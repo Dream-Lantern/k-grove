@@ -1,0 +1,6 @@
+{
+  "theme": "neutral",
+  "securityLevel": "strict",
+  "fontFamily": "Microsoft YaHei, PingFang SC, sans-serif",
+  "flowchart": { "htmlLabels": false }
+}

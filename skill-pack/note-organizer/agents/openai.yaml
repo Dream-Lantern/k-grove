@@ -1,0 +1,4 @@
+interface:
+  display_name: "技术笔记整理"
+  short_description: "整理技术笔记分类、重复候选与来源映射，保留原文及版本差异"
+  default_prompt: "使用 $note-organizer 整理选定笔记，输出分类与去重建议，保留原文。"

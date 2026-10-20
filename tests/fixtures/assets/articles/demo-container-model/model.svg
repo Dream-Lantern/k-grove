@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="150" viewBox="0 0 680 150" role="img" aria-labelledby="title desc">
+  <title id="title">镜像与容器关系示意</title><desc id="desc">镜像通过运行配置关联到容器实例；这是概念示意，不是运行结果。</desc>
+  <rect width="680" height="150" rx="12" fill="#edf4f1"/>
+  <g fill="#fff" stroke="#267062" stroke-width="2"><rect x="28" y="43" width="160" height="64" rx="8"/><rect x="260" y="43" width="160" height="64" rx="8"/><rect x="492" y="43" width="160" height="64" rx="8"/></g>
+  <g font-family="sans-serif" font-size="18" fill="#194f45" text-anchor="middle"><text x="108" y="82">镜像</text><text x="340" y="82">运行配置</text><text x="572" y="82">容器实例</text></g>
+  <g stroke="#267062" stroke-width="2" fill="none"><path d="M188 75h60m-8-6 8 6-8 6"/><path d="M420 75h60m-8-6 8 6-8 6"/></g>
+</svg>

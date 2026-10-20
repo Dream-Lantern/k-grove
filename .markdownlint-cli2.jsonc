@@ -1,0 +1,15 @@
+{
+  "globs": ["docs/**/*.md", "templates/**/*.md", "tests/fixtures/**/*.md", "skill-pack/**/*.md", "governance/tooling-guide.md"],
+  "ignores": ["docs/.vitepress/**"],
+  "config": {
+    "default": true,
+    // 中文长句、URL 和示例代码不设置机械行宽。
+    "MD013": false,
+    // VitePress 默认主题页面标题可来自 Frontmatter 或 Vue 组件。
+    "MD041": false,
+    "MD025": { "front_matter_title": "" },
+    // 站点主动使用 Vue 组件及 HTML 布局；此规则不承担安全审核。
+    "MD033": false,
+    "MD024": { "siblings_only": true }
+  }
+}

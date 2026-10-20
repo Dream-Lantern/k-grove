@@ -1,0 +1,4 @@
+interface:
+  display_name: "技术事实与版本审核"
+  short_description: "依据官方文档、版本源码与实验条件复核技术结论并记录待验证项"
+  default_prompt: "使用 $tech-reviewer 审核选定文章的技术结论、适用版本与证据。"

@@ -1,0 +1,19 @@
+node_modules/
+.tools/
+.tmp/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+*.log
+artifacts/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# 仅供本机验收的历史记录；维护指南仍随源码提交。
+governance/p1-acceptance.md
+governance/p1-files.md
+governance/visual-refresh.md
+governance/ocean-space-visual.md
+governance/tooling-acceptance.md
