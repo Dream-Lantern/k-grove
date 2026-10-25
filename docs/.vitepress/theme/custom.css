@@ -141,9 +141,11 @@
 .collection-row .collection-state { font-size:10px; color:var(--kb-muted); white-space:nowrap; }
 .collection-row > svg { width:15px; height:15px; color:var(--kb-accent); flex-shrink:0; }
 .collection-row:hover strong { color:var(--kb-accent); }
-.topic-stage { position:relative; border-left:1px solid var(--kb-border); padding:2px 0 20px 25px; margin-left:12px; }
-.topic-stage h2 { border-top:0 !important; padding-top:0 !important; margin-top:26px !important; font-size:20px !important; }
-.stage-number { position:absolute; left:-15px; width:29px; height:29px; display:grid; place-items:center; background:var(--kb-surface); color:var(--kb-teal); border:1px solid var(--kb-border); border-radius:50%; font-size:11px; letter-spacing:0; }
+.topic-stage { border-left:1px solid var(--kb-border); padding:2px 0 20px 30px; margin-left:15px; }
+/* 编号参与标题布局，固定列宽为长标题及换行保留空间。 */
+.topic-stage h2 { display:grid; grid-template-columns:30px minmax(0,1fr); column-gap:16px; align-items:start; margin-left:-46px; border-top:0 !important; padding-top:0 !important; margin-top:26px !important; font-size:20px !important; line-height:1.5; }
+.stage-number { width:30px; height:30px; display:grid; place-items:center; background:var(--kb-surface); color:var(--kb-teal); border:1px solid var(--kb-border); border-radius:50%; font-size:11px; letter-spacing:0; }
+.stage-title { min-width:0; overflow-wrap:anywhere; }
 .topic-stage p { font-size:13px; color:var(--kb-muted); }
 .stage-empty { padding:12px 15px; border-radius:7px; background:var(--kb-surface); border:1px solid var(--kb-border); }
 .demo-notice { font-size:12px; line-height:1.8; border:1px solid var(--kb-border); border-left:3px solid var(--kb-teal); border-radius:0 7px 7px 0; background:var(--kb-surface); padding:10px 14px; margin-bottom:20px; color:var(--kb-muted); }
