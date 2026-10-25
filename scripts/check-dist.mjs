@@ -16,10 +16,13 @@ for (const file of walkFiles(root).filter(x => x.endsWith('.html'))) {
   const doc = parse(fs.readFileSync(file, 'utf8'))
   const ids = new Set()
   inspect(doc, node => { const id = node.attrs?.find(x => x.name === 'id')?.value; if (id) ids.add(id) })
-  documents.set(file, { doc, ids })
+  // 仅保留目标锚点。整站保留 parse5 AST 会随长文和页面数消耗大量堆内存。
+  documents.set(file, ids)
 }
 if (!documents.size) errors.push('没有构建产物，请先运行 docs:build')
-for (const [file, { doc }] of documents) {
+for (const file of documents.keys()) {
+  // 第二遍逐页检查，完成一页即可释放其 DOM。
+  const doc = parse(fs.readFileSync(file, 'utf8'))
   inspect(doc, node => {
     for (const attr of node.attrs || []) {
       if (!['href', 'src', 'poster'].includes(attr.name) || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(attr.value)) continue
@@ -31,7 +34,7 @@ for (const [file, { doc }] of documents) {
         const resolved = fs.existsSync(target) && fs.statSync(target).isDirectory() ? path.join(target, 'index.html') : target
         if (!fs.existsSync(resolved)) throw new Error('目标不存在')
         const hash = decodeURIComponent(parsed.hash.slice(1))
-        if (hash && documents.has(resolved) && !documents.get(resolved).ids.has(hash)) throw new Error(`锚点不存在：${hash}`)
+        if (hash && documents.has(resolved) && !documents.get(resolved).has(hash)) throw new Error(`锚点不存在：${hash}`)
       } catch (error) { errors.push(`${path.relative(root, file)}: ${attr.value}: ${error.message}`) }
     }
   })

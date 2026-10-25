@@ -1,0 +1,26 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="语音打断：格式、检测、事件身份与播放确认",shape=plaintext,style="",width=6.205555555555556,height=.75,fontsize=20]; title -> pcm [style=invis];
+pcm [label="[本地修订示例]\n显式PCM格式与固定帧\n位宽/端序/采样率/声道/毫秒",width=3.4250000000000003,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+detect [label="[固定提交片段]\n示例：RMS能量门控\n未验证人声；实际VAD/AEC另接",width=3.5791666666666666,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+identity [label="[本地修订示例]\n输入event_id与目标代次\n去重 / 旧代次 / 身份冲突",width=4.0625,height=1.5444,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+ignore [label="[本地修订示例]\n拒绝过期/重复事件\n不影响当前新回复",width=2.4375,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+playing [label="[本地修订示例]\n当前代次正在播放？",width=3.15625,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+idle [label="[建议设计]\n无当前播放：不发取消\n继续接收用户输入 [建议]",width=3.095833333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+cancel [label="[本地修订示例]\n请求取消 + 清理待播队列\nCANCEL_REQUESTED ≠ 已静音",width=3.658333333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+ack [label="[建议设计]\n播放器ACK与已播位置\n设备缓冲与文本对齐 [建议]",width=3.3041666666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+state [label="[建议设计]\n按已交付范围更新上下文\n无ACK/位置时记录UNKNOWN",width=3.229166666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+replan [label="[建议设计]\n由外层重规划 / 新回复\n输出须经本地代次检查",width=2.8874999999999997,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+pcm -> detect [label="合法帧"];
+detect -> identity [label="能量触发不等于真语音"];
+identity -> ignore [label="无效"];
+identity -> playing [label="有效"];
+playing -> idle [label="否"];
+playing -> cancel [label="是"];
+cancel -> ack [label="异步确认",style=dashed];
+ack -> state [label="确认或缺失均保留"];
+state -> replan [label=""];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+ignore -> legend [style=invis];
+idle -> legend [style=invis];
+replan -> legend [style=invis];
+}

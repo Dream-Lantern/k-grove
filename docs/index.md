@@ -14,7 +14,7 @@ title: 首页
 
 <section class="home-section" aria-labelledby="topics-title">
 <div class="section-heading"><div><p class="section-kicker">专题笔记</p><h2 id="topics-title">按专题阅读</h2><p>围绕一个主题，把零散的笔记按阅读顺序串起来。</p></div><a class="section-link" href="./topics/">全部专题 <span aria-hidden="true">→</span></a></div>
-<KnowledgeCards kind="topics" />
+<KnowledgeCards kind="topics" recommended />
 </section>
 
 <div class="home-section reading-columns">
@@ -28,6 +28,6 @@ title: 首页
 </section>
 </div>
 
-<p class="home-content-note">当前为框架预览，尚无正式文章。模拟稿仅保留为测试夹具，不参与站点构建和搜索。</p>
+<p class="home-content-note">笔记持续整理中。文中的版本前提、引用来源和待验证说明，请结合具体章节阅读。</p>
 
 </div>

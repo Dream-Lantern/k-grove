@@ -1,0 +1,22 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="Coding Agent：修复、恢复和停止",shape=plaintext,style="",width=5.083333333333334,height=.75,fontsize=20]; title -> task [style=invis];
+task [label="[固定提交片段]\n任务与项目约束",width=2.1416666666666666,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+search [label="[固定提交片段]\n检索定位 → 小步编辑",width=2.7666666666666666,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+test [label="[固定提交片段]\n静态检查与行为测试",width=2.525,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+decision [label="[建议设计]\n测试与需求验证通过？",width=3.416666666666667,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+review [label="[建议设计]\nDiff审查 + 保存验证证据",width=3.1625,height=0.8799999999999999,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+diagnose [label="[建议设计]\n首错归因\n参数 / 代码 / 环境 / 输入",width=3.404166666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+retry [label="[建议设计]\n可修复且仍有预算？",width=3.15625,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+checkpoint [label="[建议设计]\n保存检查点并说明阻碍\n缺输入 / 环境 / 预算耗尽",width=3.25,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+task -> search [label=""];
+search -> test [label=""];
+test -> decision [label=""];
+decision -> review [label="通过"];
+decision -> diagnose [label="失败/未知"];
+diagnose -> retry [label=""];
+retry -> search [label="可修复"];
+retry -> checkpoint [label="否则"];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+review -> legend [style=invis];
+checkpoint -> legend [style=invis];
+}

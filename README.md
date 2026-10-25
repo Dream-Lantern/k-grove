@@ -13,7 +13,7 @@
 - 分布式系统与系统设计
 - 编程语言与工程工具
 
-同时提供操作系统、分布式系统、Kafka、Redis、Docker、Kubernetes 六个技术分册。
+常用查阅入口依次为 **AI Agent、AI Infra、分布式系统、操作系统、K8s、Redis、Kafka**。这些分册和专题关联唯一的文章正文；六大主要领域标识仍保持稳定。
 
 ## 主要功能
 
@@ -35,7 +35,7 @@
 | 依赖管理   | npm，固定版本并保留锁文件                      |
 | 格式与规则 | Prettier、markdownlint-cli2                    |
 | 图示       | Mermaid CLI，本机浏览器渲染 SVG                |
-| 计划部署   | GitHub Pages + GitHub Actions                  |
+| 静态部署   | GitHub Pages + GitHub Actions                  |
 
 不依赖数据库、搜索服务器或业务后端。开发工具依赖不导入站点前端。
 
@@ -112,7 +112,7 @@ artifacts/                 # 本地验收材料与图示输出，不作为站点
 
 ## 文章组织与维护
 
-当前站点尚无正式文章。人工编写的非敏感模拟稿位于 `tests/fixtures/`，只用于测试，不参与站点构建、导航或搜索。
+站点已接入七个查阅分组的学习笔记，按章节和专题顺序阅读。广告引擎及 GPU 内核态虚拟化未纳入本次发布。人工编写的非敏感模拟稿位于 `tests/fixtures/`，只用于测试，不参与站点构建、导航或搜索。
 
 文章统一放在 `docs/articles/<article-slug>.md`，对应 `/articles/<article-slug>.html`。ID 与 slug 全局唯一，发布后尽量保持稳定，避免因分类调整而移动正文。
 
@@ -123,7 +123,7 @@ Frontmatter 必填字段为 `id`、`title`、`description`、`date`、`updated`�
 - 分类、专题和项目通过元数据引用同一篇文章。
 - 原理、教程、参考、排障和实践可选不同模板；短知识点无需扩写或补空章节。
 
-具体规则见[内容规范](governance/content-guide.md)和 `templates/`。当前校验策略仅接受模拟来源与草稿；导入真实内容前，需要单独完成发布策略与对应校验的调整。
+具体规则见[内容规范](governance/content-guide.md)和 `templates/`。构建只接受明确列入公开白名单的非草稿学习笔记，并拒绝未批准正文。文章日期表示本站发布和修订时间，技术资料的适用日期及验证边界见正文。
 
 ### 辅助 Skill
 
@@ -141,11 +141,15 @@ Skill 源码随项目维护，使用前需安装到 Codex 的用户技能目录�
 
 真实内容采用“选定候选 → 整理与复核 → 正文和资源人工审核 → 按 UID、SHA-256 与审核清单定向导入”的流程。保留原始备份，不自动同步整个笔记库，也不把候选稿或模拟文章当作正式内容发布。
 
-## 部署规划
+## 部署
 
-计划使用 GitHub Actions 构建静态页面，再部署到 GitHub Pages，访问者不需要启动应用服务。源码仓库为 [Dream-Lantern/k-grove](https://github.com/Dream-Lantern/k-grove)，当前尚未配置自动部署工作流。
+GitHub Actions 在 `main` 更新时执行测试、格式和内容检查，构建静态页面后部署到 GitHub Pages。访问者不需要启动应用服务。源码仓库为 [Dream-Lantern/k-grove](https://github.com/Dream-Lantern/k-grove)，工作流见 [.github/workflows/deploy.yml](.github/workflows/deploy.yml)。
 
-用户站点或自定义域名通常使用根路径 `/`；项目站点可通过 `BLOG_BASE=/仓库名/` 注入基础路径。实际部署前需确定仓库地址和站点路径，并完成公开文件与页面内容审核。
+本站项目路径为 `/k-grove/`，工作流通过 `BLOG_BASE` 注入；本地默认仍为 `/`。GitHub 仓库的 Settings → Pages 发布来源需选择 **GitHub Actions**。仅上传构建产物 `docs/.vitepress/dist`，不发布整个源码或本地私有工作区。
+
+## 第三方来源
+
+学习笔记保留论文、官方文档和源码出处。第三方代码节选沿用上游许可，不因本站根目录的 CC0 声明改变授权；详见 [THIRD_PARTY.md](THIRD_PARTY.md)。
 
 ## 提交规范
 

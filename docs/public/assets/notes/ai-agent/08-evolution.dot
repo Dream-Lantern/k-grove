@@ -1,0 +1,23 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="候选代码：门禁失败立即关闭",shape=plaintext,style="",width=4.261111111111111,height=.75,fontsize=20]; title -> trace [style=invis];
+trace [label="[固定提交片段]\n失败轨迹与候选补丁",width=2.525,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+compile [label="[固定提交片段]\n长度/编译/静态预筛通过？",width=3.9791666666666665,height=1.1616,style="rounded,filled",fillcolor="#E0F2FE",shape=diamond];
+docker [label="[固定提交片段]\nDocker与隔离执行可用？",width=3.802083333333334,height=1.1616,style="rounded,filled",fillcolor="#E0F2FE",shape=diamond];
+regress [label="[固定提交片段]\n必需行为检查/旧任务回归\n回滚产物校验通过？",width=3.8281249999999996,height=1.5444,style="rounded,filled",fillcolor="#E0F2FE",shape=diamond];
+manifest [label="[固定提交片段]\n生成版本、来源、检查清单\n以及回滚Hash",width=3.15,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+candidate [label="[固定提交片段]\n仅获得影子/灰度候选资格\n稳定模块保持不变",width=3.0624999999999996,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+reject [label="[固定提交片段]\n拒绝并留证\n静态失败 / 沙盒不可用\n超时 / 回归或回滚失败",width=2.8874999999999997,height=1.46,style="rounded,filled",fillcolor="#E0F2FE"];
+deploy [label="[建议设计]\n后续发布、监测与回滚\n由外层发布系统落实 [建议]",width=3.3041666666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+trace -> compile [label=""];
+compile -> docker [label="通过"];
+compile -> reject [label="失败"];
+docker -> regress [label="可用且成功返回"];
+docker -> reject [label="不可用/执行失败"];
+regress -> manifest [label="全部通过"];
+regress -> reject [label="任一失败/缺失"];
+manifest -> candidate [label=""];
+candidate -> deploy [label="独立发布决策",style=dashed];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+reject -> legend [style=invis];
+deploy -> legend [style=invis];
+}

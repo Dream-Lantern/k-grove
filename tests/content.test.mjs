@@ -41,7 +41,7 @@ test('能识别非法词表、缺失字段、非法日期和排序', () => {
     [record => record.frontmatter.updated = '2026-02-30', /非法日期/],
     [record => record.frontmatter.updated = '2020-01-01', /不能早于/],
     [record => { record.frontmatter.series = 'systems-foundations'; record.frontmatter.order = -1 }, /正整数/],
-    [record => record.frontmatter.source = { kind: 'original' }, /demo/],
+    [record => record.frontmatter.source = { kind: 'original' }, /source 仅允许/],
     [record => record.frontmatter.source_uid = 123, /不允许的元数据/],
     [record => record.frontmatter.draft = false, /仅接受 draft: true/]
   ]

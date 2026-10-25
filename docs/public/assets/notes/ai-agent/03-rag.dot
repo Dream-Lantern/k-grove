@@ -1,0 +1,19 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="混合检索目标设计：授权与证据不足分支",shape=plaintext,style="",width=5.65,height=.75,fontsize=20]; title -> query [style=invis];
+query [label="[建议设计]\n查询与用户访问范围",width=2.525,height=0.8799999999999999,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+recall [label="[建议设计]\n授权范围内两路召回\nBM25 + Dense",width=2.525,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+unique [label="[建议设计]\n每路文档ID去重\n防止同路重复加分 [建议]",width=3.095833333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+fusion [label="[固定提交片段]\nRRF融合 → 候选重排\n仅处理已有候选",width=2.7124999999999995,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+evidence [label="[建议设计]\n授权过滤后可用证据足够？",width=3.9375,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+answer [label="[建议设计]\n根据证据回答并核查引用",width=2.9416666666666664,height=0.8799999999999999,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+retry [label="[建议设计]\n预算允许：改写查询/重检索\n否则未知 / 拒答",width=3.270833333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+query -> recall [label=""];
+recall -> unique [label=""];
+unique -> fusion [label=""];
+fusion -> evidence [label=""];
+evidence -> answer [label="足够"];
+evidence -> retry [label="不足"];
+retry -> recall [label="仍有预算",style=dashed];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+answer -> legend [style=invis];
+}

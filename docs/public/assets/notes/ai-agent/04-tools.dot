@@ -1,0 +1,25 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="工具目标契约：不执行、失败与效果未知",shape=plaintext,style="",width=5.65,height=.75,fontsize=20]; title -> call [style=invis];
+call [label="[建议设计]\n调用请求\n绑定操作意图 / 请求ID",width=2.9208333333333334,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+pre [label="[建议设计]\n参数合法且有服务端授权？",width=3.9375,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+confirmation [label="[建议设计]\n按风险/既有授权判断确认\n无需确认或确认有效？",width=3.8281249999999996,height=1.5444,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+execute [label="[建议设计]\n依幂等契约执行\n超时与重试不等于效果回滚",width=3.15,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+result [label="[建议设计]\n环境效果？\n已知成功 / 失败 / 未知",width=3.802083333333334,height=1.5444,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+verify [label="[建议设计]\n目标验证\n通过 / 失败 / 未知",width=2.6250000000000004,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+noexec [label="[建议设计]\n不执行并审计\nINVALID_INPUT / FORBIDDEN\n拒绝确认 / 过期",width=3.6708333333333334,height=1.46,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+unknown [label="[建议设计]\n效果未知：查请求状态\n禁止盲目重复不可逆动作",width=2.9416666666666664,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+audit [label="[本地修订示例]\n返回分层状态及证据\n执行 ≠ 业务 ≠ 验证",width=2.8000000000000003,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+call -> pre [label=""];
+pre -> confirmation [label="合法且授权"];
+pre -> noexec [label="失败"];
+confirmation -> execute [label="允许"];
+confirmation -> noexec [label="拒绝/过期"];
+execute -> result [label=""];
+result -> verify [label="效果已知"];
+result -> unknown [label="超时/缺证"];
+unknown -> audit [label="未知或查回后报告"];
+verify -> audit [label="保留验证失败/未知"];
+noexec -> audit [label=""];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+audit -> legend [style=invis];
+}

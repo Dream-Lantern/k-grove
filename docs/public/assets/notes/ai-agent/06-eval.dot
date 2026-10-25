@@ -1,0 +1,19 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="评估：逐单元复位、覆盖与分层聚合",shape=plaintext,style="",width=5.094444444444445,height=.75,fontsize=20]; title -> matrix [style=invis];
+matrix [label="[建议设计]\ntask × variant × repeat\n配对A/B各自从同一初态Reset",width=3.4916666666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+run [label="[固定提交片段]\n逐单元运行并记录轨迹",width=2.7333333333333334,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+verifiers [label="[建议设计]\n环境真值 + 过程证据\n独立验证与来源记录",width=2.6791666666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+coverage [label="[建议设计]\n运行 / 证据 / 定价齐全？",width=4.0625,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+unknown [label="[建议设计]\n缺单元 / 缺证据 / 未知成本\n标UNKNOWN并保留分母",width=3.4583333333333335,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+aggregate [label="[本地修订示例]\n先按查询/任务计算\n再按声明权重汇总",width=2.4375,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+report [label="[建议设计]\n结果 + 覆盖率 + 未知数\n质量 / 时延 / 成本 / 过程",width=3.404166666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+matrix -> run [label=""];
+run -> verifiers [label=""];
+verifiers -> coverage [label=""];
+coverage -> unknown [label="不齐全"];
+coverage -> aggregate [label="齐全"];
+unknown -> report [label="不可冒充完整比较"];
+aggregate -> report [label=""];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+report -> legend [style=invis];
+}

@@ -1,0 +1,27 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="Harness：动作选择与明确退出",shape=plaintext,style="",width=4.555555555555555,height=.75,fontsize=20]; title -> goal [style=invis];
+goal [label="[固定提交片段]\n用户目标与当前状态",width=2.525,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+budget [label="[固定提交片段]\n步数 / 预算仍可继续？",width=3.6093749999999996,height=1.1616,style="rounded,filled",fillcolor="#E0F2FE",shape=diamond];
+context [label="[固定提交片段]\n组装实际消息并请求模型",width=2.9416666666666664,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+decision [label="[建议设计]\n动作类型？\n工具 / 回答 / 等待 / 拒绝",width=4.255208333333334,height=1.5444,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+tool [label="[固定提交片段]\n校验、执行工具\n结果与错误写回轨迹",width=2.525,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+answer [label="[建议设计]\n结束条件与结果已验证？",width=3.677083333333333,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+done [label="[建议设计]\n输出结果与证据",width=2.1083333333333334,height=0.8799999999999999,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+wait [label="[建议设计]\n等待事件 / 追问缺失输入\n保存检查点 [建议]",width=3.095833333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+stop [label="[建议设计]\n拒绝 / 预算耗尽\n记录未完成原因",width=2.2625,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+goal -> budget [label=""];
+budget -> context [label="可继续"];
+budget -> stop [label="耗尽"];
+context -> decision [label=""];
+decision -> tool [label="工具"];
+tool -> budget [label="下一轮"];
+decision -> answer [label="回答"];
+answer -> done [label="通过"];
+answer -> budget [label="未满足且可重试"];
+decision -> wait [label="等待/追问"];
+decision -> stop [label="拒绝"];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+done -> legend [style=invis];
+wait -> legend [style=invis];
+stop -> legend [style=invis];
+}

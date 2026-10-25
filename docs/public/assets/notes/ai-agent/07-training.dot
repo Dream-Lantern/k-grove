@@ -1,0 +1,24 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="训练决策：先审计链路，再验证训练价值",shape=plaintext,style="",width=5.65,height=.75,fontsize=20]; title -> input [style=invis];
+input [label="[固定提交片段]\n字符串与工具参数任务",width=2.7333333333333334,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+audit [label="[建议设计]\nTokenizer / JSON / 模板审计\nraw exact 与后处理指标分列",width=3.7791666666666663,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+intact [label="[建议设计]\n链路保真？",width=2.15625,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+repair [label="[建议设计]\n修接口/模板/工具 [建议]",width=3.1291666666666664,height=0.8799999999999999,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+worth [label="[建议设计]\n确为模型问题且训练值得？",width=3.9375,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
+other [label="[建议设计]\n先比较Prompt / 检索 / 工具\n规则用代码强制",width=3.558333333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+split [label="[固定提交片段]\n独立训练 / 留出 / 边界集",width=3.25,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+train [label="[固定提交片段]\n基座与LoRA对照\n记录rank、alpha和缩放实现",width=3.404166666666667,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+eval [label="[建议设计]\n独立留出与真实工具匹配\n只报告已实测范围",width=2.9416666666666664,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+input -> audit [label=""];
+audit -> intact [label=""];
+intact -> repair [label="否"];
+repair -> audit [label="修复后重审",style=dashed];
+intact -> worth [label="是"];
+worth -> other [label="否/证据不足"];
+worth -> split [label="是"];
+split -> train [label=""];
+train -> eval [label=""];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+other -> legend [style=invis];
+eval -> legend [style=invis];
+}

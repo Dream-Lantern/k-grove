@@ -17,6 +17,7 @@ const items = computed(() => {
   if (props.category) result = byCategory(result, props.category)
   if (props.collection) result = byCollection(result, props.collection)
   if (props.series) result = bySeries(result, props.series)
+  if (props.collection || props.category) result = [...result].sort((a, b) => (a.order || 0) - (b.order || 0) || a.id.localeCompare(b.id))
   if (props.project) result = result.filter(x => x.project === props.project)
   if (props.mode === 'featured') result = featuredIds.map(id => result.find(x => x.id === id)).filter(Boolean)
   if (props.mode === 'recent') result = recent(result)

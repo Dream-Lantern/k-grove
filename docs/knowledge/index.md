@@ -6,14 +6,11 @@
 
 <KnowledgeCards />
 
-## 技术分册
-
-<KnowledgeCards kind="collections" />
-
 ## 从哪里开始
 
-- 回顾系统基础：[系统基础专题](/topics/systems-foundations/)。
-- 了解容器与工作负载：[容器基础专题](/topics/container-foundations/)。
+- 学习 Agent：[AI Agent 专题](/topics/agent-engineering/)。
+- 理解 GPU 与模型服务：[AI Infra 专题](/topics/ai-infrastructure/)。
+- 回顾系统基础：[操作系统](/collections/operating-systems/)与[分布式系统](/collections/distributed-systems/)。
 - 已有明确问题：使用顶部“搜索知识库”。
 
-目前先提供分类与阅读入口，尚未导入历史笔记或发布正式文章。
+分类页、专题页和文章导航引用同一份正文。调整查阅顺序不会改变已发布文章的地址。

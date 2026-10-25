@@ -1,7 +1,9 @@
-# Kubernetes
+# K8s
 
-从声明工作负载开始建立集群资源对象的概念。
+Kubernetes 架构、工作负载、网络、存储与日常管理。
 
-## 知识条目
+按章节顺序阅读，或使用顶部搜索查找具体知识点。正文只存储一份；本站发布日期不代表技术结论已在该日期重新实测。
 
-<ArticleList collection="kubernetes" />
+[专题阅读入口](/topics/kubernetes-learning/)
+
+<TopicOutline topic="kubernetes-learning" />

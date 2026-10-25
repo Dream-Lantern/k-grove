@@ -9,6 +9,6 @@ export default createContentLoader('articles/*.md', {
       url: item.url,
       slug: item.url.split('/').pop()!.replace(/\.html$/, '')
     }))
-    return articleIndex(records)
+    return articleIndex(records, { publish: true })
   }
 })

@@ -1,0 +1,17 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="翻译编排依赖顺序：不表示已并发运行",shape=plaintext,style="",width=5.372222222222223,height=.75,fontsize=20]; title -> manager [style=invis];
+manager [label="[固定提交片段]\nManager：任务与文件索引\n不持有全书完整历史",width=3.1624999999999996,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+glossary [label="[固定提交片段]\n术语表先生成\n共享只读契约",width=2.1416666666666666,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+worker [label="[固定提交片段]\n逐章调用翻译角色\n独立必要上下文 / 独立文件",width=3.3041666666666667,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+proof [label="[固定提交片段]\n全书审校与有限返修",width=2.525,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+metrics [label="[本地修订示例]\n指定译法命中 / 混用 / 覆盖\n严格率与UNKNOWN分开",width=3.4583333333333335,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+baseline [label="[建议设计]\n同术语表的单Agent基线\n质量、总Token、时间对照",width=3.1291666666666664,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+manager -> glossary [label=""];
+glossary -> worker [label=""];
+worker -> proof [label=""];
+proof -> worker [label="限次返修",style=dashed];
+proof -> metrics [label=""];
+metrics -> baseline [label=""];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+baseline -> legend [style=invis];
+}

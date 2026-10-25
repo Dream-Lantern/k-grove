@@ -1,9 +1,10 @@
 import path from 'node:path'
 import { readArticles, validateRecords, validateMarkdownLinks, walkFiles, docsRoot } from '../lib/content.mjs'
+import { validatePublication } from '../lib/public-display.mjs'
 
 try {
   const records = readArticles()
-  const errors = [...validateRecords(records), ...validateMarkdownLinks()]
+  const errors = [...validateRecords(records), ...validatePublication(records), ...validateMarkdownLinks()]
   for (const file of walkFiles(docsRoot).filter(file => !file.includes(`${path.sep}.vitepress${path.sep}`))) {
     if (/\.(enex|notes|enml|diff)$/i.test(file) || /(?:^|[\\/])(raw|review|ready|provenance|approvals)(?:[\\/]|$)/i.test(file)) errors.push(`禁止进入网站的私有资料类型：${file}`)
   }

@@ -1,0 +1,23 @@
+digraph G { graph [rankdir=TB,bgcolor="white",pad="0.28",nodesep="0.38",ranksep="0.45",outputorder=edgesfirst]; node [shape=box,style="rounded,filled",fixedsize=true,fillcolor="#E0F2FE",color="#0369A1",fontcolor="#0F172A",fontname="Microsoft YaHei",fontsize=15,penwidth=1.6]; edge [color="#0369A1",fontcolor="#0369A1",fontname="Microsoft YaHei",fontsize=11,penwidth=1.4,arrowsize=.75];
+title [label="上下文：保真字段、摘要与受控重读",shape=plaintext,style="",width=5.094444444444445,height=.75,fontsize=20]; title -> input [style=invis];
+input [label="[固定提交片段]\n本轮任务及历史",width=2.1416666666666666,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+stable [label="[固定提交片段]\n稳定前缀 + 近期消息\n保留调用与返回关联",width=2.6791666666666667,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+history [label="[固定提交片段]\n较早历史与长工具结果",width=2.7333333333333334,height=0.8799999999999999,style="rounded,filled",fillcolor="#E0F2FE"];
+facts [label="[建议设计]\n关键约束 / 事务ID / 状态\n结构化保真 [建议]",width=3.2833333333333337,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+summary [label="[固定提交片段]\n任务感知摘要\n截断/失败回退需记录",width=2.645833333333333,height=1.17,style="rounded,filled",fillcolor="#E0F2FE"];
+raw [label="[建议设计]\n原始日志外置保存\n来源 / 版本 / 可访问范围",width=3.25,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+read [label="[建议设计]\n权限与预算允许的工具重读\n返回后再注入 [建议]",width=3.15,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+request [label="[建议设计]\n下一模型请求\n前缀 + 状态 + 摘要 + 最近消息",width=3.8208333333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+input -> stable [label=""];
+input -> history [label=""];
+history -> facts [label="按关键性提取"];
+history -> summary [label=""];
+history -> raw [label="原文留存"];
+stable -> request [label=""];
+facts -> request [label=""];
+summary -> request [label=""];
+raw -> read [label="按需请求",style=dashed];
+read -> request [label="工具结果入上下文"];
+legend [label="图例：实线框＝固定提交可定位步骤；虚线框＝本地修订示例或建议\n节点标签区分示例/建议；虚线箭头含义以边文字为准\n教学图不等于整链已实现或通过实测 · 源码基线 dbc046eb896a",shape=box,style="filled",fillcolor="#FFFFFF",color="#CBD5E1",fontcolor="#475569",fontsize=11,width=5.233333333333333,height=.82];
+request -> legend [style=invis];
+}

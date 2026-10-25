@@ -11,4 +11,4 @@
 - [Docker 分册](/collections/docker/)
 - [Kubernetes 分册](/collections/kubernetes/)
 
-GPU 虚拟化和 G-CR 的真实资料尚未导入。
+可从 [AI Infra 分册](/collections/ai-infra/)按顺序阅读 GPU、CUDA、资源管理与模型服务笔记；G-CR 内容是公开论文和源码的学习整理。

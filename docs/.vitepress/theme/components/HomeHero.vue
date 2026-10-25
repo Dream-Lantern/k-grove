@@ -3,7 +3,7 @@ import { withBase } from 'vitepress'
 import { collections } from '../../../../content-config/catalog.mjs'
 import KnowledgeIcon from './KnowledgeIcon.vue'
 import AstronautScene from './AstronautScene.vue'
-const shortcuts = ['operating-systems', 'redis', 'kafka', 'docker'].map(id => collections.find(item => item.id === id)).filter(Boolean)
+const shortcuts = ['ai-agent', 'ai-infra', 'operating-systems', 'redis'].map(id => collections.find(item => item.id === id)).filter(Boolean)
 function openSearch() {
   // 复用锁定版本默认主题中真实的搜索触发按钮，不维护第二套索引或弹窗。
   document.querySelector('.VPNavBarSearch .DocSearch-Button')?.click()
