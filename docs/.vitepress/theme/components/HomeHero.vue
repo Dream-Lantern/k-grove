@@ -15,7 +15,7 @@ function openSearch() {
     <div class="hero-main">
     <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span>个人技术笔记 · 持续整理</p>
     <h1 id="home-title">整理技术知识，<span>记录学习心得。</span></h1>
-    <p class="hero-description">这里记录我在学习和工作中整理的技术知识、问题笔记与实践心得，方便日后查阅，也分享给有需要的人。</p>
+    <p class="hero-description">整理学习与工作中的技术知识和实践心得，方便查阅，也分享给有需要的人。</p>
     <button class="hero-search" type="button" aria-label="打开知识库全文搜索" aria-haspopup="dialog" @click="openSearch">
       <KnowledgeIcon name="search" /><span>搜索知识点、问题或笔记…</span><kbd aria-hidden="true">Ctrl K</kbd>
     </button>
