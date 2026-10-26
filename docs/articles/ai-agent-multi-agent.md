@@ -19,11 +19,7 @@ order: 10
 
 # 第10章 多 Agent 协作
 
-> 源码增补基于 `dbc046eb896a`（2026-10-22 获取）；本地编号保持不变。`【源码补充】`为本次读码归纳，代码节选依赖原文件上下文。
-
-**本地阅读编号**：第10章；**当前仓库对应**：第10章。旧版分节号不再作为当前源码定位依据；完整映射仅见[章号对照](/articles/ai-agent-chapter-reference.html)。**原笔记已有**：上下文共享、IPC、Peer/Manager/Decentralized、A2A、并发冲突、Loop 失败模式。
-
-## 10.1 先分两个设计维度【书】
+## 10.1 先分两个设计维度
 
 **维度一：上下文是否共享**。
 
@@ -38,7 +34,7 @@ order: 10
 
 上下文与拓扑是不同的设计维度，不能只用“有几个 Agent”来描述协作架构。
 
-## 10.2 多 Agent 何时值得做【书+整理】
+## 10.2 多 Agent 何时值得做
 
 **一个实际检验问题**：多 Agent 是否引入单 Agent 无法廉价获得的**新信息、新能力或有效并行**？
 
@@ -52,7 +48,7 @@ order: 10
 
 要把 **性能收益、总 Token、总耗时、错误率、协调成本** 放在同一评估框架下。
 
-## 10.3 协作时传递什么【书】
+## 10.3 协作时传递什么
 
 最稳妥的 handoff 不是把全部对话复制过去，而是提供**结构化合同**：
 
@@ -70,7 +66,7 @@ handoff:
 
 子 Agent 给出的结论必须引用可复核的证据，不能用上一 Agent 的口头声明替代实际的数据查询与权限校验。
 
-## 10.4 IPC 与共享文件系统并发问题【书】
+## 10.4 IPC 与共享文件系统并发问题
 
 IPC（Inter-Process Communication）可类比两种方式：
 
@@ -79,7 +75,7 @@ IPC（Inter-Process Communication）可类比两种方式：
 
 共享工作区中的常见冲突是：两个 Agent 同时修改同一文件，后保存的内容覆盖先保存的内容。可通过 Git worktree/分支隔离、乐观版本检查、细粒度任务划分和合并测试处理。共享数据库任务则需要事务与状态机，不能仅靠提示词要求“别冲突”。
 
-## 10.5 多 Agent 常见失败【书】
+## 10.5 多 Agent 常见失败
 
 1. **成本爆炸**：每个 Agent 重复读全量上下文、反复讨论，未引入新信息。
 2. **理解债（Comprehension Debt）**：代码产出很快，团队却跟不上架构演变，不知道做了什么。
@@ -89,7 +85,7 @@ IPC（Inter-Process Communication）可类比两种方式：
 
 **补充工程建议**：对每个 Agent 设置预算、可调用工具、产物格式、证据标准、完成条件和冲突仲裁方式。
 
-## 10.6 结合 Agent 评测平台做拆分【实践补充】
+## 10.6 结合 Agent 评测平台做拆分
 
 示例：
 
@@ -99,7 +95,7 @@ IPC（Inter-Process Communication）可类比两种方式：
 
 对比单 Agent：记录两个版本的任务成功率、方案可执行率、人工返工次数、端到端耗时、Token 总成本、业务规则违反率。只有收益足够明显才继续增加 Agent 数量。
 
-## 10.7 用翻译实验理解管理者上下文隔离【源码补充】
+## 10.7 用翻译实验理解管理者上下文隔离
 
 `chapter10/book-translation/agents.py` 的 `run_orchestration()` 是一条值得跟读的实现：Glossary Agent 先生成术语表，章节翻译 Agent 读取必要原文，Proofreading Agent 检查一致性，Manager 依据报告安排修订。Manager 维护任务、进度、文件索引和调用摘要，避免长期持有所有章节全文。
 
@@ -137,7 +133,7 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 - [当前仓库正文](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/book/chapter10.md)
 - [实验优先级与复现记录](/articles/ai-agent-source-experiments.html) · 统一验证入口（仅保留于本地审阅资料，公开版不提供）
 
-## 10.8 指定译法命中、混用与严格遵从【审阅修订】
+## 10.8 指定译法命中、混用与严格遵从
 
 上游`check_adherence()`只要一章出现指定译法就计命中；同章“词元和标记”可得到1.0，而`analyze()`的一致性为0。无跟踪概念时二者也可返回1.0，因此不能把这个满分解释为完全遵从或质量提高。
 
@@ -164,4 +160,4 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 
 ## 学习资料与代码出处
 
-本篇为个人学习整理，参考李博杰《深入理解 AI Agent：设计原理与工程实践》及 [ai-agent-book](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6)。`【书】`、`【整理】`、`【实践补充】`、`【源码补充】`用于区分观点来源与个人归纳，不代表原书逐字转录。代码节选保留正文中的固定提交链接，引用代码沿用上游 [Apache-2.0 许可证](/licenses/ai-agent-book-APACHE-2.0.txt)，不适用本站 CC0 声明。
+本篇为个人学习整理，参考李博杰《深入理解 AI Agent：设计原理与工程实践》及 [ai-agent-book](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6)。代码节选保留正文中的固定提交链接，引用代码沿用上游 [Apache-2.0 许可证](/licenses/ai-agent-book-APACHE-2.0.txt)，不适用本站 CC0 声明。

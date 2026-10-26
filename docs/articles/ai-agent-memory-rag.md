@@ -19,11 +19,7 @@ order: 3
 
 # 第3章 用户记忆、知识库与 RAG
 
-> 源码增补基于 `dbc046eb896a`（2026-10-22 获取）；本地编号保持不变。`【源码补充】`为本次读码归纳，代码节选依赖原文件上下文。
-
-**本地阅读编号**：第3章；**当前仓库对应**：第3章。旧版分节号不再作为当前源码定位依据；完整映射仅见[章号对照](/articles/ai-agent-chapter-reference.html)。**原笔记已有**：Mem0/Memobase、RAPTOR、GraphRAG、OpenViking、混合检索与 Contextual Retrieval。本章补齐完整流程与可靠性边界。
-
-## 3.1 Context、Memory、Knowledge Base 是三层不同概念【书+整理】
+## 3.1 Context、Memory、Knowledge Base 是三层不同概念
 
 | 概念           | 作用                    | 生命周期               | 典型内容                 |
 | -------------- | ----------------------- | ---------------------- | ------------------------ |
@@ -33,7 +29,7 @@ order: 3
 
 RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回答前**检索有依据的外部信息**的流程，不等于存储系统本身；既可以连接知识库，也可以服务于个人记忆。
 
-## 3.2 用户记忆的分类【书】
+## 3.2 用户记忆的分类
 
 - **情景记忆（Episodic）**：谁在何时做了什么，依赖事件上下文。
 - **语义记忆（Semantic）**：从多条事实抽象的稳定知识或偏好。
@@ -73,7 +69,7 @@ RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回�
 
 原书把 Mem0 / Memobase 作为记忆系统案例，LoCoMo 用于长对话记忆评估。阅读框架时要拆解：写入时如何抽取、冲突如何解决、如何检索、删除如何实现、评价采用什么任务。**仅看“能记住多少条”不足以评价系统。**
 
-## 3.4 标准 RAG 流程【书】
+## 3.4 标准 RAG 流程
 
 [本章修订流程图（含失败/未知路径）](/assets/notes/ai-agent/03-rag.svg)
 
@@ -97,7 +93,7 @@ RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回�
 
 典型顺序是召回 TopK → 合并去重 → 重排 TopN → 注入模型；**Rerank 不能修复召回阶段完全漏掉的文档。**
 
-## 3.5 结构化组织与智能体检索【书】
+## 3.5 结构化组织与智能体检索
 
 - **RAPTOR**：按层次聚合并摘要，便于从细节到主题层级检索。
 - **图增强RAG / GraphRAG**：广义方法用实体、关系或图结构组织检索；不同项目并非同一实现。若特指 Microsoft GraphRAG，还应区分实体周围的 local search 与依靠社区报告的 global search。后者用于“全库主要主题是什么”一类跨全数据集汇总；“某实体关联了哪些对象”更接近局部检索问题。社区发现、报告生成与更新均有成本。依据：[Microsoft GraphRAG Global Search](https://microsoft.github.io/graphrag/query/global_search/)（2026-10-22核查，项目特定机制，不泛化到全部图RAG）。
@@ -105,17 +101,17 @@ RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回�
 - **Agentic RAG**：模型判断“需不需要检索、换不换关键词、证据够不够”，可能多轮搜索，但引入更高成本与失败风险。
 - **Contextual Retrieval**：在索引时为原本脱离章节语境的块附加相关背景，有助于减少语义断裂。这与“把用户记忆摘要放到每次查询前”是不同的处理环节，不应混为一谈。
 
-## 3.6 RAG 的评价指标与诊断【审阅修订】
+## 3.6 RAG 的评价指标与诊断
 
 检索指标的唯一主定义见 [第6章：单查询RR与跨查询MRR](/articles/ai-agent-evaluation.html#retrieval-metrics)。本章使用同一口径：前5名为 `[X,A,Y]`、相关集合为 `{A,B}` 时，Hit@5=1、Recall@5=0.5、RR@5=0.5。只有这一题时MRR也为0.5；不要把单查询的首次相关排名或RR直接称为MRR。
 
 排障时，先确认正确文档是否进入候选池，再检查融合与重排是否改善了它的位置，最后独立验证回答正确性、证据支持与引用准确性。端到端还应记录任务完成率、p95时延、检索/重排用量、过期信息和权限违规情况。检索得分高，并不能替代生成阶段的验证。
 
-## 3.7 工程实验【实践补充】
+## 3.7 工程实验
 
 以 Agent 开发文档问答为任务，做三个版本：BM25-only、Dense-only、Hybrid+Rerank。固定问题集，包含精确符号、同义词、跨文件关系和不存在的答案；比较 Recall@5、引用准确率与 p95 延迟。再引入“未找到可信依据则明确未知”的策略。
 
-## 3.8 用混合检索源码补齐“融合”这一步【源码补充】
+## 3.8 用混合检索源码补齐“融合”这一步
 
 优先读 `retrieval-pipeline/fusion.py`。RRF（Reciprocal Rank Fusion，倒数排名融合）不直接相加 BM25 分数和余弦相似度，而按每路排名贡献 `w / (k + rank)`。这避免了量纲不同的问题；`k=60` 是示例默认值，不是针对你的语料验证过的最优值。
 
@@ -164,4 +160,4 @@ return sorted(fused.items(), key=lambda kv: kv[1], reverse=True)
 
 ## 学习资料与代码出处
 
-本篇为个人学习整理，参考李博杰《深入理解 AI Agent：设计原理与工程实践》及 [ai-agent-book](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6)。`【书】`、`【整理】`、`【实践补充】`、`【源码补充】`用于区分观点来源与个人归纳，不代表原书逐字转录。代码节选保留正文中的固定提交链接，引用代码沿用上游 [Apache-2.0 许可证](/licenses/ai-agent-book-APACHE-2.0.txt)，不适用本站 CC0 声明。
+本篇为个人学习整理，参考李博杰《深入理解 AI Agent：设计原理与工程实践》及 [ai-agent-book](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6)。代码节选保留正文中的固定提交链接，引用代码沿用上游 [Apache-2.0 许可证](/licenses/ai-agent-book-APACHE-2.0.txt)，不适用本站 CC0 声明。
