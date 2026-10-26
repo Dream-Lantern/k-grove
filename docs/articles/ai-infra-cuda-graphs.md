@@ -1,7 +1,7 @@
 ---
 id: ai-infra-cuda-graphs
 title: 第 7 章 CUDA Graphs：定义、实例化、更新与回放
-description: 原笔记这一主题应命名为 CUDA Graphs。RAPIDS cuGraph 是另一套图分析库，处理图算法；本章讨论把 CUDA 工作及其依赖组织为可重复提交的执行图。cuGraph 官方说明
+description: 笔记这一主题应命名为 CUDA Graphs。本章讨论把 CUDA 工作及其依赖组织为可重复提交的执行图。cuGraph 官方说明
 date: '2026-10-25'
 updated: '2026-10-25'
 category: gpu-infra
@@ -18,8 +18,6 @@ order: 7
 ---
 
 # 第 7 章 CUDA Graphs：定义、实例化、更新与回放
-
-原笔记这一主题应命名为 CUDA Graphs。RAPIDS cuGraph 是另一套图分析库，处理图算法；本章讨论把 CUDA 工作及其依赖组织为可重复提交的执行图。[cuGraph 官方说明](https://docs.nvidia.com/cugraph/latest/)
 
 ## 1. 它主要减少什么开销
 
@@ -55,11 +53,11 @@ CUDA 12.8.1 还提供事件节点和条件节点等能力，因此“Graph 不�
 
 执行图回放时，不保证经过应用拦截的普通 kernel launch 入口。因此，“hook 没命中”不能说明 kernel 没执行；也不能通过让图相关函数直接返回成功来绕过调用，这可能破坏输出句柄、依赖和应用正确性。
 
-图节点遍历可以帮助读取定义态的 kernel 参数，但真实运行时间需要 profiler/activity 证据。节点数也取决于模型、形状、后端及版本，原笔记中的某次 Ollama 节点统计只保留为待复现实验观察，不作为固定常量。
+图节点遍历可以帮助读取定义态的 kernel 参数，但真实运行时间需要 profiler/activity 证据。节点数也取决于模型、形状、后端及版本。
 
 ## 5. 回归验证不只检查速度
 
-回归时，至少要核对无图/有图的输出、不同输入、边界形状、错误返回、内存增长和并发场景。更新不兼容时，应采用重新构建等明确的回退路径。Graph、event 和 stream 都需要管理生命周期，不能视为创建后就永久有效的开关。
+回归时，至少要核对无图/有图的输出、不同输入、边界形状、错误返回、内存增长和并发场景。更新不兼容时，应采用重新构建等明确的回退路径。Graph、event 和 stream 都需要管理生命周期。
 
 ## 6. 四种时间不要都叫 H2D 延迟
 

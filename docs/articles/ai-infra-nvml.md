@@ -31,7 +31,7 @@ GPU handle、GI handle、CI handle 和 MIG device handle 不是可任意互换�
 
 ## 2. 一个只读 Python 教学例
 
-Python 包通常通过 `nvidia-ml-py` 分发，导入名为 `pynvml`。下面假定包和驱动库已经可用，未实际运行；不安装依赖、不修改 MIG 模式。
+Python 包通常通过 `nvidia-ml-py` 分发，导入名为 `pynvml`。
 
 ```python
 import pynvml
@@ -51,13 +51,9 @@ finally:
     pynvml.nvmlShutdown()
 ```
 
-示例会捕获查询错误，不会将“不支持/无权限”解释为显存为零。生产采集程序还需区分初始化失败、设备丢失、版本不匹配等状态，并提供反映采集健康状况的指标。
-
 ## 3. MIG 枚举不能依赖硬编码数字
 
 先确认设备支持和当前 MIG 模式，再查询可用 profile、GI/CI 及其 UUID。profile 枚举值、profile ID、创建出的 instance ID、设备索引是不同概念。“整卡时 id 一律填 0”“最多八张卡”“A30 只有两种 profile”都不应成为跨型号规则。
-
-部分 Python 绑定已经提供封装好的列表或对象，不宜直接照搬旧版 C 数组/ctypes 写法，并假定函数签名始终相同。修改前应查询目标版本的函数签名，再按 API 返回值管理句柄。
 
 ## 4. 监控能力的缺失也是信息
 

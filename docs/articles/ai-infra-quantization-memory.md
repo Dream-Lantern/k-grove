@@ -1,7 +1,7 @@
 ---
 id: ai-infra-quantization-memory
 title: 第 20 章 量化与显存预算：低位宽不等于等比例加速
-description: “7B 模型做 4bit 量化只需 3.5GB”只能作为权重数据的理想下界，不能直接当作部署显存要求。量化格式、计算后端和运行时开销都要纳入预算。
+description: 
 date: '2026-10-25'
 updated: '2026-10-25'
 category: gpu-infra
@@ -18,8 +18,6 @@ order: 20
 ---
 
 # 第 20 章 量化与显存预算：低位宽不等于等比例加速
-
-“7B 模型做 4bit 量化只需 3.5GB”只能作为权重数据的理想下界，不能直接当作部署显存要求。量化格式、计算后端和运行时开销都要纳入预算。
 
 ## 1. 量化如何表示数值
 
@@ -48,7 +46,7 @@ PTQ 在训练后做量化，可能使用校准数据；QAT 在训练中考虑量
 
 当前文档将 `mem-fraction-static` 关联到权重和 KV 池的预算比例，并要求为激活和 Graph 等保留空间。原式 `chunked_prefill_size × 1.5 + cuda_graph_max_bs × 2` 没有自洽的字节单位和模型条件，不能用于估算 GB，应删除。[SGLang 参数调优](https://docs.sglang.io/docs/advanced_features/hyperparameter_tuning)
 
-应固定模型、精度、上下文、并发和 Graph 配置，读取启动预算，再测试最坏的 prefill/decode 负载并预留余量。每次增加配额后，都要重新检查 OOM、p99 和质量，不能把占满显存当作成功标准。
+应固定模型、精度、上下文、并发和 Graph 配置，读取启动预算，再测试最坏的 prefill/decode 负载并预留余量。每次增加配额后，都要重新检查 OOM、p99 和质量。
 
 ## 5. 正确的 INT8 数值例子
 
@@ -69,5 +67,3 @@ PTQ 在训练后做量化，可能使用校准数据；QAT 在训练中考虑量
 激活不是“不断更新的输入 token”；token ID 与层内中间张量是不同对象。LoRA/adapter 属于参数适配方法，不会自动压缩基础权重；W4A16 也不表示 KV 使用了 4bit。
 
 表示范围和分辨率可以不同：FP32 为 1/8/23 位符号/指数/显式尾数字段，FP16 为 1/5/10，BF16 为 1/8/7。这里是格式字段说明，不是把所有数都当作 normal finite value；零、subnormal、Inf/NaN 另有编码。一个 π 的舍入例子只反映表示误差，不直接证明模型质量下降多少。
-
-原 SGLang 错误经验式按“GB”代入 `8192×1.5+160×2` 会得到 12608 GB，在 80GB 卡上连占比范围都不成立。不能未经版本证据只改成 MB 就宣布修好；本册保留预算定义，实际 reserve 按相应版本代码、日志和峰值测量核对。

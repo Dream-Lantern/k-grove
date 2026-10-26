@@ -1,7 +1,7 @@
 ---
 id: ai-infra-green-context
 title: 第 5 章 Context、Module 与 Green Context 的边界
-description: Context 可以理解为 CUDA 资源和状态的管理环境，但不能据此认为“一个进程只会有一个 GPU 容器”。一个进程可以使用多张设备，也可以管理多个 context；因此需要明确对象归属和生命周期。
+description: Context 可以理解为 CUDA 资源和状态的管理环境。一个进程可以使用多张设备，也可以管理多个 context；因此需要明确对象归属和生命周期。
 date: '2026-10-25'
 updated: '2026-10-25'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 5
 
 # 第 5 章 Context、Module 与 Green Context 的边界
 
-Context 可以理解为 CUDA 资源和状态的管理环境，但不能据此认为“一个进程只会有一个 GPU 容器”。一个进程可以使用多张设备，也可以管理多个 context；因此需要明确对象归属和生命周期。
+Context 可以理解为 CUDA 资源和状态的管理环境。一个进程可以使用多张设备，也可以管理多个 context；因此需要明确对象归属和生命周期。
 
 ## 1. Runtime API 与 Driver API
 
@@ -51,4 +51,4 @@ PTX 是中间表示，cubin 是面向相应 GPU 架构的设备二进制。fat b
 
 ## 4. 工程上先写清所有权
 
-插件式程序尤其需要明确：谁初始化设备、谁持有 primary context、谁创建 stream，以及谁负责最终同步和销毁。不要让一个插件调用 reset，销毁其他插件仍在使用的环境。排查 invalid context 或失效句柄时，沿“创建线程—当前 context—传递对象—销毁时机”追踪，通常比反复重启更容易保留排查证据。
+插件式程序尤其需要明确：谁初始化设备、谁持有 primary context、谁创建 stream，以及谁负责最终同步和销毁。不要让一个插件调用 reset，销毁其他插件仍在使用的环境。排查 invalid context 或失效句柄时，沿“创建线程—当前 context—传递对象—销毁时机”追踪。

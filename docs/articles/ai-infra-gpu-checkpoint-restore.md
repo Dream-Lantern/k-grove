@@ -31,8 +31,6 @@ order: 26
 >
 > **一句话**：用 CUDA VMM 分离 GPU 虚拟地址与物理显存，先将 GPU 数据高带宽转移到 Host，再释放物理显存并保留地址语义；恢复时重建物理映射和内容；GPU 控制状态交给驱动级 C/R；多 GPU 再额外修复跨进程 cuMem IPC 关系。论文还研究了通过 CPU Shadow Execution 识别 Dirty Buffer 的增量 Checkpoint。
 
-**阅读基线**：本文于 2026-10-23 对照论文与公开源码复核，代码固定在 [`e9bbb52`](https://github.com/gpu-os/GPU-CR/tree/e9bbb52e1f52986587fc631217c0f2b50b46245a)，不以持续变化的 `main` 作为永久证据。下文以 Linux/NVIDIA 信号驱动路径为主，另列 AMD 和 NCCL Adapter 的差异；未在本机编译或运行 GPU 实验。
-
 **先分清三个层次**：VMM 解决指针与物理分配的关系；驱动 C/R 处理 CUDA 状态；完整应用恢复还需要 CPU 进程状态、外部依赖与恢复后的业务校验。任何一层“完成”都不能代替其余两层。
 
 ## 0. 为什么值得研究：问题、目标和边界
@@ -62,7 +60,7 @@ GPU Checkpoint/Restore (C/R) 要恢复的并不只是显存字节，还包括两
 
 这里沿用论文的抽象地址举例，`0x1234` 不是满足 VMM 对齐要求的可运行示例。
 
-**[论文]** 不建议依赖“释放后以提示地址重新申请同一 VA”来碰运气；正确的思路是：把 VA 的生命周期和物理分配的生命周期分离，保存 VA/页表语义，在其下替换物理分配。
+**[论文]** 把 VA 的生命周期和物理分配的生命周期分离，保存 VA/页表语义，在其下替换物理分配。
 
 ### 1.2 VMM API 的职责
 
@@ -251,10 +249,6 @@ Coordinator: broadcast message/signals to ALL ranks → wait ALL ranks finish
 
 Linux 的 `SCM_RIGHTS` 传递的是可在接收进程中安装的对象引用，接收方得到的 FD 数字通常不同；它不负责复制 GPU 数据。源码对 `pidfd_getfd` 的兼容性注释只代表该项目路径的判断，不应推广为 Linux 所有 FD 都“只能通过 SCM_RIGHTS 传递”。另有一处文档陷阱：`ipc_hooks.h` 顶部注释还写着 teardown 会 `cuMemAddressFree`、import 使用 `pidfd_getfd`；当前 `.cpp` 的导入/导出/本地分配拆除实际保留 VA，FD 主路径也已改用 UDS。读源码时应检查实现，而不能只摘取旧注释。依据：[ipc_hooks.cpp](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/ipc_hooks.cpp)、[ipc_fd_exchange.cpp](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/ipc_fd_exchange.cpp)、[Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)。
 
-### 4.5 不把历史绕过方案写成永久限制
-
-此提交围绕项目所测驱动与 cuMem IPC 路径做显式拆除/重建。NVIDIA 官方主线 README 另列出 **610 驱动的 `cuIpcGetMemHandle` 型 IPC 支持**，要求相应 job 启动或 job 文件流程，并注明该流程当前逐进程调用工具。它不等于已支持所有 cuMem VMM IPC，也不证明本文原型可直接删除 IPC 管理层或沿用原有并行策略。实际使用应固定驱动、工具、IPC 类型与编排模式，再验证兼容。依据：[NVIDIA cuda-checkpoint 版本说明](https://github.com/NVIDIA/cuda-checkpoint#610-features)，核对日期 2026-10-23。
-
 ## 5. NCCL Adapter：与信号路径相互区分
 
 项目有两种控制方式：
@@ -282,8 +276,6 @@ Application calls ncclCommCheckpointPrepare
 - `NCCL_P2P_DISABLE=1`：某些 vLLM 配置启用，**但不能对所有 NCCL 测试默认启用**；项目的 two-process AllReduce 案例需要 P2P 路径来验证 export/import。
 - 关闭 vLLM custom all-reduce：应核对实际版本的正式配置，例如 vLLM 0.14.1 的 `--disable-custom-all-reduce` 或 Python `LLM(..., disable_custom_all_reduce=True)`；若其旧式 IPC 不兼容，再选择 NCCL 路径或另行适配。项目脚本虽设置了 `VLLM_DISABLE_CUSTOM_ALL_REDUCE=1`，但 vLLM 0.14.1 官方 `envs.py` 未定义这个开关，不能仅凭 `export` 就认为已生效；同脚本的 `VLLM_DISABLED_KERNELS=custom_all_reduce` 也不能据此当成通用关闭方式，该版本的变量说明用于量化线性 kernel 选择。应检查最终配置和运行日志。依据：[vLLM 0.14.1 CLI](https://docs.vllm.ai/en/v0.14.1/cli/serve/#--disable-custom-all-reduce)、[LLM 源码](https://github.com/vllm-project/vllm/blob/v0.14.1/vllm/entrypoints/llm.py)、[环境变量源码](https://github.com/vllm-project/vllm/blob/v0.14.1/vllm/envs.py)。
 - `CUDARTLIB=cudart`：使用适合动态拦截的 CUDA Runtime 构建；NCCL 默认的静态 cudart 可能绕开 `LD_PRELOAD` Hook。
-
-**需保留版本注记**：当前 NCCL Adapter README 的 `nccl_patches/` 描述为若干需改动的文件；README 不同段落对文件个数存在不一致，**不要在通用笔记中固定断言“必定打 3 个补丁”**，应以所用 commit 的 `adapters/nccl/nccl_patches/README.md` 和实际 `git diff` 为准。
 
 ## 6. 论文的重要补充：增量 Checkpoint 与 Shadow Execution
 
@@ -347,7 +339,7 @@ DirtyTemplate(kernel_args, gridDim, blockDim)
 
 ### 6.4 论文中的量化效果
 
-FAST '26 论文的实验结论（原论文对其所选模型/硬件/对照系统的结果，不直接等于 GPU-CR GitHub 项目现版本的性能保证）：
+FAST '26 论文的实验结论（原论文对其所选模型/硬件/对照系统的结果）：
 
 | 指标                                      | 论文报告                                                                 |
 | ----------------------------------------- | ------------------------------------------------------------------------ |
@@ -421,7 +413,7 @@ Restore wall time ≈ driver CUDA-control restore
 
 在 LLM 推理性能测评中，可将 GPU-CR 视为一种可能的**推理实例抢占/换入换出机制**，但不宜简单地将它当作新的推理优化参数。
 
-下面是新增的**实验设计建议，并非已完成实验**：
+下面是新增的**实验设计建议**：
 
 1. **Baseline**：vLLM 服务不使用 GPU-CR，在固定 Dataset/并发/ISL/OSL 下测稳定 TTFT、ITL/TPOT、Token Throughput。
 2. **Checkpoint 开销**：测 quiesce、数据拷贝、VMM 回收、CUDA freeze 分阶段耗时；记录峰值 Host/GPU 内存。
@@ -445,7 +437,7 @@ Restore wall time ≈ driver CUDA-control restore
 
 只要被测服务依赖分布式通信，**恢复 CPU/CUDA 控制状态成功 ≠ NCCL 通信恢复成功 ≠ 应用推理服务恢复成功**。
 
-## 10. 容易混淆的 8 个问题（自测）
+## 10. 容易混淆的 8 个问题
 
 1. 为什么释放 `cudaMalloc` 后再分配同样大小，不保证原指针可继续使用？
 2. `cuMemUnmap`、`cuMemRelease`、`cuMemAddressFree` 各释放了哪层资源？
@@ -485,6 +477,5 @@ Restore wall time ≈ driver CUDA-control restore
 - [仓库随附的工具说明](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/cuda-checkpoint/README.md)与 [NVIDIA 主线版本说明](https://github.com/NVIDIA/cuda-checkpoint)：历史条件和后续能力分别阅读。
 - [Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)、[signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html)：FD 传递与异步信号安全。
 
-**图源**：[架构](/assets/notes/ai-infra/gcr-architecture.drawio)、[VMM 生命周期](/assets/notes/ai-infra/gcr-vmm-lifecycle.drawio)、[单卡时序](/assets/notes/ai-infra/gcr-single-sequence.drawio)、[多 Rank 阶段](/assets/notes/ai-infra/gcr-multirank-phases.drawio)、[增量机制](/assets/notes/ai-infra/gcr-dirty-template.drawio)。同名 `.mmd` 保留逻辑图源，`.svg` 为正文图；图表示机制/主干流程，不冒充完整源码调用图。draw.io XML 已作静态检查，未在编辑器中导入验证；Mermaid 图源不保证像素布局与 SVG 一致。
+**图源**：[架构](/assets/notes/ai-infra/gcr-architecture.drawio)、[VMM 生命周期](/assets/notes/ai-infra/gcr-vmm-lifecycle.drawio)、[单卡时序](/assets/notes/ai-infra/gcr-single-sequence.drawio)、[多 Rank 阶段](/assets/notes/ai-infra/gcr-multirank-phases.drawio)、[增量机制](/assets/notes/ai-infra/gcr-dirty-template.drawio)。同名 `.mmd` 保留逻辑图源，`.svg` 为正文图；图表示机制/主干流程，不冒充完整源码调用图。
 
-> **验证边界**：本轮是论文、文档、固定提交源码与排版的静态复核，没有编译 CUDA/NCCL、启动服务、变更驱动或执行故障注入。论文数据是作者测量；本文的示例、容量预算和改进建议不能当作个人实测结果。

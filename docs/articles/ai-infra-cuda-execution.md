@@ -31,7 +31,7 @@ order: 3
 
 ## 2. Warp 是 32 个线程的执行组织
 
-在本册讨论的 NVIDIA CUDA 架构中，一个 warp 包含 32 个线程。SIMT 允许线程按各自数据执行相同程序。分支条件在 warp 内不一致时，会产生发散并可能降低执行效率，但这不意味着任何 `if` 都必须删除。
+在本册讨论的 NVIDIA CUDA 架构中，一个 warp 包含 32 个线程。SIMT 允许线程按各自数据执行相同程序。分支条件在 warp 内不一致时，会产生发散并可能降低执行效率。
 
 从 Volta 起还需要考虑 Independent Thread Scheduling。不要假设 warp 内线程始终隐式同步；涉及 warp 内共享数据时使用正确的掩码、同步或原语。`__syncthreads()` 是线程块范围的屏障，要求该块需要参与的线程以合法方式到达，不能放在仅部分线程会进入的分支中。[CUDA 编程模型与硬件实现，12.8.1](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html)
 
@@ -53,7 +53,7 @@ order: 3
 
 ## 6. 被限制的 Grid 需要循环覆盖
 
-下面为新增 kernel 片段，替代第 04 章的一次索引版本时，应同时保持其 host 分配、错误检查和结果校验。片段未编译；它只解释覆盖协议，不宣称更快。
+下面为 kernel 片段，它解释了覆盖协议。
 
 ```cpp
 __global__ void add_stride(const float* a, const float* b,
@@ -76,4 +76,4 @@ __global__ void add_stride(const float* a, const float* b,
 | `__device__` | device 端函数，由设备代码调用 | host 可以像普通函数一样直接调用 |
 | `__global__` | device 执行的 kernel 入口     | 所有场景都只能由 host 发起      |
 
-设备端 kernel launch 属于动态并行，须核对架构、Toolkit 与链接要求。它与设备堆上的 `malloc`，以及 host 端 `cudaMalloc` 是不同机制，不能用添加一条旧 `-arch=sm_35` 来统一解决。[CUDA 12.8.1 编译与链接说明](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-compiler-driver-nvcc/index.html)
+设备端 kernel launch 属于动态并行，须核对架构、Toolkit 与链接要求。它与设备堆上的 `malloc`，以及 host 端 `cudaMalloc` 是不同机制。[CUDA 12.8.1 编译与链接说明](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-compiler-driver-nvcc/index.html)

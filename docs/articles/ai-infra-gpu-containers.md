@@ -66,4 +66,4 @@ docker run --rm --gpus '"device=0"' \
 | `libcudart`、cuBLAS 等    | 镜像、框架依赖或明确挂载 | 镜像包清单与库路径       |
 | `nvcc`                    | 选定 Toolkit/devel 环境  | PATH、版本、构建日志     |
 
-表格描述通常路径，兼容包、显式挂载及特殊平台可能改变提供方，需记录例外。设备端 `malloc` 不等于 host `cudaMalloc`；动态并行是另一类设备端工作发起机制。原 RPM 文件清单只作历史资料留档，不据其路径安排所有新系统的库注入。
+表格描述通常路径，兼容包、显式挂载及特殊平台可能改变提供方，需记录例外。设备端 `malloc` 不等于 host `cudaMalloc`。
