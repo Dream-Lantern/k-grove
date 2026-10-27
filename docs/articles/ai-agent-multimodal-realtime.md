@@ -3,7 +3,7 @@ id: ai-agent-multimodal-realtime
 title: 第9章 多模态与实时交互
 description: 一次性文本处理可以容忍较长等待；语音、GUI 和机器人交互则要求持续感知和低延迟响应。多模态能力不只在于识别图片，还在于持续输入、动作反馈、不同模态时间同步。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -95,9 +95,9 @@ if self.dialogue_context:
 
 这里的 `truncated_length` 由外部提供。未提供时，示例仅追加 interrupted 标记，不能证明文本已截断到用户实际听到的位置。真实系统需结合播放器的已播采样数/时间戳，以及音频片段与文本的对齐关系，区分“已生成”“已发送”和“已播放”。
 
-![09-barge-in](/assets/notes/ai-agent/09-barge-in.svg)
+[![语音打断：合法输入才触发重规划](/assets/notes/ai-agent/09-barge-in.svg)](/assets/notes/ai-agent/09-barge-in.svg)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/09-barge-in.svg) · [可编辑 DOT](/assets/notes/ai-agent/09-barge-in.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/09-barge-in.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/09-barge-in.dot)供对照，不是本版配图的可编辑源文件。
 
 ### 推荐实验：播放状态保护与事件身份分别测试
 

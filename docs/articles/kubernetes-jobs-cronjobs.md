@@ -3,7 +3,7 @@ id: kubernetes-jobs-cronjobs
 title: 第十八章 Job 与 CronJob 批处理
 description: 长期服务通常希望持续运行；一次数据处理任务则可能执行完成后正常退出。若把它当作需要持续 Running 的服务，正常结束反而可能被错误地重启。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 18
 
 Job 跟踪相应的完成条件，并管理 Pod 的执行尝试；CronJob 则按计划创建 Job。两者都无法自动判断外部数据库是否已提交全部预期结果，程序需要明确约定退出码与业务成功的关系。
 
-![Job 尝试、外部副作用和任务完成的关系](/assets/notes/kubernetes/k8s-job-idempotency.svg)
+[![Job 与 CronJob：按可能重复执行设计](/assets/notes/kubernetes/k8s-job-idempotency.svg)](/assets/notes/kubernetes/k8s-job-idempotency.svg)
 
 ## 2. completions、parallelism 与失败预算
 

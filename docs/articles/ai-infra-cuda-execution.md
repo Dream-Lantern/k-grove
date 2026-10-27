@@ -3,7 +3,7 @@ id: ai-infra-cuda-execution
 title: 第 3 章 CUDA 执行模型：Grid、Block、Warp 与同步
 description: 理解 CUDA 程序，不能只停留在“线程很多”。本章进一步说明线程如何组织、哪些线程可以同步，以及 block 大小为什么会影响资源使用。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 3
 
 一次普通 kernel launch 定义一个 grid；grid 包含多个 block，block 包含线程。线程用 `threadIdx`、`blockIdx`、`blockDim` 定位自己的工作。一维数组常用 `i = blockIdx.x * blockDim.x + threadIdx.x` 得到全局索引。
 
-![CUDA 工作组织与硬件映射](/assets/notes/ai-infra/cuda-hierarchy.svg)
+[![CUDA：Grid/Block/SM映射关系](/assets/notes/ai-infra/cuda-hierarchy.png)](/assets/notes/ai-infra/cuda-hierarchy.png)
 
 普通线程块整体被分配到某个 SM 上执行；同一 SM 可以容纳多个 block，数量受寄存器、共享内存和架构上限约束。block 的执行先后不可假定，更不能依赖“block 0 必须先完成”。支持 thread block cluster 的新架构还有额外协作机制，不能倒推为所有 GPU 都支持。
 

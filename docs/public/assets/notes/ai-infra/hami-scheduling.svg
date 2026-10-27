@@ -1,5 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="840" viewBox="0 0 1200 840" role="img" aria-labelledby="title desc">
-<title id="title">HAMi：调度到容器的协作链</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">HAMi：调度到容器的协作链</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">典型职责图，不是某个 commit 的精确调用序列。</tspan></text><rect x="220" y="125" width="760" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="162" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">Pod 与 Admission</tspan></text><text x="600.0" y="199" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">检查并修改相关配置</tspan></text><rect x="220" y="290" width="760" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="327" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">调度组件</tspan></text><text x="600.0" y="364" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">节点与设备候选、资源匹配</tspan></text><path d="M600.0 240 L600.0 290" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="220" y="455" width="760" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="492" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">kubelet / Device Plugin</tspan></text><text x="600.0" y="529" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">分配设备、准备注入配置</tspan></text><path d="M600.0 405 L600.0 455" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="220" y="620" width="760" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="657" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">容器控制层与应用</tspan></text><text x="600.0" y="694" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">落实所选模式，报告启动结果</tspan></text><path d="M600.0 570 L600.0 620" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="600" y="815" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600" dy="0">Admission、绑定、分配和业务成功是不同验收点。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">HAMi：调度、分配与就绪的边界</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">概念职责链，不宣称包含完整的失败恢复协议</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
+  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
+  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">调度筛选设备资源</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">识别工作负载需求与设备候选</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
+  <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
+  <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
+  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">节点侧设备分配</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">Allocate / 注入配置按目标实现</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
+  <rect fill="#C88323" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
+  <rect fill="#FFF5E7" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">Pod 启动及应用初始化</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">运行时准备与容器启动</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
+  <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
+  <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
+  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">业务 Ready 独立验收</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">分配成功不等于业务就绪</text>
+  <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
+  <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
+  <polygon fill="#8996A8" points="430,453 435.0,442.0 425.0,442.0"/>
+  <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">具体版本、设备后端、故障路径应在正文固定并独立验收。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">调度成功、Allocate 成功与服务 Ready 是三个不同的结果。</text>
+</svg>

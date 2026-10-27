@@ -1,5 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">超时后的未知结果与幂等去重</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">超时后的未知结果与幂等去重</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">原理示意；省略协议报文和实现分支，适用边界见正文。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">第一次发送可能已追加</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">只是响应在网络中丢失</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">客户端重试同一协议批次</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">幂等生产者用身份与分区序列识别重复</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">应用重新创建业务发送则另论</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">新 send 不是自动按业务 event_id 去重</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">最终按业务键处理重复与恢复</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">投递去重不替代数据库约束或外部接口幂等</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">Java 3.9 与 librdkafka 2.8.0 的默认幂等开关不同，不混抄。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Kafka 幂等：协议重试与新业务请求</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">同批次协议去重需要启用幂等及适用配置条件</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#E9F8F0" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="74.0" y="205"/>
+  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="104.0" y="253">enable.idempotence=true</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="104.0" y="294">同 Producer / Partition 的序列与身份</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="317"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="356">网络超时</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="386">Broker 可能已追加但确认丢失</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="436"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="475">协议重试</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="505">符合幂等条件的同批次重试可去重</text>
+  <rect fill="#FFF5E7" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="810.0" y="205"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="840.0" y="253">新业务 send</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="840.0" y="294">不是自动按 event_id 去重</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="317"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="356">新的发送</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="386">可能携带相同业务事实却是新 Record</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="436"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="475">外部业务效果</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="505">仍需业务 event_id 去重或唯一约束</text>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">Java 与 librdkafka 默认幂等配置可能依版本不同，需分别核验。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">Kafka 不会因业务 Key 相同就自动去重不同的业务消息。</text>
+</svg>

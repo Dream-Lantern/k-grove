@@ -1,5 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">配置变化：交付到文件不等于应用已重载</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">配置变化：交付到文件不等于应用已重载</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">蓝色系逻辑示意；具体版本、条件与异常分支以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">API 中更新配置对象</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">ConfigMap 或 Secret；不可变对象另有生命周期</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">识别消费方式</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">环境变量、普通投射卷、subPath 的更新语义不同</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">更新或替换实例</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">普通投射更新非瞬时；环境变量与 subPath 不自动更新</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">应用采用新配置</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">需要重载能力或受控发布，最后验证实际效果</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">Secret 编码不等于加密；本册示例不含真实凭据。</tspan></text></g></svg>
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <ns0:defs />
+  <ns0:rect fill="#F9FBFE" height="900" rx="16" ry="16" stroke="none" stroke-width="1.5" width="1600" x="0" y="0" />
+  <ns0:rect fill="#FFFFFF" height="852" rx="26" ry="26" stroke="#D8E4F2" stroke-width="1.8" width="1540" x="30" y="24" />
+  <ns0:rect fill="#2563EB" height="8" rx="4" ry="4" stroke="none" stroke-width="1.5" width="1540" x="30" y="24" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="43" font-weight="bold" x="72" y="95">ConfigMap / Secret：配置更新到应用生效</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="75" y="143">更新 API 对象、更新容器可见配置、应用真正采用配置，是三个不同阶段</ns0:text>
+  <ns0:line stroke="#D8E4F2" stroke-width="2" x1="70" x2="1530" y1="170" y2="170" />
+  <ns0:rect fill="#FFFFFF" height="126" rx="20" ry="20" stroke="#D8E4F2" stroke-width="1.7" width="460" x="70" y="205" />
+  <ns0:rect fill="#2563EB" height="126" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="70" y="205" />
+  <ns0:rect fill="#EBF4FF" height="51" rx="13" ry="13" stroke="none" stroke-width="0" width="57" x="93" y="224" />
+  <ns0:text fill="#2563EB" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" text-anchor="middle" x="121.5" y="259">1</ns0:text>
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="27" font-weight="bold" x="168" y="248">修改 ConfigMap / Secret</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="168" y="284">通过 API 更新配置对象</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="168" y="316">不可变对象需另按生命周期处理</ns0:text>
+  <ns0:polyline fill="none" points="530,268 662,268" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.6" />
+  <ns0:polygon fill="#8B9AAD" points="662,268 649.0,261.11 649.0,274.89" />
+  <ns0:rect fill="#FFFFFF" height="126" rx="20" ry="20" stroke="#D8E4F2" stroke-width="1.7" width="865" x="665" y="205" />
+  <ns0:rect fill="#7654E8" height="126" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="665" y="205" />
+  <ns0:rect fill="#F2EFFF" height="51" rx="13" ry="13" stroke="none" stroke-width="0" width="57" x="688" y="224" />
+  <ns0:text fill="#7654E8" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" text-anchor="middle" x="716.5" y="259">2</ns0:text>
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="27" font-weight="bold" x="763" y="248">识别配置消费方式</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="763" y="284">按环境变量、普通投射卷、subPath 区分；这些是并列路径</ns0:text>
+  <ns0:line stroke="#8B9AAD" stroke-width="3" x1="1096" x2="1096" y1="331" y2="379" />
+  <ns0:line stroke="#8B9AAD" stroke-width="3" x1="302" x2="1314" y1="379" y2="379" />
+  <ns0:polyline fill="none" points="302,379 302,418" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#8B9AAD" points="302,418 308.89,405.0 295.11,405.0" />
+  <ns0:polyline fill="none" points="802,379 802,418" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#8B9AAD" points="802,418 808.89,405.0 795.11,405.0" />
+  <ns0:polyline fill="none" points="1314,379 1314,418" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#8B9AAD" points="1314,418 1320.89,405.0 1307.11,405.0" />
+  <ns0:rect fill="#F3FCF8" height="155" rx="20" ry="20" stroke="#12946B" stroke-width="1.7" width="456" x="70" y="425" />
+  <ns0:rect fill="#12946B" height="155" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="70" y="425" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" x="97" y="468">环境变量</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="97" y="504">已运行容器的环境变量</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="97" y="536">不会因对象更新而自动变化</ns0:text>
+  <ns0:polyline fill="none" points="298,580 298,638" stroke="#12946B" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.6" />
+  <ns0:polygon fill="#12946B" points="298,638 304.89,625.0 291.11,625.0" />
+  <ns0:rect fill="#FFFFFF" height="124" rx="20" ry="20" stroke="#D8E4F2" stroke-width="1.7" width="456" x="70" y="642" />
+  <ns0:rect fill="#12946B" height="124" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="70" y="642" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="97" y="685">重建容器 / Pod</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="97" y="721">由新实例读取更新后的变量</ns0:text>
+  <ns0:rect fill="#F4F9FF" height="155" rx="20" ry="20" stroke="#2563EB" stroke-width="1.7" width="456" x="572" y="425" />
+  <ns0:rect fill="#2563EB" height="155" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="572" y="425" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" x="599" y="468">普通投射卷</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="599" y="504">经 kubelet 协调与缓存传播</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="599" y="536">文件内容可能延迟更新</ns0:text>
+  <ns0:polyline fill="none" points="800,580 800,638" stroke="#2563EB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.6" />
+  <ns0:polygon fill="#2563EB" points="800,638 806.89,625.0 793.11,625.0" />
+  <ns0:rect fill="#FFFFFF" height="124" rx="20" ry="20" stroke="#D8E4F2" stroke-width="1.7" width="456" x="572" y="642" />
+  <ns0:rect fill="#2563EB" height="124" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="572" y="642" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="599" y="685">重新读取或重载</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="599" y="721">应用需具备动态加载能力</ns0:text>
+  <ns0:rect fill="#FFFBF3" height="155" rx="20" ry="20" stroke="#C77907" stroke-width="1.7" width="456" x="1074" y="425" />
+  <ns0:rect fill="#C77907" height="155" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="1074" y="425" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" x="1101" y="468">subPath 挂载</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="1101" y="504">不会自动接收此类配置更新</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="1101" y="536">不可按普通投射卷推断</ns0:text>
+  <ns0:polyline fill="none" points="1302,580 1302,638" stroke="#C77907" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.6" />
+  <ns0:polygon fill="#C77907" points="1302,638 1308.89,625.0 1295.11,625.0" />
+  <ns0:rect fill="#FFFFFF" height="124" rx="20" ry="20" stroke="#D8E4F2" stroke-width="1.7" width="456" x="1074" y="642" />
+  <ns0:rect fill="#C77907" height="124" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="1074" y="642" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="1101" y="685">受控替换 / 发布</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="1101" y="721">让新实例采用需要的配置</ns0:text>
+  <ns0:rect fill="#F3F7FC" height="48" rx="13" ry="13" stroke="none" stroke-width="0" width="1460" x="70" y="819" />
+  <ns0:text fill="#2563EB" font-family="Noto Sans CJK SC" font-size="21" font-weight="bold" x="91" y="849">说明</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="167" y="850">应用最终仍需验证配置已生效；Secret 使用 Base64 编码不代表已加密。</ns0:text>
+</ns0:svg>

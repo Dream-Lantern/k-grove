@@ -1,5 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="850" viewBox="0 0 1120 850" role="img" aria-labelledby="title desc">
-<title id="title">Cache Aside：读路径与写路径分别考虑</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">Cache Aside：读路径与写路径分别考虑</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">新增教学模型；数据库与 Redis 更新不构成一个跨系统原子事务。</tspan></text><rect x="60" y="140" width="430" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="275.0" y="177" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="275.0" dy="0">读：先查缓存</tspan></text><text x="275.0" y="214" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="275.0" dy="0">命中返回；未命中再向数据库查询</tspan></text><rect x="630" y="140" width="430" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="845.0" y="177" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="845.0" dy="0">数据库读结果</tspan></text><text x="845.0" y="214" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="845.0" dy="0">按策略回填，包括适用的短期空值</tspan></text><path d="M490 195 L630 195" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="60" y="440" width="430" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="275.0" y="477" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="275.0" dy="0">写：先提交数据库</tspan></text><text x="275.0" y="514" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="275.0" dy="0">数据库是该示例的权威数据源</tspan></text><rect x="630" y="440" width="430" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="845.0" y="477" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="845.0" dy="0">使缓存失效</tspan></text><text x="845.0" y="514" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="845.0" dy="0">失败重试 / 并发旧回填另有窗口</tspan></text><path d="M490 495 L630 495" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560" y="680" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560" dy="0">过期、淘汰、回填和写入竞态分别建模，不能宣称延迟双删永远一致。</tspan></text><text x="560.0" y="812" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">权威数据源和可接受陈旧时间由业务决定；强一致要求需要额外协议。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Cache Aside：命中与未命中必须分流</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">命中立即结束；未命中才查询数据库和回填缓存</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#FFFFFF" height="122" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="1120" x="240" y="211"/>
+  <rect fill="#2F6FDB" height="122" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="240" y="211"/>
+  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="262" y="231"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="288" y="262">1</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" x="328" y="255">查询 Redis 缓存</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="328" y="292">根据 hit / miss 产生独立的下游路径</text>
+  <polyline fill="none" points="800,333 800,390" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polyline fill="none" points="440.0,390 1154.0,390" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"/>
+  <polyline fill="none" points="440.0,390 440.0,412" stroke="#118E6B" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#118E6B" points="440.0,412 445.0,401.0 435.0,401.0"/>
+  <rect fill="#FFFFFF" height="252" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="700" x="90" y="418"/>
+  <rect fill="#118E6B" height="252" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="90" y="418"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="25" font-weight="bold" x="114" y="462">命中 HIT</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="114" y="499">直接返回缓存值</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="114" y="530">成功终止，不继续查询数据库</text>
+  <polyline fill="none" points="1154.0,390 1154.0,412" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="1154.0,412 1159.0,401.0 1149.0,401.0"/>
+  <rect fill="#FFFFFF" height="252" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="700" x="804" y="418"/>
+  <rect fill="#2F6FDB" height="252" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="804" y="418"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="25" font-weight="bold" x="828" y="462">未命中 MISS</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="828" y="499">查询数据库 → 按策略回填</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="828" y="530">返回结果；并发旧值回填须防护</text>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">Cache Aside 中数据库与缓存更新通常不是一笔原子事务。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">并发、过期与写入顺序可能造成旧值短暂回填，应在工程方案中明确约束。</text>
+</svg>

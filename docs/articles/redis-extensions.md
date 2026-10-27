@@ -3,7 +3,7 @@ id: redis-extensions
 title: 第三十三章 Bloom Filter、JSON、Search 与扩展边界
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 33
 
 ## 1. Bloom Filter 回答“可能存在”
 
-![Bloom Filter 的判断方向](/assets/notes/redis/redis-study-bloom.svg)
+[![Bloom Filter：只检查本次命中的位](/assets/notes/redis/redis-study-bloom.svg)](/assets/notes/redis/redis-study-bloom.svg)
 
 加入元素时，由多个哈希派生的位置被置位；查询时，只要相关位置中有一个为 0，在结构正确、元素已经按协议加入且没有破坏性修改等假设下，就能判定它未被加入。全部位置为 1 只表示可能存在，因为不同元素可能共用位置。
 

@@ -3,7 +3,7 @@ id: kubernetes-deployment
 title: 第十五章 Deployment 发布、扩缩容与回滚
 description: Deployment 通过 ReplicaSet 协调符合模板的 Pod。用户通常修改 Deployment 的期望，而不是逐个修改它创建的 Pod。Pod 被替换后，新对象会来自相应模板。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Deployment 通过 ReplicaSet 协调符合模板的 Pod。用户通常修改 Depl
 
 修改 `spec.template` 才会触发适用的模板发布过程；只修改 `replicas` 是扩缩容，不因此产生一个新的应用模板版本。Deployment 自己的顶层 metadata 标签变化，也不等于 Pod 模板变化。
 
-![Deployment 的模板、更新预算与观察过程](/assets/notes/kubernetes/k8s-deployment-rollout-detail.svg)
+[![Deployment 发布：约束过程，不保证零故障](/assets/notes/kubernetes/k8s-deployment-rollout-detail.svg)](/assets/notes/kubernetes/k8s-deployment-rollout-detail.svg)
 
 这个模型适合可互换副本。数据库的复制、主从切换和数据迁移并不会由 Deployment 自动完成，是否适用需要结合应用设计。
 

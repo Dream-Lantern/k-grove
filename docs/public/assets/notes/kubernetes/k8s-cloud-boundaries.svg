@@ -1,5 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="850" viewBox="0 0 1120 850" role="img" aria-labelledby="title desc">
-<title id="title">云集成：负载均衡与存储是不同职责</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">云集成：负载均衡与存储是不同职责</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">箭头表示协调关系，不是用户业务数据的固定转发时序。</tspan></text><rect x="60" y="140" width="420" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="270.0" y="177" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="270.0" dy="0">Service 等对象</tspan></text><text x="270.0" y="214" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="270.0" dy="0">表达入口等适用期望</tspan></text><rect x="640" y="140" width="420" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="850.0" y="177" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="850.0" dy="0">PVC / PV / StorageClass</tspan></text><text x="850.0" y="214" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="850.0" dy="0">表达存储需求及关联</tspan></text><rect x="60" y="380" width="420" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="270.0" y="417" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="270.0" dy="0">CCM 与提供者集成</tspan></text><text x="270.0" y="454" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="270.0" dy="0">协调适用的节点、路由与服务</tspan></text><rect x="640" y="380" width="420" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="850.0" y="417" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="850.0" dy="0">CSI 等存储机制</tspan></text><text x="850.0" y="454" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="850.0" dy="0">供应、附加、挂载各有分工</tspan></text><rect x="60" y="620" width="420" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="270.0" y="657" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="270.0" dy="0">云网络 / 负载均衡</tspan></text><text x="270.0" y="694" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="270.0" dy="0">相应数据平面，能力依实现</tspan></text><rect x="640" y="620" width="420" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="850.0" y="657" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="850.0" dy="0">云存储后端</tspan></text><text x="850.0" y="694" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="850.0" dy="0">权限、回收与备份独立核对</tspan></text><path d="M270 250 L270 380" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M850 250 L850 380" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M270 490 L270 620" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M850 490 L850 620" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="812" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">云 DNS 等集成未画出；裸机无需虚构云集成，CCM 不承包全部存储职责。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">云集成：网络与存储分别协调</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">CCM 与 CSI 按各自职责工作；不画两者固定的直接调用关系</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#EEF5FF" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="74.0" y="205"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="104.0" y="253">云网络 / 负载均衡</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="104.0" y="294">由适用的 CCM / 云提供者集成协调</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="317"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="356">API 对象</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="386">Service 等描述入口意图</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="436"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="475">CCM 与提供者</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="505">协调适用的服务、路由和节点</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="555"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="594">云网络数据平面</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="624">真实转发能力取决于后端实现</text>
+  <rect fill="#E9F8F0" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="810.0" y="205"/>
+  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="840.0" y="253">云存储 / 卷管理</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="840.0" y="294">由 CSI 等存储组件协调</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="317"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="356">API 对象</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="386">PVC / PV / StorageClass 表达存储需求</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="436"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="475">CSI 驱动与节点</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="505">供应、附加、挂载职责分离</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="555"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="594">存储后端</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="624">权限、备份、回收需单独核验</text>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">两条路径可通过 Kubernetes API 对象相关联，但不假定 CCM ↔ CSI 有固定直连接口。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">裸机环境可使用其他实现；CCM 不是云存储的统一责任主体。</text>
+</svg>

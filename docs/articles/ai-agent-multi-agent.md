@@ -3,7 +3,7 @@ id: ai-agent-multi-agent
 title: 第10章 多 Agent 协作
 description: 上下文与拓扑是不同的设计维度，不能只用“有几个 Agent”来描述协作架构。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -115,9 +115,9 @@ manager_peak = 0  # Manager 上下文（其状态序列化后的）token 峰值
 
 Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有子 Agent 的 token 加起来仍可能更高。应同时查看 `TokenTracker`、总调用次数、返修次数和质量指标。代码中的术语表是共享契约，也是实验中的额外信息：不能把“有指定术语表”和“没有术语表”的差异全归因于 Agent 数量。
 
-![10-multi-agent](/assets/notes/ai-agent/10-multi-agent.svg)
+[![多 Agent：翻译角色分工示例](/assets/notes/ai-agent/10-multi-agent.svg)](/assets/notes/ai-agent/10-multi-agent.svg)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/10-multi-agent.svg) · [可编辑 DOT](/assets/notes/ai-agent/10-multi-agent.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/10-multi-agent.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/10-multi-agent.dot)供对照，不是本版配图的可编辑源文件。
 
 ### 推荐消融与公平基线
 

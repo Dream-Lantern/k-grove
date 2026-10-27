@@ -3,7 +3,7 @@ id: distributed-two-phase-commit
 title: 第二十一章 两阶段提交与故障恢复状态机
 description: Two-Phase Commit（2PC）用于协调多个事务资源的提交决定。它并非主从复制的默认步骤，也不是跨服务业务的唯一方案。理解它的关键在于准备之后的状态：参与者已承诺可以提交，却可能尚不知道全局最终决定。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -31,7 +31,7 @@ Two-Phase Commit（2PC）用于协调多个事务资源的提交决定。它并�
 
 ## 2. 准备阶段的 YES 是持久承诺
 
-![投票、持久决定与恢复](/assets/notes/distributed-systems/dist-2pc.svg)
+[![2PC：准备请求、参与者投票与全局决议](/assets/notes/distributed-systems/dist-2pc.svg)](/assets/notes/distributed-systems/dist-2pc.svg)
 
 协调者询问是否能提交。参与者在返回 YES 前，保存足以在故障后恢复 Prepared 状态的信息，并保留必要资源；不能回一个内存 ACK 后就忘掉事务。全体愿意提交，才具备作出 COMMIT 决定的条件。[Gray 与 Lamport 的原子提交分析 §2—3](https://lamport.azurewebsites.net/video/consensus-on-transaction-commit.pdf)
 

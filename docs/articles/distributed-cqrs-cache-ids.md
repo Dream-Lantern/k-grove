@@ -3,7 +3,7 @@ id: distributed-cqrs-cache-ids
 title: 第二十五章 CQRS、缓存、会话、全局 ID 与任务
 description: 原笔记列出了多种工程方案。本章分别说明它们解决的问题，不因都带有“分布式”就将其视为同一种一致性技术。这些方案可以组合使用，但也会在新的边界引入需要处理的失败状态。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 25
 
 Command Query Responsibility Segregation 将改变状态的命令与读取状态的查询在职责、模型上分开。可以共用数据库，也可以采用独立的查询存储；不是必须读写跑在不同机器，更不等于普通主从复制。
 
-![命令模型、可靠变化与查询投影](/assets/notes/distributed-systems/dist-cqrs.svg)
+[![CQRS：事件驱动同步是一种可选实现](/assets/notes/distributed-systems/dist-cqrs.svg)](/assets/notes/distributed-systems/dist-cqrs.svg)
 
 若查询模型异步构建，订单已提交而列表尚未出现，就需要写后读与进度策略。关键库存校验不能随意依赖有延迟的查询投影。[Microsoft CQRS 模式说明](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs)
 

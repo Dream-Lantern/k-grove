@@ -3,7 +3,7 @@ id: kubernetes-kubeadm-review
 title: 第二章：kubeadm 单节点安装实践复盘（Kubernetes 1.28）
 description: 第一章解释了各组件的作用，本章则按依赖关系重新组织安装记录：先准备主机和运行时，再建立控制平面，最后配置 Pod 网络和日常管理入口。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -41,7 +41,7 @@ order: 2
 
 ## 2. 安装顺序为什么不能随便颠倒？
 
-![单节点实验的依赖与检查顺序](/assets/notes/kubernetes/k8s-128-install-order.svg)
+[![Kubernetes 1.28：安装记录的依赖顺序](/assets/notes/kubernetes/k8s-128-install-order.png)](/assets/notes/kubernetes/k8s-128-install-order.png)
 
 图中的箭头表示主要依赖，不表示每个命令都必须严格串行，也不表示某一步通过就保证整个应用可用。
 

@@ -3,7 +3,7 @@ id: ai-infra-mig-isolation
 title: 第 13 章 MIG 原理：GI、CI 与隔离的粒度
 description: 把一张卡切成几个可分配的设备，和给几个进程设置百分比配额，是两种不同思路。MIG（Multi-Instance GPU）基于受支持硬件划分相应资源，本章先说明切分边界，再讨论操作。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 13
 
 GI（GPU Instance）由一定的计算、内存及相关引擎资源组成。一个 GI 可以进一步划分 CI（Compute Instance）；同一 GI 下的 CI 划分计算资源，但共享父 GI 的相应内存和引擎资源。因此，两个 CI 不能被描述为拥有两份完全独立的 GI 显存。[MIG Concepts](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/latest/concepts.html)
 
-![MIG 资源包含与共享边界](/assets/notes/ai-infra/mig-boundaries.svg)
+[![MIG：GI 的资源边界与 CI 共享关系](/assets/notes/ai-infra/mig-boundaries.svg)](/assets/notes/ai-infra/mig-boundaries.svg)
 
 图中是逻辑示意，不按某款产品的精确比例绘制。“显存固定八等分、计算固定七等分”有 A100 等特定产品语境，不能推广到所有 MIG GPU。
 

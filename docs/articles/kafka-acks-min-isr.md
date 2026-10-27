@@ -3,7 +3,7 @@ id: kafka-acks-min-isr
 title: 第 5 章：acks、minISR 与可靠性边界
 description: 这些值有各自的协议含义，不是可随意填写 2、3、4 的计数器。可靠性还取决于副本的运行状态：若允许 ISR 只有 Leader，all 也不代表写入了三份副本。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -33,7 +33,7 @@ order: 5
 
 `min.insync.replicas` 配合 `acks=all` 规定所需的最小同步副本条件。它不是指定“只需这些副本回复即可，不用管其他仍在 ISR 的副本”，也不会强制落后副本瞬间追上。
 
-![RF、ISR 与确认门槛](/assets/notes/kafka/kf-acks.svg)
+[![RF=3、minISR=2、acks=all 的含义](/assets/notes/kafka/kf-acks.png)](/assets/notes/kafka/kf-acks.png)
 
 教学例子采用 RF=3、minISR=2。当 ISR 为 A、B、C 时，按当前同步集合确认；C 离开后，A、B 仍可能满足门槛。若只剩 A，则应拒绝不能满足门槛的可靠写入，而不是静默降级。操作发生前后 ISR 变化还可能影响返回错误，不能据某次快照推断完整执行历史。
 

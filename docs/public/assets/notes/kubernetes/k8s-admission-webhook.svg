@@ -1,5 +1,92 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">准入 Webhook：写入前的策略边界</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">准入 Webhook：写入前的策略边界</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">蓝色系逻辑示意；具体版本、条件与异常分支以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">认证与授权通过</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">准入不是登录，也不是替代 RBAC</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">适用的变更与验证处理</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">按配置调用 Webhook；省略内部默认化等步骤</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">允许、拒绝或出现调用错误</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">匹配规则、超时、failurePolicy 与证书影响结果</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">后续对象保存</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">放行不代表容器已启动或业务正常</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">Webhook 通常针对适用写请求；GET 不是 Pod 创建式注入流程。</tspan></text></g></svg>
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <ns0:defs />
+  <ns0:rect fill="#F9FBFE" height="900" rx="16" ry="16" stroke="none" stroke-width="1.5" width="1600" x="0" y="0" />
+  <ns0:rect fill="#FFFFFF" height="852" rx="26" ry="26" stroke="#D8E4F2" stroke-width="1.8" width="1540" x="30" y="24" />
+  <ns0:rect fill="#2563EB" height="8" rx="4" ry="4" stroke="none" stroke-width="1.5" width="1540" x="30" y="24" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="43" font-weight="bold" x="72" y="95">准入 Webhook：允许、拒绝与调用异常</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="75" y="143">在适用写入请求中，显式拒绝与调用失败是两条不同的处理路径</ns0:text>
+  <ns0:line stroke="#D8E4F2" stroke-width="2" x1="70" x2="1530" y1="170" y2="170" />
+  <ns0:polyline fill="none" points="490,263 588,263" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" />
+  <ns0:polygon fill="#8B9AAD" points="588,263 575.0,256.11 575.0,269.89" />
+  <ns0:polyline fill="none" points="1005,263 1102,263" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" />
+  <ns0:polygon fill="#8B9AAD" points="1102,263 1089.0,256.11 1089.0,269.89" />
+  <ns0:rect fill="#FFFFFF" height="116" rx="20" ry="20" stroke="#D8E4F2" stroke-width="1.7" width="420" x="70" y="205" />
+  <ns0:rect fill="#2563EB" height="116" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="70" y="205" />
+  <ns0:rect fill="#EBF4FF" height="51" rx="13" ry="13" stroke="none" stroke-width="0" width="57" x="93" y="224" />
+  <ns0:text fill="#2563EB" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" text-anchor="middle" x="121.5" y="259">1</ns0:text>
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="27" font-weight="bold" x="168" y="248">认证与授权</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="168" y="284">调用者已通过身份识别与授权</ns0:text>
+  <ns0:rect fill="#FFFFFF" height="116" rx="20" ry="20" stroke="#D8E4F2" stroke-width="1.7" width="415" x="590" y="205" />
+  <ns0:rect fill="#7654E8" height="116" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="590" y="205" />
+  <ns0:rect fill="#F2EFFF" height="51" rx="13" ry="13" stroke="none" stroke-width="0" width="57" x="613" y="224" />
+  <ns0:text fill="#7654E8" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" text-anchor="middle" x="641.5" y="259">2</ns0:text>
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="27" font-weight="bold" x="688" y="248">适用写入准入</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="688" y="284">匹配规则决定是否调用 Webhook</ns0:text>
+  <ns0:rect fill="#FFFFFF" height="116" rx="20" ry="20" stroke="#D8E4F2" stroke-width="1.7" width="420" x="1105" y="205" />
+  <ns0:rect fill="#2563EB" height="116" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="1105" y="205" />
+  <ns0:rect fill="#EBF4FF" height="51" rx="13" ry="13" stroke="none" stroke-width="0" width="57" x="1128" y="224" />
+  <ns0:text fill="#2563EB" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" text-anchor="middle" x="1156.5" y="259">3</ns0:text>
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="27" font-weight="bold" x="1203" y="248">调用 Webhook</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="1203" y="284">处理变更 / 验证；接收结果</ns0:text>
+  <ns0:line stroke="#8B9AAD" stroke-width="3" x1="1315" x2="1315" y1="321" y2="375" />
+  <ns0:line stroke="#8B9AAD" stroke-width="3" x1="275" x2="1315" y1="375" y2="375" />
+  <ns0:polyline fill="none" points="275,375 275,432" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#8B9AAD" points="275,432 281.89,419.0 268.11,419.0" />
+  <ns0:polyline fill="none" points="797,375 797,432" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#8B9AAD" points="797,432 803.89,419.0 790.11,419.0" />
+  <ns0:polyline fill="none" points="1315,375 1315,432" stroke="#8B9AAD" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#8B9AAD" points="1315,432 1321.89,419.0 1308.11,419.0" />
+  <ns0:rect fill="#E8F9F2" height="31" rx="15.5" ry="15.5" stroke="none" stroke-width="0" width="180" x="185" y="391" />
+  <ns0:text fill="#12946B" font-family="Noto Sans CJK SC" font-size="17" font-weight="bold" text-anchor="middle" x="275.0" y="412.11">明确允许</ns0:text>
+  <ns0:rect fill="#FFF0F2" height="31" rx="15.5" ry="15.5" stroke="none" stroke-width="0" width="190" x="704" y="391" />
+  <ns0:text fill="#CD4050" font-family="Noto Sans CJK SC" font-size="17" font-weight="bold" text-anchor="middle" x="799.0" y="412.11">显式拒绝</ns0:text>
+  <ns0:rect fill="#FFF5E5" height="31" rx="15.5" ry="15.5" stroke="none" stroke-width="0" width="195" x="1218" y="391" />
+  <ns0:text fill="#C77907" font-family="Noto Sans CJK SC" font-size="17" font-weight="bold" text-anchor="middle" x="1315.5" y="412.11">超时 / 调用错误</ns0:text>
+  <ns0:rect fill="#F3FCF8" height="148" rx="20" ry="20" stroke="#12946B" stroke-width="1.7" width="420" x="70" y="434" />
+  <ns0:rect fill="#12946B" height="148" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="70" y="434" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="97" y="477">Webhook 允许</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="97" y="513">allowed: true</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="97" y="545">仍需通过后续准入检查</ns0:text>
+  <ns0:rect fill="#FFF6F7" height="148" rx="20" ry="20" stroke="#CD4050" stroke-width="1.7" width="415" x="590" y="434" />
+  <ns0:rect fill="#CD4050" height="148" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="590" y="434" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="617" y="477">Webhook 拒绝</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="617" y="513">allowed: false</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="617" y="545">不适用 failurePolicy</ns0:text>
+  <ns0:rect fill="#FFFBF4" height="148" rx="20" ry="20" stroke="#C77907" stroke-width="1.7" width="420" x="1105" y="434" />
+  <ns0:rect fill="#C77907" height="148" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="1105" y="434" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="1132" y="477">Webhook 调用失败</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="1132" y="513">按此 Webhook 的 failurePolicy</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="1132" y="545">决定是否拒绝请求</ns0:text>
+  <ns0:polyline fill="none" points="280,582 280,649" stroke="#12946B" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#12946B" points="280,649 286.89,636.0 273.11,636.0" />
+  <ns0:rect fill="#F3FCF8" height="135" rx="20" ry="20" stroke="#12946B" stroke-width="1.7" width="420" x="70" y="650" />
+  <ns0:rect fill="#12946B" height="135" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="70" y="650" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="97" y="693">后续检查通过 → 保存</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="97" y="729">API Server 持久化对象</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="97" y="761">成功不代表容器运行或就绪</ns0:text>
+  <ns0:polyline fill="none" points="797,582 797,649" stroke="#CD4050" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#CD4050" points="797,649 803.89,636.0 790.11,636.0" />
+  <ns0:rect fill="#FFF6F7" height="135" rx="20" ry="20" stroke="#CD4050" stroke-width="1.7" width="415" x="590" y="650" />
+  <ns0:rect fill="#CD4050" height="135" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="590" y="650" />
+  <ns0:text fill="#142D52" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="617" y="693">请求终止：拒绝</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="617" y="729">不保存本次请求对象</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="617" y="761">可返回明确的准入拒绝信息</ns0:text>
+  <ns0:line stroke="#C77907" stroke-width="3" x1="1315" x2="1315" y1="582" y2="626" />
+  <ns0:line stroke="#C77907" stroke-width="3" x1="1214" x2="1421" y1="626" y2="626" />
+  <ns0:polyline fill="none" points="1214,626 1214,650" stroke="#CD4050" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#CD4050" points="1214,650 1220.89,637.0 1207.11,637.0" />
+  <ns0:polyline fill="none" points="1421,626 1421,650" stroke="#12946B" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <ns0:polygon fill="#12946B" points="1421,650 1427.89,637.0 1414.11,637.0" />
+  <ns0:rect fill="#FFF6F7" height="135" rx="17" ry="17" stroke="#F9C7CE" stroke-width="1.5" width="195" x="1105" y="650" />
+  <ns0:text fill="#CD4050" font-family="Noto Sans CJK SC" font-size="25" font-weight="bold" text-anchor="middle" x="1202" y="692">Fail</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" text-anchor="middle" x="1202" y="730">拒绝请求</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" text-anchor="middle" x="1202" y="758">终止本次写入</ns0:text>
+  <ns0:rect fill="#F3FCF8" height="135" rx="17" ry="17" stroke="#BDE6D5" stroke-width="1.5" width="200" x="1325" y="650" />
+  <ns0:text fill="#12946B" font-family="Noto Sans CJK SC" font-size="25" font-weight="bold" text-anchor="middle" x="1425" y="692">Ignore</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" text-anchor="middle" x="1425" y="730">跳过失败项</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" text-anchor="middle" x="1425" y="758">继续其他准入检查</ns0:text>
+  <ns0:rect fill="#F3F7FC" height="48" rx="13" ry="13" stroke="none" stroke-width="0" width="1460" x="70" y="819" />
+  <ns0:text fill="#2563EB" font-family="Noto Sans CJK SC" font-size="21" font-weight="bold" x="91" y="849">说明</ns0:text>
+  <ns0:text fill="#617993" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="167" y="850">未匹配的 Webhook 可跳过；GET 等读取请求不机械套用写入准入流程。</ns0:text>
+</ns0:svg>

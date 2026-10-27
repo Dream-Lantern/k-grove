@@ -3,7 +3,7 @@ id: os-page-faults
 title: 第十八章 缺页异常与按需分配
 description: 缺页异常并不总意味着错误，也不一定需要磁盘 I/O。当内存访问无法依据当前翻译或权限完成时，处理器会报告这一同步异常，再由内核判断是需要完成合法的延迟工作，还是无法修复的访问。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 18
 
 TLB 未命中可以通过有效页表完成翻译；页表存在性或权限等条件不满足才可能触发缺页异常。原笔记把它叫“硬件中断触发”容易与外设中断混淆，应按同步异常理解。
 
-![先核对地址语义，再选择处理路径](/assets/notes/operating-systems/os-fault.svg)
+[![Page Fault：合法缺页与权限异常](/assets/notes/operating-systems/os-fault.svg)](/assets/notes/operating-systems/os-fault.svg)
 
 进入异常处理后，内核会检查内存区域与访问类型。不能只要找不到页框就分配新页，否则可能错误放行越界访问。
 

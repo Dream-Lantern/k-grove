@@ -1,5 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1150" viewBox="0 0 1120 1150" role="img" aria-labelledby="title desc">
-<title id="title">从 Deployment 到运行中的 Pod</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">从 Deployment 到运行中的 Pod</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">箭头表示主要状态的推进，不表示组件间固定的同步调用。</tspan></text><rect x="90" y="135" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="172" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">1  客户端 → API Server</tspan></text><text x="560.0" y="209" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">提交并保存 Deployment；成功响应不表示应用已就绪</tspan></text><path d="M560 245 L560 285" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="285" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="322" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">2  Deployment Controller</tspan></text><text x="560.0" y="359" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">通过 API 创建或调整 ReplicaSet</tspan></text><path d="M560 395 L560 435" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="435" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="472" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">3  ReplicaSet Controller</tspan></text><text x="560.0" y="509" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">通过 API 协调 Pod 数量</tspan></text><path d="M560 545 L560 585" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="585" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="622" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">4  kube-scheduler</tspan></text><text x="560.0" y="659" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">为需要调度的 Pod 选择节点，并记录绑定</tspan></text><path d="M560 695 L560 735" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="735" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="772" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">5  目标节点：kubelet + 容器运行时</tspan></text><text x="560.0" y="809" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">配合网络和存储机制准备运行环境并启动容器</tspan></text><path d="M560 845 L560 885" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="885" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="922" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">6  kubelet / 相关控制器</tspan></text><text x="560.0" y="959" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">状态回报与持续协调；Running 不等于 Ready</tspan></text><text x="560" y="1080" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560" dy="0">镜像、网络、卷准备的内部顺序依实现和条件而异。</tspan><tspan x="560" dy="29">另建并配置匹配的 Service，才涉及相应端点与业务访问路径。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">从 Deployment 到 Pod 运行</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">对象通过 API 独立协调；业务访问不要求所有场景必须先创建 Service</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
+  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
+  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">API Server 保存 Deployment</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">请求成功 ≠ Pod 已运行</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
+  <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
+  <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
+  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">控制器协调资源</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">Deployment → ReplicaSet → Pod 对象</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
+  <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
+  <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
+  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">Scheduler 与 kubelet</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">选择 Node；节点侧启动容器</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
+  <rect fill="#C88323" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
+  <rect fill="#FFF5E7" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">持续上报与检查</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">Running ≠ Ready；就绪后可提供访问条件</text>
+  <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
+  <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
+  <polygon fill="#8996A8" points="430,453 435.0,442.0 425.0,442.0"/>
+  <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">如果使用 Service 访问，还需选择器、端点及就绪条件满足。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">其他场景可以 Pod IP 直连；并不是业务访问都必须使用 Service。</text>
+</svg>

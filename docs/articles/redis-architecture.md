@@ -3,7 +3,7 @@ id: redis-architecture
 title: 第一章 Redis 架构、执行模型与版本边界
 description: Redis 常被概括成“内存里的键值数据库”。这个说法方便入门，却解释不了几个常见现象：为什么一个大集合查询会影响其他请求，后台保存为什么仍会抬高延迟，主节点写成功后为什么副本还可能读不到？
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Redis 常被概括成“内存里的键值数据库”。这个说法方便入�
 
 客户端先获取或建立连接，将命令编码后发送。服务端读取请求、解析协议，按相应的执行模型处理命令，再将回复发回客户端。客户端只有收到并正确解析结果，才能知道这次调用返回了什么。
 
-![客户端、Redis 执行与回复的职责关系](/assets/notes/redis/redis-study-architecture.svg)
+[![Redis：命令执行、持久化与复制的开销](/assets/notes/redis/redis-study-architecture.svg)](/assets/notes/redis/redis-study-architecture.svg)
 
 端到端延迟包含连接池等待、网络、排队、执行和回复处理。慢日志只覆盖其中一部分。因此“服务器没有慢日志”和“用户没有超时”不是一回事。
 

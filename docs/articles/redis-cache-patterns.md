@@ -3,7 +3,7 @@ id: redis-cache-patterns
 title: 第二十七章 缓存更新、穿透、击穿与雪崩
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 27
 
 缓存不是把查询结果 SET 进去就结束。真正困难的是更新竞态、失效时的回源压力，以及缓存不可用时怎样保护权威存储。本章保留原笔记的问题分类，补充每种方案的适用条件。
 
-![Cache-Aside 的读取与更新](/assets/notes/redis/redis-study-cache-aside.svg)
+[![Cache Aside：命中与未命中必须分流](/assets/notes/redis/redis-study-cache-aside.svg)](/assets/notes/redis/redis-study-cache-aside.svg)
 
 ## 1. Cache-Aside：数据库与缓存各自提交
 

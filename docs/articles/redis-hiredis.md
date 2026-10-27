@@ -3,7 +3,7 @@ id: redis-hiredis
 title: 第十五章 客户端连接、超时与 hiredis 基础
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 15
 
 ## 1. 一次调用经过哪些等待
 
-![一次请求的时间预算](/assets/notes/redis/redis-study-client-budget.svg)
+[![Redis 客户端超时：端到端预算模型](/assets/notes/redis/redis-study-client-budget.svg)](/assets/notes/redis/redis-study-client-budget.svg)
 
 连接池先决定有没有可用连接，随后才可能发生 DNS、TCP、TLS、认证和命令读写。服务端收到完整请求后也可能排队。Slowlog 只覆盖其中的执行部分，不是完整的调用耗时。
 

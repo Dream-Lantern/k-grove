@@ -3,7 +3,7 @@ id: ai-agent-post-training
 title: 第7章 模型后训练：SFT、RL、偏好优化
 description: 后训练不是只有一种算法。实践常见：SFT（监督微调）→ 偏好优化/DPO 或 RL（按需要）。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -132,9 +132,9 @@ out.append({"id": row["id"], "kind": row["kind"], "exact": int(pb == tb), "predi
 3. 确认问题确实在模型生成后，才对照基座与 LoRA。训练、留出和边界集按随机种子、字符组合、长度及包装上下文隔离。
 4. 同时检查原始字节一致性、首个分歧位置和真实工具参数是否匹配；只看自然语言相似度会漏掉这一类失败。
 
-![07-training](/assets/notes/ai-agent/07-training.svg)
+[![训练改进：条件对照与独立评估](/assets/notes/ai-agent/07-training.png)](/assets/notes/ai-agent/07-training.png)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/07-training.svg) · [可编辑 DOT](/assets/notes/ai-agent/07-training.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 PNG](/assets/notes/ai-agent/07-training.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/07-training.dot)供对照，不是本版配图的可编辑源文件。
 
 本次未进行 GPU 训练，也未调用计费模型，不能将仓库历史训练结果当作本地复现成绩。笔记中的本地脚本仅展示 Unicode、首尾空白和 JSON round-trip 的区别，用于判断应在哪一层修复错误。
 

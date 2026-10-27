@@ -3,7 +3,7 @@ id: kubernetes-service-endpointslice
 title: 第十九章 Service 与 EndpointSlice 资源实践
 description: Service 的 selector 通常选择同命名空间中具有匹配标签的 Pod。它不要求 Pod 一定来自 Deployment，也不通过 Deployment 的名字找到后端。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Service 的 selector 通常选择同命名空间中具有匹配标签的 Pod。�
 
 如果 Service 在 study，Pod 在另一个命名空间，即使标签完全一样，也不会被这个普通 selector 自动纳入。标签匹配采用所列要求的组合，Pod 可以还有额外标签。
 
-![Service 端口、Pod 标签、EndpointSlice 与目标端口](/assets/notes/kubernetes/k8s-service-ports-detail.svg)
+[![Service：port与targetPort映射](/assets/notes/kubernetes/k8s-service-ports-detail.png)](/assets/notes/kubernetes/k8s-service-ports-detail.png)
 
 ## 2. 一个最小端口例子
 

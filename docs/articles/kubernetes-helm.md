@@ -3,7 +3,7 @@ id: kubernetes-helm
 title: 第二十七章 Helm、Chart 与发布记录
 description: Chart 是一组模板、默认值和元数据等组成的包。用户结合 Values 渲染 Kubernetes 对象，通过安装或升级形成一次 Release 的管理记录。一个 Chart 可以形成多个 Release，不能把包名、应用名和发布实例名混为一谈。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Chart 是一组模板、默认值和元数据等组成的包。用户结合 Valu
 
 Chart 的 `version` 与 `appVersion` 也不是同一个版本号。升级 Chart 可能修改模板、依赖或默认值，即使应用版本没变，也应审核实际渲染差异。
 
-![Chart、Values、渲染与 Release 的关系](/assets/notes/kubernetes/k8s-helm-release.svg)
+[![Helm：Chart、Values、渲染与 Release](/assets/notes/kubernetes/k8s-helm-release.svg)](/assets/notes/kubernetes/k8s-helm-release.svg)
 
 Helm 使用相应 Kubernetes 权限执行资源操作，不会因为“它是包管理器”绕过 RBAC 或准入。
 

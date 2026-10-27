@@ -3,7 +3,7 @@ id: os-buffer-io
 title: 第十一章 bread、缓冲区与 I/O 等待
 description: 原笔记通过 Linux 0.11 的 bread 解释“进程发磁盘请求后睡眠，中断完成后唤醒”。这一思路正确，但未展开缓存命中、缓冲区获取和完成后的错误检查。本章依据原版 fs/buffer.c 核对，区分代码片段与完整实现。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 11
 
 原片段声明 buffer_head *bh 后立即使用它，缺少初始化。真实 bread 先通过 getblk(dev,block) 获取相应缓冲区，再判断 b_uptodate。未初始化指针不是简写可以直接执行的程序。
 
-![缓存判断与设备读取](/assets/notes/operating-systems/os-bread.svg)
+[![Linux 0.11 bread：命中直接返回，失效才读设备](/assets/notes/operating-systems/os-bread.png)](/assets/notes/operating-systems/os-bread.png)
 
 如果缓存数据已有效，就直接返回对应缓冲，无需每次访问磁盘。缓存键、引用计数、锁定与数据有效性分别承担不同职责。
 

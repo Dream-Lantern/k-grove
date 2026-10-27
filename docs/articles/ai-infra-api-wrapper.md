@@ -1,9 +1,9 @@
 ---
 id: ai-infra-api-wrapper
 title: 第 8 章 API Wrapper：覆盖范围与异步观测
-description: 
+description: "整理 API 包装的覆盖边界、返回语义及主机调用与异步设备活动的观测方法。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -21,7 +21,7 @@ order: 8
 
 ## 1. 链接期包装的边界
 
-![API 调用与设备活动分开观察](/assets/notes/ai-infra/observe-paths.svg)
+[![观测链：API 与设备活动](/assets/notes/ai-infra/observe-paths.svg)](/assets/notes/ai-infra/observe-paths.svg)
 
 GNU ld 的 `--wrap=symbol` 重定向参与该链接过程的相应未定义引用。已解析的内部引用、独立动态库、`dlsym`/Driver 入口查询和其他 API 变体，需要分别确认。[GNU ld：wrap](https://sourceware.org/binutils/docs/ld/Options.html)
 

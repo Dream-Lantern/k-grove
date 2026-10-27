@@ -3,7 +3,7 @@ id: ai-infra-mig-operations
 title: 第 14 章 MIG 操作复盘：查询、规划、变更和恢复
 description: MIG 变更会改变可分配设备和正在运行的工作。这里保留原笔记的操作链，但不把它写成可以在任意服务器复制执行的安装脚本。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 14
 
 记录 GPU UUID、型号、驱动、MIG 模式、现有 GI/CI、profile 和 placement，以及容器/Pod 与设备的对应。确认维护窗口、业务退出和调度侧摘除方式。不能默认把所有占用进程 `kill -9` 作为准备步骤。
 
-![MIG 变更与中止路径](/assets/notes/ai-infra/mig-change.svg)
+[![MIG：受控变更与联合验收](/assets/notes/ai-infra/mig-change.png)](/assets/notes/ai-infra/mig-change.png)
 
 只读查询示例，未执行；目标命令是否支持以本机 `--help` 为准：
 

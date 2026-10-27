@@ -3,7 +3,7 @@ id: kubernetes-ingress
 title: 第二十章 Ingress 与 HTTP 入口路由
 description: Ingress 对象声明适用的 HTTP/HTTPS 路由；Ingress Controller 观察并实现这些规则。只创建一个 Ingress 对象，不会自动安装一个能接外部流量的代理。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Ingress 对象声明适用的 HTTP/HTTPS 路由；Ingress Controller 观察并�
 
 外部 DNS、负载均衡或节点入口仍需相应的基础设施支持。控制器可以作为 Pod 运行，但入口如何暴露取决于部署方式，不能只根据“它在哪个节点”，就认定外部一定能直接连接该节点的某个端口。
 
-![外部入口、Ingress Controller、Service 后端与应用的职责](/assets/notes/kubernetes/k8s-ingress-boundaries.svg)
+[![Ingress：规则不是控制器本身](/assets/notes/kubernetes/k8s-ingress-boundaries.svg)](/assets/notes/kubernetes/k8s-ingress-boundaries.svg)
 
 图中的 Service 是规则后端引用。某些控制器直接使用端点地址转发，不要求每个业务数据包都先经过 ClusterIP；不要把声明上的依赖画成唯一的实际包路径。
 

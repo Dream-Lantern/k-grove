@@ -1,9 +1,9 @@
 ---
 id: ai-infra-multi-gpu-nccl
 title: 第 22 章 多 GPU 与 NCCL：并行策略和通信契约
-description: 
+description: "整理多 GPU 并行策略、NCCL 集合通信契约与通信挂起的排查方法。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -30,7 +30,7 @@ order: 22
 
 这些维度可以组合，不能把四张 TP 卡当作四个 DP 副本重复计算全局 batch。并行方式还会影响每卡权重、KV 和通信缓冲区的预算，不能只把总显存除以卡数。
 
-![并行任务中的集合通信示意](/assets/notes/ai-infra/parallel-collectives.svg)
+[![多 GPU：集合通信的匹配契约](/assets/notes/ai-infra/parallel-collectives.svg)](/assets/notes/ai-infra/parallel-collectives.svg)
 
 ## 2. NCCL 提供什么
 

@@ -3,7 +3,7 @@ id: kubernetes-api-server
 title: 第三章：kube-apiserver——请求如何变成集群状态？
 description: 运行一次 kubectl get pods 和提交一份 Deployment，看起来都只是访问 API Server，后续工作却不一样：前者读取对象，后者改变期望状态，随后还可能触发多个控制循环。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -42,7 +42,7 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 ## 2. 先区分 TLS、认证、授权和准入
 
-![API 写请求的主要检查边界](/assets/notes/kubernetes/k8s-api-request-boundaries.svg)
+[![API 写请求：逐层识别访问边界](/assets/notes/kubernetes/k8s-api-request-boundaries.png)](/assets/notes/kubernetes/k8s-api-request-boundaries.png)
 
 这是普通写请求的高层模型，省略了解码、默认化、具体 REST 处理和其他内部步骤。读取、聚合 API、连接型请求等路径不能机械套用所有框。
 
@@ -88,7 +88,7 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 常见客户端使用 list/watch 等机制建立和持续更新对象视图。Watch 关注的是对象变化，不是 API Server 为每个控制器安排一串可靠的远程函数回调。
 
-![对象变化如何驱动各组件继续工作](/assets/notes/kubernetes/k8s-api-observe-state.svg)
+[![API 状态：观察与写回走向](/assets/notes/kubernetes/k8s-api-observe-state.svg)](/assets/notes/kubernetes/k8s-api-observe-state.svg)
 
 图中“观察”和“写入”方向分开；各组件独立推进，省略断线、重试和响应。控制器之间的协调依赖对象与状态，并不要求前一个组件同步调用下一个组件。
 

@@ -3,7 +3,7 @@ id: kubernetes-scheduler
 title: 第六章：kube-scheduler——Pod 怎样找到节点，失败后又怎样重试？
 description: Pod 已经创建，却一直 Pending，是学习 Kubernetes 时很常见的困惑。首先要问：它尚未得到节点位置，还是已经有了位置、但后续容器无法运行？
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -68,7 +68,7 @@ node-b 通过这一项检查，也不代表必然最终被选中：它还可能�
 
 ## 4. 调度周期与绑定周期的边界
 
-![调度周期和绑定周期的主要扩展点](/assets/notes/kubernetes/k8s-scheduler-cycles-detail.svg)
+[![调度周期与绑定周期](/assets/notes/kubernetes/k8s-scheduler-cycles-detail.svg)](/assets/notes/kubernetes/k8s-scheduler-cycles-detail.svg)
 
 图中归并了部分扩展点，省略失败分支；是框架职责图，不是某个版本的完整函数调用栈。
 
@@ -123,7 +123,7 @@ Reserve 和 Permit 仍属于调度周期的框架处理；Permit 返回等待时
 
 如果一个请求需要的条件暂时不存在，持续立即重试会消耗资源，也可能让其他 Pod 难以得到公平处理。调度器需要组织可尝试对象、待重新评估对象和退避对象。
 
-![调度失败后的重新评估与退避](/assets/notes/kubernetes/k8s-scheduler-retry-queues.svg)
+[![Scheduler：失败之后如何再次尝试](/assets/notes/kubernetes/k8s-scheduler-retry-queues.svg)](/assets/notes/kubernetes/k8s-scheduler-retry-queues.svg)
 
 图示保留常见概念，不表示每次失败都只能沿同一条固定路线进入队列；具体事件处理和队列实现随版本变化。
 

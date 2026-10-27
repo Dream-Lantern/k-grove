@@ -3,7 +3,7 @@ id: ai-agent-tools-events
 title: 第4章 工具、MCP 与异步事件系统
 description: 仅靠“先查一下再写”不足以保证幂等，并发时仍可能重复写入。应通过幂等键、唯一约束、事务或状态机处理重复请求。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -63,7 +63,7 @@ Skill 提供“何时和怎样做”的说明；MCP Tool 提供“能调用什�
 
 ## 4.4 高风险动作的执行护栏
 
-[本章修订流程图（含失败/未知路径）](/assets/notes/ai-agent/04-tools.svg)
+[本章修订流程图（含失败/未知路径）](/assets/notes/ai-agent/04-tools.png)
 
 **提议 → 审核 → 执行 → 验证**比“模型直接写入”更可控。对于删除、付款、发布、修改权限等动作，把批准绑定到**具体操作参数与版本**，而不是仅凭一句笼统的“允许操作”。
 
@@ -124,9 +124,9 @@ def _is_safe_path(self, path: Path) -> bool:
 
 先阅读 `file_tools.py` 的写入/编辑流程、`external_tools.py` 的幂等处理，再看 `test_github_idempotency.py`。用本地临时文件或测试替身构造：非法路径、空查找串、语法错误、重复业务键、执行成功但产物不满足要求。记录“是否执行”“是否验证通过”“是否修改了环境”三个独立事实。
 
-![04-tools](/assets/notes/ai-agent/04-tools.svg)
+[![工具调用：验证、执行与结果处理](/assets/notes/ai-agent/04-tools.png)](/assets/notes/ai-agent/04-tools.png)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/04-tools.svg) · [可编辑 DOT](/assets/notes/ai-agent/04-tools.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 PNG](/assets/notes/ai-agent/04-tools.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/04-tools.dot)供对照，不是本版配图的可编辑源文件。
 
 仓库示例中有 LLM 审批和 shell 执行路径。LLM 审查用于辅助判断，不能替代服务端授权；单进程测试通过也不等于并发幂等已获保证。Windows 下应按项目说明核对 Bash/WSL 条件；只观察本地文件工具时，没有必要连接日历、创建 PR 等外部动作。
 

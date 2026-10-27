@@ -3,7 +3,7 @@ id: ai-infra-nvml
 title: 第 10 章 NVML：设备、进程和 MIG 对象的只读观察
 description: NVML 是 NVIDIA Management Library，面向设备管理与监控。它适合读取 UUID、显存、温度和进程信息，但不是用来测量每个 kernel 的精确执行时间。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ NVML 是 NVIDIA Management Library，面向设备管理与监控。它适合读�
 
 GPU 0 只是当前枚举中的编号。重启、调整可见设备设置或设备发生变化后，索引与物理卡的对应关系可能改变。长期记录应保存 UUID，并关联 PCI Bus ID、节点和设备类型；容器内的编号也可能与宿主不同。
 
-![NVML 与 MIG 查询对象](/assets/notes/ai-infra/nvml-objects.svg)
+[![NVML：查询对象不能混用](/assets/notes/ai-infra/nvml-objects.svg)](/assets/notes/ai-infra/nvml-objects.svg)
 
 GPU handle、GI handle、CI handle 和 MIG device handle 不是可任意互换的值。尤其 `nvmlGpuInstanceGetComputeInstanceById` 的父对象应为 GI handle，不是物理 GPU handle；原文相关示例需要修正。[NVML API](https://docs.nvidia.com/deploy/nvml-api/latest/index.html)
 

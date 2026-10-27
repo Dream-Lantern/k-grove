@@ -1,5 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1050" viewBox="0 0 1200 1050" role="img" aria-labelledby="title desc">
-<title id="title">MoE：按 Token 路由至部分专家</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">MoE：按 Token 路由至部分专家</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">专家输出为向量，不预设正面/负面等语义角色。</tspan></text><rect x="360" y="125" width="480" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="162" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">隐藏向量 h</tspan></text><text x="600.0" y="199" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">某一 token 的层内表示</tspan></text><rect x="360" y="315" width="480" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="352" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">Router：示意 Top-2</tspan></text><text x="600.0" y="389" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">选择专家及相应权重</tspan></text><rect x="50" y="560" width="340" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="220.0" y="597" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="220.0" dy="0">专家 1</tspan></text><text x="220.0" y="634" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="220.0" dy="0">本次选中</tspan></text><rect x="430" y="560" width="340" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="597" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">专家 2</tspan></text><text x="600.0" y="634" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">本次未选中</tspan></text><rect x="810" y="560" width="340" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="980.0" y="597" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="980.0" dy="0">专家 3</tspan></text><text x="980.0" y="634" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="980.0" dy="0">本次选中</tspan></text><rect x="360" y="835" width="480" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="872" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">按实现汇聚输出</tspan></text><text x="600.0" y="909" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">示意：0.7 E1(h) + 0.3 E3(h)</tspan></text><path d="M600.0 240 L600.0 315" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M600.0 430 L600.0 495.0 L220.0 495.0 L220.0 560" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="255" y="510" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="255" dy="0">选择</tspan></text><path d="M600.0 430 L600.0 495.0 L980.0 495.0 L980.0 560" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="950" y="510" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="950" dy="0">选择</tspan></text><path d="M220.0 675 L220.0 755.0 L600.0 755.0 L600.0 835" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M980.0 675 L980.0 755.0 L600.0 755.0 L600.0 835" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="600" y="1025" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600" dy="0">权重归一化方式是示例假设；总参数与每 token 激活参数应分开。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="970" viewBox="0 0 1600 970">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#F8FBFF"/></linearGradient>
+ <filter id="sh" x="-20%" y="-40%" width="150%" height="200%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#153F75" flood-opacity=".10"/></filter>
+ <marker id="arrow" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#5679BC"/></marker>
+ <marker id="arrG" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#10B981"/></marker>
+ <marker id="arrR" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#EF4444"/></marker>
+ </defs>
+<rect x="0" y="0" width="1600" height="970" rx="0" fill="url(#bg)"/>
+<rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">25  ·  MoE：每个 Token 只激活部分专家</text>
+<text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">专家输出是向量；不要预设“正面 / 负面”等固定语义角色</text>
+<path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="560" y="176" width="480" height="105" rx="15" fill="#EEF6FF" stroke="#3B82F6" stroke-width="1.8"/>
+<text x="582" y="214" font-family="Noto Sans CJK SC, sans-serif" font-size="29" font-weight="700" fill="#1E40AF" text-anchor="start">隐藏向量 h</text>
+<text x="582" y="248" font-family="Noto Sans CJK SC, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="start">某个 Token 在当前层的表示</text>
+<path d="M800 284 L800 337" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="487" y="341" width="632" height="115" rx="15" fill="#F4F0FF" stroke="#8B5CF6" stroke-width="1.8"/>
+<text x="509" y="379" font-family="Noto Sans CJK SC, sans-serif" font-size="27" font-weight="700" fill="#5B21B6" text-anchor="start">Router（示例 Top-2）</text>
+<text x="509" y="413" font-family="Noto Sans CJK SC, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="start">选择两个专家，示例权重 E1=0.7、E3=0.3。</text>
+<path d="M797 458 V498 H276 V541" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M797 498 H803 V541" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="9 7"/>
+<path d="M797 498 H1330 V541" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="91" y="549" width="365" height="172" rx="18" fill="#E9FBF4" stroke="#10B981" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="137" cy="596" r="24" fill="#10B981"/>
+<text x="137" y="605" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="174" y="603" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">Expert 1</text>
+<text x="115" y="649" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">本次选中</text>
+<text x="115" y="681" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">权重 0.7</text>
+<rect x="623" y="549" width="365" height="172" rx="18" fill="#F7FAFF" stroke="#CBD5E1" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="669" cy="596" r="24" fill="#CBD5E1"/>
+<text x="669" y="605" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="706" y="603" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">Expert 2</text>
+<text x="647" y="649" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">本次未选中</text>
+<text x="647" y="681" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">无本次输出贡献</text>
+<rect x="1155" y="549" width="365" height="172" rx="18" fill="#E9FBF4" stroke="#10B981" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="1201" cy="596" r="24" fill="#10B981"/>
+<text x="1201" y="605" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="1238" y="603" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">Expert 3</text>
+<text x="1179" y="649" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">本次选中</text>
+<text x="1179" y="681" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">权重 0.3</text>
+<path d="M273 723 V772 H802 V787" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrG)"/>
+<path d="M1340 723 V772 H806 V787" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrG)"/>
+<rect x="450" y="791" width="707" height="79" rx="15" fill="#E9FBF4" stroke="#10B981" stroke-width="1.8"/>
+<text x="472" y="829" font-family="Noto Sans CJK SC, sans-serif" font-size="26" font-weight="700" fill="#047857" text-anchor="start">结果合并</text>
+<text x="472" y="863" font-family="Noto Sans CJK SC, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="start">0.7 × E1(h) + 0.3 × E3(h)</text>
+<path d="M65 897 L1535 897" fill="none" stroke="#DFE7F2" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="70" y="932" font-family="Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#6B7E99" text-anchor="start">权重归一化方式是教学示例假设；模型总参数量 ≠ 每 Token 实际激活的参数量。</text>
+</svg>

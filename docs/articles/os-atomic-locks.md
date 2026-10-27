@@ -3,7 +3,7 @@ id: os-atomic-locks
 title: 第八章 竞争条件、原子操作与锁
 description: 可以先通过抽象机器中读、算、写的交错理解丢失更新，但不能据此枚举真实C11竞态程序的全部结果。同步旨在保护共享不变量，不是给看似危险的语句简单套上一个名为lock的函数。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -31,7 +31,7 @@ order: 8
 
 即使用原子fetch_add使一次加法不可分割，复合的“余额足够才扣减”也不会自动整体原子；检查与更新仍需共同的锁、CAS循环或其他正确协议。这里限定C11规则，不把所有语言的内存模型混为一谈。
 
-![访问协议与锁的作用](/assets/notes/operating-systems/os-lock.svg)
+[![volatile 与线程同步：职责不同](/assets/notes/operating-systems/os-lock.svg)](/assets/notes/operating-systems/os-lock.svg)
 
 临界区是受保护的代码区域。互斥需要覆盖访问同一共享状态的所有相关路径，而不只是调用“同一函数名称”的线程。如果只有写者加锁，读者仍随意读取，也未必满足程序语言和业务要求。
 

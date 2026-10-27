@@ -3,7 +3,7 @@ id: os-context-switching
 title: 第六章 上下文切换、中断与内核栈
 description: 进入内核、保存陷入状态、选择下一个任务和恢复用户执行，彼此相关但并非同一步骤。原笔记的“五段论”有助于理解整体路径，但不能据此认为所有系统调用都会先切换到另一个线程。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 6
 
 架构规定的返回位置、标志和栈等状态，以及入口软件保存的必要寄存器，是后续恢复执行的基础。调度切换还可能涉及地址空间、内核栈和其他线程状态，具体由哪些部分负责，取决于实现。
 
-![入口与调度切换的区别](/assets/notes/operating-systems/os-context.svg)
+[![上下文切换：异常入口、唤醒与调度](/assets/notes/operating-systems/os-context.svg)](/assets/notes/operating-systems/os-context.svg)
 
 不是每个寄存器都由同一个 switch_to 函数复制，也不是所有上下文都存成 PCB 中一排 ax/bx 字段。需要区分陷入帧、保存的内核调用上下文和资源描述。
 

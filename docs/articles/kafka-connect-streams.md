@@ -3,7 +3,7 @@ id: kafka-connect-streams
 title: 第 23 章：Connect、Streams 与演进路线
 description: 直接使用 Producer/Consumer API，可以控制业务处理和依赖，但需要自己维护位点、错误、模式、并发和恢复。若主要目标是把外部系统接入 Kafka，重复编写同样的连接与运行管理代码可能没有必要。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -29,7 +29,7 @@ order: 23
 
 Kafka Connect 提供连接器运行框架，由 Source 将外部数据接入 Kafka，再由 Sink 从 Kafka 写向外部。但使用同一框架，不意味着每种 Connector 都有相同的 Exactly Once 保证；最终语义仍取决于版本、Connector、运行模式及外部系统的合作契约。
 
-![常见生态组件职责](/assets/notes/kafka/kf-ecosystem.svg)
+[![生态组件按职责选择，而非都叫消费者](/assets/notes/kafka/kf-ecosystem.png)](/assets/notes/kafka/kf-ecosystem.png)
 
 ## 2. Kafka Streams 处理的是什么
 

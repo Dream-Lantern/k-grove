@@ -3,7 +3,7 @@ id: ai-infra-heterogeneous-computing
 title: 第 1 章 异构计算全景：从 CPU 到模型服务
 description: 把一段 CPU 程序原样搬到 GPU，并不会让它自动变快。加速针对的是程序中适合并行的工作，而不是“程序文件”本身；数据传输、任务提交和结果回收也需要时间。本册先介绍硬件和执行模型，再讨论共享、监控及大模型服务。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 1
 
 离散 GPU 常经 PCIe 连接主机，但这不是所有系统的固定结构。集成式系统、CPU/GPU 一致性互连、GPU 间的 NVLink 等属于不同层次，是否共享地址、是否自动搬运数据都要具体分析。
 
-![异构计算软件与硬件分层](/assets/notes/ai-infra/hetero-stack.svg)
+[![异构计算：软件栈与跨层调用](/assets/notes/ai-infra/hetero-stack.svg)](/assets/notes/ai-infra/hetero-stack.svg)
 
 图中箭头表示工作提交的层次，不表示应用每次都必须逐层调用所有库。数学库也可能直接使用 Driver API。CUDA 是 NVIDIA 的并行计算平台及编程体系，不等于一张显卡，也不等于某个 Python 包。[CUDA 平台说明](https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/cuda-platform.html)
 

@@ -3,7 +3,7 @@ id: kubernetes-controller-manager
 title: 第五章：kube-controller-manager——多个控制循环怎样协作？
 description: 第一章说 Kubernetes 会持续比较期望与已观察状态，但“持续比较”不是一个包办所有任务的巨大循环。不同控制器负责不同对象和关系，围绕 API 状态各自推进。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -35,7 +35,7 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 ## 2. 一次协调大致做什么？
 
-![控制器的观察、排队与协调反馈](/assets/notes/kubernetes/k8s-controller-reconcile.svg)
+[![控制器：线索、当前视图与再次协调](/assets/notes/kubernetes/k8s-controller-reconcile.png)](/assets/notes/kubernetes/k8s-controller-reconcile.png)
 
 这是教学模型，不是对任意控制器源码的逐行复现。队列、缓存和重试的具体实现应按目标版本阅读。
 
@@ -69,7 +69,7 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 ## 4. Deployment、ReplicaSet 与 RC，不能混成一个名字
 
-![Deployment 与副本控制的职责层次](/assets/notes/kubernetes/k8s-controller-ownership.svg)
+[![工作负载管理：Deployment → ReplicaSet → Pod](/assets/notes/kubernetes/k8s-controller-ownership.png)](/assets/notes/kubernetes/k8s-controller-ownership.png)
 
 ### 4.1 Deployment Controller
 

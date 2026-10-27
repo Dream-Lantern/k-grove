@@ -3,7 +3,7 @@ id: kubernetes-volumes-nfs
 title: 第二十二章 Volume、emptyDir、hostPath 与 NFS
 description: 容器镜像提供文件系统基础，运行中的可写层不适合作为跨 Pod 生命周期的数据保留承诺。卷让容器通过某个路径访问适用的数据来源。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 22
 
 一个 Pod 的 `volumes` 定义来源，各容器的 `volumeMounts` 定义挂载位置，通过 `name` 对应。相同卷在两个容器中可以挂到不同路径；文件能否互读写还受权限与访问方式影响。
 
-![容器、Pod、节点与远端存储的数据生命周期对比](/assets/notes/kubernetes/k8s-volume-lifetimes.svg)
+[![卷的生命周期：先问数据属于谁](/assets/notes/kubernetes/k8s-volume-lifetimes.svg)](/assets/notes/kubernetes/k8s-volume-lifetimes.svg)
 
 图按数据所属层级逐项比较，箭头不代表数据会自动从 emptyDir 迁移到远端存储。
 

@@ -3,7 +3,7 @@ id: os-deadlocks
 title: 第十章 死锁条件、避免与恢复
 description: 死锁是相关活动相互等待、无法自行继续的状态；饥饿指某个活动长期得不到执行机会；活锁则表现为持续动作，却没有有效进展。三者现象可能相似，但处理方式不同。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 10
 
 在相应资源模型中，互斥、占有并等待、不可抢占、循环等待共同构成死锁的经典必要条件。描述“有两个线程等待”还不够，要明确它们各自持有什么、还需要什么。
 
-![两任务逆序获取锁](/assets/notes/operating-systems/os-deadlock.svg)
+[![死锁：资源分配图与循环等待](/assets/notes/operating-systems/os-deadlock.svg)](/assets/notes/operating-systems/os-deadlock.svg)
 
 教学例子：A 持有 L1 请求 L2，B 持有 L2 请求 L1。两把锁各只有一个实例，且无法由外部安全解除，形成直接等待环。[OSTEP 并发问题](https://pages.cs.wisc.edu/~remzi/OSTEP/threads-bugs.pdf)
 

@@ -3,7 +3,7 @@ id: os-linux011-copy-on-write
 title: 第十七章 Linux 0.11 段页结合与写时复制
 description: Linux 0.11 的段页结合是一种具体的历史布局，并非虚拟内存的唯一定义。原笔记将 64 MiB 线性区、LDT 和共享物理页联系起来，这条学习路线值得保留；但对“共用一套页表”和复制循环的解释需要修正。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -41,7 +41,7 @@ nr是任务槽号，不是任意PID直接乘64MiB；64MiB是线性范围间隔�
 
 ## 3. 写入时发生什么？
 
-![私有逻辑与共享物理页](/assets/notes/operating-systems/os-cow.svg)
+[![Linux0.11背景的写时复制流程](/assets/notes/operating-systems/os-cow.png)](/assets/notes/operating-systems/os-cow.png)
 
 纸面推演：父子私有页初始都指向内容为 A 的物理页，并被写保护。子进程尝试改为 B，触发保护异常；内核确认是适用 COW 情况，必要时分配新页、复制内容、修改子映射，再恢复执行。父视图仍为 A。
 

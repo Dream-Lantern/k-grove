@@ -1,5 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1370" viewBox="0 0 1200 1370" role="img" aria-labelledby="title desc">
-<title id="title">HAMi：控制面与节点执行面</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">HAMi：控制面与节点执行面</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">职责模型参考 v2.10.0 协议；不是历史未知 commit 的精确函数时序。</tspan></text><rect x="50" y="135" width="530" height="1095" rx="10" fill="#F0F9FF" stroke="#0369A1" stroke-dasharray="8 5"/><text x="315.0" y="167" text-anchor="middle" fill="#0369A1" font-size="21" font-weight="600"><tspan x="315.0" dy="0">调度控制面</tspan></text><rect x="620" y="135" width="530" height="1095" rx="10" fill="#F0F9FF" stroke="#0369A1" stroke-dasharray="8 5"/><text x="885.0" y="167" text-anchor="middle" fill="#0369A1" font-size="21" font-weight="600"><tspan x="885.0" dy="0">节点执行面及元数据读取</tspan></text><rect x="85" y="220" width="460" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="315.0" y="257" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="315.0" dy="0">Pod / Admission</tspan></text><text x="315.0" y="294" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="315.0" dy="0">提交与配置变更</tspan></text><rect x="85" y="445" width="460" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="315.0" y="482" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="315.0" dy="0">选中调度器与扩展协作</tspan></text><text x="315.0" y="519" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="315.0" dy="0">匹配节点 / 设备与资源</tspan></text><rect x="85" y="690" width="460" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="315.0" y="727" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="315.0" dy="0">绑定目标节点</tspan></text><text x="315.0" y="764" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="315.0" dy="0">绑定成功仍不表示容器可运行</tspan></text><rect x="655" y="220" width="460" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="885.0" y="257" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="885.0" dy="0">Pod 分配元数据</tspan></text><text x="885.0" y="294" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="885.0" dy="0">API 中的 Pod 注解；节点按协议读取</tspan></text><rect x="655" y="600" width="460" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="885.0" y="637" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="885.0" dy="0">目标节点 kubelet</tspan></text><text x="885.0" y="674" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="885.0" dy="0">推进容器准备流程</tspan></text><rect x="655" y="820" width="460" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="885.0" y="857" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="885.0" dy="0">Device Plugin Allocate</tspan></text><text x="885.0" y="894" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="885.0" dy="0">读取配置，返回分配结果</tspan></text><rect x="655" y="1060" width="460" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="885.0" y="1097" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="885.0" dy="0">容器与用户态后端</tspan></text><text x="885.0" y="1134" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="885.0" dy="0">初始化、资源限制、业务验收</tspan></text><path d="M315.0 335 L315.0 445" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M315.0 560 L315.0 690" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M545 502 L600 502 L600 277 L655 277" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="7 5"/><path d="M545 747 L600 747 L600 657 L655 657" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M885.0 715 L885.0 820" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M885.0 935 L885.0 1060" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M1115 277 L1180 277 L1180 877 L1115 877" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="7 5"/><text x="1020" y="455" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="1020" dy="0">按后端协议读取</tspan></text><text x="600" y="1295" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600" dy="0">实线：主要工作推进；虚线：元数据写入 / 读取关系。</tspan></text><text x="600" y="1345" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600" dy="0">Admission、Bind、Allocate 与业务成功分开验收；不把 hook 当作调度器直接调用。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#F8FBFF"/></linearGradient>
+ <filter id="sh" x="-20%" y="-40%" width="150%" height="200%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#153F75" flood-opacity=".10"/></filter>
+ <marker id="arrow" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#5679BC"/></marker>
+ <marker id="arrG" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#10B981"/></marker>
+ <marker id="arrR" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#EF4444"/></marker>
+ </defs>
+<rect x="0" y="0" width="1600" height="940" rx="0" fill="url(#bg)"/>
+<rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">16  ·  HAMi：控制面与节点执行面</text>
+<text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">职责参考随附 v2.10.0 协议；Bind、Allocate、容器启动及业务 Ready 分别验收</text>
+<path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="60" y="193" width="711" height="618" rx="20" fill="#F5F9FF" stroke="#BFDBFE" stroke-width="1.8"/>
+<rect x="828" y="193" width="711" height="618" rx="20" fill="#F6F4FF" stroke="#DDD6FE" stroke-width="1.8"/>
+<text x="92" y="239" font-family="Noto Sans CJK SC, sans-serif" font-size="30" font-weight="700" fill="#1D4ED8" text-anchor="start">控制面：准入与调度</text>
+<text x="861" y="239" font-family="Noto Sans CJK SC, sans-serif" font-size="30" font-weight="700" fill="#6D28D9" text-anchor="start">节点执行面：分配与启动</text>
+<rect x="93" y="275" width="638" height="126" rx="18" fill="#EEF6FF" stroke="#3B82F6" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="139" cy="322" r="24" fill="#3B82F6"/>
+<text x="139" y="331" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+<text x="176" y="329" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">Pod / Admission</text>
+<text x="117" y="375" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">创建、校验或修改配置</text>
+<path d="M408 402 L408 426" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="93" y="432" width="638" height="126" rx="18" fill="#F4F0FF" stroke="#8B5CF6" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="139" cy="479" r="24" fill="#8B5CF6"/>
+<text x="139" y="488" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<text x="176" y="486" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">调度组件</text>
+<text x="117" y="532" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">选节点、设备与容量匹配</text>
+<path d="M408 559 L408 583" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="93" y="589" width="638" height="126" rx="18" fill="#EEF6FF" stroke="#3B82F6" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="139" cy="636" r="24" fill="#3B82F6"/>
+<text x="139" y="645" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+<text x="176" y="643" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">Bind 目标节点</text>
+<text x="117" y="689" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">确定调度结果；尚未运行</text>
+<rect x="859" y="275" width="636" height="126" rx="18" fill="#F4F0FF" stroke="#8B5CF6" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="905" cy="322" r="24" fill="#8B5CF6"/>
+<text x="905" y="331" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">4</text>
+<text x="942" y="329" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">目标节点 kubelet</text>
+<text x="883" y="375" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">准备容器、卷与运行环境</text>
+<path d="M1170 402 L1170 426" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="859" y="432" width="636" height="126" rx="18" fill="#EEF6FF" stroke="#3B82F6" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="905" cy="479" r="24" fill="#3B82F6"/>
+<text x="905" y="488" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">5</text>
+<text x="942" y="486" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">Device Plugin Allocate</text>
+<text x="883" y="532" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">读取分配配置；返回设备结果</text>
+<path d="M1170 559 L1170 583" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="859" y="589" width="636" height="126" rx="18" fill="#F4F0FF" stroke="#8B5CF6" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="905" cy="636" r="24" fill="#8B5CF6"/>
+<text x="905" y="645" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">6</text>
+<text x="942" y="643" font-family="Noto Sans CJK SC, sans-serif" font-size="22" font-weight="700" fill="#112A54" text-anchor="start">容器 / 用户态后端</text>
+<text x="883" y="689" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">资源限制、应用初始化与检查</text>
+<path d="M731 590 H791 V338 H859" fill="none" stroke="#5679BC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="738" y="515" width="105" height="35" rx="17" fill="#EEF6FF" stroke="#3B82F6" stroke-width="1.2"/>
+<text x="790.5" y="539" font-family="Noto Sans CJK SC, sans-serif" font-size="19" font-weight="600" fill="#1E40AF" text-anchor="middle">绑定</text>
+<path d="M731 697 H795 V644 H859" fill="none" stroke="#8B5CF6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 7"/>
+<rect x="718" y="727" width="169" height="35" rx="17" fill="#F4F0FF" stroke="#8B5CF6" stroke-width="1.2"/>
+<text x="802.5" y="751" font-family="Noto Sans CJK SC, sans-serif" font-size="19" font-weight="600" fill="#5B21B6" text-anchor="middle">注解 / 元数据</text>
+<path d="M65 867 L1535 867" fill="none" stroke="#DFE7F2" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="70" y="902" font-family="Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#6B7E99" text-anchor="start">实线表示主要推进，虚线表示通过 API 中的 Pod 元数据提供配置；并非调度器直接调用节点 Hook。</text>
+</svg>

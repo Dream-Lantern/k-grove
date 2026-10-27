@@ -1,5 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="990" viewBox="0 0 1200 990" role="img" aria-labelledby="title desc">
-<title id="title">内核入口不等于必然切换任务</title><desc id="desc">0.11时钟在内核CPL耗尽counter时不直接schedule；显式阻塞路径另行调度。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">内核入口不等于必然切换任务</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">保存入口状态之后，只有需要且允许调度时才转到其他执行实体。</tspan></text><rect x="360" y="130" width="480" height="105" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">系统调用 / 异常 / 中断入口</tspan></text><text x="600.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">保存架构要求的返回状态</tspan></text><polygon points="510.0,350 680,410.0 510.0,470 340,410.0" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="510.0" y="417.0" text-anchor="middle" fill="#0369A1" font-size="22" font-weight="600"><tspan x="510.0" dy="0">需要且允许调度？</tspan></text><rect x="50" y="690" width="440" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="270.0" y="727" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="270.0" dy="0">原任务继续内核处理</tspan></text><text x="270.0" y="764" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="270.0" dy="0">无需换任务；随后按入口规则返回</tspan></text><rect x="740" y="350" width="410" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="945.0" y="387" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="945.0" dy="0">调度选择并切换上下文</tspan></text><text x="945.0" y="424" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="945.0" dy="0">保存A续接点，恢复B续接点</tspan></text><rect x="740" y="670" width="410" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="945.0" y="707" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="945.0" dy="0">B沿自己的调用链继续</tspan></text><text x="945.0" y="744" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="945.0" dy="0">A被唤醒后也先变为可运行</tspan></text><path d="M510 235 L510 350" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M340 410 L270 410 L270 690" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="256.5" y="526" width="27.0" height="25" fill="white"/><text x="270" y="545" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="270" dy="0">否</tspan></text><path d="M680 410 L740 410" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="696.5" y="371" width="27.0" height="25" fill="white"/><text x="710" y="390" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="710" dy="0">是</tspan></text><path d="M945 465 L945 670" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="600.0" y="960" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600.0" dy="0">0.11时钟在内核CPL耗尽counter时不直接schedule；显式阻塞路径另行调度。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">上下文切换：异常入口、唤醒与调度</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">保存执行现场不等于立即调度；唤醒任务不保证立即运行</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
+  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
+  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">异常 / 中断入口</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">按体系结构保存必要现场</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
+  <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
+  <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
+  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">处理与可运行状态变化</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">执行内核处理、可能唤醒任务</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
+  <rect fill="#C88323" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
+  <rect fill="#FFF5E7" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">调度器决定是否切换</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">选择运行任务并安排上下文切换</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
+  <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
+  <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
+  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">恢复任务上下文</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">依据选定架构和内核版本恢复运行</text>
+  <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
+  <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
+  <polygon fill="#8996A8" points="430,453 435.0,442.0 425.0,442.0"/>
+  <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">异常专用栈、IRQ 栈与寄存器保存细节需按具体架构 / 版本说明。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">这里是简化教学模型，不代表所有入口路径都会调用 Scheduler。</text>
+</svg>

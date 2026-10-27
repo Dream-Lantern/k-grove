@@ -3,7 +3,7 @@ id: os-file-descriptors-persistence
 title: 第十二章 文件描述符、文件系统与持久化
 description: 本章补充基础概念，串联原笔记中的系统调用、bread 和缺页文件读取。文件名、文件描述符、打开文件描述和实际存储对象属于不同层次，区分这些概念，才能解释 fork、缓存与数据持久化。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 12
 
 路径用于查找对象，open 成功返回进程中的文件描述符编号。描述符引用相应内核打开状态，后者再联系文件系统对象；一个文件可以被多次打开，也可以有多个引用。
 
-![从路径到文件与持久数据](/assets/notes/operating-systems/os-file.svg)
+[![文件持久化写入：write/fsync](/assets/notes/operating-systems/os-file.png)](/assets/notes/operating-systems/os-file.png)
 
 关闭某个描述符只是释放这个引用，不能据此推导其他引用失效、文件立即删除或所有数据落盘。不同系统对象还可能有不同读写行为。
 

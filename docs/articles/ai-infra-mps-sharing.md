@@ -3,7 +3,7 @@ id: ai-infra-mps-sharing
 title: 第 15 章 MPS 与其他共享方式：并发不等于硬隔离
 description: 多个小 CUDA 进程各自无法充分利用整卡时，MPS（Multi-Process Service）可能提高资源复用率。它与 MIG 的目标不同，不能简单判断“哪个一定更快”。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 15
 
 传统 pre-Volta 路径和 Volta 起的执行及地址空间机制不同。MPS 有控制守护进程、server 与 client 运行时等角色，具体提交路径和隔离能力需按架构与实现理解。[MPS Architecture](https://docs.nvidia.com/deploy/mps/latest/architecture.html)
 
-![GPU 共享方案的选择维度](/assets/notes/ai-infra/sharing-choices.svg)
+[![GPU 共享：需求与机制](/assets/notes/ai-infra/sharing-choices.svg)](/assets/notes/ai-infra/sharing-choices.svg)
 
 图中分支只是选择起点，不是固定推荐。例如已划分的 MIG 实例中也可以在支持条件下使用 MPS。
 

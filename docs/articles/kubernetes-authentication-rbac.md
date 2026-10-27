@@ -3,7 +3,7 @@ id: kubernetes-authentication-rbac
 title: 第二十八章 身份认证、ServiceAccount 与 RBAC
 description: 认证识别调用者；授权判断该身份是否能执行请求；适用的准入随后检查写请求。API 权限不等于网络访问权限，ServiceAccount 也不是应用数据库的万能账号。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -39,7 +39,7 @@ ServiceAccount 是命名空间内的工作负载身份资源，其标准身份�
 
 ## 3. Role、ClusterRole 与绑定
 
-![RBAC 主体、规则与绑定范围](/assets/notes/kubernetes/k8s-rbac-binding.svg)
+[![RBAC：主体、规则与授权范围](/assets/notes/kubernetes/k8s-rbac-binding.svg)](/assets/notes/kubernetes/k8s-rbac-binding.svg)
 
 Role 描述命名空间级范围的规则；ClusterRole 可描述集群级资源或可复用规则。RoleBinding 在自己的命名空间内授予相应权限，可以引用 Role，也可以引用 ClusterRole；引用后者不自动变成全局授权。
 

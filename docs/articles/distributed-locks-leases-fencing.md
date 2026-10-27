@@ -3,7 +3,7 @@ id: distributed-locks-leases-fencing
 title: 第十五章 分布式锁、租约与 fencing
 description: 锁需要明确的不只是“谁创建了一个名字”，还包括谁在何时有资格修改哪个资源，以及如何拒绝旧资格发出的写入。协调对象消失，并不会强制停止持有者线程，也不会撤销已经发出的网络请求。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -43,7 +43,7 @@ create 回复丢失时，应按申请身份恢复自己可能已经创建的节�
 
 ## 2. 失去锁为何还能写？
 
-![旧租约持有者恢复后，下游拒绝旧令牌](/assets/notes/distributed-systems/dist-fencing.svg)
+[![最高已见令牌：资源观察新代际后才拒旧](/assets/notes/distributed-systems/dist-fencing.png)](/assets/notes/distributed-systems/dist-fencing.png)
 
 纸面推演：A 获锁后暂停很久；会话过期，B 获得新锁并完成更新；A 恢复，继续执行暂停前的代码。协调服务可能正确地交接了锁，但外部存储仍同时收到 A、B 的请求。
 

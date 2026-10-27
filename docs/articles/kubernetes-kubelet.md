@@ -3,7 +3,7 @@ id: kubernetes-kubelet
 title: 第七章 kubelet：节点协作与健康检查
 description: 调度器为 Pod 选择节点，并不意味着镜像已经下载、卷已经挂载、容器已经启动。调度解决的是“放在哪里”，节点侧还要解决“在这里如何运行”。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -33,7 +33,7 @@ kubelet 是节点上的代理，持续处理分配给本节点的 Pod。它读�
 - “这一个 Pod 放在哪台节点？”通常由调度器决定，不由 kubelet 在全局挑选。
 - “分配到这里的 Pod 为什么还没有启动？”这时才进入 kubelet、运行时、卷与网络的节点侧范围。
 
-![kubelet 与 API、运行时、卷和探针的协作边界](/assets/notes/kubernetes/k8s-kubelet-boundaries.svg)
+[![kubelet：把本节点的期望转成运行状态](/assets/notes/kubernetes/k8s-kubelet-boundaries.svg)](/assets/notes/kubernetes/k8s-kubelet-boundaries.svg)
 
 图中的箭头表示主要请求或调用方向，不是说 API Server 同步调用 kubelet 并等待应用启动完毕。kubelet 会持续观察和协调，网络短暂中断也不能简单等同于“节点上的所有容器立即停止”。
 
@@ -80,7 +80,7 @@ Pod sandbox 是运行时管理 Pod 级运行环境的抽象，不能直接等同
 | liveness  | 应用是否陷入需要终止处理的状态？ | 触发容器终止，再按适用的重启策略处理               |
 | readiness | 当前是否适合承接服务流量？       | 影响就绪和服务后端资格，不直接因这一失败而重启容器 |
 
-![startup、liveness 与 readiness 的作用及区别](/assets/notes/kubernetes/k8s-probe-effects.svg)
+[![三类探针：失败后采取的动作不同](/assets/notes/kubernetes/k8s-probe-effects.svg)](/assets/notes/kubernetes/k8s-probe-effects.svg)
 
 配置了 startup probe 时，在它成功之前，其他两类探针不会开始工作。这样能给慢启动应用留出启动检查阶段，而不是单纯把所有检查的间隔都调得很长。
 

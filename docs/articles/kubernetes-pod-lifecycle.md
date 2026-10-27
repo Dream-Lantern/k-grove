@@ -3,7 +3,7 @@ id: kubernetes-pod-lifecycle
 title: 第十三章 Pod 生命周期、初始化与退出
 description: Pod 是运行一组紧密协作容器的资源单元。普通 Pod 中的容器共享网络环境，并可通过卷共享文件；它们不自动共享各自镜像里的所有文件。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Pod 是运行一组紧密协作容器的资源单元。普通 Pod 中的容器�
 
 Pod 对象有自己的 UID。原 Pod 删除后，即使控制器创建了同名替代对象，也不代表旧 UID 被迁移到另一节点。而在原 Pod 内重启容器，仍属于同一个 Pod 的容器运行过程。
 
-![Pod 从创建到终止与替代的对象边界](/assets/notes/kubernetes/k8s-pod-lifetime.svg)
+[![Pod 生命周期：同一个对象不会迁移到另一节点](/assets/notes/kubernetes/k8s-pod-lifetime.svg)](/assets/notes/kubernetes/k8s-pod-lifetime.svg)
 
 排查时同时记录 Pod 名、UID、节点、创建时间和容器重启次数，可以避免把“新对象接替”误读成“旧进程恢复”。稳定名称在 StatefulSet 中尤其常见，名称稳定与实例不变是不同概念。
 

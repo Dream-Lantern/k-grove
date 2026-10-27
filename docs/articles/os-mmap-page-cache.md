@@ -3,7 +3,7 @@ id: os-mmap-page-cache
 title: 第二十章 mmap、页缓存与 I/O 路径
 description: 文件读取与内存访问并非完全独立。普通文件 I/O 与文件映射可能使用同一页缓存；mmap 先建立虚拟地址关系，后续访问再触发实际的页面处理。本章用于串联原 bread 与缺页章节。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -31,7 +31,7 @@ order: 20
 
 ## 2. mmap 先建立什么？
 
-![映射、访问与后续同步](/assets/notes/operating-systems/os-mmap.svg)
+[![mmap：文件映射与匿名映射分开理解](/assets/notes/operating-systems/os-mmap.svg)](/assets/notes/operating-systems/os-mmap.svg)
 
 mmap 组织一段进程虚拟地址与文件或匿名后备的关系，涉及长度、偏移、保护与标志。调用成功不等于整份文件已读入物理内存；首次访问可能缺页，也可能已有可用缓存。[mmap(2)](https://man7.org/linux/man-pages/man2/mmap.2.html)
 

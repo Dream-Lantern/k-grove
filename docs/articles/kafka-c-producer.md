@@ -3,7 +3,7 @@ id: kafka-c-producer
 title: 第 16 章：C 生产者、回调与背压
 description: 客户端的后台线程负责网络 I/O，因此不能说“不 poll 就完全不发消息”。不过，应用仍需持续调用 poll 或处理相应队列中的事件，让投递报告和其他事件得到处理；否则，应用无法获知结果，消息资源也不能及时回收，最终可能形成背压。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -29,7 +29,7 @@ order: 16
 
 客户端的后台线程负责网络 I/O，因此不能说“不 poll 就完全不发消息”。不过，应用仍需持续调用 poll 或处理相应队列中的事件，让投递报告和其他事件得到处理；否则，应用无法获知结果，消息资源也不能及时回收，最终可能形成背压。
 
-![C 生产者结果与队列](/assets/notes/kafka/kf-cproducer.svg)
+[![librdkafka Producer：COPY、FREE 与借用所有权](/assets/notes/kafka/kf-cproducer.svg)](/assets/notes/kafka/kf-cproducer.svg)
 
 ## 2. 三种 Payload 归属
 

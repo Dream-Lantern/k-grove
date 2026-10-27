@@ -3,7 +3,7 @@ id: redis-cluster-routing
 title: 第二十三章 Cluster、槽路由与重定向
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 23
 
 Sentinel 管理复制组的切换，Redis Cluster 则进一步把键分布到多个主节点，并结合副本提供故障处理。理解 Cluster 的起点不是启动多少进程，而是一个键怎样找到负责它的节点。
 
-![键、槽与节点的关系](/assets/notes/redis/redis-study-cluster-slots.svg)
+[![Redis Cluster：MOVED与ASK](/assets/notes/redis/redis-study-cluster-slots.png)](/assets/notes/redis/redis-study-cluster-slots.png)
 
 ## 1. 16,384 个槽不是一致性哈希环
 

@@ -3,7 +3,7 @@ id: distributed-gfs-consistency
 title: 第十七章 GFS 读写、Record Append 与一致性
 description: 理解 GFS，需要区分顺序控制与大数据传输，而不是认为“所有请求都由主副本完成”。本章分别说明普通写入、Record Append 和失败后的文件区域状态，补充原来仅有标题的一致性笔记。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -31,7 +31,7 @@ order: 17
 
 ## 2. 写入的数据流与控制流
 
-![推送数据与排序控制分离](/assets/notes/distributed-systems/dist-gfs-write.svg)
+[![GFS写入：数据链与控制链](/assets/notes/distributed-systems/dist-gfs-write.png)](/assets/notes/distributed-systems/dist-gfs-write.png)
 
 客户端查询租约 Primary 和适用副本，先把待写数据推送到副本的数据流水线；推送顺序按网络等条件选择，不必先到 Primary。随后客户端向 Primary 发控制请求，Primary 决定 mutation 顺序，其他副本按一致顺序执行。
 

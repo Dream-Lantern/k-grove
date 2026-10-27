@@ -3,7 +3,7 @@ id: kafka-consumer-groups
 title: 第 10 章：消费组、分区分配与并行
 description: 共享 group.id 的传统消费成员参与组协调，分摊共同订阅的分区，并围绕组的恢复位点继续消费。不同 group.id 则分别维护进度，适合统计、搜索等独立处理链。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -29,7 +29,7 @@ order: 10
 
 稳定正常分配中，同组一个分区由一个成员负责；一个成员可以负责多个分区。故障交接和在途任务可能造成重复业务效果，因此“同组不重复分配”不能推出“下游永不出现重复操作”。
 
-![分区与消费组的分配关系](/assets/notes/kafka/kf-group.svg)
+[![Kafka Consumer Groups：独立的消费位点](/assets/notes/kafka/kf-group.svg)](/assets/notes/kafka/kf-group.svg)
 
 ## 2. 分区数形成一层并行上限
 

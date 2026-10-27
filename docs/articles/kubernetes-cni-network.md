@@ -3,7 +3,7 @@ id: kubernetes-cni-network
 title: 第九章 CNI 与 Pod 网络
 description: Pod 有一个 IP、Service 有一个地址、应用能通过服务名访问，它们看起来都与网络有关，实际由不同机制共同完成。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -49,7 +49,7 @@ Overlay 常用额外封装，把逻辑的 Pod 网络承载在底层节点网络�
 
 另一些方案可以采用原生路由，或与云网络地址和网卡能力集成；同一个网络项目也可能支持多种模式。因此，仅写“使用某某 CNI”还不足以说明实际数据路径，还需记录模式、地址管理、路由、MTU 和策略等条件。
 
-![两节点 Pod 网络与数据平面路径](/assets/notes/kubernetes/k8s-cni-two-nodes.svg)
+[![Pod 网络：两节点布局与跨节点路径](/assets/notes/kubernetes/k8s-cni-two-nodes.png)](/assets/notes/kubernetes/k8s-cni-two-nodes.png)
 
 这张图参考原笔记的双节点分组重新绘制，但修正了三个易误解点：
 

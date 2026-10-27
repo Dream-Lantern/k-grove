@@ -3,7 +3,7 @@ id: ai-infra-hami-core
 title: 第 17 章 HAMi-core：显存限额、算力控制和安全边界
 description: “容器里看到 3GB 显存”与“物理卡真的切出了独立 3GB 硬件分区”不同。HAMi-core 典型路径通过用户态 CUDA 调用拦截落实资源控制。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -51,7 +51,7 @@ order: 17
 
 ## 6. 记账设计要覆盖请求大小、预留与回滚
 
-![配额记账的设计验收模型](/assets/notes/ai-infra/hami-allocation-ledger.svg)
+[![HAMi 显存配额：原子检查与预留](/assets/notes/ai-infra/hami-allocation-ledger.svg)](/assets/notes/ai-infra/hami-allocation-ledger.svg)
 
 | 不变量/事件                              | 验收问题                                     |
 | ---------------------------------------- | -------------------------------------------- |

@@ -3,7 +3,7 @@ id: distributed-gfs-architecture
 title: 第十六章 GFS 架构、Master 与元数据恢复
 description: GFS 是理解工作负载如何影响存储设计的经典案例。本章复盘 2003 年论文中的环境：大量普通机器、巨大文件、以顺序读取和追加为主的访问，以及频繁发生的组件故障。它并非所有文件系统的理想模板，也不代表今天 Google 存储产品的全部内部结构。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -31,7 +31,7 @@ GFS 论文中的 chunk 默认 64 MB 是历史设计参数，而不是网络存�
 
 ## 2. Master 在什么路径上？
 
-![Master 元数据与客户端文件数据访问](/assets/notes/distributed-systems/dist-gfs.svg)
+[![GFS架构总览](/assets/notes/distributed-systems/dist-gfs.png)](/assets/notes/distributed-systems/dist-gfs.png)
 
 Master 管理命名空间、文件到 chunk 的映射、租约等控制信息；Chunkserver 保存实际文件块。客户端询问元数据后，直接访问合适的 Chunkserver。Master 不负责把每一个文件字节都转发回客户端。
 

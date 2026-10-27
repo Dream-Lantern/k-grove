@@ -3,7 +3,7 @@ id: kubernetes-statefulset
 title: 第十六章 StatefulSet：身份、顺序与数据
 description: Deployment 中的副本通常可互换；有些应用还需要固定成员名、独立数据目录或受控的成员启动顺序。StatefulSet 提供序号、稳定命名及卷申领等机制。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Deployment 中的副本通常可互换；有些应用还需要固定成员名、
 
 例如一组名为 ledger 的副本，可以采用 ledger-0、ledger-1 等逻辑名字。某个实例替换后能沿用相应身份和存储引用，但替代 Pod 的 UID、节点和 IP 仍可能改变。应用不能把稳定名字误当成永不变动的进程或地址。
 
-![StatefulSet 的成员身份、Service、PVC 与维护关系](/assets/notes/kubernetes/k8s-stateful-identity.svg)
+[![StatefulSet：身份与存储分开管理](/assets/notes/kubernetes/k8s-stateful-identity.svg)](/assets/notes/kubernetes/k8s-stateful-identity.svg)
 
 StatefulSet 不会自动将普通数据库变成多副本数据库。复制协议、选主、仲裁和备份仍需由应用及相应的运维方案实现。
 

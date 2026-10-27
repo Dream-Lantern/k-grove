@@ -1,5 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="920" viewBox="0 0 1120 920" role="img" aria-labelledby="title desc">
-<title id="title">Bloom Filter：查询结果是两种不同结论</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">Bloom Filter：查询结果是两种不同结论</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学示意：多个位置由哈希派生，可能被不同元素共同置位。</tspan></text><rect x="350" y="135" width="420" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="172" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">查询元素</tspan></text><text x="560.0" y="209" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">计算该元素对应的多个位置</tspan></text><rect x="350" y="355" width="420" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="392" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">检查全部相关位</tspan></text><text x="560.0" y="429" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">此前加入元素会将相关位置置为 1</tspan></text><rect x="60" y="650" width="440" height="120" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="280.0" y="687" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="280.0" dy="0">任一位置为 0</tspan></text><text x="280.0" y="724" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="280.0" dy="0">在正确初始化和更新等假设下</tspan><tspan x="280.0" dy="30">可判定该元素未被加入</tspan></text><rect x="620" y="650" width="440" height="120" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="840.0" y="687" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="840.0" dy="0">全部位置为 1</tspan></text><text x="840.0" y="724" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="840.0" dy="0">只表示可能存在</tspan><tspan x="840.0" dy="30">需按业务回到权威数据确认</tspan></text><path d="M560 245 L560 355" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M430 465 L430 555 L280 555 L280 650" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M690 465 L690 555 L840 555 L840 650" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="882" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">有假阳性；基础 Bloom 不能直接安全删除，业务漏写也会破坏使用假设。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Bloom Filter：只检查本次命中的位</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">查询哈希命中索引 1 / 4 / 7；任一命中位为 0 就可判不存在</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#FFFFFF" height="122" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="1120" x="240" y="211"/>
+  <rect fill="#2F6FDB" height="122" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="240" y="211"/>
+  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="262" y="231"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="288" y="262">1</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" x="328" y="255">查询 key → 哈希索引 [1, 4, 7]</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="328" y="292">只看这些位置，不检查位数组的任意 0</text>
+  <polyline fill="none" points="800,333 800,390" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polyline fill="none" points="440.0,390 1154.0,390" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"/>
+  <polyline fill="none" points="440.0,390 440.0,412" stroke="#118E6B" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#118E6B" points="440.0,412 445.0,401.0 435.0,401.0"/>
+  <rect fill="#FFFFFF" height="252" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="700" x="90" y="418"/>
+  <rect fill="#118E6B" height="252" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="90" y="418"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="25" font-weight="bold" x="114" y="462">可能存在</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="114" y="499">bit[1]=1；bit[4]=1；bit[7]=1</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="114" y="530">仍有假阳性可能</text>
+  <polyline fill="none" points="1154.0,390 1154.0,412" stroke="#CB4656" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#CB4656" points="1154.0,412 1159.0,401.0 1149.0,401.0"/>
+  <rect fill="#FFFFFF" height="252" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="700" x="804" y="418"/>
+  <rect fill="#CB4656" height="252" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="804" y="418"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="25" font-weight="bold" x="828" y="462">一定不存在</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="828" y="499">例如 bit[4]=0</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="828" y="530">即使 bit[0]=0 也不能代替命中位</text>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">Bloom Filter 假阳性可能存在；标准实现下无假阴性需满足正确插入与维护条件。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">图中的“不存在”分支必须将索引 1、4 或 7 至少一位画成 0。</text>
+</svg>

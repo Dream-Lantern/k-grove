@@ -3,7 +3,7 @@ id: ai-infra-gpu-containers
 title: 第 9 章 驱动、Toolkit、框架与 GPU 容器
 description: 新驱动通常可以运行面向较旧 CUDA 的应用；同一大版本内的 minor compatibility 也有前提和功能限制，PTX JIT、新 API 等可能提出更高要求。因此，不能只看两个小版本号是否相等。CUDA Compatibility
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -34,7 +34,7 @@ order: 9
 
 ## 2. 容器里应该放什么
 
-![宿主驱动与容器用户态软件边界](/assets/notes/ai-infra/container-boundary.svg)
+[![GPU 容器：宿主与镜像边界](/assets/notes/ai-infra/container-boundary.png)](/assets/notes/ai-infra/container-boundary.png)
 
 通常由宿主提供内核驱动，Container Toolkit 在运行时按配置暴露设备与相应驱动用户态能力；镜像携带应用所需的 CUDA 用户态运行库、数学库和框架。`base`、`runtime`、`devel` 等镜像变体内容不同，不能写成“官方 CUDA 镜像没有 NVIDIA 库”。
 

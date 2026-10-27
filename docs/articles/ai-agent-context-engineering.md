@@ -3,7 +3,7 @@ id: ai-agent-context-engineering
 title: 第2章 上下文工程（Context Engineering）
 description: 有状态 Agent 的关键是：LLM 请求常可视为一次无状态计算，而 Agent 需要显式维护跨轮任务状态。模型不会自动继承你没有再次提供或通过 API 状态机制引用的信息。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -181,9 +181,9 @@ except Exception as e:
 
 在 `context-compression` 先运行 `python experiment.py --list-strategies`，再选 `-s context_aware` 或 `-s windowed` 做单策略验证。批量前固定搜索快照；在线搜索随时间变化，会破坏对照。缓存实验还应控制冷/热请求、工具顺序、时间戳位置和服务 TTL；不支持缓存统计的接口应记“不可观测”，不要填 0 当成真实未命中。
 
-![02-context](/assets/notes/ai-agent/02-context.svg)
+[![上下文压缩：三路材料汇入下一请求](/assets/notes/ai-agent/02-context.svg)](/assets/notes/ai-agent/02-context.svg)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/02-context.svg) · [可编辑 DOT](/assets/notes/ai-agent/02-context.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/02-context.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/02-context.dot)供对照，不是本版配图的可编辑源文件。
 
 **指标口径**：`CompressedContent.original_length` 与 `compressed_length` 是字符长度；token 计数和提供商计费用量要另外核对。压缩比、模型上下文长度、实际计费 token 是三个不同量。
 

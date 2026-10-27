@@ -3,7 +3,7 @@ id: kafka-c-rebalance-shutdown
 title: 第 18 章：C 重平衡回调与优雅关闭
 description: 客户端可以自动处理适用分区分配；一旦注册自定义 rebalance callback，应用就必须按所选协议履行分配和撤销契约，同时完成自己的业务交接。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -52,7 +52,7 @@ order: 18
 
 ## 4. 优雅关闭不是一个 destroy
 
-![关闭与对象生命周期](/assets/notes/kafka/kf-close.svg)
+[![librdkafka 2.8：异步 Consumer 关闭](/assets/notes/kafka/kf-close.svg)](/assets/notes/kafka/kf-close.svg)
 
 Producer 停止新发送，服务回调并执行有界 flush，记录仍未完成和最终失败的消息。Consumer 停止新业务派发，处理安全前沿，调用 `rd_kafka_consumer_close()` 并检查结果，随后释放客户端。显式 close 使生命周期更清楚；库在适用 destroy 路径中也可能触发 close 和回调，因此上下文不能提前释放。
 

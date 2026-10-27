@@ -1,5 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="840" viewBox="0 0 1200 840" role="img" aria-labelledby="title desc">
-<title id="title">异构计算：从业务到设备</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">异构计算：从业务到设备</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">层次表示职责；数学库可以直接使用 Driver API。</tspan></text><rect x="220" y="125" width="760" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="162" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">应用与模型服务</tspan></text><text x="600.0" y="199" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">请求、数据准备、结果与质量</tspan></text><rect x="220" y="290" width="760" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="327" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">框架与加速库</tspan></text><text x="600.0" y="364" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">PyTorch / cuBLAS 等</tspan></text><path d="M600.0 240 L600.0 290" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="220" y="455" width="760" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="492" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">CUDA Runtime / Driver API</tspan></text><text x="600.0" y="529" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">内存、执行环境与工作提交</tspan></text><path d="M600.0 405 L600.0 455" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="220" y="620" width="760" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="657" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">驱动与硬件</tspan></text><text x="600.0" y="694" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">CPU、互连、GPU 及内存</tspan></text><path d="M600.0 570 L600.0 620" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="600" y="815" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600" dy="0">不是每次调用都必须逐层经过所有组件。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">异构计算：软件栈与跨层调用</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">分层用于理解职责，不表示所有调用必须逐层经过所有组件</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#EEF5FF" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="470.6666666666667" x="74.0" y="205"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="104.0" y="253">应用与框架</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="104.0" y="294">高层算子与服务</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="426.6666666666667" x="96.0" y="317"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="356">应用</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="386">训练 / 推理工作负载</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="426.6666666666667" x="96.0" y="436"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="475">框架</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="505">PyTorch / 分布式算子</text>
+  <rect fill="#F3EFFF" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="470.6666666666667" x="564.6666666666667" y="205"/>
+  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="594.6666666666667" y="253">编译与运行时</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="594.6666666666667" y="294">执行模型与调度</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="426.6666666666667" x="586.6666666666667" y="317"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="607.6666666666667" y="356">编译器</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="607.6666666666667" y="386">Kernel 编译 / 优化</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="426.6666666666667" x="586.6666666666667" y="436"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="607.6666666666667" y="475">Runtime</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="607.6666666666667" y="505">内存、流、设备与库接口</text>
+  <rect fill="#E9F8F0" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="470.6666666666667" x="1055.3333333333335" y="205"/>
+  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="1085.3333333333335" y="253">设备与系统</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="1085.3333333333335" y="294">驱动、通信与硬件</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="426.6666666666667" x="1077.3333333333335" y="317"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="1098.3333333333335" y="356">Driver</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="1098.3333333333335" y="386">设备管理与执行接口</text>
+  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="426.6666666666667" x="1077.3333333333335" y="436"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="1098.3333333333335" y="475">硬件</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="1098.3333333333335" y="505">GPU / DCU / 网络 / 存储</text>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">实际调用路径可跨层或走专用库；不要据分层图推导固定同步调用链。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">完整内容均限制在画布内部，不覆盖页脚和相邻模块。</text>
+</svg>

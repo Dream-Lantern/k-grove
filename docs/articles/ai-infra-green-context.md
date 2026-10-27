@@ -3,7 +3,7 @@ id: ai-infra-green-context
 title: 第 5 章 Context、Module 与 Green Context 的边界
 description: Context 可以理解为 CUDA 资源和状态的管理环境。一个进程可以使用多张设备，也可以管理多个 context；因此需要明确对象归属和生命周期。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ Context 可以理解为 CUDA 资源和状态的管理环境。一个进程可以
 
 Runtime API 常见前缀为 `cuda`，负责较多隐式管理；Driver API 常见前缀为 `cu`，提供更明确的 context 和 module 操作。Runtime 通常使用设备的 primary context。混用两套 API 时，应先明确当前线程使用哪个 context，不要每个组件都自行创建、销毁一套互不知情的环境。[Driver 与 Runtime 的差异](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/driver-vs-runtime-api.html)
 
-![Context 内对象与线程当前状态](/assets/notes/ai-infra/context-ownership.svg)
+[![Context：所有权与当前线程](/assets/notes/ai-infra/context-ownership.png)](/assets/notes/ai-infra/context-ownership.png)
 
 `cuCtxSetCurrent()` 设置的是调用它的宿主线程的当前 context，不是一个“整个 GPU 当前只能选中谁”的全局开关。context 所属、宿主线程当前状态、硬件此刻执行哪个任务，是三个不同问题。[Context API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__CTX.html)
 

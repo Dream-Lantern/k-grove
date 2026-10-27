@@ -3,7 +3,7 @@ id: ai-infra-mixture-of-experts
 title: 第 21 章 MoE：路由、专家与稀疏激活
 description: MoE（Mixture of Experts，混合专家）在不同模型中有不同结构。本章以 Transformer 中常见的稀疏专家 FFN 为例：对每个 token 选择部分专家计算，而不是每次使用全部专家。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ MoE（Mixture of Experts，混合专家）在不同模型中有不同结构。�
 
 专家通常输出隐藏向量，路由器从训练中学习分配；并不保证每个专家对应人能命名的主题，专家 FFN 也不必天然比普通 FFN 简单。
 
-![MoE 的选择、分发和汇聚](/assets/notes/ai-infra/moe-routing.svg)
+[![MoE：按 Token 路由至部分专家](/assets/notes/ai-infra/moe-routing.svg)](/assets/notes/ai-infra/moe-routing.svg)
 
 图中仅展示两个被选专家和一个未选专家，数字不对应某个产品配置。实际可能存在共享专家、额外路由规则或不同 top-k。
 

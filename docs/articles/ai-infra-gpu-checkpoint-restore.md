@@ -3,7 +3,7 @@ id: ai-infra-gpu-checkpoint-restore
 title: GPU-CR / GCR：GPU Checkpoint-Restore 论文与源码学习笔记
 description: GPU Checkpoint/Restore (C/R) 要恢复的并不只是显存字节，还包括两个互相关联的状态：
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -76,7 +76,7 @@ GPU Checkpoint/Restore (C/R) 要恢复的并不只是显存字节，还包括两
 
 **VMM 生命周期：**
 
-![VMM 生命周期：地址不变，物理分配可替换](/assets/notes/ai-infra/gcr-vmm-lifecycle.svg)
+[![GPU-CR VMM显存生命周期与业务安全点](/assets/notes/ai-infra/gcr-vmm-lifecycle.png)](/assets/notes/ai-infra/gcr-vmm-lifecycle.png)
 
 ```text
 分配： Reserve(VA) → Create(Physical) → Map(VA, Physical) → SetAccess
@@ -104,7 +104,7 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 
 ## 2. 系统架构：把两种 Checkpoint 能力组合起来
 
-![GPU-CR 信号驱动架构：数据面、控制面与进程边界](/assets/notes/ai-infra/gcr-architecture.svg)
+[![GPU-CR：数据路径与控制工具边界](/assets/notes/ai-infra/gcr-architecture.svg)](/assets/notes/ai-infra/gcr-architecture.svg)
 
 图中协调器负责发指令与等待阶段完成，**实际的 IPC teardown/rebuild 在 Worker 内的 Runtime 执行**。GPU 数据经 staging 双缓冲进入快照映射区；控制消息共享区不是大容量数据快照。图只画 NVIDIA 信号路径，避免把不同后端拼成一条调用链。
 
@@ -137,9 +137,9 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 
 ## 3. 单卡 Checkpoint/Restore：数据先搬、控制后冻
 
-![单卡 C/R 时序：安全点、数据恢复与业务放行](/assets/notes/ai-infra/gcr-single-sequence.svg)
+[![GPU-CR单卡Checkpoint/Restore时序图](/assets/notes/ai-infra/gcr-single-sequence.png)](/assets/notes/ai-infra/gcr-single-sequence.png)
 
-图中的“业务安全点/停止提交”和“验收后放行”是**正确使用所需的外部协作条件**，不是宣称源码已经自动实现了这些屏障。实线表示源码中的主干顺序，虚线表示补充的工程条件。
+图中的“业务安全点/停止提交”和“验收后放行”是**正确使用所需的外部协作条件**，不是宣称源码已经自动实现了这些屏障。配图区分数据面、驱动控制与外部验收；完成阶段通知不代表数据或业务验收通过。
 
 ### 3.1 Checkpoint
 
@@ -212,7 +212,7 @@ RUNNING <--unlock-- LOCKED <--restore----- CHECKPOINTED
 
 ### 4.3 多卡 Checkpoint：先拆 IPC，再 dump，再冻结
 
-![多 Rank 阶段屏障：阶段完成不等于业务验收](/assets/notes/ai-infra/gcr-multirank-phases.svg)
+[![GPU-CR：多 Rank 协同阶段](/assets/notes/ai-infra/gcr-multirank-phases.svg)](/assets/notes/ai-infra/gcr-multirank-phases.svg)
 
 ```text
 Coordinator: broadcast message/signals to ALL ranks → wait ALL ranks finish
@@ -281,7 +281,7 @@ Application calls ncclCommCheckpointPrepare
 
 > **[论文设计，不等于本提交已实现]** 对本文所列公开源码入口的静态核查，未确认完整的 Dirty Template 生成与 CPU Shadow Execution 链路；不能据此宣称“编译该仓库即可开启论文全部增量能力”，也不将未发现当成对所有分支/后续版本的否定。
 
-![论文增量机制：离线模板、在线脏区与保守回退](/assets/notes/ai-infra/gcr-dirty-template.svg)
+[![论文增量机制：计算写到哪里，而非重跑数值计算](/assets/notes/ai-infra/gcr-dirty-template.png)](/assets/notes/ai-infra/gcr-dirty-template.png)
 
 ### 6.1 Full C/R 的问题
 
@@ -478,4 +478,3 @@ Restore wall time ≈ driver CUDA-control restore
 - [Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)、[signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html)：FD 传递与异步信号安全。
 
 **图源**：[架构](/assets/notes/ai-infra/gcr-architecture.drawio)、[VMM 生命周期](/assets/notes/ai-infra/gcr-vmm-lifecycle.drawio)、[单卡时序](/assets/notes/ai-infra/gcr-single-sequence.drawio)、[多 Rank 阶段](/assets/notes/ai-infra/gcr-multirank-phases.drawio)、[增量机制](/assets/notes/ai-infra/gcr-dirty-template.drawio)。同名 `.mmd` 保留逻辑图源，`.svg` 为正文图；图表示机制/主干流程，不冒充完整源码调用图。
-

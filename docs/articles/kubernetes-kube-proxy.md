@@ -3,7 +3,7 @@ id: kubernetes-kube-proxy
 title: 第十章 kube-proxy 与 Service 转发
 description: 工作负载的 Pod 会替换，Pod 地址也可能变化。客户端若把每个实例的地址写死，就需要随时追踪这些变化。Service 通过逻辑入口与后端集合的配合，让客户端不必把某个临时 Pod 当成永久地址。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -43,7 +43,7 @@ kube-proxy 不负责创建应用副本，也不是由它判断应用所有业务
 
 ## 3. 控制路径与数据路径要分开
 
-![Service 状态更新、节点规则与业务流量的区别](/assets/notes/kubernetes/k8s-service-control-data.svg)
+[![Service：规则更新与业务流量是两条路径](/assets/notes/kubernetes/k8s-service-control-data.svg)](/assets/notes/kubernetes/k8s-service-control-data.svg)
 
 上半部分是控制路径：API 中的状态变化被观察到后，节点规则随之协调。下半部分是业务路径：客户端连接 Service 地址与端口，由适用的数据平面选取后端，再沿 Pod 网络到达目标端口。
 

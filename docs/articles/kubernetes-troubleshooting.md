@@ -3,7 +3,7 @@ id: kubernetes-troubleshooting
 title: 第三十章 应用、网络与存储分层排障
 description: “服务挂了”还不足以开始修复。先记录时间范围、影响用户、环境、命名空间、工作负载、相关 Pod UID 与最近变更。明确是提交失败、启动失败、间歇错误、延迟升高还是数据不一致。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: troubleshooting
 tags:
@@ -27,7 +27,7 @@ order: 30
 
 故障范围同样是重要线索：影响的是一个副本、一台节点、一个命名空间，还是全局？只有外部访问失败，还是集群内也失败？对比这些情况，有助于确定接下来检查哪一层。
 
-![API、调度、节点准备、应用和连接的分层排查](/assets/notes/kubernetes/k8s-troubleshooting-map.svg)
+[![排障路径：先找停在哪一层](/assets/notes/kubernetes/k8s-troubleshooting-map.svg)](/assets/notes/kubernetes/k8s-troubleshooting-map.svg)
 
 ## 2. API 请求失败
 

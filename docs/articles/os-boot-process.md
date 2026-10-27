@@ -3,7 +3,7 @@ id: os-boot-process
 title: 第二章 从引导到首个进程
 description: “装入内核后跳到 main”只描述了启动过程的一部分。执行环境、地址解释、异常入口、设备和首个用户任务，都需要按依赖顺序准备。本章复盘 Linux 0.11 的 BIOS/x86 启动路线，不作为现代 UEFI 设备的操作说明。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 2
 
 固件与引导程序提供最初的执行条件，后续代码逐步建立内核预期的环境。原笔记中的文件名应为 bootsect.s，不是 bootset.s；setup.s、head.s 和 init/main.c 承担不同阶段工作。
 
-![Linux 0.11 的主要启动阶段](/assets/notes/operating-systems/os-boot.svg)
+[![Linux 0.11：从 bootsect 到 main](/assets/notes/operating-systems/os-boot.svg)](/assets/notes/operating-systems/os-boot.svg)
 
 这些阶段不能任意交换：在相关表和地址环境建立之前，普通 C 代码不能假定栈、地址映射和异常处理已经可用。
 

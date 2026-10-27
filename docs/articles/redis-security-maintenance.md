@@ -3,7 +3,7 @@ id: redis-security-maintenance
 title: 第三十一章 安全、备份、多实例与维护边界
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -51,7 +51,7 @@ CPU、内存、磁盘、网络和故障域仍然共享。多个实例 maxmemory 
 
 ## 4. 备份验收必须包含隔离恢复
 
-![从文件到恢复能力](/assets/notes/redis/redis-study-backup.svg)
+[![备份验收：文件存在之后还要验证恢复](/assets/notes/redis/redis-study-backup.png)](/assets/notes/redis/redis-study-backup.png)
 
 备份清单要说明版本、数据文件集合、配置、函数或扩展依赖、加密及访问权限。多部分 AOF 应取得一致的完整文件集，模块数据还要核对兼容版本。
 

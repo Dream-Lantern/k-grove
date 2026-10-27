@@ -3,7 +3,7 @@ id: ai-agent-continuous-improvement
 title: 第8章 Agent 的持续进化（Continual Improvement）
 description: 原书强调：一次成功可能只是偶然，错误经验也可能来自提示注入。Agent 完成任务后不会自动修改模型参数。系统必须主动完成轨迹采集 → 评价 → 跨轨迹归纳 → 候选更新 → 回归验证 → 发布/回滚，才谈得上持续进化。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -18,7 +18,6 @@ order: 8
 ---
 
 # 第8章 Agent 的持续进化（Continual Improvement）
-
 
 ## 8.1 保存经历不等于“学会”
 
@@ -83,9 +82,9 @@ contract = diagnosis.get("change_contract", {})
 
 `release_manifest()` 还会保存稳定版本与候选版本的 Hash、来源轨迹、预期修复、潜在回归和回滚版本。这里的 `release_to_canary` 只表示决定进入影子/灰度候选阶段，并不意味着已替换生产代码；正式部署仍由外层发布系统执行。
 
-![08-evolution](/assets/notes/ai-agent/08-evolution.svg)
+[![Agent 持续进化：门禁、审批与发布](/assets/notes/ai-agent/08-evolution.svg)](/assets/notes/ai-agent/08-evolution.svg)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/08-evolution.svg) · [可编辑 DOT](/assets/notes/ai-agent/08-evolution.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/08-evolution.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/08-evolution.dot)供对照，不是本版配图的可编辑源文件。
 
 ### 推荐三个反例
 

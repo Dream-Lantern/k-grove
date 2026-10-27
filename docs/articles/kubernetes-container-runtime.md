@@ -3,7 +3,7 @@ id: kubernetes-container-runtime
 title: 第八章 容器运行时与 containerd 工具边界
 description: 启动一个容器，不只是运行一个镜像名字。还涉及获取镜像内容、准备根文件系统、设置隔离和资源约束、创建进程，以及记录退出结果。把所有实现都写进 kubelet，会使 Kubernetes 与具体运行时紧密耦合。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -36,7 +36,7 @@ order: 8
 | CNI  | 网络配置与插件调用的约定                        | 不是所有数据包都经过的代理服务               |
 | CSI  | 存储能力与插件集成接口                          | 不是 CRI 的另一种名字                        |
 
-![kubelet、containerd、OCI 与 CNI 的接口分工](/assets/notes/kubernetes/k8s-runtime-interfaces.svg)
+[![运行时接口：CRI、OCI、CNI 的分工](/assets/notes/kubernetes/k8s-runtime-interfaces.svg)](/assets/notes/kubernetes/k8s-runtime-interfaces.svg)
 
 这张图以 containerd 的常见 Linux 集成为例。containerd 的 CRI 插件接收 kubelet 请求，借助运行时内部机制管理镜像、容器与 Pod 网络；这部分关系可参照 [containerd 1.7 分支的 CRI 架构说明](https://raw.githubusercontent.com/containerd/containerd/release/1.7/docs/cri/architecture.md)。
 
@@ -57,7 +57,7 @@ Pod 是 Kubernetes 的资源抽象，运行时需要相应的 Pod 级运行环�
 
 初学时最容易把“存在一条记录”理解成“已经有进程在运行”。
 
-![containerd 的镜像、容器元数据和 Task 对象关系](/assets/notes/kubernetes/k8s-containerd-objects.svg)
+[![containerd：镜像、容器记录与任务不是同一个对象](/assets/notes/kubernetes/k8s-containerd-objects.png)](/assets/notes/kubernetes/k8s-containerd-objects.png)
 
 可以按三个层级观察：
 

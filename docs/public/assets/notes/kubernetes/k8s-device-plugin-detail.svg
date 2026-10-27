@@ -1,5 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="955" viewBox="0 0 1120 955" role="img" aria-labelledby="title desc">
-<title id="title">Device Plugin：发现、调度、分配分属不同环节</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">Device Plugin：发现、调度、分配分属不同环节</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">蓝色系逻辑示意；具体版本、条件与异常分支以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">插件向 kubelet 注册</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">节点本地接口；插件提供自己的服务端点</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">ListAndWatch 提供设备健康列表</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">流式更新不是每次定时重新调用</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">kubelet 上报 Node 扩展资源</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">Scheduler 按适用资源请求选择节点</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">节点侧选择并调用 Allocate</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">返回设备访问所需配置；不是全局调度决策</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="730" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="767" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">运行与释放的后续管理</tspan></text><text x="560.0" y="804" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">使用量、健康、容量与插件特定清理不能混为一谈</tspan></text><path d="M560 690 L560 730" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="917" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">经典接口没有通用 Deallocate RPC；PodResources 不是 GPU 利用率采集接口。</tspan></text></g></svg>
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+  <defs/>
+  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
+  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Device Plugin：调度与分配边界</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">设备健康发现、节点选择、具体 Device ID 分配不是同一个动作</text>
+  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
+  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
+  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">插件注册到 kubelet</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">提供服务端点；进入节点设备管理</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
+  <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
+  <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
+  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">ListAndWatch（完整 API 名）</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">持续推送设备列表及健康变化</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
+  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
+  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
+  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">Node 资源 → Scheduler</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">根据扩展资源数量等条件选择节点</text>
+  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
+  <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
+  <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
+  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">kubelet 选择并 Allocate</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">节点设备管理器选 Device ID，调用插件</text>
+  <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
+  <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
+  <polygon fill="#8996A8" points="430,453 435.0,442.0 425.0,442.0"/>
+  <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
+  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
+  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">Allocate 提供设备访问配置，不等于全局节点调度。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">经典 Device Plugin API 没有通用 Deallocate RPC；PodResources 不等于 GPU 利用率。</text>
+</svg>

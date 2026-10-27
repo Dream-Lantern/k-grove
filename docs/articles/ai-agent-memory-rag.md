@@ -3,7 +3,7 @@ id: ai-agent-memory-rag
 title: 第3章 用户记忆、知识库与 RAG
 description: RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回答前检索有依据的外部信息的流程，不等于存储系统本身；既可以连接知识库，也可以服务于个人记忆。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -137,9 +137,9 @@ return sorted(fused.items(), key=lambda kv: kv[1], reverse=True)
 
 每条查询保留两路候选 ID、融合后排名、重排后排名与相关标注。再故意让正确文档不进入候选池，验证“重排不能补回漏召回”。首次加载 Dense/Rerank 仍可能下载模型；无 API Key 不等于无需联网或无需模型资源。单进程 CLI 和微服务路径的默认模型可能不同，应以实际参数为准。
 
-![03-rag](/assets/notes/ai-agent/03-rag.svg)
+[![RAG：混合检索示例](/assets/notes/ai-agent/03-rag.svg)](/assets/notes/ai-agent/03-rag.svg)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/03-rag.svg) · [可编辑 DOT](/assets/notes/ai-agent/03-rag.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/03-rag.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/03-rag.dot)供对照，不是本版配图的可编辑源文件。
 
 若要继续研究记忆，下一步看 `chapter3/user-memory` 的记忆表示，再用当前仓库第7章的评估器比较相同问题。表示复杂度上升是否有收益，需要通过召回与最终答案分开验证。
 

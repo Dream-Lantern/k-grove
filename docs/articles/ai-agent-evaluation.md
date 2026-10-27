@@ -3,7 +3,7 @@ id: ai-agent-evaluation
 title: 第6章 Agent 的评估与可观测性
 description: 不只回答“现在得几分”，更重要的是新模型、新提示词、新工具或架构变更是否真正改善产品。需要四个彼此相连的要素：
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -163,9 +163,9 @@ def retrieval_metrics(retrieved: Sequence[Chunk], relevant_ids: Sequence[str]) -
 
 先用小规模矩阵比较记忆卡片、RAG、卡片+RAG，再固定主模型，分别调整 Embedding 或 Reranker。每次都记录配置、任务 ID、实际检索片段、最终回答、评判结果、API 错误和原生币种成本。不能同时切换所有模型后，再将收益归因于 Rerank。
 
-![06-eval](/assets/notes/ai-agent/06-eval.svg)
+[![不可冒充完整比较](/assets/notes/ai-agent/06-eval.png)](/assets/notes/ai-agent/06-eval.png)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/06-eval.svg) · [可编辑 DOT](/assets/notes/ai-agent/06-eval.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 PNG](/assets/notes/ai-agent/06-eval.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/06-eval.dot)供对照，不是本版配图的可编辑源文件。
 
 读码重点：`RunRecord` 保存一次运行，`completion_assessment()` 检查预期单元是否齐全，`pricing_coverage()` 检查是否有未计价用量，`aggregate()` 才做汇总。存在 API 错误、缺失任务或未计价用量时，必须显式报告；零费用和未知费用不是一回事。
 

@@ -3,7 +3,7 @@ id: ai-infra-kubernetes-hami
 title: 第 16 章 Kubernetes GPU 资源与 HAMi 调度链
 description: Kubernetes 把 Pod 放到某个节点，不等于它天然理解每张 GPU 的剩余显存、拓扑和百分比配额。GPU 能力来自设备插件、调度扩展及运行时等组件的配合。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Kubernetes 把 Pod 放到某个节点，不等于它天然理解每张 GPU 的�
 
 ## 2. HAMi 把调度与容器内控制分开
 
-![HAMi 主要协作链](/assets/notes/ai-infra/hami-scheduling.svg)
+[![HAMi：调度、分配与就绪的边界](/assets/notes/ai-infra/hami-scheduling.svg)](/assets/notes/ai-infra/hami-scheduling.svg)
 
 图示为典型架构，不锁定某个 commit 的函数顺序。Webhook 修改有关 Pod 配置；调度组件结合节点/设备状态选择位置；kubelet 与设备插件准备设备及注入配置；容器内控制层落实对应策略。Pod 已绑定节点，不意味着镜像、设备配置和业务启动都成功。
 
@@ -57,7 +57,7 @@ binpack 倾向于集中资源，便于保留空卡；spread 倾向于分散资�
 
 ## 6. 调度控制面与节点执行面分开读
 
-![HAMi 控制与节点执行双平面](/assets/notes/ai-infra/hami-control-node.svg)
+[![HAMi：控制面与节点执行面](/assets/notes/ai-infra/hami-control-node.svg)](/assets/notes/ai-infra/hami-control-node.svg)
 
 | 阶段                | 应检查的证据                   | 成功后仍未证明         |
 | ------------------- | ------------------------------ | ---------------------- |

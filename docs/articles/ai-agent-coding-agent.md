@@ -3,7 +3,7 @@ id: ai-agent-coding-agent
 title: 第5章 Coding Agent 与代码生成的元能力
 description: Coding Agent 在可写工作区内反复执行：搜索理解 → 修改文件 → 静态检查 → 运行测试 → 分析反馈 → 修复。执行环境能提供模型此前不知道的新事实，因此它比单次“生成代码”更容易形成反馈闭环。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 5
 
 Coding Agent 在可写工作区内反复执行：**搜索理解 → 修改文件 → 静态检查 → 运行测试 → 分析反馈 → 修复**。执行环境能提供模型此前不知道的新事实，因此它比单次“生成代码”更容易形成反馈闭环。
 
-[本章修订流程图](/assets/notes/ai-agent/05-coding.svg)
+[本章修订流程图](/assets/notes/ai-agent/05-coding.png)
 
 ### 搜索工具分工
 
@@ -114,9 +114,9 @@ class ToolResult:
 
 给定一个小型仓库和固定的失败测试，比较“只生成补丁”与“读取工具错误后迭代”两组。再加入三类负例：`old_string` 不匹配、修改引入语法错误、测试运行器缺少依赖。分别记录修复成功率、额外回归、工具调用数和环境故障，避免将依赖未安装误判为模型无法修复。
 
-![05-coding](/assets/notes/ai-agent/05-coding.svg)
+[![Coding Agent：完成出口与再次迭代](/assets/notes/ai-agent/05-coding.png)](/assets/notes/ai-agent/05-coding.png)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/05-coding.svg) · [可编辑 DOT](/assets/notes/ai-agent/05-coding.dot)。
+配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 PNG](/assets/notes/ai-agent/05-coding.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/05-coding.dot)供对照，不是本版配图的可编辑源文件。
 
 **值得补到系统设计中的状态**：工作目录、已读文件、工具计数、最近错误、剩余预算、待验证改动。它们应来自运行时和文件状态，不能只靠模型在自然语言里维护。
 

@@ -3,7 +3,7 @@ id: kafka-c-consumer
 title: 第 17 章：C 消费者、处理完成与提交
 description: 先配置 group.id、创建消费者并设置相应的消费队列，再订阅 Topic。Subscribe 返回并不表示消费组已经完成协调，也不表示每个 Topic 都已获授权；错误还可能通过后续事件报告。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -29,7 +29,7 @@ order: 17
 
 持续调用 `rd_kafka_consumer_poll()`，既读取业务消息，也服务适用客户端事件。返回 NULL 表示这次等待没有取得消息，不是 Topic 已永久结束。非 NULL 也可能表示错误，先检查 err，不能直接解析 Payload。
 
-![处理、位点与对象释放](/assets/notes/kafka/kf-cconsumer.svg)
+[![C Consumer：连续完成前沿与 Offset Store](/assets/notes/kafka/kf-cconsumer.svg)](/assets/notes/kafka/kf-cconsumer.svg)
 
 ## 2. 一条易于推理的串行路线
 

@@ -3,7 +3,7 @@ id: distributed-aurora
 title: 第二十三章 Aurora 计算存储分离与日志下沉
 description: 本章复盘 Aurora 2017 年论文，不将其中的设计推广到所有 RDS、Aurora DSQL 或当前全部云数据库。重点是理解如何将事务计算与分布式存储解耦，以及如何减少复制数据页造成的网络写放大。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -31,7 +31,7 @@ order: 23
 
 ## 2. 存储副本不是数据库写实例
 
-![三个 AZ 的保护组与 redo 路径](/assets/notes/distributed-systems/dist-aurora.svg)
+[![Aurora：计算与持久化存储分离](/assets/notes/distributed-systems/dist-aurora.svg)](/assets/notes/distributed-systems/dist-aurora.svg)
 
 论文以保护组为粒度在三个 AZ 放置六份存储副本，每 AZ 两份；数据库计算实例下发 redo，并按相应持久化边界判断写入。图里的六份不是六个独立接受业务 SQL 写入的主库。[Aurora 2017 论文 §2—3](https://cdn.amazon.science/dc/2b/4ef2b89649f9a393d37d3e042f4e/amazon-aurora-design-considerations-for-high-throughput-cloud-native-relational-databases.pdf)
 

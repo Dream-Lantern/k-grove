@@ -3,7 +3,7 @@ id: ai-infra-training-inference-finetuning
 title: 第 18 章 训练、推理与微调：参数究竟何时更新
 description: 同一份模型代码可以用于训练和推理，但二者的工作目标、显存组成和评价方式不同。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 18
 
 读取 batch → 前向计算 → 计算损失 → 反向求梯度 → 优化器更新参数。训练通过数据和目标函数学习参数，不要求所有任务都使用人工标签；自监督学习可以由数据自身构造训练目标。
 
-![训练、验证与部署的分工](/assets/notes/ai-infra/training-cycle.svg)
+[![训练、验证、测试：数据职责与参数更新](/assets/notes/ai-infra/training-cycle.svg)](/assets/notes/ai-infra/training-cycle.svg)
 
 训练集用于学习参数，验证集用于超参数和模型选择，测试集应作为独立的最终评估，避免反复查看测试结果来调参。数据切分还应防止重复样本、同一用户或时间穿越造成泄漏。[PyTorch 优化参数教程](https://docs.pytorch.org/tutorials/beginner/basics/optimization_tutorial.html)
 

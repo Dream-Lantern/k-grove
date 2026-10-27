@@ -3,7 +3,7 @@ id: distributed-chain-replication-craq
 title: 第十八章 Chain Replication 与 CRAQ 读扩展
 description: 链复制将写入沿有序链传播，CRAQ 则利用版本状态将读取分散到链上。这里的“任意副本可读”以 clean/dirty 规则和有效链配置为前提，并非忽略写入进度、直接返回本地最新值。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -31,7 +31,7 @@ Head 接收写入并向后继传递，逐步到达 Tail；基础协议将到达 
 
 ## 2. CRAQ 怎样安全地分散读？
 
-![写入、clean/dirty 状态与读取路径](/assets/notes/distributed-systems/dist-craq.svg)
+[![CRAQ：写传播与读选择是两条不同路径](/assets/notes/distributed-systems/dist-craq.png)](/assets/notes/distributed-systems/dist-craq.png)
 
 节点可保留对象的多个版本。新写到达非 Tail 节点时先标 dirty；到达 Tail 后提交并产生反向确认，节点收到确认将对应版本标 clean。
 

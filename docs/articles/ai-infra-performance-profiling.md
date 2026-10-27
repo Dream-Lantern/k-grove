@@ -3,7 +3,7 @@ id: ai-infra-performance-profiling
 title: 第 12 章 性能分析：先看时间线，再看 Kernel
 description: GPU 利用率很高，模型服务却仍然缓慢时，应先定位耗时环节，再选择测量工具。本章区分“系统时间线”“kernel 内部效率”和“长期监控”，避免同时启用所有 profiler。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -30,7 +30,7 @@ GPU 利用率很高，模型服务却仍然缓慢时，应先定位耗时环节�
 | NVML/DCGM      | 长期状态与资源是否异常         | 设备、实体和采样指标     |
 | 业务压测       | 用户实际得到了什么             | 延迟分位数、吞吐和错误率 |
 
-![性能分析的证据分支](/assets/notes/ai-infra/profiling-decision.svg)
+[![性能定位：按证据选择工具](/assets/notes/ai-infra/profiling-decision.svg)](/assets/notes/ai-infra/profiling-decision.svg)
 
 ## 2. 先做一份有限窗口的时间线
 

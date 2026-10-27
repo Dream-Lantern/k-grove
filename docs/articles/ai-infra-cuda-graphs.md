@@ -3,7 +3,7 @@ id: ai-infra-cuda-graphs
 title: 第 7 章 CUDA Graphs：定义、实例化、更新与回放
 description: 笔记这一主题应命名为 CUDA Graphs。本章讨论把 CUDA 工作及其依赖组织为可重复提交的执行图。cuGraph 官方说明
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 7
 
 大量短 kernel 每次由 CPU 单独提交时，主机开销可能占比较高。CUDA Graphs 把工作定义与执行分开，允许重用已实例化的执行图。它不等于 kernel 融合：图内仍可以保留多个 kernel，也不能保证单个长 kernel 本身因此变快。
 
-![执行图的生命周期与更新分支](/assets/notes/ai-infra/graph-lifecycle.svg)
+[![CUDA Graphs：构建、回放与更新](/assets/notes/ai-infra/graph-lifecycle.svg)](/assets/notes/ai-infra/graph-lifecycle.svg)
 
 图定义可通过显式添加节点及依赖建立，也可以在支持的操作范围内进行 stream capture。capture 记录工作及依赖，不是一次正常的“先计算出结果再缓存答案”。不能在捕获期间读取尚未执行的输出。
 

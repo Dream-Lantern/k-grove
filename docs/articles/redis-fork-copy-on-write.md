@@ -3,7 +3,7 @@ id: redis-fork-copy-on-write
 title: 第二十章 fork、写时复制与资源峰值
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 20
 
 为什么“后台保存”仍会引起延迟，甚至触发系统内存不足？关键在于父子进程共享内存视图，并不代表它们没有额外成本。
 
-![fork 与写时复制](/assets/notes/redis/redis-study-cow.svg)
+[![fork 与写时复制：按变化页产生额外开销](/assets/notes/redis/redis-study-cow.png)](/assets/notes/redis/redis-study-cow.png)
 
 ## 1. fork 并非立即复制全部数据
 

@@ -3,7 +3,7 @@ id: distributed-cap-flp
 title: 第五章 CAP、FLP 与最终一致性
 description: CAP 不是数据库选型中可随意勾选的三个特性，FLP 也不意味着“共识不可能实现”。理解这些结论，应先明确模型，再看哪些保证无法同时获得。忽略前提、只记口诀，容易将正常的安全拒绝误判为设计缺陷。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -29,7 +29,7 @@ CAP 不是数据库选型中可随意勾选的三个特性，FLP 也不意味着
 
 当分区阻断了必要信息，又要求双方持续完成操作，就不能同时保留实时一致的单副本语义。它不是说网络健康时也必须永久丢掉某一项。[Gilbert 与 Lynch 的 CAP 讨论](https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf)
 
-![分区下的一次写入与随后读取](/assets/notes/distributed-systems/dist-cap.svg)
+[![CAP：分区中的可用性与一致性边界](/assets/notes/distributed-systems/dist-cap.svg)](/assets/notes/distributed-systems/dist-cap.svg)
 
 ## 2. CP 不等于整个集群全部不可用
 

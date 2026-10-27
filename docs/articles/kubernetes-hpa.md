@@ -3,7 +3,7 @@ id: kubernetes-hpa
 title: 第二十五章 HPA 与指标驱动扩缩容
 description: HorizontalPodAutoscaler 根据指标与目标，通过目标资源的 scale 能力调整期望副本数。Deployment、StatefulSet 是常见目标，但能力边界不是“只支持这两个名字”。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ HorizontalPodAutoscaler 根据指标与目标，通过目标资源的 scale 能�
 
 HPA 不直接增加节点，也不能解决数据库响应慢的问题。新增的 Pod 仍需经过控制器创建、调度和启动；节点容量不足时，扩容决定可能只会增加 Pending 状态的数量。
 
-![指标、建议副本、行为约束与实际容量的反馈关系](/assets/notes/kubernetes/k8s-hpa-feedback.svg)
+[![HPA 反馈：更多副本还需要资源和依赖](/assets/notes/kubernetes/k8s-hpa-feedback.svg)](/assets/notes/kubernetes/k8s-hpa-feedback.svg)
 
 ## 2. 指标从哪里来
 

@@ -3,7 +3,7 @@ id: kubernetes-admission-webhooks
 title: 第二十九章 准入 Webhook 与安全边界
 description: 即使调用者通过认证并获得了相应写权限，提交的对象仍可能不满足集群策略。例如，策略可能要求声明某个标签，或禁止某类主机权限。准入机制在适用的对象写入流程中检查这些条件。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 29
 
 准入不负责用户登录，也不代替 RBAC。GET 查询不是“触发 Pod 创建注入”的同一种流程，不能把所有 API 请求都概括成 Webhook 拦截。
 
-![写请求中的认证授权、适用准入与保存边界](/assets/notes/kubernetes/k8s-admission-webhook.svg)
+[![准入 Webhook：允许、拒绝与调用异常](/assets/notes/kubernetes/k8s-admission-webhook.svg)](/assets/notes/kubernetes/k8s-admission-webhook.svg)
 
 ## 2. 两类 Webhook 与配置资源
 

@@ -3,7 +3,7 @@ id: kubernetes-affinity-taints
 title: 第二十四章 节点选择、亲和性与污点容忍
 description: nodeSelector、节点亲和性描述 Pod 对节点的要求或偏好；污点写在 Node 上，用来排斥未能容忍它的 Pod。两者可以配合，但容忍一个节点污点不等于一定被调度到那个节点。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 24
 
 nodeSelector、节点亲和性描述 Pod 对节点的要求或偏好；污点写在 Node 上，用来排斥未能容忍它的 Pod。两者可以配合，但容忍一个节点污点不等于一定被调度到那个节点。
 
-![资源、亲和与污点约束在调度中的关系](/assets/notes/kubernetes/k8s-scheduling-constraints.svg)
+[![调度约束：容忍不等于一定安排到该节点](/assets/notes/kubernetes/k8s-scheduling-constraints.svg)](/assets/notes/kubernetes/k8s-scheduling-constraints.svg)
 
 例如，为专用硬件节点设置污点，可以减少普通 Pod 进入；需要设备的 Pod 仍应声明设备资源和相应的选择条件。仅添加 toleration，并不能保证取得某块硬件。
 

@@ -3,7 +3,7 @@ id: distributed-frangipani
 title: 第二十四章 Frangipani 缓存一致性与恢复
 description: Frangipani 1997 年论文研究的是多个文件服务器共享同一个 Petal 虚拟磁盘、同时各自缓存数据的设计。共享底层存储，并不能让上层缓存自动保持一致；文件系统语义需要由锁交接、元数据日志和故障恢复共同维护。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -25,7 +25,7 @@ Frangipani 1997 年论文研究的是多个文件服务器共享同一个 Petal 
 
 ## 1. 三层职责
 
-![文件服务器、锁服务与 Petal](/assets/notes/distributed-systems/dist-frangipani.svg)
+[![Frangipani 1997：锁协议与Petal I-O分开](/assets/notes/distributed-systems/dist-frangipani.png)](/assets/notes/distributed-systems/dist-frangipani.png)
 
 Frangipani 文件服务器执行文件系统操作并维护本地缓存；分布式锁服务管理适用的访问资格；Petal 提供共享、复制的虚拟磁盘。这里的缓存是文件系统层缓存，不是 CPU cache line 与主内存之间的硬件缓存协议。
 

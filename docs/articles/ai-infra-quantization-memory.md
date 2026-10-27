@@ -1,9 +1,9 @@
 ---
 id: ai-infra-quantization-memory
 title: 第 20 章 量化与显存预算：低位宽不等于等比例加速
-description: 
+description: "整理仿射量化、误差与显存预算，区分低位宽表示和实际推理性能。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -31,7 +31,7 @@ PTQ 在训练后做量化，可能使用校准数据；QAT 在训练中考虑量
 
 ## 3. 先列显存账本
 
-![模型服务的显存预算组成](/assets/notes/ai-infra/memory-budget.svg)
+[![显存预算：权重只是其中一项](/assets/notes/ai-infra/memory-budget.svg)](/assets/notes/ai-infra/memory-budget.svg)
 
 ```text
 总显存需求 ≈ 权重 + KV cache + 激活值/工作区
@@ -50,7 +50,7 @@ PTQ 在训练后做量化，可能使用校准数据；QAT 在训练中考虑量
 
 ## 5. 正确的 INT8 数值例子
 
-![INT8 的量化、存储和还原](/assets/notes/ai-infra/int8-affine-example.svg)
+[![INT8量化与反量化误差](/assets/notes/ai-infra/int8-affine-example.png)](/assets/notes/ai-infra/int8-affine-example.png)
 
 新增算例设 `x=3.14`、`scale=0.1`、`zero_point=0`，选择对称有效范围 [-127,127]，使用本例明确的就近舍入：`q=clip(round(31.4),-127,127)=31`。存储为 int8 的位串是 `00011111`；还原约为 3.1，`还原值−原值≈−0.04`。这不是把 FP32 的指数或尾数截成整数，也不使用错误的 `01001000`（十进制 72）。
 

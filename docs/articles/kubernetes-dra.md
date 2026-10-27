@@ -3,7 +3,7 @@ id: kubernetes-dra
 title: 第三十二章 DRA：版本边界与设备分配
 description: Dynamic Resource Allocation 尝试通过资源申领与驱动协作来表达更复杂的设备需求。安装一个插件，并不会让所有硬件自动具备相同的分区和共享能力。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Dynamic Resource Allocation 尝试通过资源申领与驱动协作来表达更�
 
 1.28 的官方说明将 DRA 标为 Alpha，要求显式启用相关能力并具备资源驱动等条件。“默认开启即可使用”遗漏了默认状态、API 和实现前提。
 
-![DRA 历史模型、后续对象与驱动条件的阅读边界](/assets/notes/kubernetes/k8s-dra-version-boundary.svg)
+[![DRA 先分版本，再讨论对象与分配流程](/assets/notes/kubernetes/k8s-dra-version-boundary.svg)](/assets/notes/kubernetes/k8s-dra-version-boundary.svg)
 
 ## 2. 1.28：ResourceClass 与早期协调模型
 

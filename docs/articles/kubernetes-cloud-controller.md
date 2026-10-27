@@ -3,7 +3,7 @@ id: kubernetes-cloud-controller
 title: 第三十三章 Cloud Controller Manager 与云集成
 description: Kubernetes 描述 Node、Service 等期望对象，但实际云主机、路由和负载均衡由云平台管理。Cloud Controller Manager（CCM）把适用的云厂商集成职责与核心控制循环分开。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ Kubernetes 描述 Node、Service 等期望对象，但实际云主机、路由�
 
 CCM 观察相关对象，按云提供者实现和权限调用云接口，再更新相应状态。它不是业务数据包逐次经过的代理，也不等于每种环境都必须安装的通用组件。裸机集群可以采用其他网络与入口实现。
 
-![CCM、云网络数据平面与存储驱动的职责边界](/assets/notes/kubernetes/k8s-cloud-boundaries.svg)
+[![云集成：网络与存储分别协调](/assets/notes/kubernetes/k8s-cloud-boundaries.svg)](/assets/notes/kubernetes/k8s-cloud-boundaries.svg)
 
 ## 2. 三类常见职责
 

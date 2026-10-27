@@ -3,7 +3,7 @@ id: ai-infra-cuda-memory
 title: 第 4 章 显存与最小 CUDA 程序：先保证结果正确
 description: 学习内存模型时，先把“数据属于谁”和“数据放在哪里”分开。变量在语法上局部，并不保证一定保存在寄存器；指针可见，也不等于另一段工作已经把数据写完。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 4
 
 ## 1. 常见内存层次
 
-![内存作用域与生命周期](/assets/notes/ai-infra/memory-scopes.svg)
+[![内存：作用域与访问方式](/assets/notes/ai-infra/memory-scopes.svg)](/assets/notes/ai-infra/memory-scopes.svg)
 
 | 类型               | 典型作用域           | 使用要点                         |
 | ------------------ | -------------------- | -------------------------------- |

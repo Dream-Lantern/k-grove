@@ -1,9 +1,9 @@
 ---
 id: ai-infra-version-references
 title: 附录 A 版本与实验边界
-description: 
+description: "说明 AI 基础设施笔记的版本参考口径、示例副作用及仍需目标环境验证的边界。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: reference
 tags:

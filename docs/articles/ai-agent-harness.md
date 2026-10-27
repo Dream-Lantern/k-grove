@@ -3,7 +3,7 @@ id: ai-agent-harness
 title: 第1章 AI Agent 基础与 Harness
 description: 原书的核心公式是：Agent = LLM + 上下文 + 工具。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: ai-agent
 type: explanation
 tags:
@@ -43,7 +43,7 @@ order: 1
 
 ReAct（Reasoning + Acting）可概括为“判断下一步 → 调用工具 → 观察反馈 → 再判断”。
 
-[本章修订流程图（含失败/未知路径）](/assets/notes/ai-agent/01-harness.svg)
+[本章修订流程图（含循环与明确退出路径）](/assets/notes/ai-agent/01-harness.png)
 
 **重要分工**：模型只产生调用请求，不等于已经执行；真正的副作用发生在 Harness 的工具适配器中。
 
@@ -117,9 +117,9 @@ return windowed
 
 记录任务正确性、工具调用次数、重复动作、异常类型和最终答案引用的证据。每种配置应重复多次；若移除 reasoning 字段仍成功，只能说明当前任务/模型/接口下没有观察到退化。隐藏推理不是所有 API 都可见的公共状态，不能用是否返回 reasoning 文本判断模型是否进行了推理。
 
-![01-harness](/assets/notes/ai-agent/01-harness.svg)
+[![Harness：动作分流与退出条件](/assets/notes/ai-agent/01-harness.png)](/assets/notes/ai-agent/01-harness.png)
 
-图内实线框标固定提交可定位步骤，虚线框区分本地修订示例与建议；不代表整链已经实测。[SVG](/assets/notes/ai-agent/01-harness.svg) · [可编辑 DOT](/assets/notes/ai-agent/01-harness.dot)。
+图示为教学/建议流程，不代表特定提交中的完整实现或实机验证；等待、拒绝、未完成与成功分别处理。[原始 DOT 语义图源](/assets/notes/ai-agent/01-harness.dot)供对照，不是本版配图的可编辑源文件。
 
 **读码顺序**：`ContextMode` → `_prepare_messages_for_api()` → `execute_task()` → 工具结果消息。后续应优先为 Harness 补充预算、错误分支和终止验证，而不是继续堆叠提示词。
 

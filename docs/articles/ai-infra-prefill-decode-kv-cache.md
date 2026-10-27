@@ -3,7 +3,7 @@ id: ai-infra-prefill-decode-kv-cache
 title: 第 19 章 大模型推理：Prefill、Decode 与 KV Cache
 description: 为什么长提示词影响首字延迟，而生成很长的回答会持续占用显存？自回归语言模型通常可以分为 prefill 和 decode 两个阶段，这有助于把服务指标与资源需求联系起来。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 19
 
 prefill 处理输入 token 并建立相应注意力状态；decode 在已有上下文基础上逐步产生新 token，并追加所需状态。两阶段的瓶颈会随 batch、上下文和模型而变化，不能写成“prefill 永远计算密集、decode 永远带宽密集”。
 
-![请求调度、Prefill 与循环 Decode](/assets/notes/ai-infra/llm-serving.svg)
+[![LLM自回归推理：Prefill到Decode](/assets/notes/ai-infra/llm-serving.png)](/assets/notes/ai-infra/llm-serving.png)
 
 continuous batching 允许在迭代调度中加入和移除请求，无需让整个静态 batch 等待最长的请求。它仍然受到队列、公平性和资源约束的影响，并发增加并不意味着吞吐和延迟都会改善。
 

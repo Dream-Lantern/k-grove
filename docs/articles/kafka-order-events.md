@@ -3,7 +3,7 @@ id: kafka-order-events
 title: 第 24 章：订单事件案例与故障推演
 description: 场景：订单创建后，库存服务应对每条有效扣减事件最多产生一次扣减效果；系统故障后允许重新读取消息，但不允许静默跳过未完成订单。这个要求并不是“网络只发送一次”，而是约束最终业务效果与恢复能力。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -29,7 +29,7 @@ order: 24
 
 事件包含稳定 event_id、order_id、事件类型、模式版本和业务版本等信息。订单路由使用明确且跨客户端一致的 Key 策略；模式演进有兼容检查，不把未识别版本当正常成功。
 
-![订单 Outbox 到业务效果](/assets/notes/kafka/kf-case.svg)
+[![订单 Outbox：分区保序与业务效果幂等](/assets/notes/kafka/kf-case.svg)](/assets/notes/kafka/kf-case.svg)
 
 ## 2. 源数据库与发布的缺口
 

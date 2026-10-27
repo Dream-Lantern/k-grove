@@ -3,7 +3,7 @@ id: ai-infra-gpu-architecture
 title: 第 2 章 GPU 架构：SM、Tensor Core 与资源瓶颈
 description: 显卡标称的 CUDA Core 数量很多，小任务却未必能充分利用它们。核心数量只是硬件条件的一部分；任务还需要足够的并行度，以及能让这些单元持续工作所需的数据、指令和可用资源。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -25,7 +25,7 @@ order: 2
 
 SM（Streaming Multiprocessor，流式多处理器）是理解执行资源的重要单位。一个 SM 包含指令调度与执行单元，并拥有寄存器、共享内存等资源。CUDA 线程是程序抽象；硬件以 warp 等粒度推进指令，并不是启动多少线程就独占多少个 CUDA Core。
 
-![GPU 资源关系示意](/assets/notes/ai-infra/gpu-resources.svg)
+[![GPU 资源：计算与数据供给](/assets/notes/ai-infra/gpu-resources.svg)](/assets/notes/ai-infra/gpu-resources.svg)
 
 这张图只表示概念关系，不仿造某款 GPU 的精确芯片框图。GPC、TPC、SM、复制引擎、视频单元、L2 和显存的数量及组织会随芯片和产品 SKU 改变。完整芯片的设计数量也不等于实际产品启用数量。
 

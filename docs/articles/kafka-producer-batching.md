@@ -3,7 +3,7 @@ id: kafka-producer-batching
 title: 第 8 章：生产者路由、批次与压缩
 description: 应用先把业务对象序列化成字节，客户端再确定目标分区、将记录排入队列，最后由后台 I/O 发送。API 是否阻塞、何时报告本地错误，以及如何获取最终结果，都取决于具体客户端。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -29,7 +29,7 @@ order: 8
 
 对于异步生产者，“函数返回没有错误”常常不等于远端已经可靠接受。Java Future 或回调、librdkafka Delivery Report 都需要按接口契约检查。不能丢弃全部回调，再用程序正常退出证明发送成功。
 
-![批次发送链路](/assets/notes/kafka/kf-batch.svg)
+[![Kafka Producer：分区选择先于分区 Batch](/assets/notes/kafka/kf-batch.svg)](/assets/notes/kafka/kf-batch.svg)
 
 ## 2. Batch 是聚合单位，不是必须装满才发
 

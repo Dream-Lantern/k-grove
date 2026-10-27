@@ -3,7 +3,7 @@ id: redis-hiredis-async
 title: 第十六章 hiredis 异步接口与事件循环
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 16
 
 异步接口让应用在等待网络期间继续处理其他事件，但不会把每条 Redis 命令变成独立后台线程，也不会自动提高服务端处理能力。原笔记的发布订阅示例适合用来理解回调，本章补齐它省略的生命周期。
 
-![异步连接的生命周期](/assets/notes/redis/redis-study-async.svg)
+[![hiredis 异步回复：对象所有权](/assets/notes/redis/redis-study-async.svg)](/assets/notes/redis/redis-study-async.svg)
 
 ## 1. 四个时刻不要混在一起
 

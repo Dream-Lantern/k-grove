@@ -3,7 +3,7 @@ id: os-address-spaces-segmentation
 title: 第十三章 地址空间、重定位与分段
 description: 虚拟地址使程序能够按自身的地址关系运行，物理内存则由系统组织和共享。原笔记通过 base+offset、段表和页表逐步解释地址转换，适合入门，但需区分教学分段模型、x86 历史实现与现代平坦地址空间。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -33,7 +33,7 @@ order: 13
 
 抽象分段把程序按代码、数据、栈等逻辑区域组织，可赋予基址、界限和权限。段号与偏移形成逻辑访问，再按规则得到目标地址。
 
-![逻辑地址、线性地址与物理地址](/assets/notes/operating-systems/os-address.svg)
+[![x86 保护模式：分段与分页示例](/assets/notes/operating-systems/os-address.svg)](/assets/notes/operating-systems/os-address.svg)
 
 在适用的 x86 保护模式中，段选择子联系 GDT/LDT 中的描述符；代码段、数据段和门有不同检查规则。现代 x86-64 普通代码常采用平坦模型，仍有特殊寄存器用途，不能照搬“每进程都用 LDT 管自己全部内存”。
 

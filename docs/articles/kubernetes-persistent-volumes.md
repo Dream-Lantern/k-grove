@@ -3,7 +3,7 @@ id: kubernetes-persistent-volumes
 title: 第二十三章 PV、PVC 与 StorageClass
 description: Pod 需要存储，但不适合把某台服务器的所有实现细节都写进应用模板。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -31,7 +31,7 @@ Pod 需要存储，但不适合把某台服务器的所有实现细节都写进�
 | PVC          | 提出容量、模式等存储需求并绑定卷     | 命名空间级 |
 | StorageClass | 描述动态供应等相关策略与 provisioner | 集群级     |
 
-![Pod、PVC、PV、StorageClass 供应与后端存储的关系](/assets/notes/kubernetes/k8s-storage-binding-detail.svg)
+[![存储路径：Pod → PVC → PV → 后端](/assets/notes/kubernetes/k8s-storage-binding-detail.svg)](/assets/notes/kubernetes/k8s-storage-binding-detail.svg)
 
 PV 不是磁盘分区本身，StorageClass 也不会凭空提供磁盘。动态供应依赖可用的驱动或 provisioner，以及所需的后端权限。存储驱动与 CRI 运行时处于不同层次，不能把原示意图中的 CRI 当作通用存储供应接口。
 

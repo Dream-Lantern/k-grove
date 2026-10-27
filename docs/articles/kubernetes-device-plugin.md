@@ -3,7 +3,7 @@ id: kubernetes-device-plugin
 title: 第三十一章 Device Plugin 与设备资源管理
 description: 调度器需要知道节点提供哪些可分配资源，容器运行时又需要知道进程怎样访问实际设备。设备插件与 kubelet 协作，把这两个阶段连接起来。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -27,7 +27,7 @@ order: 31
 
 插件发现设备并报告健康等信息；kubelet 的设备管理器跟踪这些信息并更新 Node 的相关资源状态；调度器根据请求和适用条件选择节点；节点侧再完成设备分配及运行配置准备。
 
-![设备插件注册、流式发现、节点资源与 Allocate](/assets/notes/kubernetes/k8s-device-plugin-detail.svg)
+[![Device Plugin：调度与分配边界](/assets/notes/kubernetes/k8s-device-plugin-detail.svg)](/assets/notes/kubernetes/k8s-device-plugin-detail.svg)
 
 原图中的 API Server 不负责亲自执行全局调度。这里把调度器决策与 kubelet 的节点侧分配明确分开，也不把插件部署为 DaemonSet 写成接口强制要求。
 

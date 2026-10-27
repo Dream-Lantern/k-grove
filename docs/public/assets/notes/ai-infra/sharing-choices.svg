@@ -1,5 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" role="img" aria-labelledby="title desc">
-<title id="title">GPU 共享：需求与机制</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">GPU 共享：需求与机制</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">先明确隔离目标，再比较吞吐。</tspan></text><rect x="360" y="130" width="480" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">共享需求</tspan></text><text x="600.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">并发、资源边界、租户信任</tspan></text><rect x="65" y="365" width="480" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="305.0" y="402" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="305.0" dy="0">协作并发</tspan></text><text x="305.0" y="439" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="305.0" dy="0">Stream / MPS：提升复用机会</tspan></text><rect x="655" y="365" width="480" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="895.0" y="402" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="895.0" dy="0">明确设备分区</tspan></text><text x="895.0" y="439" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="895.0" dy="0">MIG：受支持硬件的资源实例</tspan></text><rect x="360" y="625" width="480" height="115" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="662" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">负载与故障验收</tspan></text><text x="600.0" y="699" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">公平性、尾延迟、配额、影响范围</tspan></text><path d="M600.0 245 L600.0 305.0 L305.0 305.0 L305.0 365" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="295" y="305" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="295" dy="0">协作任务</tspan></text><path d="M600.0 245 L600.0 305.0 L895.0 305.0 L895.0 365" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="900" y="305" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="900" dy="0">资源边界</tspan></text><path d="M305.0 480 L305.0 552.5 L600.0 552.5 L600.0 625" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M895.0 480 L895.0 552.5 L600.0 552.5 L600.0 625" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="600" y="825" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600" dy="0">vGPU 是另一虚拟化体系；部分路径可以组合，不能简单按快慢排序。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="940" viewBox="0 0 1600 940">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#F8FBFF"/></linearGradient>
+ <filter id="sh" x="-20%" y="-40%" width="150%" height="200%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#153F75" flood-opacity=".10"/></filter>
+ <marker id="arrow" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#5679BC"/></marker>
+ <marker id="arrG" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#10B981"/></marker>
+ <marker id="arrR" markerWidth="10" markerHeight="9" refX="9" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#EF4444"/></marker>
+ </defs>
+<rect x="0" y="0" width="1600" height="940" rx="0" fill="url(#bg)"/>
+<rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">30  ·  GPU 共享：先决定隔离目标，再谈吞吐</text>
+<text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">并发共享、资源配额、硬件隔离和租户信任不是同一个指标</text>
+<path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="422" y="183" width="755" height="116" rx="15" fill="#EEF6FF" stroke="#3B82F6" stroke-width="1.8"/>
+<text x="444" y="221" font-family="Noto Sans CJK SC, sans-serif" font-size="30" font-weight="700" fill="#1E40AF" text-anchor="start">业务需求 / 租户边界</text>
+<text x="444" y="255" font-family="Noto Sans CJK SC, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="start">目标：并发量、隔离粒度、资源配额、故障影响、硬件支持</text>
+<path d="M798 302 V356 H413 V405" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M798 356 H1184 V405" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="67" y="425" width="674" height="267" rx="18" fill="#F4F0FF" stroke="#8B5CF6" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="113" cy="472" r="24" fill="#8B5CF6"/>
+<text x="113" y="481" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">A</text>
+<text x="150" y="479" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#112A54" text-anchor="start">协作并发 / 提高复用</text>
+<text x="91" y="525" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">Stream：同进程的工作并行机会</text>
+<text x="91" y="557" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">MPS：多进程共享 GPU 执行资源</text>
+<text x="91" y="589" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">不等于强硬件隔离</text>
+<rect x="864" y="425" width="666" height="267" rx="18" fill="#E9FBF4" stroke="#10B981" stroke-width="2.0" filter="url(#sh)"/>
+<circle cx="910" cy="472" r="24" fill="#10B981"/>
+<text x="910" y="481" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#FFFFFF" text-anchor="middle">B</text>
+<text x="947" y="479" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#112A54" text-anchor="start">明确 GPU 资源边界</text>
+<text x="888" y="525" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">MIG：受支持 GPU 的资源实例</text>
+<text x="888" y="557" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">vGPU：另一个虚拟化管理体系</text>
+<text x="888" y="589" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">二者隔离与资源机制不同</text>
+<path d="M411 696 V747 H797 V762" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1193 696 V747 H803 V762" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="250" y="771" width="1094" height="94" rx="15" fill="#FFF5E8" stroke="#F59E0B" stroke-width="1.8"/>
+<text x="272" y="809" font-family="Noto Sans CJK SC, sans-serif" font-size="26" font-weight="700" fill="#9A3412" text-anchor="start">真实负载与故障验收</text>
+<text x="272" y="843" font-family="Noto Sans CJK SC, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="start">检验公平性、尾延迟、配额遵守、相互影响及故障范围；不能简单做快慢排名。</text>
+<path d="M65 867 L1535 867" fill="none" stroke="#DFE7F2" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="70" y="902" font-family="Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#6B7E99" text-anchor="start">部分机制可组合，但必须先核查 GPU 型号、驱动、工具链、部署方式和可靠隔离能力。</text>
+</svg>

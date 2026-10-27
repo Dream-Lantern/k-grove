@@ -3,7 +3,7 @@ id: ai-infra-dcgm-monitoring
 title: 第 11 章 DCGM 与 Exporter：部署拓扑、实体与指标
 description: 本章先介绍指标来源，再说明如何避免将其他节点或整卡的数据误归到某个任务。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: explanation
 tags:
@@ -23,10 +23,9 @@ order: 11
 
 ## 1. 两种部署模式不要混搭成重复采集
 
-![嵌入式与外部 hostengine 模式](/assets/notes/ai-infra/dcgm-deployment-modes.svg)
+[![DCGM Exporter：hostengine 使用方式](/assets/notes/ai-infra/dcgm-deployment-modes.svg)](/assets/notes/ai-infra/dcgm-deployment-modes.svg)
 
 Exporter 可以使用嵌入式 hostengine，或连接受管理的已有 hostengine；选择其一并记录实际进程与连接。外部模式通过 `-r Host:Port` 等受支持配置连接，不能继续写成“DCGM 与 exporter 一律不能并存”。客户端 `libdcgm` 与服务端版本也要检查兼容，不只检查 exporter 镜像是否能启动。[DCGM Exporter 部署说明](https://docs.nvidia.com/datacenter/cloud-native/gpu-telemetry/latest/dcgm-exporter.html)
-
 
 ## 2. 指标字典：实体、分母和单位一起读
 
@@ -40,7 +39,6 @@ Exporter 可以使用嵌入式 hostengine，或连接受管理的已有 hostengi
 | DEV_FB_USED             | 已用 framebuffer 容量            | 依该字段定义，常为 MiB | 活跃计算比例           |
 
 字段可用性取决于设备、驱动、DCGM 与实体范围。采集到的 N/A、未支持或无效状态必须保留，不转换成业务利用率 0。若需要 bytes/s，查询实际传输计数字段及其单位，不能把 DRAM_ACTIVE 直接乘一个宣传峰值当作实测带宽。[DCGM 字段与功能说明](https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/feature-overview.html)
-
 
 ## 3. 查询实体，再选字段
 
@@ -61,7 +59,7 @@ DCGM_FI_DEV_FB_USED, gauge, Framebuffer used (MiB).
 
 ## 4. 按节点监控，不能只依赖一个共享 Service 名
 
-![独立抓取与共享 Service 的区别](/assets/notes/ai-infra/dcgm-node-targets.svg)
+[![逐节点抓取：不要把 Service 名当节点身份](/assets/notes/ai-infra/dcgm-node-targets.png)](/assets/notes/ai-infra/dcgm-node-targets.png)
 
 DaemonSet 可以在多个 GPU 节点运行 exporter。普通多 endpoint Service 代表一组后端，一次连接可能选到其中一个。应通过监控发现逐个抓取目标，并保留 node、UUID、GI/CI 等对应标签；具体标签由 exporter 和发现配置决定。[Kubernetes Service](https://kubernetes.io/docs/concepts/services-networking/service/)
 

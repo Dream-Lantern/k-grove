@@ -3,7 +3,7 @@ id: kafka-offset-watermarks
 title: 第 11 章：消费位点、提交与连续完成水位
 description: 每个 Topic-Partition 都有自己的位置。客户端可能已预先拉取一批记录到本地，应用却只处理了其中一部分，外部数据库完成的部分还可能更少。因此，网络读取进度、应用读取进度和业务完成进度不能混用。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -31,7 +31,7 @@ order: 11
 
 ## 2. 并行消费需要连续完成前沿
 
-![异步任务的安全提交前沿](/assets/notes/kafka/kf-frontier.svg)
+[![异步消费：只提交连续完成的下一位置](/assets/notes/kafka/kf-frontier.png)](/assets/notes/kafka/kf-frontier.png)
 
 假设 100、101、102 都存在，100 和 102 完成，101 仍在执行。安全提交值只能推进到 101。提交 103 会让崩溃恢复跳过尚未完成的 101。等 101 也完成，再推进到 103。
 

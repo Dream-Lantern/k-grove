@@ -3,7 +3,7 @@ id: kubernetes-etcd
 title: 第四章：etcd——集群状态为什么需要多数派和备份？
 description: 控制平面需要记住哪些对象存在、期望运行多少副本，以及组件已经观察到什么状态。若这些信息只存在于某个进程的内存里，进程退出后就无法可靠继续协调。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -45,7 +45,7 @@ Kubernetes 的 API 对象包含名称、标签、期望配置和已观察状态�
 
 ## 2. 为什么其他组件不直接修改 etcd？
 
-![API 状态与 etcd 的访问边界](/assets/notes/kubernetes/k8s-etcd-state-boundary.svg)
+[![etcd 的边界：API 状态不是业务文件](/assets/notes/kubernetes/k8s-etcd-state-boundary.svg)](/assets/notes/kubernetes/k8s-etcd-state-boundary.svg)
 
 图中只画标准 API 状态路径，省略响应、缓存和外部工具。应用数据路径单独表示，不经过 etcd 保存业务文件。
 
@@ -65,7 +65,7 @@ Kubernetes 的 API 对象包含名称、标签、期望配置和已观察状态�
 
 对 N 个投票成员，多数数量为 `floor(N / 2) + 1`。这不是把 Learner 等所有进程一概计入的公式。
 
-![投票成员数量与多数要求](/assets/notes/kubernetes/k8s-etcd-quorum.svg)
+[![三个投票成员：多数可用与孤立成员](/assets/notes/kubernetes/k8s-etcd-quorum.svg)](/assets/notes/kubernetes/k8s-etcd-quorum.svg)
 
 | 投票成员数 | 所需多数 | 在剩余多数可正常通信等条件下，可容忍失效数 |
 | ---------: | -------: | -----------------------------------------: |

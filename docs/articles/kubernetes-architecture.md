@@ -3,7 +3,7 @@ id: kubernetes-architecture
 title: 第一章：Kubernetes 整体架构——从一次部署理解各组件如何协作
 description: 学习 Kubernetes，容易先记住一串名字：API Server、etcd、Scheduler、kubelet。可是一旦开始部署应用，又会遇到 Pod、Deployment、Service，看起来每个词都重要，却不知道它们之间是什么关系。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -85,7 +85,7 @@ Deployment：管理 Pod 模板的发布和更新
 
 ## 3. 架构总览：控制平面负责协调，节点负责运行
 
-![Kubernetes 逻辑架构：控制平面与工作节点](/assets/notes/kubernetes/k8s-logical-architecture.png)
+[![k8s-logical-architecture](/assets/notes/kubernetes/k8s-logical-architecture.svg)](/assets/notes/kubernetes/k8s-logical-architecture.svg)
 
 图 1：此图只表示逻辑分组，不表示调用顺序、固定节点数或高可用副本配置。
 
@@ -199,7 +199,7 @@ spec:
 
 不是所有对象都拥有完全相同的 `spec/status` 结构，也不应把期望副本数直接当作当前就绪实例数。[对象、spec 与 status](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
 
-![控制循环：期望状态与已观察状态](/assets/notes/kubernetes/k8s-reconcile-loop.svg)
+[![控制循环：不断协调期望与已观察状态](/assets/notes/kubernetes/k8s-reconcile-loop.svg)](/assets/notes/kubernetes/k8s-reconcile-loop.svg)
 
 图 2：用副本协调说明控制循环。图中的观察和变更经 API 等机制完成；这是简化反馈模型，不表示所有控制器都使用相同的检查周期。
 
@@ -209,7 +209,7 @@ spec:
 
 继续使用新增教学例子：创建一个名为 `web-demo` 的 Deployment，希望运行三个 Web Pod。
 
-![从 Deployment 请求到 Pod 运行的协作过程](/assets/notes/kubernetes/k8s-deployment-journey.svg)
+[![从 Deployment 到 Pod 运行](/assets/notes/kubernetes/k8s-deployment-journey.svg)](/assets/notes/kubernetes/k8s-deployment-journey.svg)
 
 图 3：按主要状态变化整理的教学流程。箭头表示后续工作依赖哪些对象或状态变化，不代表组件之间存在固定的同步调用链；各组件会独立观察、重试与协调。
 

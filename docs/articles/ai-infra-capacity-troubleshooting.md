@@ -3,7 +3,7 @@ id: ai-infra-capacity-troubleshooting
 title: 第 24 章 排障与容量验收：从现象走到证据
 description: 笔记记录了 torch.cuda.is_available() 为 false、重启后恢复的现象。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: gpu-infra
 type: troubleshooting
 tags:
@@ -25,7 +25,7 @@ order: 24
 
 记录时间、驱动和框架版本、容器 digest、设备 UUID、环境变量、错误码及相关日志。重启、升级驱动或批量杀进程可能破坏现场；在生产系统中，必须先评估影响并确认维护授权，不能将这些操作作为诊断的第一步。
 
-![GPU 问题分层定位](/assets/notes/ai-infra/gpu-troubleshoot.svg)
+[![GPU 排障：逐层通过、逐层定位](/assets/notes/ai-infra/gpu-troubleshoot.svg)](/assets/notes/ai-infra/gpu-troubleshoot.svg)
 
 ## 2. 按失败层次逐步缩小
 

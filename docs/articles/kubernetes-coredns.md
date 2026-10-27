@@ -3,7 +3,7 @@ id: kubernetes-coredns
 title: 第十一章 CoreDNS 与服务发现
 description: 应用通常希望连接“订单服务”，而不是记住某个 Pod 地址。DNS 负责把名称解析为相应记录，应用再利用结果建立连接。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -30,7 +30,7 @@ order: 11
 1. 查询：服务名应解析成什么？
 2. 连接：到解析结果对应的端口，业务能否成功？
 
-![DNS 查询与应用业务连接的两条路径](/assets/notes/kubernetes/k8s-dns-two-paths.svg)
+[![DNS 解析成功之后，应用才建立业务连接](/assets/notes/kubernetes/k8s-dns-two-paths.svg)](/assets/notes/kubernetes/k8s-dns-two-paths.svg)
 
 以普通 ClusterIP Service 为例，应用通过 DNS 查询得到 Service 地址后，再发起业务连接，由服务数据平面处理。CoreDNS 并不因此成为 HTTP 请求的业务代理。解析超时与业务连接超时虽然表面相似，却不能都用“重启 DNS”来处理。
 
@@ -108,7 +108,7 @@ Corefile 是 CoreDNS 配置。初学时先认识职责，比一次复制一整�
 
 ## 7. 排障先区分返回码与连接阶段
 
-![从名称与查询结果开始的 DNS 分层排查](/assets/notes/kubernetes/k8s-dns-triage.svg)
+[![DNS 排查：先按失败类型划分边界](/assets/notes/kubernetes/k8s-dns-triage.svg)](/assets/notes/kubernetes/k8s-dns-triage.svg)
 
 常见现象可以这样组织证据：
 

@@ -3,7 +3,7 @@ id: kubernetes-configmap-secret
 title: 第二十一章 ConfigMap 与 Secret 配置交付
 description: ConfigMap 保存非敏感配置；Secret 为敏感数据提供专门的 API 类型和使用方式。应用镜像、配置对象和 Pod 是不同资源，它们的版本与生命周期也要分别管理。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -77,7 +77,7 @@ spec:
 
 ## 4. 配置更新至少有两个阶段
 
-![配置对象变更、消费方式与应用采用新配置](/assets/notes/kubernetes/k8s-config-delivery.svg)
+[![ConfigMap / Secret：配置更新到应用生效](/assets/notes/kubernetes/k8s-config-delivery.svg)](/assets/notes/kubernetes/k8s-config-delivery.svg)
 
 | 消费方式     | 已运行容器中的典型更新语义 | 还需处理                 |
 | ------------ | -------------------------- | ------------------------ |

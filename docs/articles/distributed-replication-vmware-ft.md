@@ -3,7 +3,7 @@ id: distributed-replication-vmware-ft
 title: 第七章 复制状态机与 VMware FT 历史设计
 description: 复制并非只能选择“同步整个内存”或“发送客户端请求”。它可以传输状态、状态差异、日志或确定性执行所需的事件，快照也常与日志配合使用。具体传输什么，取决于需要恢复的状态和非确定性来源。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -37,7 +37,7 @@ order: 7
 
 ## 3. VMware FT 论文的关键路线
 
-![记录重放与输出控制](/assets/notes/distributed-systems/dist-ft.svg)
+[![VMware FT：Logging Channel与输出控制](/assets/notes/distributed-systems/dist-ft.png)](/assets/notes/distributed-systems/dist-ft.png)
 
 本节复盘论文的 vSphere 4.0 时代方案：虚拟化层捕获使执行可重放的事件，经日志通道交给 Backup；Backup 抑制外部输出。Primary 的输出规则要求相关日志先得到 Backup 的确认，不是只要求转发了一个网络包。[VMware FT 原论文 §2](https://pdos.csail.mit.edu/6.824/papers/vm-ft.pdf)
 

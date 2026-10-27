@@ -3,7 +3,7 @@ id: redis-internal-encoding
 title: 第二十六章 内部编码、SDS、listpack 与渐进 rehash
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 26
 
 对外类型决定命令语义，内部编码决定某种规模下怎样保存对象。Hash 类型不等于它内部一定使用哈希表，String 也不等于所有值都用同一种字符串布局。
 
-![类型与编码分开观察](/assets/notes/redis/redis-study-encoding.svg)
+[![Redis 数据结构编码：需要固定版本](/assets/notes/redis/redis-study-encoding.svg)](/assets/notes/redis/redis-study-encoding.svg)
 
 ## 1. 为什么小对象采用紧凑编码
 

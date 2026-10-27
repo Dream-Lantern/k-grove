@@ -3,7 +3,7 @@ id: kafka-retries-idempotency
 title: 第 9 章：重试、幂等与超时的未知结果
 description: 客户端发出请求后发生网络故障，可能有三种事实：Broker 尚未处理、已经处理但确认未返回、处理结果仍未确定。应用仅看到一个超时，不能据此可靠区分这些事实。
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -29,7 +29,7 @@ order: 9
 
 如果确认丢失，普通重新发送可能产生重复；若不重试，又可能遗漏业务事实。可靠协议要显式处理不确定窗口，而不是假设每个请求都会得到准确的“成功或完全没发生”二选一结果。
 
-![幂等与业务去重的范围](/assets/notes/kafka/kf-idempotence.svg)
+[![Kafka 幂等：协议重试与新业务请求](/assets/notes/kafka/kf-idempotence.svg)](/assets/notes/kafka/kf-idempotence.svg)
 
 ## 2. 幂等生产者去掉哪一类重复
 

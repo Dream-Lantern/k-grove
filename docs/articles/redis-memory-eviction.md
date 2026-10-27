@@ -3,7 +3,7 @@ id: redis-memory-eviction
 title: 第二十五章 内存核算、淘汰与碎片诊断
 description: 返回本册目录
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -45,7 +45,7 @@ Redis 返回 OOM 错误，与系统 OOM Killer 杀掉进程，是不同故障。
 
 ## 3. 淘汰策略先决定候选范围
 
-![淘汰的判断路径](/assets/notes/redis/redis-study-eviction.svg)
+[![Redis 内存淘汰与操作系统 OOM](/assets/notes/redis/redis-study-eviction.svg)](/assets/notes/redis/redis-study-eviction.svg)
 
 allkeys 类策略在全部适用键中选择；volatile 类策略只在具有 TTL 的候选键中选择。volatile 不是“只删除已经过期的键”，没有足够候选时，也可能无法腾出所需空间。
 
