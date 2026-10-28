@@ -1,4 +1,4 @@
 interface:
-  display_name: "技术文章重构"
-  short_description: "按文章类型重构技术笔记与术语表达，保留来源、短条目及技术结论"
-  default_prompt: "使用 $technical-writer 重构选定技术文章，附改动摘要和未解决疑点。"
+  display_name: '技术文章重构'
+  short_description: '先讲概念与主流程，再说明条件和异常，保留来源、短条目与技术结论'
+  default_prompt: '使用 $technical-writer 将选定笔记整理成便于初学者阅读的知识文章，讲清概念和流程，保留技术条件，将审阅记录与正文分开。'

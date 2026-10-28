@@ -1,7 +1,7 @@
 ---
 id: ai-infra-prefill-decode-kv-cache
 title: 第 19 章 大模型推理：Prefill、Decode 与 KV Cache
-description: 为什么长提示词影响首字延迟，而生成很长的回答会持续占用显存？自回归语言模型通常可以分为 prefill 和 decode 两个阶段，这有助于把服务指标与资源需求联系起来。
+description: "自回归语言模型通常先处理输入，再逐步生成输出，对应 prefill 和 decode 两个阶段。前者建立输入上下文的状态，后者在已有状态上继续生成。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,9 +19,9 @@ order: 19
 
 # 第 19 章 大模型推理：Prefill、Decode 与 KV Cache
 
-为什么长提示词影响首字延迟，而生成很长的回答会持续占用显存？自回归语言模型通常可以分为 prefill 和 decode 两个阶段，这有助于把服务指标与资源需求联系起来。
+自回归语言模型通常先处理输入，再逐步生成输出，对应 prefill 和 decode 两个阶段。前者建立输入上下文的状态，后者在已有状态上继续生成。沿这两阶段观察 KV Cache、调度与计时，可以把首字延迟、生成间隔和显存需求联系起来。
 
-## 1. 一次请求如何推进
+## 1. 从 Prefill 进入逐步 Decode {#_1-一次请求如何推进}
 
 prefill 处理输入 token 并建立相应注意力状态；decode 在已有上下文基础上逐步产生新 token，并追加所需状态。两阶段的瓶颈会随 batch、上下文和模型而变化，不能写成“prefill 永远计算密集、decode 永远带宽密集”。
 
@@ -29,7 +29,7 @@ prefill 处理输入 token 并建立相应注意力状态；decode 在已有上�
 
 continuous batching 允许在迭代调度中加入和移除请求，无需让整个静态 batch 等待最长的请求。它仍然受到队列、公平性和资源约束的影响，并发增加并不意味着吞吐和延迟都会改善。
 
-## 2. KV Cache 缓存的不是最后回答
+## 2. KV Cache 复用历史 Key 与 Value {#_2-kv-cache-缓存的不是最后回答}
 
 注意力计算可以复用历史 token 的 key/value。KV cache 的大小与层数、KV head 数、head dimension、已缓存 token 数和数据类型有关。PagedAttention 将逻辑 token 与非连续物理块关联，改善相应内存管理，并不是增加 GPU 的实际显存容量。[vLLM Paged Attention](https://docs.vllm.ai/en/latest/design/paged_attention/)
 
@@ -41,7 +41,7 @@ KV 字节数 ≈ 2 × 层数 × KV heads × head_dim × 已缓存 token 数 × �
 
 前面的 2 表示 K 与 V。使用 GQA/MQA 时应填 KV heads，而不是 query heads；MLA、滑动窗口、量化、分片和前缀共享需要另建模型，不能盲套该公式。
 
-## 3. TTFT、TPOT 和吞吐不是一个数字
+## 3. 分别定义首字、生成间隔与吞吐 {#_3-ttft、tpot-和吞吐不是一个数字}
 
 TTFT 是请求到首个输出 token 的时间，通常包含排队和 prefill；TPOT 描述后续输出 token 的时间间隔，需注明计算和聚合定义。吞吐应区分输入 token、输出 token、请求数以及稳定时间窗口。
 

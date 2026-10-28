@@ -1,7 +1,7 @@
 ---
 id: kubernetes-etcd
 title: 第四章：etcd——集群状态为什么需要多数派和备份？
-description: 控制平面需要记住哪些对象存在、期望运行多少副本，以及组件已经观察到什么状态。若这些信息只存在于某个进程的内存里，进程退出后就无法可靠继续协调。
+description: "控制平面需要记住哪些对象存在、期望运行多少副本，以及组件已经观察到什么状态。若这些信息只存在于某个进程的内存里，进程退出后就无法可靠继续协调。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -25,7 +25,7 @@ etcd 为标准 Kubernetes 控制平面提供关键的持久状态存储。这一
 
 以下以 etcd 3.5 官方资料核对基础机制，不据此认定原安装实验实际运行的补丁版本。所有状态和故障例子均为教学示例，没有连接真实 etcd，也没有执行恢复。
 
-## 1. etcd 保存什么，不保存什么？
+## 1. etcd 保存的 API 状态 {#_1-etcd-保存什么-不保存什么}
 
 Kubernetes 的 API 对象包含名称、标签、期望配置和已观察状态等信息。API Server 需要把相关状态持久保存，etcd 是标准控制平面中的核心存储。
 
@@ -41,7 +41,7 @@ Kubernetes 的 API 对象包含名称、标签、期望配置和已观察状态�
 
 因此，etcd 快照不是应用数据目录的全量备份。恢复了 Deployment 对象，不代表恢复了应用数据库的业务内容。
 
-原笔记将 etcd 称作“控制节点唯一的 StatefulSet 组件”。准确的区别是：**etcd 是有状态服务，但不等于它一定通过 StatefulSet 资源部署。** kubeadm 常见叠放拓扑通常以静态 Pod 等方式组织本地 etcd；外置 etcd 则有不同部署安排。[kubeadm 拓扑](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)
+**etcd 是有状态服务，StatefulSet 则是一种 Kubernetes 工作负载资源。** 二者分别描述服务性质与部署管理方式。 kubeadm 常见叠放拓扑通常以静态 Pod 等方式组织本地 etcd；外置 etcd 则有不同部署安排。[kubeadm 拓扑](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)
 
 ## 2. 为什么其他组件不直接修改 etcd？
 
@@ -53,7 +53,7 @@ Kubernetes 的 API 对象包含名称、标签、期望配置和已观察状态�
 
 管理员的诊断、备份和恢复工具可能需要在受控条件下直接访问 etcd，但这不是普通客户端的日常工作方式。不能把 etcd 客户端端口公开给所有应用，也不应在教程中直接编辑内部键来“修好”某个 Pod。
 
-原笔记列出的 `/registry/...` 是内部存储理解线索，不是为业务程序设计的稳定 API。本章不会提供直接删改该前缀下键值的命令。
+`/registry/...` 可用于理解内部存储组织；业务程序应使用 Kubernetes API，直接修改内部键会绕过 API 的处理边界。
 
 ## 3. 多数派究竟在解决什么问题？
 
@@ -102,9 +102,9 @@ etcd 可以提供键空间变化的观察能力，API Server 也基于其存储�
 
 不要在业务程序中用内部数值公式推导对象“几秒前更新”，也不要认为 Watch 连接永远不会断开。历史压缩、连接恢复和重新建立当前视图，都可能影响观察方式。[Kubernetes 1.28 API 概念](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/using-api/api-concepts.md)
 
-## 6. etcd 异常时，应用真的“完全不受影响”吗？
+## 6. etcd 异常的影响范围 {#_6-etcd-异常时-应用真的-完全不受影响-吗}
 
-原笔记认为 etcd 中断不会影响已运行应用，但这个判断需要限定条件：已有容器可能暂时继续运行，却不能据此认定整个服务、管理面和恢复能力都不受影响。
+etcd 中断后，已有容器可能暂时继续运行；API 状态变更、控制循环和故障恢复则可能受阻。评估业务影响时，需要沿依赖路径逐项检查。
 
 例如：
 
@@ -115,7 +115,7 @@ etcd 可以提供键空间变化的观察能力，API Server 也基于其存储�
 
 故障分析应说明“哪个对象、哪个路径、哪一段时间”，而不是只写一句“业务不会受影响”。
 
-## 7. 为什么复制不能代替备份？
+## 7. 复制与备份分别解决的问题 {#_7-为什么复制不能代替备份}
 
 假设管理员通过合法 API 误删了对象，复制机制仍会推进各成员达成相同状态。从一致性角度看，这可能符合协议要求，但复制机制不会自动识别管理员的操作意图有误。
 

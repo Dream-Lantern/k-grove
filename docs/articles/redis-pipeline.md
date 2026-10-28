@@ -1,9 +1,9 @@
 ---
 id: redis-pipeline
 title: 第十七章 Pipeline、批量命令与背压
-description: 返回本册目录
+description: "如果每发一条命令都等待回复，网络等待会反复出现在调用路径上。Pipeline 的基本做法是先提交一批命令，再依次读取回复，让请求发送和结果接收重叠。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -38,7 +38,7 @@ Pipeline：提交 GET A、GET B → 依次取回 A、B 的回复
 
 同一连接的命令与回复保持相应顺序，但多个客户端的请求仍可能在批次的命令之间执行。Pipeline 不提供整批隔离，也不是“整个批次只用一个 TCP 包”。分包、拥塞、服务端缓冲和回复大小都会影响实际通信。[官方 Pipeline 原理](https://redis.io/docs/latest/develop/using-commands/pipelining/)
 
-## 2. hiredis 需要成对管理提交与取回
+## 2. hiredis 中的请求累积与回复读取 {#_2-hiredis-需要成对管理提交与取回}
 
 同步 hiredis 可以用 `redisAppendCommand` 等接口累积请求，再调用 `redisGetReply` 取回结果。应用必须检查提交结果、取回结果和每个回复的类型。下面是流程，不是完整可运行代码：
 
@@ -54,7 +54,7 @@ for 每个有界批次:
 
 这与超时、断连不是同一种状态：完整错误回复可以逐项消费；通信失败后则有未确认命令，不能把连接当成干净连接回池。见 [第 15 章的失败状态表](/articles/redis-hiredis.html)。
 
-## 3. 批次大小要看字节和尾延迟
+## 3. 用命令数、字节与等待时间确定批次 {#_3-批次大小要看字节和尾延迟}
 
 同为 1000 条命令，读取很小的计数器与读取数 MB 的值，负载完全不同。批次至少有三种边界：命令数、请求及预期回复字节、等待时间。
 

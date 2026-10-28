@@ -1,7 +1,7 @@
 ---
 id: ai-infra-green-context
 title: 第 5 章 Context、Module 与 Green Context 的边界
-description: Context 可以理解为 CUDA 资源和状态的管理环境。一个进程可以使用多张设备，也可以管理多个 context；因此需要明确对象归属和生命周期。
+description: "理解 CUDA Context 与 Green Context 的资源归属、SM 资源划分和生命周期，区分资源配置与实际性能验证。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -29,7 +29,7 @@ Runtime API 常见前缀为 `cuda`，负责较多隐式管理；Driver API 常�
 
 `cuCtxSetCurrent()` 设置的是调用它的宿主线程的当前 context，不是一个“整个 GPU 当前只能选中谁”的全局开关。context 所属、宿主线程当前状态、硬件此刻执行哪个任务，是三个不同问题。[Context API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__CTX.html)
 
-## 2. Module、Function、Stream 不是同一种对象
+## 2. Module、Function、Stream 与分配的对象关系 {#_2-module、function、stream-不是同一种对象}
 
 | 对象       | 表示什么             | 需要记录的归属               |
 | ---------- | -------------------- | ---------------------------- |
@@ -43,11 +43,11 @@ PTX 是中间表示，cubin 是面向相应 GPU 架构的设备二进制。fat b
 
 跨进程通信也不是只能复制回 CPU。CUDA IPC、外部内存、设备间访问等提供特定能力，但需要满足设备、句柄、安全和生命周期条件。初学示例默认各进程管理自己的分配，不依赖隐式共享。
 
-## 3. Green Context 不是更轻但仍随便抢全卡
+## 3. Green Context 的 SM 资源划分流程 {#_3-green-context-不是更轻但仍随便抢全卡}
 
 以 CUDA 12.8.1 文档为准，Green Context 可以把所支持的 SM 资源集合划分并提供给特定执行环境。逻辑步骤是查询资源 → 划分 SM 资源 → 生成描述符 → 创建 green context，再按 API 契约创建或使用相关 stream。
 
-它不是 MIG 的别名，也不意味着显存控制器、带宽和全部故障域都得到了隔离。资源划分的粒度、最小数量、并发进展条件，以及与其他 context 的关系，都必须结合目标架构和 API 限制理解。[Green Contexts，CUDA 12.8.1](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__GREEN__CONTEXTS.html)
+Green Context 与 MIG 提供不同层次的资源能力。解释其保证时，应分别核对 SM 划分粒度、最小数量、并发进展条件与其他 context 的关系；显存控制器、带宽和故障域的隔离还需按目标架构与 API 限制单独判断。[Green Contexts，CUDA 12.8.1](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__GREEN__CONTEXTS.html)
 
 ## 4. 工程上先写清所有权
 

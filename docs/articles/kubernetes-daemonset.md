@@ -1,9 +1,9 @@
 ---
 id: kubernetes-daemonset
 title: 第十七章 DaemonSet 与节点级任务
-description: Deployment 管理一组可互换副本，DaemonSet 则让符合条件的节点具有相应 Pod。节点加入、移除或标签条件变化，都会影响期望覆盖范围。
+description: "Deployment 管理一组可互换副本，DaemonSet 则让符合条件的节点具有相应 Pod。节点加入、移除或标签条件变化，都会影响期望覆盖范围。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -50,7 +50,7 @@ updateStrategy:
 
 该例用于理解更新预算，不是所有节点代理的推荐配置。代理若使用同一个 hostPort 或独占设备，在同一节点允许新旧实例重叠前，还要核对冲突。
 
-## 3. 更新字段的默认值不能照抄
+## 3. DaemonSet 的更新预算与取整规则 {#_3-更新字段的默认值不能照抄}
 
 DaemonSet 的 RollingUpdate 使用自己的字段语义。v1.28.0 API 中，`maxUnavailable` 默认是 1，`maxSurge` 默认是 0；不能从 Deployment 抄成两项都是 25%。
 
@@ -76,7 +76,7 @@ OnDelete 则把已有 Pod 的替换留给后续受控操作。一个网络代理
 
 DaemonSet 与 Deployment 都可以运行普通容器；资源类型不决定程序自动获得硬件权限。设备插件的节点侧职责将在第三十一章展开。
 
-## 5. 不要只看期望数量
+## 5. 从期望覆盖到实际可用 {#_5-不要只看期望数量}
 
 ```bash
 kubectl get daemonset AGENT -n NAMESPACE -o wide
@@ -84,7 +84,7 @@ kubectl describe daemonset AGENT -n NAMESPACE
 kubectl get pods -n NAMESPACE -o wide
 ```
 
-命令未执行。对比 desired、current、ready、available、updated 等字段，并把缺失实例映射回具体节点。期望 5 个且实际 5 个，不说明其中 5 个都可用；实例存在也不代表节点功能已验收。
+查询时对比 desired、current、ready、available、updated 等字段，并把缺失实例映射回具体节点。期望 5 个且实际 5 个，不说明其中 5 个都可用；实例存在也不代表节点功能已验收。
 
 节点数变化时，应先确认覆盖范围是否按预期改变，再判断是否发生故障。节点代理配置错误可能影响整个集群，因此发布前应安排分批观察和回退方案，不要同时强制重启所有代理。
 

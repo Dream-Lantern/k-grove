@@ -1,7 +1,7 @@
 ---
 id: ai-infra-api-wrapper
 title: 第 8 章 API Wrapper：覆盖范围与异步观测
-description: "整理 API 包装的覆盖边界、返回语义及主机调用与异步设备活动的观测方法。"
+description: "介绍 CUDA 调用拦截的常见入口，区分链接包装、动态符号解析与驱动接口，并说明各条路径的适用条件。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 8
 
 # 第 8 章 API Wrapper：覆盖范围与异步观测
 
-## 1. 链接期包装的边界
+## 1. 从链接符号到实际调用覆盖 {#_1-链接期包装的边界}
 
 [![观测链：API 与设备活动](/assets/notes/ai-infra/observe-paths.svg)](/assets/notes/ai-infra/observe-paths.svg)
 
@@ -34,7 +34,7 @@ GNU ld 的 `--wrap=symbol` 重定向参与该链接过程的相应未定义引�
 
 ## 2. 最小 Wrapper：保持返回语义
 
-`size_t` 用 `%zu`，只有成功时读取有效输出值，不吞错误、不假成功。
+包装函数需要保持原接口的返回值与有效输出语义：`size_t` 用 `%zu`，成功后再读取相应输出，失败时保留错误供调用方处理。
 
 ```cpp
 #include <cuda_runtime_api.h>
@@ -69,6 +69,6 @@ target_link_options(app PRIVATE
 
 包装层的 host enter/exit 不能冒充 kernel start/end。需要设备时间时使用受支持的 profiler/activity 路径并关联标识。[CUPTI Usage](https://docs.nvidia.com/cupti/main/main.html)
 
-## 4. 验收覆盖，而不是只增加符号名单
+## 4. 用覆盖矩阵验证返回值与资源生命周期 {#_4-验收覆盖-而不是只增加符号名单}
 
 覆盖矩阵应包含静态/动态库、Runtime/Driver、异步内存池、Graph、多线程和失败路径。需要比较无包装/有包装时的结果、返回值和资源寿命，并测量采集开销。未捕获的路径应明确记录为“未观测”。

@@ -1,7 +1,7 @@
 ---
 id: kubernetes-kube-proxy
 title: 第十章 kube-proxy 与 Service 转发
-description: 工作负载的 Pod 会替换，Pod 地址也可能变化。客户端若把每个实例的地址写死，就需要随时追踪这些变化。Service 通过逻辑入口与后端集合的配合，让客户端不必把某个临时 Pod 当成永久地址。
+description: "工作负载的 Pod 会替换，Pod 地址也可能变化。客户端若把每个实例的地址写死，就需要随时追踪这些变化。Service 通过逻辑入口与后端集合的配合，让客户端不必把某个临时 Pod 当成永久地址。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -27,7 +27,7 @@ order: 10
 
 Service 是 API 对象，并不是一台独立的代理机器。以普通 ClusterIP Service 为例，要实现连接转发，还需要端点信息与节点上的服务数据平面配合。
 
-这里先明确例外：Headless Service 使用 `clusterIP: None`，没有普通 Service 虚拟 IP；ExternalName 提供 DNS 别名语义，也不是为它新建一组普通虚拟 IP 转发规则。原笔记“所有 Service 都分配 ClusterIP”的说法因此需要修正。[Kubernetes 1.28 Service](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/service.md)
+这里先明确例外：Headless Service 使用 `clusterIP: None`，没有普通 Service 虚拟 IP；ExternalName 提供 DNS 别名语义，也不是为它新建一组普通虚拟 IP 转发规则。这些类型需要按各自的地址与转发语义理解。[Kubernetes 1.28 Service](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/service.md)
 
 ## 2. Service、端点与 kube-proxy 各做什么
 
@@ -49,7 +49,7 @@ kube-proxy 不负责创建应用副本，也不是由它判断应用所有业务
 
 在 iptables 模式下，kube-proxy 主要负责配置规则，业务数据包并不是先交给 kube-proxy 用户态进程逐条处理。它也不会因为服务使用 HTTP，就开始按 `Host` 或 URL 路径做七层路由。
 
-把“不是 HTTP 代理”写成“不支持 HTTP 流量”是错误的：HTTP 可以承载在 TCP 连接上，Service 可以转发这样的连接；只是它不因此具备 HTTP 语义路由能力。
+HTTP 可以承载在 TCP 连接上，Service 能转发这样的连接；按 `Host` 或 URL 路径路由则属于七层能力，需要相应入口实现。
 
 ## 4. 1.28 的模式，不能套用今天的列表
 
@@ -60,7 +60,7 @@ Kubernetes v1.28.0 的 kube-proxy 参数说明列出了 Linux 的 `iptables` 和
 | iptables | kube-proxy 协调内核规则，典型路径包含目标转换 | 每个请求都经过用户态代理进程       |
 | IPVS     | 利用内核 IPVS 及配套网络规则实现转发          | 有哈希表就意味着无限扩展、永远更快 |
 
-模式选择受版本、内核能力、服务数量、规则变化频率、兼容语义和运维条件影响。原笔记中关于 IPVS 性能的绝对结论缺乏环境和测量条件，本稿不保留为普遍结论；也没有据此替你修改模式。
+模式选择受版本、内核能力、服务数量、规则变化频率、兼容语义和运维条件影响。IPVS 的性能表现需结合上述条件测量，不能仅由数据结构推导实际收益。
 
 当前官方 [虚拟 IP 与 Service 代理说明](https://kubernetes.io/docs/reference/networking/virtual-ips/)可补充机制背景，但其中新增模式、弃用时间和调优参数必须与具体版本另行核对。本章不提供未经复测的性能数字。
 
@@ -74,11 +74,11 @@ Kubernetes v1.28.0 的 kube-proxy 参数说明列出了 Linux 的 `iptables` 和
 
 这里的 Service 地址不是节点地址，也不表示应用必须监听 80。`port` 和 `targetPort` 分别描述两个位置，名字相似不代表含义相同。
 
-本例刻意不用原文中的 `10.96.123.456`：它不是合法 IPv4 地址，最后一段超过了 255。示意地址若写错，会让读者误把无效数据当成可执行配置；图中改为角色名称，实际地址从环境观察。
+图中以角色名称区分 Service 与后端地址；实际地址应从目标环境获取。IPv4 的各段范围为 0–255，例如 `10.96.123.456` 超出范围，不能作为可用配置。
 
 连接转发还要考虑回程、连接跟踪、会话保持与流量策略。负载均衡不意味着一个 HTTP 长连接里的每个请求都会平均分配到不同 Pod，也不保证多个后端获得完全相同的请求数。
 
-## 6. 后端变化，不意味着旧连接瞬间消失
+## 6. 后端更新、端点传播与已有连接 {#_6-后端变化-不意味着旧连接瞬间消失}
 
 Pod 创建、就绪或终止后，相关端点状态与节点规则需要经过多个协调过程更新，不能将其描述为“实时同步，永不访问异常后端”。
 

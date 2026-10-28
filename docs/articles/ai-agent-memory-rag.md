@@ -1,7 +1,7 @@
 ---
 id: ai-agent-memory-rag
 title: 第3章 用户记忆、知识库与 RAG
-description: RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回答前检索有依据的外部信息的流程，不等于存储系统本身；既可以连接知识库，也可以服务于个人记忆。
+description: "RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回答前检索有依据的外部信息的流程，不等于存储系统本身；既可以连接知识库，也可以服务于个人记忆。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: ai-agent
@@ -19,7 +19,7 @@ order: 3
 
 # 第3章 用户记忆、知识库与 RAG
 
-## 3.1 Context、Memory、Knowledge Base 是三层不同概念
+## 3.1 上下文、用户记忆与知识库的分工 {#_3-1-context、memory、knowledge-base-是三层不同概念}
 
 | 概念           | 作用                    | 生命周期               | 典型内容                 |
 | -------------- | ----------------------- | ---------------------- | ------------------------ |
@@ -65,13 +65,13 @@ RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回�
 
 存储内容并非越精简越好，复杂关系可能需要结构化表示；但无论采用何种形式，都不能将模型推测当作已证实的用户事实。
 
-### Mem0、Memobase、LoCoMo
+### 记忆系统与评估：Mem0、Memobase、LoCoMo {#mem0、memobase、locomo}
 
-原书把 Mem0 / Memobase 作为记忆系统案例，LoCoMo 用于长对话记忆评估。阅读框架时要拆解：写入时如何抽取、冲突如何解决、如何检索、删除如何实现、评价采用什么任务。**仅看“能记住多少条”不足以评价系统。**
+Mem0 / Memobase 是记忆系统案例，LoCoMo 用于长对话记忆评估。理解这类系统可沿写入、冲突处理、检索、删除和任务评估五个环节展开；记忆条数反映存储规模，任务表现则需要单独评价。
 
 ## 3.4 标准 RAG 流程
 
-[本章修订流程图（含失败/未知路径）](/assets/notes/ai-agent/03-rag.svg)
+[RAG 检索、生成与结果验证流程](/assets/notes/ai-agent/03-rag.svg)
 
 ### 分块 Chunking
 
@@ -111,7 +111,7 @@ RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回�
 
 以 Agent 开发文档问答为任务，做三个版本：BM25-only、Dense-only、Hybrid+Rerank。固定问题集，包含精确符号、同义词、跨文件关系和不存在的答案；比较 Recall@5、引用准确率与 p95 延迟。再引入“未找到可信依据则明确未知”的策略。
 
-## 3.8 用混合检索源码补齐“融合”这一步
+## 3.8 混合检索中的排名融合 {#_3-8-用混合检索源码补齐-融合-这一步}
 
 优先读 `retrieval-pipeline/fusion.py`。RRF（Reciprocal Rank Fusion，倒数排名融合）不直接相加 BM25 分数和余弦相似度，而按每路排名贡献 `w / (k + rank)`。这避免了量纲不同的问题；`k=60` 是示例默认值，不是针对你的语料验证过的最优值。
 
@@ -139,7 +139,7 @@ return sorted(fused.items(), key=lambda kv: kv[1], reverse=True)
 
 [![RAG：混合检索示例](/assets/notes/ai-agent/03-rag.svg)](/assets/notes/ai-agent/03-rag.svg)
 
-配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/03-rag.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/03-rag.dot)供对照，不是本版配图的可编辑源文件。
+图中展示稀疏与稠密检索、候选融合及生成验证的衔接；检索不到依据时保留失败或未知出口。[放大查看 SVG](/assets/notes/ai-agent/03-rag.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/03-rag.dot)供对照，不是本版配图的可编辑源文件。
 
 若要继续研究记忆，下一步看 `chapter3/user-memory` 的记忆表示，再用当前仓库第7章的评估器比较相同问题。表示复杂度上升是否有收益，需要通过召回与最终答案分开验证。
 
@@ -148,15 +148,15 @@ return sorted(fused.items(), key=lambda kv: kv[1], reverse=True)
 - [chapter3/retrieval-pipeline/README.md](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter3/retrieval-pipeline/README.md)
 - [chapter3/user-memory/README.md](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter3/user-memory/README.md)
 - [当前仓库正文](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/book/chapter3.md)
-- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html) · 统一验证入口（仅保留于本地审阅资料，公开版不提供）
+- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html)
 
-## 检查理解
+## 本章要点 {#检查理解}
 
-1. 为什么记忆和知识库都可使用 RAG，却不是同一层概念？
-2. Dense 检索对代码错误码 `E1042` 可能不如 BM25 的原因是什么？
-3. 为什么需要区分召回质量和最终回答质量？
-4. Contextual Retrieval 是在索引时还是在每次对话中自动“把记忆加到 Query”？
-5. 如何确认一个“长期记忆”是用户确认的事实而非模型推断？
+1. 记忆与知识库组织不同生命周期和作用范围的信息，RAG 则是读取这些信息并辅助生成的流程。
+2. BM25 擅长精确关键词，Dense 擅长语义近似，因此错误码等精确符号应单独纳入检索测试。
+3. 召回负责把依据放进候选池，生成负责正确使用依据，两阶段需要分别评估。
+4. Contextual Retrieval 在索引阶段为分块附加背景；用户记忆注入属于另一条处理管线。
+5. 长期记忆应记录来源、确认状态与有效期，并支持更正和删除，避免把模型推断保存成已确认事实。
 
 ## 学习资料与代码出处
 

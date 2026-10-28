@@ -1,7 +1,7 @@
 ---
 id: ai-agent-continuous-improvement
 title: 第8章 Agent 的持续进化（Continual Improvement）
-description: 原书强调：一次成功可能只是偶然，错误经验也可能来自提示注入。Agent 完成任务后不会自动修改模型参数。系统必须主动完成轨迹采集 → 评价 → 跨轨迹归纳 → 候选更新 → 回归验证 → 发布/回滚，才谈得上持续进化。
+description: "Agent 的持续改进是一条工程流程：轨迹采集 → 评价 → 跨轨迹归纳 → 候选更新 → 回归验证 → 发布/回滚。系统从任务记录中提取候选经验，经验证后更新合适的载体。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: ai-agent
@@ -19,9 +19,9 @@ order: 8
 
 # 第8章 Agent 的持续进化（Continual Improvement）
 
-## 8.1 保存经历不等于“学会”
+## 8.1 从任务经历到可验证的改进 {#_8-1-保存经历不等于-学会}
 
-原书强调：一次成功可能只是偶然，错误经验也可能来自提示注入。Agent 完成任务后不会自动修改模型参数。系统必须主动完成**轨迹采集 → 评价 → 跨轨迹归纳 → 候选更新 → 回归验证 → 发布/回滚**，才谈得上持续进化。
+Agent 的持续改进是一条工程流程：**轨迹采集 → 评价 → 跨轨迹归纳 → 候选更新 → 回归验证 → 发布/回滚**。系统从任务记录中提取候选经验，经验证后更新合适的载体。一次成功可能只是偶然，轨迹也可能含有提示注入，因此需要独立评价；完成任务本身不会自动修改模型参数。
 
 ### 三层验证器
 
@@ -42,11 +42,11 @@ order: 8
 | 程序 / Harness    | 确定性校验、状态机、业务逻辑 | 可测试、强约束         | 维护成本           |
 | 模型参数          | 隐式习惯、复杂感知与策略     | 泛化、推理时调用成本低 | 训练难、回归成本高 |
 
-**重要方法论**：不要把所有问题都变成提示词优化。比如“批准计划的 SLO `≤` 被错误渲染成 `<`”，应该修 Renderer 与单测，不是加一条提示词“注意小于等于”。
+**按根因选择更新载体**。例如批准计划的 SLO `≤` 被错误渲染成 `<`，问题在渲染层，应修复 Renderer 并增加单测；流程指导问题则可考虑更新 Prompt 或 Skill。
 
 ## 8.3 轨迹转可验证的经验
 
-[本章修订流程图](/assets/notes/ai-agent/08-evolution.svg)
+[经验提取、候选验证与受控发布流程](/assets/notes/ai-agent/08-evolution.svg)
 
 经验文档推荐字段：触发条件、问题表现、根因、可执行对策、反例、不适用范围、参考轨迹、验证版本与日期。
 
@@ -84,7 +84,7 @@ contract = diagnosis.get("change_contract", {})
 
 [![Agent 持续进化：门禁、审批与发布](/assets/notes/ai-agent/08-evolution.svg)](/assets/notes/ai-agent/08-evolution.svg)
 
-配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/08-evolution.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/08-evolution.dot)供对照，不是本版配图的可编辑源文件。
+图中从轨迹提取候选更新，经过验证、审批与灰度再进入正式版本，并保留拒绝和回滚路径。[放大查看 SVG](/assets/notes/ai-agent/08-evolution.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/08-evolution.dot)供对照，不是本版配图的可编辑源文件。
 
 ### 推荐三个反例
 
@@ -100,7 +100,7 @@ contract = diagnosis.get("change_contract", {})
 
 - [chapter9/self-modifying-agent/README.md](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter9/self-modifying-agent/README.md)
 - [当前仓库正文](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/book/chapter9.md)
-- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html) · 统一验证入口（仅保留于本地审阅资料，公开版不提供）
+- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html)
 
 ## 8.8 验证器的覆盖范围与证据来源
 
@@ -112,7 +112,7 @@ contract = diagnosis.get("change_contract", {})
 | 未获证实的claim复述成最终结论 | claim grounding可为0而conclusion support为1 | 原实现把全部claim再加入结论证据；禁止以自身复述自我支持 |
 | 有声明的工具结果但无实际返回  | 不进入结果对照，完整性维度可为1             | 区分尚未调用/待返回/日志缺失/合法null，不把缺证判忠实   |
 
-本次新增的`experiments/revised_contracts.py`保留原快照不动，采用范围更窄的**结构化证据契约**：由可信适配器传入`evidence_id/source/call_id/step_id/key/value/present/complete`，声明显式给出待核对字段及来源ID。最终结论也独立指向先前外部观察，不能仅引用一个未经证明的claim。未来观察、身份冲突、未采集完成、不可结构化的自然语言都保持UNKNOWN；相反的已知值为FAIL。合法null通过`present=true, value=null`表达。
+配套教学示例 `experiments/revised_contracts.py` 与原快照分开，采用范围更窄的**结构化证据契约**：由可信适配器传入`evidence_id/source/call_id/step_id/key/value/present/complete`，声明显式给出待核对字段及来源ID。最终结论也独立指向先前外部观察，不能仅引用一个未经证明的claim。未来观察、身份冲突、未采集完成、不可结构化的自然语言都保持UNKNOWN；相反的已知值为FAIL。合法null通过`present=true, value=null`表达。
 
 ```json
 {
@@ -123,14 +123,14 @@ contract = diagnosis.get("change_contract", {})
 
 适配器的可信性不能由模型自行填`source=tool`来获得。这个教学示例只比对结构化事实及时间/身份关系；不会验证中文语义、否定句推理、真实权限或业务数据库。中文/英文/混合语言在没有结构化证据时一律UNKNOWN，有确定性字段证据时才对字段作比较。报告可评估数量、覆盖率、UNKNOWN数量和每项原因，不用一个平均分掩盖未覆盖内容。
 
-修订回归包括：空输入、三种语言无证据、合法证据、状态/数值冲突、缺实际结果、合法null、错误调用ID、未来证据与自我循环。通过这些测试只表明该合成契约成立；完整业务仍需环境验证器。统一运行与不可变证据见 实验说明（仅保留于本地审阅资料，公开版不提供）。
+该契约的回归案例包括：空输入、三种语言无证据、合法证据、状态/数值冲突、缺实际结果、合法null、错误调用ID、未来证据与自我循环。通过这些测试只表明该合成契约成立；完整业务仍需环境验证器。实际业务接入时，应另行保存运行环境、不可变输入与验证证据。
 
-## 检查理解
+## 本章要点 {#检查理解}
 
-1. 为什么把错误堆到向量数据库并不会让 Agent 自动学会避免错误？
-2. 什么样的改进更适合写在代码里，而不是新建 Skill？
-3. 为什么必须保留独立 Eval 集与回滚机制？
-4. 如果一条生成经验没有原始轨迹证据，能否发布为默认规则？
+1. 轨迹存储只是起点，经验需要提取、验证并作用于后续任务，才能形成改进闭环。
+2. 确定性规则和实现缺陷适合用代码及测试修复；可语言化操作流程可更新 Skill。
+3. 独立 Eval 检查泛化与回归，回滚机制在新版本退化时恢复稳定状态。
+4. 缺少来源或验证的经验保留在候选区，取得证据并通过审核后再发布。
 
 ## 学习资料与代码出处
 

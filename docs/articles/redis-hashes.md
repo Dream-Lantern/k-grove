@@ -1,9 +1,9 @@
 ---
 id: redis-hashes
 title: 第四章 Hash、对象字段与字段过期
-description: Hash 在一个键下保存 field-value 映射，适合需要按字段读取、更新的对象。它不要求每个对象拥有完全相同的字段集合，但也不自动提供关系型数据库的约束和关联查询。
+description: "Hash 在一个键下保存 field-value 映射，适合需要按字段读取、更新的对象。它不要求每个对象拥有完全相同的字段集合，但也不自动提供关系型数据库的约束和关联查询。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -48,7 +48,7 @@ HINCRBY demo:user:42 score -2
 
 键或字段不存在时可从 0 开始，值必须是命令可接受的整数表示。字段内部本来就是字节串，所以“字符串一定不能 HINCRBY”过于笼统；应区分合法整数字符串与普通文本。
 
-命令名是 HINCRBYFLOAT，不是 hincrybyfloat。整数运算有有符号 64 位范围与溢出检查，不能依赖无界增长。[HINCRBY 定义](https://redis.io/docs/latest/commands/hincrby/)
+浮点增量使用 HINCRBYFLOAT；整数增量需要遵守有符号 64 位范围与溢出检查。[HINCRBY 定义](https://redis.io/docs/latest/commands/hincrby/)
 
 ## 3. 键级 TTL 与字段 TTL
 
@@ -86,11 +86,11 @@ HTTL 使用秒，HPTTL 使用毫秒。官网中的某些旧示例和客户端注
 
 这里的“独立授权”尤其需要区分应用校验与 Redis 键级 ACL：允许访问这个 Hash 键，并不意味着 Redis 会自动为每个 field 建立单独的授权规则。相关边界见 [第 31 章](/articles/redis-security-maintenance.html)。
 
-## 5. 内部编码不要沿用旧参数名
+## 5. 按版本观察内部编码与阈值 {#_5-内部编码不要沿用旧参数名}
 
-旧笔记讲 ziplist 和 hashtable，新版本可能使用 listpack 或后续结构；field 名和值大小、字段数都会影响紧凑表示条件。
+历史版本使用 ziplist、hashtable 等表示，新版本可能使用 listpack 或后续结构。field 名、值大小与字段数共同影响紧凑表示条件。
 
-`hash-max-ziplist-entries` 等旧参数不能在所有新版本直接照抄，更不能把 has-max 拼写当成有效设置。调整阈值也不会统一、立即把所有对象变成你想要的编码。
+`hash-max-ziplist-entries` 等参数按其版本查阅，配置名称以目标版本的有效参数为准。调整阈值也不会统一、立即把所有对象变成你想要的编码。
 
 对于内存优化，记录 Redis 精确版本、OBJECT ENCODING、字段分布、MEMORY USAGE 以及命令成本；相关实现演进在第二十六章展开。[内存优化说明](https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/memory-optimization/)
 

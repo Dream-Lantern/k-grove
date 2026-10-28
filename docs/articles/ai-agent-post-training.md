@@ -1,7 +1,7 @@
 ---
 id: ai-agent-post-training
 title: 第7章 模型后训练：SFT、RL、偏好优化
-description: 后训练不是只有一种算法。实践常见：SFT（监督微调）→ 偏好优化/DPO 或 RL（按需要）。
+description: "介绍 SFT、LoRA、强化学习和偏好优化的基本机制，并结合精确复制与工具使用说明训练信号、硬约束和验证方法。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: ai-agent
@@ -19,13 +19,13 @@ order: 7
 
 # 第7章 模型后训练：SFT、RL、偏好优化
 
-## 7.1 三个阶段各自改变了什么
+## 7.1 词元化、预训练与后训练 {#_7-1-三个阶段各自改变了什么}
 
 1. **Tokenization（词元化）**：把文本变成离散 Token 序列。Tokenizer 是编码规则，不是训练模型理解世界的阶段。
 2. **Pretraining（预训练）**：通常通过预测下一个 Token 训练基础表示与知识能力。
 3. **Post-training（后训练）**：通过示范数据、偏好或奖励信号提高遵循指令、行为质量和工具使用能力。
 
-后训练不是只有一种算法。实践常见：**SFT（监督微调）→ 偏好优化/DPO 或 RL（按需要）**。
+后训练包含多种方法，实践常见路径为：**SFT（监督微调）→ 偏好优化/DPO 或 RL（按需要）**。
 
 ## 7.2 SFT（Supervised Fine-Tuning）
 
@@ -42,7 +42,7 @@ order: 7
 - `target_modules`：只加 Attention 与同时加入 MLP 的效果可能不同。
 - 全参微调 vs LoRA：取决于数据量、部署目标、显存与遗忘风险。
 
-**对原笔记的修订**：`SFT rank 64–256、RL rank 8–32、学习率约全参 10 倍、LoRA 1%–5% 参数` 是书中归纳的部分实验/实践经验，并非可跨模型、模块、数据规模无条件复制的定律。实施时应先做小规模实验与回归。
+**参数经验的适用范围**：书中归纳了 `SFT rank 64–256、RL rank 8–32、学习率约全参 10 倍、LoRA 1%–5% 参数` 等部分实验/实践经验。选择参数时需结合模型、目标模块与数据规模，通过小规模实验和回归确认适用性。
 
 ## 7.3 RL（Reinforcement Learning）
 
@@ -104,7 +104,7 @@ order: 7
 
 来源：[GKD，arXiv:2306.13649v3](https://arxiv.org/abs/2306.13649v3)、[Self-Distilled Reasoner，arXiv:2601.18734v3，§3.2](https://arxiv.org/html/2601.18734v3)。两者的样本分布、教师输入和训练对象应分开记。
 
-更密集的token监督不保证更便宜：还要计教师推理/logits、rollout长度、训练吞吐、验证成本与留出表现。[Rethinking On-Policy Self-Distillation for Thinking Models，arXiv:2607.05184v1](https://arxiv.org/abs/2607.05184v1)在其长推理任务和模型设置下观察到特权上下文带来的退化；这限制了外推范围，不能推出OPSD普遍无效。本次核对机制与论文范围，没有复现训练或引用它们的数值作为本地收益。
+更密集的token监督不保证更便宜：还要计教师推理/logits、rollout长度、训练吞吐、验证成本与留出表现。[Rethinking On-Policy Self-Distillation for Thinking Models，arXiv:2607.05184v1](https://arxiv.org/abs/2607.05184v1)在其长推理任务和模型设置下观察到特权上下文带来的退化；这限制了外推范围，不能推出OPSD普遍无效。这里介绍论文中的机制与适用范围，训练尚未本地复现，论文结果应与本地收益分开记录。
 
 ## 7.8 怎样把训练放进系统工程
 
@@ -134,9 +134,9 @@ out.append({"id": row["id"], "kind": row["kind"], "exact": int(pb == tb), "predi
 
 [![训练改进：条件对照与独立评估](/assets/notes/ai-agent/07-training.png)](/assets/notes/ai-agent/07-training.png)
 
-配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 PNG](/assets/notes/ai-agent/07-training.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/07-training.dot)供对照，不是本版配图的可编辑源文件。
+图中将训练候选、受控对照与独立评估分开，体现训练信号与实际任务收益的验证关系。[放大查看 PNG](/assets/notes/ai-agent/07-training.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/07-training.dot)供对照，不是本版配图的可编辑源文件。
 
-本次未进行 GPU 训练，也未调用计费模型，不能将仓库历史训练结果当作本地复现成绩。笔记中的本地脚本仅展示 Unicode、首尾空白和 JSON round-trip 的区别，用于判断应在哪一层修复错误。
+配套本地脚本用于展示 Unicode、首尾空白和 JSON round-trip 的区别，帮助定位错误所在层次；GPU 训练和计费模型调用尚未执行。上游历史训练结果属于参考材料。
 
 DPO 的偏好对也应关联证据状态：同一句“已完成”，有读回证据时可能正确，缺少证据时则可能错误。如果仅按措辞标注 chosen/rejected，模型可能只是更擅长说“我还没完成”，任务能力却没有改善。
 
@@ -144,15 +144,15 @@ DPO 的偏好对也应关联证据状态：同一句“已完成”，有读回�
 
 - [chapter8/exact-copy-sft/README.md](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/README.md)
 - [当前仓库正文](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/book/chapter8.md)
-- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html) · 统一验证入口（仅保留于本地审阅资料，公开版不提供）
+- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html)
 
-## 检查理解
+## 本章要点 {#检查理解}
 
-1. 什么知识应该放在 RAG，而不是要求模型通过 SFT 记住？
-2. LoRA 为什么可以降低训练成本？Rank 越大就一定越好吗？
-3. 为什么只奖励“任务成功”可能训练出危险的 Agent？
-4. RLVR 与 RLHF 的奖励来源有什么区别？
-5. 一个 Agent 不会正确输出 JSON，是先尝试 Schema 校验/提示示例，还是立即上 RL？
+1. 更新频繁的事实适合通过 RAG 提供，固定规则由代码校验，可描述流程可先用 Prompt 或 Skill 表达。
+2. LoRA 冻结基础权重、训练低秩增量以减少可训练参数；rank 需结合容量、成本和留出表现选择。
+3. 结果奖励可能被投机利用，授权与不可违反的业务规则需要执行器强制约束。
+4. RLHF 使用人类反馈学习奖励信号，RLVR 使用可验证结果构造奖励。
+5. 格式问题应先检查提示示例、Schema 和工具参数边界，再依据可复现评估判断是否需要训练。
 
 ## 学习资料与代码出处
 

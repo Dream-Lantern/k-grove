@@ -1,7 +1,7 @@
 ---
 id: ai-infra-kubernetes-hami
 title: 第 16 章 Kubernetes GPU 资源与 HAMi 调度链
-description: Kubernetes 把 Pod 放到某个节点，不等于它天然理解每张 GPU 的剩余显存、拓扑和百分比配额。GPU 能力来自设备插件、调度扩展及运行时等组件的配合。
+description: "Kubernetes 的 GPU 工作负载要经过资源上报、节点与设备选择、分配配置和容器执行。设备插件、调度扩展及运行时分别承担这些环节；显存、拓扑或算力配额是否受管理，取决于启用的组件与策略。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,9 +19,9 @@ order: 16
 
 # 第 16 章 Kubernetes GPU 资源与 HAMi 调度链
 
-Kubernetes 把 Pod 放到某个节点，不等于它天然理解每张 GPU 的剩余显存、拓扑和百分比配额。GPU 能力来自设备插件、调度扩展及运行时等组件的配合。
+Kubernetes 的 GPU 工作负载要经过资源上报、节点与设备选择、分配配置和容器执行。设备插件、调度扩展及运行时分别承担这些环节；显存、拓扑或算力配额是否受管理，取决于启用的组件与策略。
 
-## 1. 普通设备插件负责什么
+## 1. 设备插件的注册、健康上报与分配 {#_1-普通设备插件负责什么}
 
 设备插件向 kubelet 注册并上报设备健康状态，kubelet 据此发布扩展资源；容器准备阶段再进行设备分配和相应运行配置。`nvidia.com/gpu: 1` 在普通整卡模式中是设备资源请求，不能直接解释为“1% GPU”。NVIDIA 插件还提供 MIG、time-slicing、MPS 等有各自条件的共享模式。[NVIDIA Kubernetes Device Plugin](https://github.com/NVIDIA/k8s-device-plugin)
 
@@ -29,7 +29,7 @@ Kubernetes 把 Pod 放到某个节点，不等于它天然理解每张 GPU 的�
 
 [![HAMi：调度、分配与就绪的边界](/assets/notes/ai-infra/hami-scheduling.svg)](/assets/notes/ai-infra/hami-scheduling.svg)
 
-图示为典型架构，不锁定某个 commit 的函数顺序。Webhook 修改有关 Pod 配置；调度组件结合节点/设备状态选择位置；kubelet 与设备插件准备设备及注入配置；容器内控制层落实对应策略。Pod 已绑定节点，不意味着镜像、设备配置和业务启动都成功。
+图示按典型架构解释各阶段，具体函数顺序需查对应提交。Webhook 修改有关 Pod 配置；调度组件结合节点/设备状态选择位置；kubelet 与设备插件准备设备及注入配置；容器内控制层落实对应策略。Pod 已绑定节点，不意味着镜像、设备配置和业务启动都成功。
 
 ## 3. 一个明确标版本的资源片段
 

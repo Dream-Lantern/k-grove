@@ -1,9 +1,9 @@
 ---
 id: kubernetes-version-references
 title: 附录 A　版本依据与特性门控
-description: 返回本册目录
+description: "本册主要复盘 Linux Kubernetes 1.28，不是面向当前最新版本的安装手册。下表集中列出讨论版本、API、门控、实现前提和证据位置；各章只展开与主题有关的差异。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: reference
 tags:
@@ -56,6 +56,6 @@ order: 90
 
 以上来自 [v1.28.0 kube_features.go](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/features/kube_features.go)。实际集群可能覆盖上游默认值；对于同一功能，还需确认相关组件的门控配置和 API 可用性。
 
-## 4. 本册没有替代哪些验证
+## 4. 从版本依据到实际环境验证 {#_4-本册没有替代哪些验证}
 
-这份表格不能说明实际发行版、内核、containerd 与 CNI 的精确组合，也不能确定 CoreDNS 配置、存储与设备驱动。清单通过静态阅读，并不代表已通过服务端 schema、调度、运行和故障恢复测试。各章新增数字均为纸面算例，不作为个人环境的性能结论。
+版本表用于定位文档、源码和门控条件。复现时还需记录实际发行版、内核、containerd、CNI、CoreDNS、存储与设备驱动，再依次验证服务端 schema、调度、运行和故障恢复。各章教学数字为纸面算例，实际性能需要单独测量。

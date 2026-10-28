@@ -1,7 +1,7 @@
 ---
 id: kubernetes-persistent-volumes
 title: 第二十三章 PV、PVC 与 StorageClass
-description: Pod 需要存储，但不适合把某台服务器的所有实现细节都写进应用模板。
+description: "理解 Pod、PVC、PV 与 StorageClass 的引用关系，区分绑定、挂载、访问模式、动态供应和数据回收。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -43,7 +43,7 @@ PV 不是磁盘分区本身，StorageClass 也不会凭空提供磁盘。动态�
 
 `WaitForFirstConsumer` 会让供应或绑定与使用该 PVC 的 Pod 调度协同，因此 PVC Pending 不一定立即表示故障；要先看 class 的绑定模式和事件。
 
-## 3. 先纠正字段，再理解模式
+## 3. PVC 字段与 Pod 引用方式 {#_3-先纠正字段-再理解模式}
 
 新增教学例子：假设 study-storage 是已经准备好的 StorageClass，未创建：
 
@@ -63,7 +63,7 @@ spec:
       storage: 10Gi
 ```
 
-字段是 `accessModes`，不是 accessMode；模式名是 `Filesystem`，不是 FileSystem。Pod 的卷引用使用 `persistentVolumeClaim.claimName`，不是 clainName；`kind` 的键名也不能大写成 Kind。
+`accessModes` 声明所需访问模式，`volumeMode: Filesystem` 指定文件系统卷模式；Pod 通过 `persistentVolumeClaim.claimName` 引用 PVC。字段名及枚举值需按 API 的大小写填写。
 
 ```yaml
 volumes:
@@ -76,7 +76,7 @@ volumes:
 
 ## 4. RWO、RWX、ROX 与 RWOP
 
-RWO 是 ReadWriteOnce，通常指单节点读写挂载，不等于只允许一个 Pod；同节点多个 Pod 的情况还需结合后端与实现。RWX 是多节点读写，ROX 是 ReadOnlyMany，不是 ROM。
+RWO（ReadWriteOnce）通常指单节点读写挂载，同节点多个 Pod 的使用情况仍需结合后端与实现；RWX（ReadWriteMany）表示多节点读写，ROX（ReadOnlyMany）表示多节点只读。
 
 RWOP（ReadWriteOncePod）限制单 Pod 读写使用，在 1.28 属于 Beta，且有 CSI 与相关组件条件。不能只改一个字符串就假设任意 NFS 或旧驱动支持它。
 

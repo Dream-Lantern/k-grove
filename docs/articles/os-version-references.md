@@ -1,9 +1,9 @@
 ---
 id: os-version-references
 title: 附录 A：版本与技术依据
-description: 核对日期：2026-10-22。本册未选定用户实际要安装的 Linux。历史实现、跨平台概念与现代产品文档分开说明，不将某个版本的寄存器、结构体或参数推广到所有系统。
+description: "汇总 Linux 0.11、现代 Linux、POSIX 与体系结构资料的来源，区分历史实现、跨平台概念和待核验细节。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: reference
 tags:
@@ -19,7 +19,7 @@ order: 90
 
 # 附录 A：版本与技术依据
 
-核对日期：2026-10-22。本册未选定用户实际要安装的 Linux。历史实现、跨平台概念与现代产品文档分开说明，不将某个版本的寄存器、结构体或参数推广到所有系统。
+核对日期：2026-10-22。本册按历史实现、跨平台概念和现代 Linux 接口分别组织依据，尚未指定实际安装环境。查阅寄存器、结构体或参数时，应先定位文章对应的版本与平台。
 
 ## 1. Linux 0.11 源码范围
 
@@ -33,7 +33,7 @@ order: 90
 | mm/memory.c                                   | copy_page_tables、写保护、引用计数、do_no_page |
 | fs/buffer.c、kernel/blk_drv/ll_rw_blk.c       | bread、缓冲状态、请求与完成                    |
 
-课程修改版可能以软件内核栈切换替代原版机制；缺少课程完整源码时，不能将其视为原版编译路径。原笔记中的损坏片段保留在私有原文中，新稿改用解释与伪代码，不提供虚构的编译通过记录。
+课程修改版可能以软件内核栈切换替代原版机制，阅读时需使用该课程的完整源码，与原版路径分别对照。正文使用机制说明和已注明的伪代码，未提供编译通过记录。
 
 ## 2. 对照资料
 
@@ -49,15 +49,15 @@ order: 90
 | 文件、缺页统计   | [mmap](https://man7.org/linux/man-pages/man2/mmap.2.html)、[fsync](https://man7.org/linux/man-pages/man2/fsync.2.html)、[getrusage](https://man7.org/linux/man-pages/man2/getrusage.2.html)   | 按 Linux 口径，不与 Windows 逐项等同 |
 | 另一教学架构     | [xv6 RISC-V 2024 教材](https://pdos.csail.mit.edu/6.1810/2024/xv6/book-riscv-rev4.pdf)                                                                                                        | 不混抄 x86 寄存器与陷入实现          |
 
-现代 UEFI 规范页面本轮抓取受限，没有补写未经核对的具体固件调用顺序。POSIX 名称不用于证明所有系统调用都采用 int 0x80；硬件权限也没有简化成适用于所有指令的单一 DPL 不等式。
+现代 UEFI 的具体固件调用顺序尚待对应规范核验，这里仅介绍引导阶段的职责。POSIX 名称不用于证明所有系统调用都采用 int 0x80；硬件权限也没有简化成适用于所有指令的单一 DPL 不等式。
 
 原图涉及第三方资料，授权尚未逐一核实；新图则是重新表达机制的教学抽象。本地候选稿并不意味着已获公开发布授权，文中的代码与系统参数也不代表操作授权。
 
 [返回本册目录](/collections/operating-systems/)
 
-## 本轮复核的精确定位
+## 关键规则的来源定位 {#本轮复核的精确定位}
 
 - C11数据竞争：[WG14 N1570 §5.1.2.4 ¶25](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)，抽象交错不等于未同步C程序的合法结果清单。
 - 多线程fork：[fork(2) DESCRIPTION中的线程与异步信号安全限制](https://man7.org/linux/man-pages/man2/fork.2.html)。
-- Linux0.11：kernel/sched.c的do_timer、kernel/fork.c的copy_mem、mm/memory.c的copy_page_tables与include/linux/sched.h的页目录字段，本轮再次只读核对。
+- Linux0.11：kernel/sched.c的do_timer、kernel/fork.c的copy_mem、mm/memory.c的copy_page_tables与include/linux/sched.h的页目录字段，核查方式为只读源码对照。
 - 普通文件映射同步：[msync(2) DESCRIPTION / VERSIONS](https://man7.org/linux/man-pages/man2/msync.2.html)，生命周期不代替持久化屏障。

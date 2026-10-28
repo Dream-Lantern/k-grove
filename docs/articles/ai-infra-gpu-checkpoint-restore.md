@@ -1,7 +1,7 @@
 ---
 id: ai-infra-gpu-checkpoint-restore
 title: GPU-CR / GCR：GPU Checkpoint-Restore 论文与源码学习笔记
-description: GPU Checkpoint/Restore (C/R) 要恢复的并不只是显存字节，还包括两个互相关联的状态：
+description: "结合 VMM、CUDA 驱动 Checkpoint / Restore 与 G-CR 源码，理解状态保存、恢复流程及应用层需要补齐的依赖。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -28,14 +28,14 @@ order: 26
 > 阅读材料：论文 [GPU Checkpoint/Restore Made Fast and Lightweight, FAST '26](https://www.usenix.org/system/files/fast26-zeng.pdf)；项目 [gpu-os/GPU-CR](https://github.com/gpu-os/GPU-CR)。
 >
 > **证据约定**：**[论文]** 表示论文的设计或实验结论；**[代码]** 表示 GPU-CR 公开仓库可定位的实现；**[工程分析]** 表示对机制的解释、设计建议或风险推断。不能把论文中的研究能力直接当成当前仓库已经完整实现、经过自己复现的能力。
->
-> **一句话**：用 CUDA VMM 分离 GPU 虚拟地址与物理显存，先将 GPU 数据高带宽转移到 Host，再释放物理显存并保留地址语义；恢复时重建物理映射和内容；GPU 控制状态交给驱动级 C/R；多 GPU 再额外修复跨进程 cuMem IPC 关系。论文还研究了通过 CPU Shadow Execution 识别 Dirty Buffer 的增量 Checkpoint。
 
-**先分清三个层次**：VMM 解决指针与物理分配的关系；驱动 C/R 处理 CUDA 状态；完整应用恢复还需要 CPU 进程状态、外部依赖与恢复后的业务校验。任何一层“完成”都不能代替其余两层。
+**整体流程**：用 CUDA VMM 分离 GPU 虚拟地址与物理显存，先将 GPU 数据高带宽转移到 Host，再释放物理显存并保留地址语义；恢复时重建物理映射和内容；GPU 控制状态交给驱动级 C/R；多 GPU 再额外修复跨进程 cuMem IPC 关系。论文还研究了通过 CPU Shadow Execution 识别 Dirty Buffer 的增量 Checkpoint。
 
-## 0. 为什么值得研究：问题、目标和边界
+理解恢复范围时，分别观察三个层次：VMM 维护指针与物理分配的关系，驱动 C/R 处理 CUDA 状态，应用层补齐 CPU 进程状态、外部依赖和业务校验。下面先讲地址与数据的恢复，再沿单卡、多卡的阶段顺序展开。
 
-GPU Checkpoint/Restore (C/R) 要恢复的并不只是显存字节，还包括两个互相关联的状态：
+## 0. 恢复对象、应用场景与设计目标 {#_0-为什么值得研究-问题、目标和边界}
+
+GPU Checkpoint/Restore（C/R，检查点与恢复）需要保存并重建两个相互关联的状态：
 
 - **数据状态 Data State**：模型权重、KV Cache、Activation、工作区、通信缓冲等内容及其所属地址。
 - **控制状态 Control State**：CUDA Context、Streams、Events、Module/Kernel 等驱动维护的执行和资源状态。CPU 进程内存、线程与文件描述符属于更广泛的进程状态，不等同于 CUDA 控制状态。
@@ -54,11 +54,11 @@ GPU Checkpoint/Restore (C/R) 要恢复的并不只是显存字节，还包括两
 
 ## 1. VMM 的核心：虚拟地址（VA）与物理显存解绑
 
-### 1.1 为什么普通 cudaMalloc 不够
+### 1.1 从普通分配到稳定虚拟地址 {#_1-1-为什么普通-cudamalloc-不够}
 
 假设应用原先获得 `p=0x1234`，其他 GPU 数据结构和 kernel 参数中已经保存了 `p`。如果 checkpoint 后直接 `cudaFree(p)`，restore 时再 `cudaMalloc()`，即使分配大小相同，也**不保证 VA 一样**，原来指向 `0x1234` 的引用会失效。
 
-这里沿用论文的抽象地址举例，`0x1234` 不是满足 VMM 对齐要求的可运行示例。
+例中的 `0x1234` 是抽象地址，用于说明指针引用；可运行的 VMM 程序需另外满足对齐要求。
 
 **[论文]** 把 VA 的生命周期和物理分配的生命周期分离，保存 VA/页表语义，在其下替换物理分配。
 
@@ -152,7 +152,7 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 5. **先完成数据备份，再 `releasePhysicalMemory()`**，释放 GPU 物理分配但保留 VA 语义；
 6. Worker 返回完成，协调器才调用 NVIDIA 的 `cuda-checkpoint` 冻结 CUDA 控制状态。
 
-**[工程分析] 一致性还缺哪一步？** 如果另一个 Host 线程在同步返回后继续写显存、分配/释放内存或启动 kernel，那么遍历 `allocated_memory`、拷贝和 unmap 期间仍可能竞争。必须先在应用/调度层建立安全点，阻止相关生产者继续提交，排空必要的通信，并使分配账本稳定；这个条件应持续到恢复数据和通信并验收完成。仅看到 `cudaDeviceSynchronize()` 或一次 `FINISH_MSG`，不能证明上述条件已经满足。依据：[CUDA Device Synchronize](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__DEVICE.html)。
+**[工程分析] 用应用安全点稳定数据与分配账本。** 如果另一个 Host 线程在同步返回后继续写显存、分配/释放内存或启动 kernel，那么遍历 `allocated_memory`、拷贝和 unmap 期间仍可能竞争。必须先在应用/调度层建立安全点，阻止相关生产者继续提交，排空必要的通信，并使分配账本稳定；这个条件应持续到恢复数据和通信并验收完成。仅看到 `cudaDeviceSynchronize()` 或一次 `FINISH_MSG`，不能证明上述条件已经满足。依据：[CUDA Device Synchronize](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__DEVICE.html)。
 
 这里还需区分两种“锁”：`ckpt()` 内部的 `fs_mutex` 保护快照结构，并不锁住应用的所有 CUDA 调用；驱动的 `lock` 则属于另一层协议，见 §3.4。不能简单地将驱动 `lock` 移到数据拷贝之前，就认为问题已经解决，因为本进程用于数据搬运的 CUDA API 也可能被阻塞，需要专门设计可行的协作协议。
 
@@ -164,7 +164,7 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 
 **对本文这条混合路径，可记为：Checkpoint 先搬数据、再做驱动 checkpoint；Restore 先恢复可调用的驱动状态、再搬回数据。** 这个口诀不包含完整的一致性协议，也不是所有 GPU C/R 系统的通用顺序。驱动解除锁定后，业务线程仍应由外部安全点约束，不能抢在数据恢复之前开始工作。
 
-### 3.3 Checkpoint 文件究竟存在哪里？
+### 3.3 快照后端、内存映射与持久性 {#_3-3-checkpoint-文件究竟存在哪里}
 
 - `mmap` 仅表示把内存/文件映射到进程地址空间，并**不天然具备掉电后持久性**。
 - `hugetlbfs`、`tmpfs` 主要是内存支持的文件系统，吞吐较高，但需占用较大 Host 内存，崩溃/断电恢复语义要单独确认。
@@ -174,7 +174,7 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 
 **[工程分析]** GPU-CR 当前的高性能 Host staging 和“进程仍存活的换入换出”，不应直接等同于“一台机器断电后可以恢复完整 CUDA 应用”。
 
-### 3.4 驱动状态机：lock 不等于 checkpoint
+### 3.4 驱动状态机：锁定、保存、恢复与解锁 {#_3-4-驱动状态机-lock-不等于-checkpoint}
 
 [CUDA 12.8.1 Checkpoint API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__CHECKPOINT.html) 将相关状态分开：
 
@@ -189,7 +189,7 @@ RUNNING <--unlock-- LOCKED <--restore----- CHECKPOINTED
 
 ## 4. 多 GPU 的新增困难：NCCL、IPC、P2P
 
-### 4.1 为什么单卡方案不能简单复制 N 遍？
+### 4.1 从单卡状态扩展到跨 Rank 资源关系 {#_4-1-为什么单卡方案不能简单复制-n-遍}
 
 在多 GPU 分布式任务中，CUDA Context 之外还有跨进程资源：
 
@@ -243,9 +243,9 @@ Coordinator: broadcast message/signals to ALL ranks → wait ALL ranks finish
 3b. IPC Re-import: each rank receives peer FDs, import+map+access, validate and reenable P2P
 ```
 
-**为什么需要新 Handle，而不仅是保留一个 FD 数字？** 首先，FD 是进程自己的描述符编号，把导出进程的整数 `fd=17` 写给另一个进程，并不等于传递了该对象。其次，`cuMemRelease` 不会使所有旧引用立即失效：只要还有映射、导入引用或共享引用，旧对象就可能尚未真正回收。此实现先拆引用，再为新物理分配重新导出，由导入方接收新的本地 FD、导入并映射到原 VA。**“旧 FD 未必立即失效”和“旧 FD 不能代表新分配”是两件不同的事。** 依据：[VMM 的释放语义](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__VA.html)。
+**新分配需要重新建立 Handle 与跨进程引用。** 首先，FD 是进程自己的描述符编号，把导出进程的整数 `fd=17` 写给另一个进程，并不等于传递了该对象。其次，`cuMemRelease` 不会使所有旧引用立即失效：只要还有映射、导入引用或共享引用，旧对象就可能尚未真正回收。此实现先拆引用，再为新物理分配重新导出，由导入方接收新的本地 FD、导入并映射到原 VA。**“旧 FD 未必立即失效”和“旧 FD 不能代表新分配”是两件不同的事。** 依据：[VMM 的释放语义](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__VA.html)。
 
-**为什么用 UDS + SCM_RIGHTS？** `src/ipc_fd_exchange.cpp` 明确采用 Unix Domain Socket 传递 FD（`sendmsg/recvmsg` 附带 SCM_RIGHTS）。源码注释指出从 `/proc/<pid>/fd` 重新打开或通过某些替代路径不能完整保留该 CUDA 共享句柄的语义。**这并不是普通文件路径共享问题，而是内核 FD 所承载的 GPU 对象权限/引用问题。**
+**UDS 与 SCM_RIGHTS 传递共享对象引用。** `src/ipc_fd_exchange.cpp` 明确采用 Unix Domain Socket 传递 FD（`sendmsg/recvmsg` 附带 SCM_RIGHTS）。源码注释指出从 `/proc/<pid>/fd` 重新打开或通过某些替代路径不能完整保留该 CUDA 共享句柄的语义。**这并不是普通文件路径共享问题，而是内核 FD 所承载的 GPU 对象权限/引用问题。**
 
 Linux 的 `SCM_RIGHTS` 传递的是可在接收进程中安装的对象引用，接收方得到的 FD 数字通常不同；它不负责复制 GPU 数据。源码对 `pidfd_getfd` 的兼容性注释只代表该项目路径的判断，不应推广为 Linux 所有 FD 都“只能通过 SCM_RIGHTS 传递”。另有一处文档陷阱：`ipc_hooks.h` 顶部注释还写着 teardown 会 `cuMemAddressFree`、import 使用 `pidfd_getfd`；当前 `.cpp` 的导入/导出/本地分配拆除实际保留 VA，FD 主路径也已改用 UDS。读源码时应检查实现，而不能只摘取旧注释。依据：[ipc_hooks.cpp](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/ipc_hooks.cpp)、[ipc_fd_exchange.cpp](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/ipc_fd_exchange.cpp)、[Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)。
 
@@ -326,7 +326,7 @@ DirtyTemplate(kernel_args, gridDim, blockDim)
 
 这样就不需要在 GPU 的主计算热路径里插入大量脏地址记录指令。
 
-### 6.3 为什么不是所有 Kernel 都适合 Shadow Execution？
+### 6.3 Shadow Execution 的适用与退化情形 {#_6-3-为什么不是所有-kernel-都适合-shadow-execution}
 
 论文特别说明边界：
 
@@ -356,7 +356,7 @@ FAST '26 论文的实验结论（原论文对其所选模型/硬件/对照系统
 
 [论文 PDF](https://www.usenix.org/system/files/fast26-zeng.pdf) 的适用条件和实验基线不可省略；不能拿这些百分比直接预测自己 H20/H100、vLLM/SGLang 模型的换出耗时。
 
-## 7. 性能模型：优化的是哪一段？
+## 7. 按阶段分析拷贝、冻结与恢复成本 {#_7-性能模型-优化的是哪一段}
 
 把一次操作拆分（工程分析，非论文精确公式）：
 
@@ -398,7 +398,7 @@ Restore wall time ≈ driver CUDA-control restore
 
 信号安全的判断依据是 [Linux signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html)；这里只指出复杂处理不具备一般异步信号安全保证，未声称已经复现某个死锁。
 
-### 8.1 “打印完成”为什么不等于可靠成功？
+### 8.1 从阶段通知到可靠成功的验收条件 {#_8-1-打印完成-为什么不等于可靠成功}
 
 以下是**该提交可定位的静态问题**，不是本机运行所得故障：
 
@@ -437,16 +437,16 @@ Restore wall time ≈ driver CUDA-control restore
 
 只要被测服务依赖分布式通信，**恢复 CPU/CUDA 控制状态成功 ≠ NCCL 通信恢复成功 ≠ 应用推理服务恢复成功**。
 
-## 10. 容易混淆的 8 个问题
+## 10. 八个知识要点回顾 {#_10-容易混淆的-8-个问题}
 
-1. 为什么释放 `cudaMalloc` 后再分配同样大小，不保证原指针可继续使用？
-2. `cuMemUnmap`、`cuMemRelease`、`cuMemAddressFree` 各释放了哪层资源？
-3. UVA、UVM、VMM 有什么区别？GPU-CR 直接依赖哪种显式能力？
-4. 在这条混合路径中为何先 dump data、后做驱动 checkpoint？为什么这一顺序本身仍不足以保证一致性？
-5. 为何 NCCL 使用 `cuGetProcAddress` 会使普通 LD_PRELOAD Hook 不充分？
-6. 为什么旧 FD 可能仍持有旧对象，却不能代表新分配？`SCM_RIGHTS` 传递的是数字、引用还是数据？
-7. 论文 Dirty Template 如何实现“识别脏地址而不在 CPU 重跑整个 Kernel”？有哪些退化情形？
-8. 项目声称 VRAM 降至 0，为什么不能据此推断完整“故障后恢复”能力？
+1. 普通释放后重新分配不保证原 VA；VMM 将 VA 预留与物理分配的生命周期分开管理。
+2. `cuMemUnmap` 解除映射，`cuMemRelease` 释放相应 Handle 引用，`cuMemAddressFree` 释放 VA 预留，各自的回收条件分别判断。
+3. UVA 提供统一寻址语义，Unified Memory 管理统一访问与迁移，VMM 提供本项目直接使用的显式映射能力。
+4. 混合路径先 dump data 再保存驱动状态；应用安全点还要约束业务提交、数据变更与恢复后的放行。
+5. `cuGetProcAddress` 等动态入口会影响 Hook 覆盖，需要跟踪实际函数指针的获取与转发。
+6. 旧 FD 可以继续引用旧对象，新的物理分配仍需重新导出和导入；`SCM_RIGHTS` 传递可在接收进程安装的对象引用。
+7. Dirty Template 保留地址与长度计算，复杂或不可分析的写入路径需要保守标记或退化处理。
+8. VRAM 回收是资源状态的一项观察，完整恢复还需验证 CUDA、CPU、通信、持久化与业务状态。
 
 ## 11. 阅读索引与证据来源
 
@@ -477,4 +477,4 @@ Restore wall time ≈ driver CUDA-control restore
 - [仓库随附的工具说明](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/cuda-checkpoint/README.md)与 [NVIDIA 主线版本说明](https://github.com/NVIDIA/cuda-checkpoint)：历史条件和后续能力分别阅读。
 - [Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)、[signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html)：FD 传递与异步信号安全。
 
-**图源**：[架构](/assets/notes/ai-infra/gcr-architecture.drawio)、[VMM 生命周期](/assets/notes/ai-infra/gcr-vmm-lifecycle.drawio)、[单卡时序](/assets/notes/ai-infra/gcr-single-sequence.drawio)、[多 Rank 阶段](/assets/notes/ai-infra/gcr-multirank-phases.drawio)、[增量机制](/assets/notes/ai-infra/gcr-dirty-template.drawio)。同名 `.mmd` 保留逻辑图源，`.svg` 为正文图；图表示机制/主干流程，不冒充完整源码调用图。
+**图源**：[架构](/assets/notes/ai-infra/gcr-architecture.drawio)、[VMM 生命周期](/assets/notes/ai-infra/gcr-vmm-lifecycle.drawio)、[单卡时序](/assets/notes/ai-infra/gcr-single-sequence.drawio)、[多 Rank 阶段](/assets/notes/ai-infra/gcr-multirank-phases.drawio)、[增量机制](/assets/notes/ai-infra/gcr-dirty-template.drawio)。同名 `.mmd` 保留原逻辑图源，正文按当前引用使用 SVG 或 PNG；图源与展示图分别核对，配图用于解释机制和主干流程。

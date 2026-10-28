@@ -1,9 +1,9 @@
 ---
 id: redis-bitmaps
 title: 第八章 Bitmap 与位运算
-description: Bitmap 利用 String 的位表示布尔状态。若用户 ID 可以映射到受控的整数范围，一个位表示当天是否活跃，就能紧凑地保存某类精确标记。
+description: "Bitmap 利用 String 的位表示布尔状态。若用户 ID 可以映射到受控的整数范围，一个位表示当天是否活跃，就能紧凑地保存某类精确标记。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -39,7 +39,7 @@ BITCOUNT demo:active:day-1
 
 BITCOUNT 的传统 start/end 区间按字节解释；Redis 7.0+ 可通过相应 BYTE/BIT 参数选择单位，不能只换一组数字就认为单位也变了。[BITCOUNT](https://redis.io/docs/latest/commands/bitcount/)
 
-命令 BITPOS 查找首个指定 bit 的位置，原文 bitos 是拼写错误；查询范围单位、未找到和超出数据的语义要按具体参数理解。[BITPOS](https://redis.io/docs/latest/commands/bitpos/)
+BITPOS 查找首个指定 bit 的位置。查询范围的单位、未找到与超出数据的返回语义，要结合具体参数理解。[BITPOS](https://redis.io/docs/latest/commands/bitpos/)
 
 ## 3. 交并与精确统计
 
@@ -49,7 +49,7 @@ BITOP 可以对位图做适用逻辑运算并写入目标键。相同映射下�
 
 Bitmap 能精确统计位，但不直接提供业务 ID 名单。若要找出所有置位 ID，还需扫描和映射；若只需要近似人数，下一章的 HyperLogLog 可能更合适。
 
-## 4. 生命周期与异常
+## 4. 键级期限与零值的业务解释 {#_4-生命周期与异常}
 
 位图属于一个 String 键，可设置键级过期。不能单独给其中一位设置普通 EXPIRE。若业务按天统计，按日分键通常比给每位模拟过期更清楚。
 
@@ -57,7 +57,7 @@ Bitmap 能精确统计位，但不直接提供业务 ID 名单。若要找出所
 
 ## 5. 容量估算
 
-新增算例：若覆盖偏移 0—999999，为一百万个连续位置各保留一位，原始位数据为 125000 字节，约 122.1 KiB，还未计入对象、键名和分配开销。这个纸面估算依赖连续且有界的偏移，不是“一百万活跃用户一定只占这么多”；用户 ID 稀疏且最大偏移很大时，应按最大偏移而不是活跃人数计算。
+容量算例：若覆盖偏移 0—999999，为一百万个连续位置各保留一位，原始位数据为 125000 字节，约 122.1 KiB，还未计入对象、键名和分配开销。这个纸面估算依赖连续且有界的偏移，不是“一百万活跃用户一定只占这么多”；用户 ID 稀疏且最大偏移很大时，应按最大偏移而不是活跃人数计算。
 
 先确认最大 offset 和映射规则，再检查实际 MEMORY USAGE 与读写模式。评估内存收益时，也要一起考虑大键的复制、持久化和删除成本。
 

@@ -1,7 +1,7 @@
 ---
 id: redis-hiredis
 title: 第十五章 客户端连接、超时与 hiredis 基础
-description: 返回本册目录
+description: "应用通过客户端库完成连接、请求发送和回复解析，还要管理截止时间、错误与重试。一次完整调用从等待连接开始，到取得可解释的结果结束。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -21,9 +21,9 @@ order: 15
 
 [返回本册目录](/collections/redis/)
 
-命令在命令行里执行成功，并不代表应用接入已经可靠。应用还要管理连接、请求截止时间、回复解析和失败重试。本章承接原笔记的 C 客户端内容；代码是新增教学片段，未编译或连接服务器验证。
+应用通过客户端库完成连接、请求发送和回复解析，还要管理截止时间、错误与重试。一次完整调用从等待连接开始，到取得可解释的结果结束。本章用 hiredis 的同步接口说明这条路径；代码为教学片段，尚无编译或连接服务器验证记录。
 
-## 1. 一次调用经过哪些等待
+## 1. 连接池、建连与命令读写的时间预算 {#_1-一次调用经过哪些等待}
 
 [![Redis 客户端超时：端到端预算模型](/assets/notes/redis/redis-study-client-budget.svg)](/assets/notes/redis/redis-study-client-budget.svg)
 
@@ -66,7 +66,7 @@ int ping_example(void) {
 }
 ```
 
-原文中毫秒到 `timeval` 的换算有误：`tv_usec` 的单位是微秒，毫秒余数应乘以 1000。连接超时也不会自动成为所有命令的超时，因此上例另外调用了 `redisSetTimeout`。
+`timeval` 中 `tv_usec` 的单位是微秒，毫秒余数需要乘以 1000。连接阶段与命令读写使用各自的超时设置，因此上例另行调用 `redisSetTimeout`。
 
 `redisCommand` 返回 NULL，通常说明通信或上下文失败；返回一个 `REDIS_REPLY_ERROR` 对象则是已经收到了 Redis 的错误回复。两者不能都归类成“键不存在”。完整业务代码还应核对回复类型、长度、数组元素和错误内容。
 

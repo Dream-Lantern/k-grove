@@ -1,9 +1,9 @@
 ---
 id: redis-geo
 title: 第十章 GEO 与地理位置查询
-description: Redis GEO 可以保存成员位置，并按附近范围查询。它适合部分位置检索需求，但不能代替完整的 GIS、路线规划和高精度地理计算。
+description: "Redis GEO 保存成员位置，并按给定中心和范围检索附近成员。使用时先确定经纬度和单位，再选择范围、排序与返回数量。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -19,7 +19,7 @@ order: 10
 
 # 第十章 GEO 与地理位置查询
 
-Redis GEO 可以保存成员位置，并按附近范围查询。它适合部分位置检索需求，但不能代替完整的 GIS、路线规划和高精度地理计算。
+Redis GEO 保存成员位置，并按给定中心和范围检索附近成员。使用时先确定经纬度和单位，再选择范围、排序与返回数量。其检索能力与完整 GIS、道路规划和高精度测距分别评价。
 
 ## 1. 经纬度顺序与单位
 
@@ -31,7 +31,7 @@ GEOPOS demo:places place-a place-b
 GEODIST demo:places place-a place-b km
 ```
 
-GEOADD 参数先经度，再纬度。GEOPOS 和 GEODIST 都需要键名，原文中只写 member 的格式不完整。距离单位必须明确，不能把米与千米混用。
+GEOADD 参数按经度、纬度排列；GEOPOS 与 GEODIST 通过键名定位索引，再指定成员。解释距离时同时记录单位，区分米与千米。
 
 GEOADD 接受经度 `[-180, 180]`、纬度 `[-85.05112878, 85.05112878]`；纬度不是一般地理意义下的完整 ±90°。越界会报错，不能把任意平面坐标直接当经纬度。参数先经度、后纬度；返回距离也不是实际道路通行距离。[GEOADD 坐标范围](https://redis.io/docs/latest/commands/geoadd/)
 
@@ -45,7 +45,7 @@ GEOSEARCH demo:places FROMMEMBER place-a BYRADIUS 5 km ASC COUNT 10 WITHDIST
 
 该例只用于说明“成员为中心、5 km、按距离排序、限制返回数”。COUNT 不是“数据库只检查这么多候选”的普遍保证；ANY 等选项的效率与排序/结果语义需要对应规则。
 
-## 3. 底层与删除
+## 3. 有序集合索引、位置编码与成员删除 {#_3-底层与删除}
 
 经典 GEO 索引利用有序集合能力，ZREM 可以移除成员。但不要绕过地理命令任意改 score 后，还认为该成员保留了合法位置编码。
 

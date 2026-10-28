@@ -1,7 +1,7 @@
 ---
 id: kubernetes-controller-manager
 title: 第五章：kube-controller-manager——多个控制循环怎样协作？
-description: 第一章说 Kubernetes 会持续比较期望与已观察状态，但“持续比较”不是一个包办所有任务的巨大循环。不同控制器负责不同对象和关系，围绕 API 状态各自推进。
+description: "控制器围绕 API 状态持续协调，分别推进发布、副本、节点和端点等工作。本章沿对象关系说明观察、重试与故障定位。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -23,7 +23,7 @@ order: 5
 
 这一章重点理解控制器如何获得线索、如何再次协调，以及为什么一个对象的变化能引起其他组件工作。原理不依赖某个版本的内部 goroutine 数量，也不把控制器列表当作所有集群永远固定的配置。
 
-## 1. Controller、API 对象和 Controller Manager 分别是什么？
+## 1. API 对象、控制器与管理进程的分工 {#_1-controller、api-对象和-controller-manager-分别是什么}
 
 - API 对象表达配置和状态，例如 Deployment、ReplicaSet。
 - Controller 是观察相关状态并推进协调的逻辑，例如 Deployment Controller。
@@ -33,7 +33,7 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 即使多个内置控制器处在同一个进程，也不表示它们共用一条严格的业务执行链。理解职责和对象关系，比背诵进程内实现细节更重要。[控制器模式](https://kubernetes.io/docs/concepts/architecture/controller/)
 
-## 2. 一次协调大致做什么？
+## 2. 一次协调的基本步骤 {#_2-一次协调大致做什么}
 
 [![控制器：线索、当前视图与再次协调](/assets/notes/kubernetes/k8s-controller-reconcile.png)](/assets/notes/kubernetes/k8s-controller-reconcile.png)
 
@@ -54,7 +54,7 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 因此，“收到一次事件，就恰好执行一次完整业务流程”的理解并不适用。
 
-## 3. 为什么重复协调不应该反复创造相同资源？
+## 3. 根据当前状态实现重复协调 {#_3-为什么重复协调不应该反复创造相同资源}
 
 假设某次请求已经创建了目标对象，但客户端在收到成功响应前断线。如果下一次协调不检查现有状态，而是无条件再创建一份，就可能不断制造多余资源或冲突。
 
@@ -67,7 +67,7 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 对外部云资源或存储的操作还要考虑不确定结果、重试与资源标识，不是 API 内部副本数计算可以自动解决的。
 
-## 4. Deployment、ReplicaSet 与 RC，不能混成一个名字
+## 4. Deployment、ReplicaSet 与 RC 的管理职责 {#_4-deployment、replicaset-与-rc-不能混成一个名字}
 
 [![工作负载管理：Deployment → ReplicaSet → Pod](/assets/notes/kubernetes/k8s-controller-ownership.png)](/assets/notes/kubernetes/k8s-controller-ownership.png)
 
@@ -85,7 +85,7 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 RC 是另一类历史工作负载资源及对应控制逻辑，不是“创建 ReplicaSet 的上一级控制器”。新的常见应用教程通常以 Deployment 与 ReplicaSet 关系展开，但研究旧笔记时仍要分清名称。
 
-原文关于 RC、ReplicaSet、滚动更新的混合描述，在本章按职责重新拆开，原文保留于私有记录。[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)、[ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)、[ReplicationController](https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/)
+Deployment 负责发布，ReplicaSet 协调副本，RC 则是另一类历史资源；阅读时需按各自职责区分。[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)、[ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)、[ReplicationController](https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/)
 
 ## 5. 标签、选择器和归属关系为什么需要一起看？
 
@@ -97,7 +97,7 @@ RC 是另一类历史工作负载资源及对应控制逻辑，不是“创建 R
 
 排查重复 Pod 时，应一起查看对象的管理链、选择范围、事件和新旧 ReplicaSet，不要先删除看似“多出来”的实例。
 
-## 6. 节点控制：不是运行 get nodes 才开始工作
+## 6. 节点状态观察与故障协调 {#_6-节点控制-不是运行-get-nodes-才开始工作}
 
 `kubectl get nodes` 读取节点对象，不会临时启动一次 Node Controller，再等待 kubelet现场汇报。
 
@@ -121,7 +121,7 @@ ResourceQuota 表达某个命名空间的资源配额约束。相关状态统计
 
 不要把删除 finalizers 当作万能修复。强行跳过清理约束，可能留下外部存储、云资源或其他无法正确回收的对象。本章不提供强制清理未知命名空间的脚本。[Finalizer](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/)
 
-## 9. Service 与端点协调：不要再把一切都称为 Endpoint Controller
+## 9. Service、EndpointSlice 与数据平面的配合 {#_9-service-与端点协调-不要再把一切都称为-endpoint-controller}
 
 使用选择器的常见 Service 场景中，端点相关控制逻辑根据 Service 和 Pod 等状态维护后端信息。现代学习主线需要认识 EndpointSlice，而不是只画一个同名 Endpoints。
 
@@ -149,6 +149,6 @@ Pod 是否已绑定节点？如果没有，再看调度条件
 
 控制器本身还依赖正确的 API 访问、相应的领导者工作状态，以及可用的依赖组件。进程存在或日志未立即报错，都不足以证明所有控制循环能够完成业务目标。
 
-本章保留的是一套阅读与定位模型，不是声称已经在你的集群验证过的诊断结果。
+这套定位顺序适合组织排查过程，实际根因需由目标集群的事件、日志与状态共同确认。
 
 [返回本册目录](/collections/kubernetes/)

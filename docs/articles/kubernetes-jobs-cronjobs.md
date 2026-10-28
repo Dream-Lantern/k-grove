@@ -1,7 +1,7 @@
 ---
 id: kubernetes-jobs-cronjobs
 title: 第十八章 Job 与 CronJob 批处理
-description: 长期服务通常希望持续运行；一次数据处理任务则可能执行完成后正常退出。若把它当作需要持续 Running 的服务，正常结束反而可能被错误地重启。
+description: "长期服务通常希望持续运行；一次数据处理任务则可能执行完成后正常退出。若把它当作需要持续 Running 的服务，正常结束反而可能被错误地重启。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,7 +19,7 @@ order: 18
 
 # 第十八章 Job 与 CronJob 批处理
 
-> 新增补充：把一次性任务和定时任务从长期服务中分出来。以 Kubernetes 1.28 的 batch/v1 API 为范围，未实际创建或触发任务。
+> 本章以 Kubernetes 1.28 的 batch/v1 API 为范围，介绍一次性任务和定时任务的完成条件、重试与结果管理。示例尚未实际运行。
 
 ## 1. 任务的成功条件与服务不同
 
@@ -58,7 +58,7 @@ spec:
 
 这份清单没有证明某个镜像存在，也未配置业务输出。Job 的普通 Pod 模板不能照搬 Deployment 的 Always 重启策略；适用值为 Never 或 OnFailure，具体字段可核对 [v1.28.0 batch API](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/batch/v1/types.go)。
 
-## 3. 至少按可能重复执行来设计
+## 3. 重复尝试与业务幂等 {#_3-至少按可能重复执行来设计}
 
 节点故障、控制器重试或人工再次提交，都可能让任务重复尝试。即使 completions 是 1、parallelism 是 1，也不能把调度和重试机制当作业务 exactly-once。
 
@@ -66,7 +66,7 @@ spec:
 
 任务使用共享文件或输出路径时，也要避免多次尝试互相覆盖。成功后再清理临时文件，失败现场则应按保留策略留出诊断窗口。
 
-## 4. CronJob 是计划器，不是可靠外部事务
+## 4. CronJob 的计划、并发与截止条件 {#_4-cronjob-是计划器-不是可靠外部事务}
 
 CronJob 的 `schedule` 表达计划，`concurrencyPolicy` 可以选择 Allow、Forbid 或 Replace 来约束同一个 CronJob 所创建任务的重叠行为。它不协调所有其他 CronJob，也不保证每个计划点都准时执行一次。
 

@@ -1,7 +1,7 @@
 ---
 id: ai-infra-mig-isolation
 title: 第 13 章 MIG 原理：GI、CI 与隔离的粒度
-description: 把一张卡切成几个可分配的设备，和给几个进程设置百分比配额，是两种不同思路。MIG（Multi-Instance GPU）基于受支持硬件划分相应资源，本章先说明切分边界，再讨论操作。
+description: "MIG（Multi-Instance GPU）基于受支持硬件，将 GPU 的相应资源划为可分配实例。理解它时，先看 GI 与 CI 的包含关系，再看 Profile 描述的资源以及通信和故障边界；具体变更操作在下一章展开。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 13
 
 # 第 13 章 MIG 原理：GI、CI 与隔离的粒度
 
-把一张卡切成几个可分配的设备，和给几个进程设置百分比配额，是两种不同思路。MIG（Multi-Instance GPU）基于受支持硬件划分相应资源，本章先说明切分边界，再讨论操作。
+MIG（Multi-Instance GPU）基于受支持硬件，将 GPU 的相应资源划为可分配实例。理解它时，先看 GI 与 CI 的包含关系，再看 Profile 描述的资源以及通信和故障边界；具体变更操作在下一章展开。
 
 ## 1. GI 与 CI 的包含关系
 
@@ -29,13 +29,13 @@ GI（GPU Instance）由一定的计算、内存及相关引擎资源组成。一
 
 图中是逻辑示意，不按某款产品的精确比例绘制。“显存固定八等分、计算固定七等分”有 A100 等特定产品语境，不能推广到所有 MIG GPU。
 
-## 2. Profile 不只是显存数字
+## 2. Profile 描述实例配置与资源关系 {#_2-profile-不只是显存数字}
 
 在 A100 40GB 的历史示例中，`3g.20gb` 描述一个特定 GI 配置；如果进一步分 CI，可能出现 `1c.3g.20gb` 等名称。这里的 20GB 指父 GI 相关容量，而不是每个 CI 又额外生成 20GB。
 
 即使名称相同或相近，也应查询目标设备：型号、容量和驱动不同，可用的 profile、放置位置及媒体引擎能力都可能不同。profile ID 与 instance ID 不是同一概念。[MIG Device Names](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/latest/mig-device-names.html)
 
-## 3. “隔离”需要说明隔离什么
+## 3. 资源隔离与共享故障域 {#_3-隔离-需要说明隔离什么}
 
 MIG 能提供比普通进程共享更明确的硬件资源边界，但共享的物理卡、驱动、主机和外部电源并不会消失。驱动或整卡级故障仍应单独纳入风险模型；不能承诺“任何进程崩溃绝不会影响其他实例”。
 
@@ -45,7 +45,7 @@ MIG 能提供比普通进程共享更明确的硬件资源边界，但共享的�
 
 [支持的 GPU](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/latest/supported-gpus.html)
 
-## 5. MIG 通信支持矩阵必须拆层
+## 5. 分层查阅 P2P、IPC、RDMA 与 NCCL 支持 {#_5-mig-通信支持矩阵必须拆层}
 
 | 组合或层次                         | 官方文档所列边界              | 本册处理                                 |
 | ---------------------------------- | ----------------------------- | ---------------------------------------- |

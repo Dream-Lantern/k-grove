@@ -1,7 +1,7 @@
 ---
 id: ai-infra-gpu-containers
 title: 第 9 章 驱动、Toolkit、框架与 GPU 容器
-description: 新驱动通常可以运行面向较旧 CUDA 的应用；同一大版本内的 minor compatibility 也有前提和功能限制，PTX JIT、新 API 等可能提出更高要求。因此，不能只看两个小版本号是否相等。CUDA Compatibility
+description: "GPU 环境包含驱动、Toolkit、运行库和框架构建等组件，各自报告自己的版本。例如，nvidia-smi 显示 CUDA 12.4、torch.version.cuda 显示 12.1 时，应先确认两项信息的含义，再按兼容规则判断环境，而非只比较数字是否相同。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 9
 
 # 第 9 章 驱动、Toolkit、框架与 GPU 容器
 
-`nvidia-smi` 显示 CUDA 12.4，`torch.version.cuda` 显示 12.1，是否说明环境冲突？不一定。它们回答的是不同问题，必须先分清组件，再核对兼容性。
+GPU 环境包含驱动、Toolkit、运行库和框架构建等组件，各自报告自己的版本。例如，`nvidia-smi` 显示 CUDA 12.4、`torch.version.cuda` 显示 12.1 时，应先确认两项信息的含义，再按兼容规则判断环境，而非只比较数字是否相同。
 
 ## 1. 四个版本来自四个位置
 
@@ -32,7 +32,7 @@ order: 9
 
 新驱动通常可以运行面向较旧 CUDA 的应用；同一大版本内的 minor compatibility 也有前提和功能限制，PTX JIT、新 API 等可能提出更高要求。因此，不能只看两个小版本号是否相等。[CUDA Compatibility](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)
 
-## 2. 容器里应该放什么
+## 2. 宿主驱动与镜像用户态组件的分工 {#_2-容器里应该放什么}
 
 [![GPU 容器：宿主与镜像边界](/assets/notes/ai-infra/container-boundary.png)](/assets/notes/ai-infra/container-boundary.png)
 
@@ -40,7 +40,7 @@ order: 9
 
 容器工具不是把宿主整个 `/usr/local/cuda` 自动复制进镜像。也不应把一套宿主驱动文件随意打包覆盖到容器，以免绕过明确的兼容机制。
 
-## 3. 可见设备与驱动能力是两个维度
+## 3. 分别配置可见设备与驱动能力 {#_3-可见设备与驱动能力是两个维度}
 
 `NVIDIA_VISIBLE_DEVICES` 决定可暴露的设备；`NVIDIA_DRIVER_CAPABILITIES` 决定相应驱动功能。按标准 NVIDIA runtime 配置，`none` 与空字符串/`void` 语义不同：前者可启用驱动能力但不暴露 GPU；后者通常相当于普通 runc 行为。不要把空字符串写成通用的“GPU 虚拟化模式”。[Docker 专项配置](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html)
 

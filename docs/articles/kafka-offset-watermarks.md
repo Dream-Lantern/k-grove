@@ -1,7 +1,7 @@
 ---
 id: kafka-offset-watermarks
 title: 第 11 章：消费位点、提交与连续完成水位
-description: 每个 Topic-Partition 都有自己的位置。客户端可能已预先拉取一批记录到本地，应用却只处理了其中一部分，外部数据库完成的部分还可能更少。因此，网络读取进度、应用读取进度和业务完成进度不能混用。
+description: "每个 Topic-Partition 都有自己的位置。客户端可能已预先拉取一批记录到本地，应用却只处理了其中一部分，外部数据库完成的部分还可能更少。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -23,7 +23,7 @@ order: 11
 >
 > 学习目标：区分已拉取、已交给应用、业务已完成、本地已保存和 Broker 已提交的位置，正确解释提交值中的“下一位置”。
 
-## 1. 位点不是全组一个数字
+## 1. 按 Topic-Partition 分别管理进度 {#_1-位点不是全组一个数字}
 
 每个 Topic-Partition 都有自己的位置。客户端可能已预先拉取一批记录到本地，应用却只处理了其中一部分，外部数据库完成的部分还可能更少。因此，网络读取进度、应用读取进度和业务完成进度不能混用。
 
@@ -37,13 +37,13 @@ order: 11
 
 实现时通常维护分区内交给业务的记录顺序、完成标记和最前方未完成记录。不要死等每一个数学整数 Offset：compact、事务控制记录或可见性过滤可能造成应用记录的空洞，应按实际交付的记录序列及客户端位置语义推进。
 
-## 3. Auto Store 与 Auto Commit 不是一回事
+## 3. Auto Store 保存本地位置，Auto Commit 提交恢复位置 {#_3-auto-store-与-auto-commit-不是一回事}
 
 librdkafka 的本地 Offset Store 记录下一次可提交的位置；Commit 才把恢复位置提交到 Broker。`enable.auto.offset.store` 与 `enable.auto.commit` 是两个开关。
 
 对于耗时较长或异步执行的处理，若记录一交付给应用就自动 Store，后台 Commit 就可能早于实际业务完成。可以关闭 Auto Store，在完成前沿推进后保存安全位置，再由后台提交；也可以关闭自动提交，由应用明确提交各分区的安全位点。两种做法都需要检查错误，不能只关闭一个开关就认为已经可靠。
 
-## 4. earliest 与 latest 什么时候生效
+## 4. 无有效起点或位置越界时的重置规则 {#_4-earliest-与-latest-什么时候生效}
 
 `auto.offset.reset` 一般处理没有有效初始提交位置或请求位置越界的情况，不是每次启动都覆盖已有有效位点。`earliest` 指向当前保留范围的早端，不承诺从 Topic 创建时的第一条历史开始；`latest` 从当时末端继续，不会自动补回已过期数据。
 

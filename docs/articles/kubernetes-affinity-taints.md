@@ -1,7 +1,7 @@
 ---
 id: kubernetes-affinity-taints
 title: 第二十四章 节点选择、亲和性与污点容忍
-description: nodeSelector、节点亲和性描述 Pod 对节点的要求或偏好；污点写在 Node 上，用来排斥未能容忍它的 Pod。两者可以配合，但容忍一个节点污点不等于一定被调度到那个节点。
+description: "nodeSelector、节点亲和性描述 Pod 对节点的要求或偏好；污点写在 Node 上，用来排斥未能容忍它的 Pod。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -21,7 +21,7 @@ order: 24
 
 > Kubernetes 1.28 调度配置复盘，承接第六章调度器。未修改节点标签、污点或 Pod 配置。下面的片段为新增教学示意。
 
-## 1. 先分清“想去哪里”与“允许谁来”
+## 1. 节点选择与污点容忍的分工 {#_1-先分清-想去哪里-与-允许谁来}
 
 nodeSelector、节点亲和性描述 Pod 对节点的要求或偏好；污点写在 Node 上，用来排斥未能容忍它的 Pod。两者可以配合，但容忍一个节点污点不等于一定被调度到那个节点。
 
@@ -51,7 +51,7 @@ affinity:
               values: ["ssd"]
 ```
 
-同一个 term 里的表达式按 AND 组合，多个 nodeSelectorTerms 则按 OR 组合。`In`、`NotIn`、`Exists`、`DoesNotExist` 的拼写与语义要准确，不能写成 DoesNotExists；Gt/Lt 等运算符也不是所有选择器场景都支持。
+同一个 term 里的表达式按 AND 组合，多个 nodeSelectorTerms 则按 OR 组合。常用运算符包括 `In`、`NotIn`、`Exists`、`DoesNotExist`；Gt/Lt 等运算符是否可用，需按具体选择器字段核对。
 
 ## 3. Pod 亲和与反亲和看拓扑域
 
@@ -77,7 +77,7 @@ podAffinity 选择与某组 Pod 靠近的拓扑域；podAntiAffinity 则表达�
 
 TopologySpreadConstraints 可以表达副本在适用拓扑域中的分布目标。它与反亲和用途有交集，但不是完全相同的字段。配置时应先明确故障域、选择哪些 Pod、允许多大偏斜以及无法满足时的处理。
 
-在未了解节点标签与容量前，不要同时添加大量 required 规则。即使集群看起来还有空余 CPU，多种约束组合后也可能找不到任何可行节点。
+配置 required 规则前，应对照节点标签、容量与已有约束计算候选范围。CPU 尚有余量时，其他硬条件的交集仍可能为空。
 
 ## 6. 先用事件解释 Pending
 

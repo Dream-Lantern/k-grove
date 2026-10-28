@@ -1,7 +1,7 @@
 ---
 id: ai-agent-tools-events
 title: 第4章 工具、MCP 与异步事件系统
-description: 仅靠“先查一下再写”不足以保证幂等，并发时仍可能重复写入。应通过幂等键、唯一约束、事务或状态机处理重复请求。
+description: "工具调用的基本流程是：模型依据描述选择工具并生成参数，执行器校验参数与权限，工具执行后返回可供下一轮判断的结果。工具描述负责说明用途，实际校验由实现承担。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: ai-agent
@@ -29,7 +29,7 @@ order: 4
 | 事件（Event）             | Hook、Cron、Webhook、监控触发    | 重复投递、乱序、竞态、打断                                                                 |
 | 用户沟通（Communication） | 邮件、IM、语音、通知             | 误发、敏感内容泄露、身份混淆                                                               |
 
-**共同原则**：模型的工具描述必须解释用途和参数含义；工具实现必须再次验证参数，不能相信模型生成的 JSON 天然可信。
+**工具调用的基本流程**是：模型依据描述选择工具并生成参数，执行器校验参数与权限，工具执行后返回可供下一轮判断的结果。工具描述负责说明用途，实际校验由实现承担。
 
 ## 4.2 工具设计：粒度、保真与幂等
 
@@ -55,7 +55,7 @@ errors: ["INVALID_INPUT", "CONFLICT", "FORBIDDEN"]
 
 仅靠“先查一下再写”不足以保证幂等，并发时仍可能重复写入。应通过幂等键、唯一约束、事务或状态机处理重复请求。
 
-## 4.3 MCP 与 Skills 不同
+## 4.3 MCP 与 Skills 的分工 {#_4-3-mcp-与-skills-不同}
 
 这里的协议示例限定为 [MCP 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)，不推定已安装SDK的版本。MCP（Model Context Protocol）提供工具/资源等能力的标准化接入形态，但**统一接入协议不等于自动获得权限安全、可信输出或任务持久化**。外部 MCP Server 可能是低信任组件，必须有连接授权、范围限制、工具 allowlist、输出审核与超时。
 
@@ -63,7 +63,7 @@ Skill 提供“何时和怎样做”的说明；MCP Tool 提供“能调用什�
 
 ## 4.4 高风险动作的执行护栏
 
-[本章修订流程图（含失败/未知路径）](/assets/notes/ai-agent/04-tools.png)
+[工具提议、审核、执行与验证流程](/assets/notes/ai-agent/04-tools.png)
 
 **提议 → 审核 → 执行 → 验证**比“模型直接写入”更可控。对于删除、付款、发布、修改权限等动作，把批准绑定到**具体操作参数与版本**，而不是仅凭一句笼统的“允许操作”。
 
@@ -89,7 +89,7 @@ Sidecar/Guard Agent 可以参与风险审查，但最后一道授权边界应由
 
 **工程补充**：任务长时间执行时，状态不能只藏在 LLM 对话中。可以用 Outbox（事务内写事件）、Worker Lease/Fencing（防旧消费者乱写）、Checkpoint（恢复状态）等机制。
 
-## 4.6 工具发现：避免把全量工具塞满上下文
+## 4.6 工具发现与按需加载 {#_4-6-工具发现-避免把全量工具塞满上下文}
 
 三种主流方式：
 
@@ -126,7 +126,7 @@ def _is_safe_path(self, path: Path) -> bool:
 
 [![工具调用：验证、执行与结果处理](/assets/notes/ai-agent/04-tools.png)](/assets/notes/ai-agent/04-tools.png)
 
-配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 PNG](/assets/notes/ai-agent/04-tools.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/04-tools.dot)供对照，不是本版配图的可编辑源文件。
+图中按参数验证、授权、执行和结果检查组织工具调用；各出口分别保留失败、拒绝与验证结果。[放大查看 PNG](/assets/notes/ai-agent/04-tools.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/04-tools.dot)供对照，不是本版配图的可编辑源文件。
 
 仓库示例中有 LLM 审批和 shell 执行路径。LLM 审查用于辅助判断，不能替代服务端授权；单进程测试通过也不等于并发幂等已获保证。Windows 下应按项目说明核对 Bash/WSL 条件；只观察本地文件工具时，没有必要连接日历、创建 PR 等外部动作。
 
@@ -137,7 +137,7 @@ def _is_safe_path(self, path: Path) -> bool:
 - [chapter2/kv-cache/agent.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter2/kv-cache/agent.py)
 - [chapter6/async-agent/README.md](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter6/async-agent/README.md)
 - [当前仓库正文](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/book/chapter4.md)
-- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html) · 统一验证入口（仅保留于本地审阅资料，公开版不提供）
+- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html)
 
 <a id="tool-status"></a>
 
@@ -190,12 +190,12 @@ payload: {}
 
 第9章将此契约用于音频打断与播放器ACK，第10章用于协作消息和产物版本。本地`PlaybackGuard`只实现同进程的事件身份/代次检查，返回`CANCEL_REQUESTED`，不会冒充真实播放器已静音。
 
-## 检查理解
+## 本章要点 {#检查理解}
 
-1. MCP 标准化连接后，还有哪些安全责任由应用承担？
-2. 为什么 `get_task_status` 和 `cancel_task` 不应采用同样的默认授权？
-3. 为什么分布式执行不能只靠“先查再写”保证幂等？
-4. 高优先级消息进入时，如何选择取消、排队还是并行？
+1. MCP 统一接入方式，应用仍负责连接授权、参数检查、资源范围和结果验证。
+2. 查询状态以读取为主，取消会改变执行状态，二者应依据副作用设置权限。
+3. 并发请求可能同时查到“尚未执行”，幂等需要请求身份以及唯一约束、事务或状态机共同保障。
+4. 中断策略取决于时效、副作用和资源隔离：取消需安全点，排队等待当前任务结束，并行则需隔离状态。
 
 ## 学习资料与代码出处
 

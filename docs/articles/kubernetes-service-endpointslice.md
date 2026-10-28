@@ -1,7 +1,7 @@
 ---
 id: kubernetes-service-endpointslice
 title: 第十九章 Service 与 EndpointSlice 资源实践
-description: Service 的 selector 通常选择同命名空间中具有匹配标签的 Pod。它不要求 Pod 一定来自 Deployment，也不通过 Deployment 的名字找到后端。
+description: "Service 的 selector 通常选择同命名空间中具有匹配标签的 Pod。它不要求 Pod 一定来自 Deployment，也不通过 Deployment 的名字找到后端。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -81,7 +81,7 @@ ready       = Service publishNotReadyAddresses
 
 公式依据 [v1.28.0 EndpointSlice 控制器实现](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/endpointslice/utils.go)，缺省字段依据 [v1.28.0 EndpointConditions 类型](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/discovery/v1/types.go)。手工管理端点还需确认管理者怎样设置这些条件；数据平面、流量策略与已有连接继续决定具体流量走向。
 
-## 4. 类型表示入口意图，不保证底层已准备
+## 4. Service 类型与基础设施条件 {#_4-类型表示入口意图-不保证底层已准备}
 
 | 情形         | 入口特点                         | 还需要核对                             |
 | ------------ | -------------------------------- | -------------------------------------- |
@@ -105,12 +105,12 @@ kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
 
 先确认标签与命名空间，再看就绪、端口与端点条件。随后比较服务名、Service IP 和 Pod IP 的访问证据，必要时才进入节点规则层。
 
-服务没有端点时，为 Service 重建地址通常无法修复错误的 Pod 标签。即使端点存在，应用不监听的问题也不能靠 DNS 记录解决。排查时，应明确每条证据对应的层次。
+标签与命名空间决定后端选择，就绪条件影响端点状态，应用监听决定目标端口能否响应。将访问证据对应到这些层次，再处理相应配置。
 
 ## 6. 删除和变更的影响
 
 Service 与工作负载通常独立存在，删除 Deployment 不自动删除相关 Service。重新创建 Service 可能改变地址或分配端口，客户端缓存也可能继续使用旧值。
 
-因此，不能把删除重建视为无害刷新。变更前应记录地址、端口、流量策略和外部依赖，变更后则验证真实客户端的访问路径，不能只确认 YAML 已保存。
+变更前记录地址、端口、流量策略和外部依赖，变更后验证真实客户端的访问路径；删除重建也需评估地址变化与缓存影响。
 
 [catalog 案例：标签、命名端口与后端](/articles/kubernetes-practice-guide.html) · [返回本册目录](/collections/kubernetes/)

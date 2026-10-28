@@ -1,7 +1,7 @@
 ---
 id: kubernetes-ingress
 title: 第二十章 Ingress 与 HTTP 入口路由
-description: Ingress 对象声明适用的 HTTP/HTTPS 路由；Ingress Controller 观察并实现这些规则。只创建一个 Ingress 对象，不会自动安装一个能接外部流量的代理。
+description: "Ingress 对象声明适用的 HTTP/HTTPS 路由；Ingress Controller 观察并实现这些规则。只创建一个 Ingress 对象，不会自动安装一个能接外部流量的代理。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,7 +19,7 @@ order: 20
 
 # 第二十章 Ingress 与 HTTP 入口路由
 
-> 以 Kubernetes 1.28 的 networking.k8s.io/v1 为背景。区分标准规则与控制器扩展，不安装任何 Ingress Controller，不复制原笔记里的真实域名或发布元数据。
+> 本章以 Kubernetes 1.28 的 networking.k8s.io/v1 为背景，说明规则、控制器和入口地址的配合。清单使用教学名称，控制器扩展需按实现版本单独核对。
 
 ## 1. 规则、控制器与入口地址
 
@@ -68,7 +68,7 @@ spec:
 | Prefix                 | 按路径元素进行前缀匹配 | /foo 可匹配 /foo/bar，但不匹配 /foobar |
 | ImplementationSpecific | 由相应实现定义         | 必须查控制器文档                       |
 
-Prefix 不是任意字符串前缀，末尾斜杠也不能按原笔记中的说法机械区分：规则 `/foo/` 可以匹配 `/foo`。存在多个匹配时，要按标准的最长匹配与 Exact 优先等规则理解。[1.28 Ingress 路径定义与例子](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/ingress.md)
+Prefix 按路径元素匹配，规则 `/foo/` 可以匹配 `/foo`，也可匹配 `/foo/bar`，但不能匹配 `/foobar`。存在多个匹配时，要按标准的最长匹配与 Exact 优先等规则理解。[1.28 Ingress 路径定义与例子](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/ingress.md)
 
 正则表达式不属于所有 Prefix 规则的通用能力。控制器是否支持正则、如何开启、与 pathType 如何组合，都属于实现和版本条件。
 
@@ -78,7 +78,7 @@ TLS 证书需要与入口使用的名字匹配，并由相应配置引用。入�
 
 上传大小、重写、跳转等注解通常是控制器扩展，键名不能随意混用。旧的 class 注解与 `ingressClassName` 也不能仅因名字相似就当作可互换配置。
 
-本章保留标准清单，不把某个控制器的全部注解当成 Kubernetes 通用字段。控制器的安装版本、维护状态和兼容要求需要在真正实施前另行核对，本文没有选型或部署承诺。
+本文清单采用标准字段；控制器注解属于具体实现，需要单独核对。控制器的安装版本、维护状态和兼容要求需要在真正实施前另行核对，本文没有选型或部署承诺。
 
 ## 5. 按入口路径定位
 

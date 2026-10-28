@@ -1,7 +1,7 @@
 ---
 id: kubernetes-statefulset
 title: 第十六章 StatefulSet：身份、顺序与数据
-description: Deployment 中的副本通常可互换；有些应用还需要固定成员名、独立数据目录或受控的成员启动顺序。StatefulSet 提供序号、稳定命名及卷申领等机制。
+description: "Deployment 中的副本通常可互换；有些应用还需要固定成员名、独立数据目录或受控的成员启动顺序。StatefulSet 提供序号、稳定命名及卷申领等机制。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -68,17 +68,17 @@ volumeClaimTemplates:
 
 在常见 RollingUpdate 路径里，更新通常从较大序号向较小序号推进，并等待相应就绪条件。`partition` 用来限定哪些序号进入更新范围，是按序号分界，不是按流量百分比划分灰度。
 
-OnDelete 则不会仅因模板改变而主动替换已有 Pod；之后在受控删除与重建时采用新的模板。拼写为 `OnDelete`，不是 `Ondelete`。
+OnDelete 保留已有 Pod，之后在受控删除与重建时采用新的模板；字段值使用 `OnDelete`。
 
 不能照搬 Deployment 的 `maxSurge`。1.28 中 StatefulSet 的 `maxUnavailable` 也有 Alpha 特性门控条件，不应写成无条件通用字段，更不能沿用 Deployment 的 25% 默认值。[1.28 StatefulSet 的更新与门控说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/workloads/controllers/statefulset.md)
 
-## 4. 滚动失败后，回退为何可能仍然卡住
+## 4. 滚动失败后的模板回退与实例恢复 {#_4-滚动失败后-回退为何可能仍然卡住}
 
 假如高序号的新 Pod 因配置错误始终不 Ready，更新可能停在那里。恢复旧模板后，控制器也不总会立即自动替换那个错误实例；历史版本存在需要针对已失败实例人工处理的情况。
 
 处理这类问题前，必须确认旧模板、数据兼容性、成员状态与恢复流程，不能笼统地建议所有 StatefulSet 都“强删全部 Pod”。强制删除时，旧进程可能仍在其他位置运行，重复身份对有状态应用尤其危险。
 
-应先收集实例状态、事件、修订信息与存储挂载结果，再按应用的成员恢复流程处理。本章未做故障注入，不提供已经验证成功的恢复承诺。
+应先收集实例状态、事件、修订信息与存储挂载结果，再按应用的成员恢复流程处理。具体恢复步骤需结合应用与目标版本，在隔离环境中通过故障实验验证。
 
 ## 5. 删除资源与删除数据分开决定
 

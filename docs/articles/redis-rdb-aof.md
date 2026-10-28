@@ -1,9 +1,9 @@
 ---
 id: redis-rdb-aof
 title: 第十九章 RDB、AOF 与恢复边界
-description: 返回本册目录
+description: "持久化回答的是“进程或机器失效后，可以从哪些文件恢复到什么状态”。它不是备份的同义词：误删除也可能被及时写进持久化文件，而同一块损坏的磁盘可能同时带走数据和文件。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -41,15 +41,15 @@ everysec 常被概括为通常约一秒的数据风险窗口，但这不是所�
 
 AOF 重写依据当前数据生成较精简的恢复表示，不是简单逐行删除“重复命令”。例如大量 INCR 最终可以被表示成当前值；重写与业务并发期间，还必须保存新的变化。[持久化机制与策略](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/)
 
-## 3. Redis 7.0+：不要只找一个 appendonly.aof
+## 3. Redis 7.0+ 的 BASE、INCR 与 Manifest {#_3-redis-7-0-不要只找一个-appendonly-aof}
 
 ![多部分 AOF 的文件关系](/assets/notes/redis/redis-study-multipart-aof.svg)
 
 7.0 起的多部分 AOF 由基础文件、增量文件与 manifest 共同组织。图中连线表示文件集关系，不是“把 manifest 当数据日志重放”。基础文件可能采用 RDB 格式；新写入进入相应增量文件，manifest 指定有效文件集合。
 
-这修正了旧笔记只围绕单一 AOF 文件和旧重写缓冲区描述恢复的局限。复制一个同名文件、漏掉增量或 manifest，都不能算完成现代 AOF 备份。重写过程中随意复制目录，也可能拿到不匹配的文件集合。
+备份多部分 AOF 时，需要保存相互匹配的基础文件、增量文件和 manifest。重写期间文件集合仍可能变化，取回后应核对其完整性与对应关系。
 
-## 4. 故障后，先保存现场再谈修复
+## 4. 故障后确定加载源并校验恢复集合 {#_4-故障后-先保存现场再谈修复}
 
 先确认启动配置实际启用了什么。正常配置下同时启用 AOF 与 RDB，重启使用 AOF 重建数据；目录中存在 dump.rdb 不说明本次从它恢复。AOF 损坏也不应假定平台自动挑选旧 RDB 作为无损回退。[AOF 与 RDB 的启动关系](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/#interactions-between-aof-and-rdb-persistence)
 

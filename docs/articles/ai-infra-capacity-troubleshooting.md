@@ -1,7 +1,7 @@
 ---
 id: ai-infra-capacity-troubleshooting
 title: 第 24 章 排障与容量验收：从现象走到证据
-description: 笔记记录了 torch.cuda.is_available() 为 false、重启后恢复的现象。
+description: "笔记记录了 torch.cuda.is_available() 为 false、重启后恢复的现象。排查时先保存环境与错误信息，再沿设备发现、CUDA 初始化、容器和框架逐层定位；重启后的恢复现象本身不足以确定根因。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,9 +19,9 @@ order: 24
 
 # 第 24 章 排障与容量验收：从现象走到证据
 
-笔记记录了 `torch.cuda.is_available()` 为 false、重启后恢复的现象。
+笔记记录了 `torch.cuda.is_available()` 为 false、重启后恢复的现象。排查时先保存环境与错误信息，再沿设备发现、CUDA 初始化、容器和框架逐层定位；重启后的恢复现象本身不足以确定根因。
 
-## 1. 第一原则：先保存现场
+## 1. 先记录环境、设备与错误现场 {#_1-第一原则-先保存现场}
 
 记录时间、驱动和框架版本、容器 digest、设备 UUID、环境变量、错误码及相关日志。重启、升级驱动或批量杀进程可能破坏现场；在生产系统中，必须先评估影响并确认维护授权，不能将这些操作作为诊断的第一步。
 
@@ -52,7 +52,7 @@ print("available", torch.cuda.is_available())
 
 `PYTORCH_NVML_BASED_CUDA_CHECK=1` [PyTorch CUDA 环境变量](https://docs.pytorch.org/docs/2.14/cuda_environment_variables.html)
 
-## 4. OOM 要先确认发生阶段
+## 4. 按加载、Prefill 与 Decode 区分 OOM {#_4-oom-要先确认发生阶段}
 
 加载时 OOM，先看权重、并行布局和加载峰值；prefill OOM，检查输入长度、chunk 和激活；decode OOM，检查并发、KV 增长与内存池。还应区分 CUDA 分配失败与主机 OOM killer。
 

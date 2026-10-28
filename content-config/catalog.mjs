@@ -9,7 +9,7 @@ export const categories = [
 
 export const collections = [
   { id: 'ai-agent', name: 'AI Agent', category: 'ai-agent', description: 'Agent 基础、上下文、工具、评估与多 Agent 协作。' },
-  { id: 'ai-infra', name: 'AI Infra', category: 'gpu-infra', description: 'GPU / CUDA 基础、资源管理、模型推理与 G-CR 学习笔记。' },
+  { id: 'ai-infra', name: 'GPU 与大模型基础', category: 'gpu-infra', description: 'GPU 与 CUDA、资源管理、大模型运行原理及 Checkpoint / Restore 的学习笔记。' },
   { id: 'distributed-systems', name: '分布式系统', category: 'distributed-systems', description: '复制、故障模型、一致性与系统取舍。' },
   { id: 'operating-systems', name: '操作系统', category: 'distributed-systems', description: '进程、线程、内存与系统执行环境。' },
   { id: 'kubernetes', name: 'K8s', category: 'engineering', description: 'Kubernetes 架构、工作负载、网络、存储与日常管理。' },
@@ -24,7 +24,7 @@ export const browseCollections = browseCollectionIds.map(id => collections.find(
 
 export const topics = [
   { id: 'agent-engineering', name: 'AI Agent：从基础到协作', category: 'ai-agent', description: '按概念、信息、执行和评估的顺序整理 Agent 学习笔记。', audience: '希望系统了解 Agent 工程的读者', prerequisites: '了解 Python 与大模型 API 的基本用法', stages: [{ name: 'Agent 与信息组织', min: 1, max: 3 }, { name: '工具、开发与评估', min: 4, max: 6 }, { name: '训练、交互与协作', min: 7, max: 10 }, { name: '学习路线与源码索引', min: 90, max: 99 }] },
-  { id: 'ai-infrastructure', name: 'AI Infra：从 GPU 到模型服务', category: 'gpu-infra', description: '从 CUDA 执行模型出发，理解资源共享、推理服务和 Checkpoint / Restore。', audience: '希望了解 AI 基础设施的开发者', prerequisites: '了解进程、内存与容器基础', stages: [{ name: 'GPU 与 CUDA 基础', min: 1, max: 9 }, { name: '监控与性能分析', min: 10, max: 12 }, { name: '共享与调度', min: 13, max: 17 }, { name: '模型服务与恢复', min: 18, max: 26 }, { name: '版本与验证边界', min: 90, max: 99 }] },
+  { id: 'ai-infrastructure', name: 'GPU 与大模型：从执行到推理', category: 'gpu-infra', description: '从 GPU 与 CUDA 执行模型出发，学习资源管理、大模型运行原理与 Checkpoint / Restore。', audience: '希望学习 GPU 与大模型运行基础的开发者', prerequisites: '了解进程、内存与容器基础', stages: [{ name: 'GPU 与 CUDA 基础', min: 1, max: 9 }, { name: '监控与性能分析', min: 10, max: 12 }, { name: '共享与调度', min: 13, max: 17 }, { name: '模型服务与恢复', min: 18, max: 26 }, { name: '版本与验证边界', min: 90, max: 99 }] },
   { id: 'distributed-learning', name: '分布式系统：从故障到一致性', category: 'distributed-systems', description: '从故障模型与 RPC 读起，逐步理解复制、事务与系统设计。', audience: '有单机服务开发经验的读者', prerequisites: '了解进程、网络与数据库基础', stages: [{ name: '模型、通信与分片', min: 1, max: 6 }, { name: '复制与协调', min: 7, max: 15 }, { name: '存储、事务与系统取舍', min: 16, max: 27 }, { name: '依据与练习', min: 90, max: 99 }] },
   { id: 'os-learning', name: '操作系统：从进程到内存', category: 'distributed-systems', description: '区分历史教学实现与现代机制，梳理进程、同步、I/O 和内存。', audience: '希望回顾操作系统基础的读者', prerequisites: '能阅读简单 C 代码', stages: [{ name: '执行、进程与调度', min: 1, max: 7 }, { name: '同步与 I/O', min: 8, max: 12 }, { name: '地址空间、内存与排查', min: 13, max: 21 }, { name: '依据与练习', min: 90, max: 99 }] },
   { id: 'kubernetes-learning', name: 'Kubernetes：从架构到排障', category: 'engineering', description: '沿组件协作和资源对象理解 Kubernetes，保留历史版本边界。', audience: '了解容器并希望学习 Kubernetes 的读者', prerequisites: '了解 Linux、容器与网络基础', stages: [{ name: '组件、运行时与网络', min: 1, max: 11 }, { name: 'API 与工作负载', min: 12, max: 21 }, { name: '存储、调度与管理', min: 22, max: 30 }, { name: '设备与云集成', min: 31, max: 33 }, { name: '依据与贯穿案例', min: 90, max: 99 }] },

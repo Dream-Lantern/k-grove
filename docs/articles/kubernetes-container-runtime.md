@@ -1,7 +1,7 @@
 ---
 id: kubernetes-container-runtime
 title: 第八章 容器运行时与 containerd 工具边界
-description: 启动一个容器，不只是运行一个镜像名字。还涉及获取镜像内容、准备根文件系统、设置隔离和资源约束、创建进程，以及记录退出结果。把所有实现都写进 kubelet，会使 Kubernetes 与具体运行时紧密耦合。
+description: "启动一个容器，不只是运行一个镜像名字。还涉及获取镜像内容、准备根文件系统、设置隔离和资源约束、创建进程，以及记录退出结果。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,9 +19,9 @@ order: 8
 
 # 第八章 容器运行时与 containerd 工具边界
 
-> 以 Kubernetes 1.28 与 containerd 1.7 系列的接口关系为主要背景。原安装补充材料还混有后来的 containerd 2.x 配置，不能把两代配置直接拼成一份教程；版本冲突已在第二章单独说明。本章不安装、不启动、不清理任何运行时对象。
+> 本章以 Kubernetes 1.28 与 containerd 1.7 系列的接口关系为主要背景。containerd 2.x 配置需要按对应版本单独使用，两代配置的区别见安装实践章节。
 
-## 1. kubelet 为什么不直接管理所有 Linux 细节
+## 1. kubelet 与运行时的接口分工 {#_1-kubelet-为什么不直接管理所有-linux-细节}
 
 启动一个容器，不只是运行一个镜像名字。还涉及获取镜像内容、准备根文件系统、设置隔离和资源约束、创建进程，以及记录退出结果。把所有实现都写进 kubelet，会使 Kubernetes 与具体运行时紧密耦合。
 
@@ -67,7 +67,7 @@ Pod 是 Kubernetes 的资源抽象，运行时需要相应的 Pod 级运行环�
 
 这也解释了原命令笔记中为何同时出现 `containers` 和 `tasks`：两者并不是重复命令。直接从低层删除 Kubernetes 管理的对象，可能使运行时与 kubelet 对状态的理解不再一致。
 
-## 5. 两种 namespace，不要互相替代
+## 5. Kubernetes 与 containerd 的 namespace {#_5-两种-namespace-不要互相替代}
 
 Kubernetes Namespace 是 API 资源组织与权限等机制的一部分。containerd namespace 则用于 containerd API 中的元数据隔离。二者不是一对一映射。
 
@@ -103,13 +103,13 @@ ctr -n k8s.io tasks list
 
 不能仅凭“ctr 看到了镜像”，就认定“该 Pod 一定能使用它”。还需核对端点、namespace、镜像引用与平台、CRI 视角，以及拉取策略等条件。
 
-## 7. 原镜像命令中，需要纠正的几个概念
+## 7. 镜像平台、离线归档与仓库连接 {#_7-原镜像命令中-需要纠正的几个概念}
 
 ### 7.1 所有平台，不是所有版本
 
 `--all-platforms` 处理的是一个镜像引用相关的多个平台内容，例如不同 CPU 架构；它不是下载某仓库全部标签，也不是下载该软件所有版本。它更不是所有 push 失败的通用修复开关。[containerd v1.7.0 镜像拉取参数](https://raw.githubusercontent.com/containerd/containerd/v1.7.0/cmd/ctr/commands/images/pull.go)
 
-这里引用当前源码仅核对参数的概念含义，不把当前完整参数列表当成 1.7 的兼容承诺。实际离线流程应固定工具版本和目标平台，再核对所需内容是否齐全。
+这里引用 v1.7.0 源码核对参数含义，其他版本的完整参数列表仍需查阅对应帮助。实际离线流程应固定工具版本和目标平台，再核对所需内容是否齐全。
 
 ### 7.2 导入成功，不等于可以运行
 
@@ -125,7 +125,7 @@ ctr -n k8s.io tasks list
 
 ## 8. 哪些操作留到独立维护流程
 
-原笔记还涉及 task 终止、容器删除、镜像删除、挂载与卸载。这些都有改变现场的风险，不作为本章排查的第一步。Linux 常见卸载文件系统命令是 `umount`，不是 `unmount`；但即使命令拼写正确，也不代表可以卸载运行时正在使用的路径。
+task 终止、容器删除、镜像删除、挂载与卸载会改变运行现场，应放入独立维护流程，在完成状态观察后按需要执行。Linux 常见卸载文件系统命令是 `umount`，不是 `unmount`；但即使命令拼写正确，也不代表可以卸载运行时正在使用的路径。
 
 尤其不应通过“删除 Kubernetes 管理的容器”来常规修复资源配置。kubelet 可能再次创建对象，原故障未得到解决，证据反而丢失。应先在 Kubernetes 层核对期望与事件，再决定是否需要受控的节点维护。
 

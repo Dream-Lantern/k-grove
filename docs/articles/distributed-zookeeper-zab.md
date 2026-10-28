@@ -1,9 +1,9 @@
 ---
 id: distributed-zookeeper-zab
 title: 第十三章 ZooKeeper 架构、Zab 与数据模型
-description: ZooKeeper 是协调服务，不是通用的大对象数据库。它适合保存配置、成员和少量协调状态，提供有序更新、版本校验与通知等构件。本章的 API 参照 3.9.3；历史课程说明另按其原始背景理解。
+description: "ZooKeeper 为多个进程提供共享的协调状态，适合保存配置、成员和少量控制信息。应用可以组合有序更新、版本校验与通知等构件完成协调。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -21,9 +21,9 @@ order: 13
 
 > 阅读标签：ZooKeeper3.9.3 API与Zab模型。
 
-ZooKeeper 是协调服务，不是通用的大对象数据库。它适合保存配置、成员和少量协调状态，提供有序更新、版本校验与通知等构件。本章的 API 参照 3.9.3；历史课程说明另按其原始背景理解。
+ZooKeeper 为多个进程提供共享的协调状态，适合保存配置、成员和少量控制信息。应用可以组合有序更新、版本校验与通知等构件完成协调。本章先看会话和写入路径，再介绍 znode 与常用 API，版本参照 3.9.3。
 
-## 1. 底层不是 Raft
+## 1. 会话、Zab 与有序更新 {#_1-底层不是-raft}
 
 ![客户端会话与有序写入](/assets/notes/distributed-systems/dist-zk.svg)
 
@@ -43,7 +43,7 @@ ZooKeeper 使用 Zab 路线的原子广播协调写入，与 Raft 都涉及领�
 
 这三项并非互斥且穷尽的类别。Container、TTL 节点等还各有使用条件；顺序后缀也有其作用域与计数限制，不能视为适用于所有业务的永久全局唯一标识。临时节点通常不能有子节点。[3.9.3 数据模型](https://zookeeper.apache.org/doc/r3.9.3/zookeeperProgrammers.html#ch_zkDataModel)
 
-## 3. API 的成功与错误不能二分为“存在/不存在”
+## 3. API 返回状态与条件更新 {#_3-api-的成功与错误不能二分为-存在-不存在}
 
 create 的 NodeExists 与连接丢失不同：前者给出具体冲突，后者可能意味着创建成功但响应未到。delete、setData 的版本参数用于条件检查；指定忽略版本的用法会放弃相应并发保护。
 
@@ -55,10 +55,10 @@ exists、getData、getChildren 有各自返回值与 Watch 语义。multi 可组
 
 纸面推演：A 失联但线程仍运行，服务端最终使会话过期并删除临时节点，B 获得下一份资格。A 恢复时必须停止以旧资格工作；外部资源还需 fencing 等机制阻止迟到写入，详见第 15 章。
 
-## 5. 读到旧值不是随便读什么都正确
+## 5. 普通读、会话视图与同步条件 {#_5-读到旧值不是随便读什么都正确}
 
 文档定义同一会话的系统视图等保证，同时提醒跨客户端的普通读可能不同。sync 后按顺序发读是文档给出的客户端同步工具，但不能缩写成“任意客户端加一次 sync，所有未来读取永远最新”。应保留成功回调、会话与故障条件。[一致性保证](https://zookeeper.apache.org/doc/r3.9.3/zookeeperProgrammers.html#ch_zkGuarantees)
 
-原笔记中逐请求携带 zxid 的说法，保留为理解课程的线索，不作为各客户端 API 的参数格式或精确网络协议实现说明。
+zxid 可用于理解事务顺序；客户端 API 的参数与网络消息格式，仍需按所用客户端和协议实现分别查阅。
 
 [返回本册目录](/collections/distributed-systems/)

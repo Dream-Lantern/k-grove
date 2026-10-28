@@ -1,7 +1,7 @@
 ---
 id: ai-infra-cuda-graphs
 title: 第 7 章 CUDA Graphs：定义、实例化、更新与回放
-description: 笔记这一主题应命名为 CUDA Graphs。本章讨论把 CUDA 工作及其依赖组织为可重复提交的执行图。cuGraph 官方说明
+description: "大量短 kernel 每次由 CPU 单独提交时，主机开销可能占比较高。CUDA Graphs 把工作定义与执行分开，允许重用已实例化的执行图。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 7
 
 # 第 7 章 CUDA Graphs：定义、实例化、更新与回放
 
-## 1. 它主要减少什么开销
+## 1. 通过定义与执行分离复用提交工作 {#_1-它主要减少什么开销}
 
 大量短 kernel 每次由 CPU 单独提交时，主机开销可能占比较高。CUDA Graphs 把工作定义与执行分开，允许重用已实例化的执行图。它不等于 kernel 融合：图内仍可以保留多个 kernel，也不能保证单个长 kernel 本身因此变快。
 
@@ -31,7 +31,7 @@ order: 7
 
 `cudaGraph_t` 是工作图描述，`cudaGraphExec_t` 是实例化后的可执行对象。修改原图不会自动同步到已创建的执行实例，但“每次参数变化都必须重新实例化”也不对：符合条件时可以更新节点参数或使用 `cudaGraphExecUpdate()`。
 
-CUDA 12.8.1 还提供事件节点和条件节点等能力，因此“Graph 不能放 event”“图永远完全静态”都过于绝对。必须检查对应 API 的可更新范围和捕获限制。[Graph Management API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__GRAPH.html)
+CUDA 12.8.1 还提供事件节点和条件节点等能力。选择节点与更新方法时，按对应 API 确认可更新范围、参数要求和捕获限制。[Graph Management API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__GRAPH.html)
 
 ## 3. 一个可核对的使用框架
 
@@ -49,17 +49,17 @@ CUDA 12.8.1 还提供事件节点和条件节点等能力，因此“Graph 不�
 
 图仍可能访问缓冲区时，不能将其释放。图复用的成本不只有实例化时间，还涉及固定形状、内存池、捕获数量和维护复杂度。应比较“构建 + 多次回放”的总成本，而不是只看最短的一次 launch。
 
-## 4. 为什么只 hook cuLaunchKernel 会漏数据
+## 4. Graph 回放与普通 launch 的观测覆盖 {#_4-为什么只-hook-culaunchkernel-会漏数据}
 
 执行图回放时，不保证经过应用拦截的普通 kernel launch 入口。因此，“hook 没命中”不能说明 kernel 没执行；也不能通过让图相关函数直接返回成功来绕过调用，这可能破坏输出句柄、依赖和应用正确性。
 
 图节点遍历可以帮助读取定义态的 kernel 参数，但真实运行时间需要 profiler/activity 证据。节点数也取决于模型、形状、后端及版本。
 
-## 5. 回归验证不只检查速度
+## 5. 回归时联合验证输出、资源与速度 {#_5-回归验证不只检查速度}
 
 回归时，至少要核对无图/有图的输出、不同输入、边界形状、错误返回、内存增长和并发场景。更新不兼容时，应采用重新构建等明确的回退路径。Graph、event 和 stream 都需要管理生命周期。
 
-## 6. 四种时间不要都叫 H2D 延迟
+## 6. 分别计量调用、排队、搬运与计算时间 {#_6-四种时间不要都叫-h2d-延迟}
 
 | 时间对象             | 观察的区间         | 主要边界                         |
 | -------------------- | ------------------ | -------------------------------- |

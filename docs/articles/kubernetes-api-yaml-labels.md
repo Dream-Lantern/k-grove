@@ -1,9 +1,9 @@
 ---
 id: kubernetes-api-yaml-labels
 title: 第十二章 API 对象、YAML 与标签选择
-description: Kubernetes 把集群中的管理对象通过 API 暴露出来。Pod、Service、Deployment 是不同的资源类型；每个对象有名字、所属范围及相应字段。清单常用 YAML 编写，提交后由服务端按 API 定义处理。
+description: "介绍 Kubernetes API 对象、YAML 映射与列表、模板标签和选择器，结合 Deployment 清单理解字段层级与校验。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -21,7 +21,7 @@ order: 12
 
 > 面向 Kubernetes 1.28 的资源阅读基础。以下清单均为新增教学示例，未提交到集群。API 版本、对象结构和标签关系理解清楚后，再读具体工作负载。
 
-## 1. 一份清单在描述什么
+## 1. 清单中的对象身份与期望状态 {#_1-一份清单在描述什么}
 
 Kubernetes 把集群中的管理对象通过 API 暴露出来。Pod、Service、Deployment 是不同的资源类型；每个对象有名字、所属范围及相应字段。清单常用 YAML 编写，提交后由服务端按 API 定义处理。
 
@@ -74,7 +74,7 @@ data:
 
 块内的 `#` 是字符串中的字符，是否是应用配置注释由应用格式决定。字段是数字、布尔值还是字符串也要核对；ConfigMap `data` 的值应为字符串，不能仅靠“YAML 能解析”判断对象有效。
 
-## 3. 三处 labels，作用可能不同
+## 3. 对象标签、模板标签与选择器 {#_3-三处-labels-作用可能不同}
 
 在 Deployment 示例中，`metadata.labels` 是 Deployment 自己的标签；`spec.template.metadata.labels` 是未来 Pod 的标签。两处不会因为键名相同就自动成为一回事。
 
@@ -102,7 +102,7 @@ kubectl get nodes --show-labels
 
 ## 5. 从帮助到校验
 
-遇到不熟悉的字段时，应先查询目标环境的 API 和资源文档，不要仅凭字段名猜测：
+目标环境的 API 和资源文档可用于确认字段类型、位置与说明：
 
 ```bash
 kubectl api-resources

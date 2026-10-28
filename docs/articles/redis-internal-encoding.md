@@ -1,7 +1,7 @@
 ---
 id: redis-internal-encoding
 title: 第二十六章 内部编码、SDS、listpack 与渐进 rehash
-description: 返回本册目录
+description: "Redis 的对外类型规定可执行命令，内部编码规定对象在某种规模下的存储布局。一个类型可以根据大小和内容选择不同编码。下面先看紧凑布局，再联系 String 表示与字典 rehash，理解空间、访问成本和转换过程。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -21,15 +21,15 @@ order: 26
 
 [返回本册目录](/collections/redis/)
 
-对外类型决定命令语义，内部编码决定某种规模下怎样保存对象。Hash 类型不等于它内部一定使用哈希表，String 也不等于所有值都用同一种字符串布局。
+Redis 的对外类型规定可执行命令，内部编码规定对象在某种规模下的存储布局。一个类型可以根据大小和内容选择不同编码。下面先看紧凑布局，再联系 String 表示与字典 rehash，理解空间、访问成本和转换过程。
 
 [![Redis 数据结构编码：需要固定版本](/assets/notes/redis/redis-study-encoding.svg)](/assets/notes/redis/redis-study-encoding.svg)
 
-## 1. 为什么小对象采用紧凑编码
+## 1. 小对象的紧凑布局与规模变化 {#_1-为什么小对象采用紧凑编码}
 
 哈希表、指针和独立分配都有元数据成本。元素较少、内容较短时，紧凑连续布局可以节约空间并改善局部性；代价是某些查找或更新要扫描、搬移数据。规模扩大后，Redis 可以转换编码，不能把小对象时的性能结论直接外推。
 
-原笔记中的 ziplist 适合历史机制复盘。较新版本的 Hash、Sorted Set 常见 listpack 路线，7.2 还为 Set 提供相应紧凑编码配置。List 的 quicklist 与内部紧凑节点也应按版本理解，不再统一描述成一条普通双向链表。[带版本的内存编码说明](https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/memory-optimization/)
+ziplist 按其历史版本理解。较新版本的 Hash、Sorted Set 常见 listpack 路线，7.2 还为 Set 提供相应紧凑编码配置。List 的 quicklist 与内部紧凑节点也应按版本理解，不再统一描述成一条普通双向链表。[带版本的内存编码说明](https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/memory-optimization/)
 
 ## 2. SDS、整数编码与 embstr
 
@@ -47,7 +47,7 @@ MEMORY USAGE demo:encoding:text
 
 这是会写入示例键的教学观察，实际输出随版本、构建和配置变化。OBJECT ENCODING 不是稳定的跨版本业务接口。[Redis 7.2.0 对象实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/object.c)
 
-## 3. 调大紧凑编码阈值不是纯收益
+## 3. 紧凑阈值中的空间与延迟权衡 {#_3-调大紧凑编码阈值不是纯收益}
 
 为了节省内存而大幅扩大线性扫描结构，可能使查询、更新和编码转换产生明显的尾延迟。因此，评估时应覆盖数据分布、读写比例、转换瞬间和最坏规模，不能只比较静态内存占用。
 

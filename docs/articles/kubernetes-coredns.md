@@ -1,7 +1,7 @@
 ---
 id: kubernetes-coredns
 title: 第十一章 CoreDNS 与服务发现
-description: 应用通常希望连接“订单服务”，而不是记住某个 Pod 地址。DNS 负责把名称解析为相应记录，应用再利用结果建立连接。
+description: "应用通常希望连接“订单服务”，而不是记住某个 Pod 地址。DNS 负责把名称解析为相应记录，应用再利用结果建立连接。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,7 +19,7 @@ order: 11
 
 # 第十一章 CoreDNS 与服务发现
 
-> 这是基于原笔记 Service / DNS 上下文新增的原理章节，不是原笔记中一篇独立 CoreDNS 实验的导出。围绕 Kubernetes 1.28 的服务发现语义讲解；实际 CoreDNS 镜像、插件版本和 Corefile 未复测，不提供安装或改配步骤。
+> 本章围绕 Kubernetes 1.28 的服务发现语义，说明名称解析、服务转发与 Pod 网络的关系。实际 CoreDNS 镜像、插件版本与 Corefile 尚未复测，配置需按目标环境核对。
 
 ## 1. 一个服务名，涉及两件不同的事
 
@@ -40,7 +40,7 @@ CoreDNS 是常见的集群 DNS 实现。很多环境中，对 Pod 暴露的 DNS 
 
 kubelet 参与配置 Pod 的 DNS 环境，应用使用的解析器再按配置进行查询。典型部署会经过集群 DNS 服务入口，但使用 NodeLocal DNS 或其他配置时路径可能不同。不要把一张默认部署图写成所有环境的唯一拓扑。
 
-CoreDNS 需要了解相关 Kubernetes 对象，才能形成集群内服务记录。它的 kubernetes 插件文档说明了 API 观察与服务记录处理的关系；具体插件选项依版本而定，本稿只用来说明职责，不复制当前默认值到历史实践。[CoreDNS kubernetes 插件](https://coredns.io/plugins/kubernetes/)
+CoreDNS 需要了解相关 Kubernetes 对象，才能形成集群内服务记录。它的 kubernetes 插件文档说明了 API 观察与服务记录处理的关系；具体插件选项依版本而定，这里用于说明组件职责，历史环境的默认值仍需查阅对应版本。[CoreDNS kubernetes 插件](https://coredns.io/plugins/kubernetes/)
 
 ## 3. 服务名里每一段代表什么
 
@@ -102,7 +102,7 @@ Corefile 是 CoreDNS 配置。初学时先认识职责，比一次复制一整�
 - `forward` 可以把适用查询转发到配置的上游解析器。
 - `cache` 缓存 DNS 结果，减少重复查询，但缓存也意味着变化不总是立即被客户端观察到。
 
-这些名字只是常见插件职责，不是本章验收过的 Corefile。上游可能是企业 DNS，而不是公共互联网 DNS；DNS 出口也可能受网络策略和防火墙约束。不能把“外部域名失败”直接理解为“集群内服务发现全部失败”。
+这些插件共同组织名称解析，实际 Corefile 需要结合插件版本与环境配置验证。上游可能是企业 DNS，而不是公共互联网 DNS；DNS 出口也可能受网络策略和防火墙约束。不能把“外部域名失败”直接理解为“集群内服务发现全部失败”。
 
 关于转发与缓存的行为和可配置项，后续修改前应核对相应版本的 [forward 文档](https://coredns.io/plugins/forward/)与 [cache 文档](https://coredns.io/plugins/cache/)，本章不建议随意增大缓存时间或放开所有出口。
 
@@ -129,7 +129,7 @@ kubectl get endpointslice -n kube-system -l kubernetes.io/service-name=kube-dns
 kubectl get pods -n kube-system
 ```
 
-若要进一步检查 Pod 内的解析配置或发起 DNS 查询，需要已有合适的诊断环境、工具和权限。本章没有为了测试而创建新 Pod、进入容器或安装 nslookup；也不把容器里缺少命令误记为 DNS 故障。
+若要进一步检查 Pod 内的解析配置或发起 DNS 查询，需要已有合适的诊断环境、工具和权限。诊断工具是否存在与 DNS 是否正常是两个检查项：缺少 nslookup 等命令时，应选择已有诊断环境继续验证。
 
 ## 8. 本章小结
 

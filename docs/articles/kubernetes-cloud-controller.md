@@ -1,7 +1,7 @@
 ---
 id: kubernetes-cloud-controller
 title: 第三十三章 Cloud Controller Manager 与云集成
-description: Kubernetes 描述 Node、Service 等期望对象，但实际云主机、路由和负载均衡由云平台管理。Cloud Controller Manager（CCM）把适用的云厂商集成职责与核心控制循环分开。
+description: "Kubernetes 描述 Node、Service 等期望对象，但实际云主机、路由和负载均衡由云平台管理。Cloud Controller Manager（CCM）把适用的云厂商集成职责与核心控制循环分开。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,7 +19,7 @@ order: 33
 
 # 第三十三章 Cloud Controller Manager 与云集成
 
-> 原笔记主要是一张云集成示意图，本章是在识别图中元素后新增的文字解释。以 Kubernetes 1.28 的架构职责为主，不创建云资源、不调用云 API，也不提供某家云的安装步骤。
+> 本章以 Kubernetes 1.28 的架构职责为背景，说明 Cloud Controller Manager 如何协调云侧节点、路由与负载均衡；具体提供者的配置需单独核对。
 
 ## 1. 为什么把云接口单独抽出来
 
@@ -39,9 +39,9 @@ CCM 观察相关对象，按云提供者实现和权限调用云接口，再更�
 
 职责框架参见 [Cloud Controller Manager](https://kubernetes.io/docs/concepts/architecture/cloud-controller/)，历史实践还需查对应 1.28 提供者的文档。本章没有验证某个云插件版本。
 
-## 3. 原架构图中的存储要拆出来
+## 3. 云存储与 CSI 的独立集成路径 {#_3-原架构图中的存储要拆出来}
 
-原图把云存储放在同一张图里，适合认识“集群需要外部能力”，但不能由此推导“所有卷都由 CCM 供应和挂载”。
+集群依赖的云网络与云存储各有集成路径。CCM 主要承担适用的云控制职责，卷供应与挂载需要结合存储机制分析。
 
 现代适用的存储集成还涉及 CSI 驱动及相关控制器、节点插件，与 PVC/PV/StorageClass 配合。驱动使用的云凭据、资源权限和数据回收策略，需要独立核对。
 
@@ -53,7 +53,7 @@ CCM 观察相关对象，按云提供者实现和权限调用云接口，再更�
 
 删除 Kubernetes 对象后，云资源是否自动删除，要看提供者、注解、最终处理与保留策略。不能根据 kubectl 列表里已经没有对象就断言云端已无资源或费用。
 
-网络入口和持久数据尤其需要区分：清理负载均衡与回收云盘是不同风险。任何真正的清理都应先列出准确资源标识与恢复路径，本次没有执行这些操作。
+网络入口和持久数据尤其需要区分：清理负载均衡与回收云盘是不同风险。清理前应列出准确资源标识与恢复路径，分别确认入口退役和数据保留要求。
 
 ## 5. 回到整个学习路线
 

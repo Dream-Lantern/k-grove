@@ -1,7 +1,7 @@
 ---
 id: kubernetes-configmap-secret
 title: 第二十一章 ConfigMap 与 Secret 配置交付
-description: ConfigMap 保存非敏感配置；Secret 为敏感数据提供专门的 API 类型和使用方式。应用镜像、配置对象和 Pod 是不同资源，它们的版本与生命周期也要分别管理。
+description: "ConfigMap 保存非敏感配置；Secret 为敏感数据提供专门的 API 类型和使用方式。应用镜像、配置对象和 Pod 是不同资源，它们的版本与生命周期也要分别管理。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -75,7 +75,7 @@ spec:
 
 通过 subPath 投射 ConfigMap 或 Secret 时，不能期待与普通卷投射相同的自动更新效果。如果应用尝试通过软链接等方式处理更新，还需验证其打开文件的方式和实际更新行为，不能把某种路径技巧当作通用的热更新保证。
 
-## 4. 配置更新至少有两个阶段
+## 4. 配置投射与应用生效 {#_4-配置更新至少有两个阶段}
 
 [![ConfigMap / Secret：配置更新到应用生效](/assets/notes/kubernetes/k8s-config-delivery.svg)](/assets/notes/kubernetes/k8s-config-delivery.svg)
 
@@ -87,7 +87,7 @@ spec:
 
 “文件已变化”与“应用正在使用新配置”需要分别验收。如果应用只在启动时读取一次配置，即使文件已更新，也不会自动采用新内容。不可变对象则需要另一套变更流程。[ConfigMap 消费与更新说明](https://kubernetes.io/docs/concepts/configuration/configmap/)
 
-常见做法包括配置版本化、Pod 模板校验和触发发布，或采用经过审核的重载机制；选哪一种要看应用能力。这里没有安装重载插件，也没有把删除 Pod 当成默认步骤。
+常见做法包括配置版本化、Pod 模板校验和触发发布，或采用经过审核的重载机制；选哪一种要看应用能力。变更方案应明确配置如何交付、应用如何采用，以及失败时怎样回退。
 
 ## 5. 镜像凭据与服务账户
 
@@ -95,6 +95,6 @@ spec:
 
 避免把密码放在命令行示例中。生产凭据的创建、轮换和撤销应有独立流程，也要避免在 `get -o yaml`、模板渲染和差异报告中泄露。
 
-本章不展示实际密码。验证时，应检查对象是否存在、引用关系是否正确、挂载或环境配置是否符合预期，以及应用采用了哪个配置版本，不必通过打印真实值来证明“读到了”。
+验证配置交付时，检查对象存在性、引用关系、挂载或环境配置，以及应用采用的配置版本；这些证据通常无需暴露真实密码。
 
 [catalog 案例：配置文件与应用重载约定](/articles/kubernetes-practice-guide.html) · [返回本册目录](/collections/kubernetes/)

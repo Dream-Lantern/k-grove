@@ -1,7 +1,7 @@
 ---
 id: os-linux011-copy-on-write
 title: 第十七章 Linux 0.11 段页结合与写时复制
-description: Linux 0.11 的段页结合是一种具体的历史布局，并非虚拟内存的唯一定义。原笔记将 64 MiB 线性区、LDT 和共享物理页联系起来，这条学习路线值得保留；但对“共用一套页表”和复制循环的解释需要修正。
+description: "Linux 0.11 先通过分段把任务的逻辑地址放入相应线性范围，再用分页联系物理页。fork 时，父子可以暂时共享数据物理页；写入时再根据权限与引用状态处理。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -21,7 +21,7 @@ order: 17
 
 > 阅读标签：Linux0.11段页结合与常规COW历史案例。
 
-Linux 0.11 的段页结合是一种具体的历史布局，并非虚拟内存的唯一定义。原笔记将 64 MiB 线性区、LDT 和共享物理页联系起来，这条学习路线值得保留；但对“共用一套页表”和复制循环的解释需要修正。
+Linux 0.11 先通过分段把任务的逻辑地址放入相应线性范围，再用分页联系物理页。fork 时，父子可以暂时共享数据物理页；写入时再根据权限与引用状态处理。下面先区分线性位置、页表对象和数据页，再沿写时复制流程观察它们的变化。
 
 ## 1. 进程的逻辑视图与线性位置
 
@@ -33,13 +33,13 @@ Linux 0.11 的段页结合是一种具体的历史布局，并非虚拟内存的
 
 nr是任务槽号，不是任意PID直接乘64MiB；64MiB是线性范围间隔，不是每个任务已经占用同样多物理RAM。现代每进程地址空间不必采用相同LDT布局。
 
-## 2. copy_page_tables 复制什么？
+## 2. copy_page_tables 建立子映射 {#_2-copy-page-tables-复制什么}
 
 它为目标范围分配相应页表，复制适用映射到同一物理页，调整写权限及引用计数。它并不是让父子进程永远指向同一套可变页表对象，也不是此时把所有用户数据页内容全部复制一遍。
 
-外层循环推进页目录范围，内层循环处理一组表项；原笔记把 size 循环解释成多个进程数，并将两层作用拆错，不能当原样正确源码。[Linux 0.11 mm/memory.c 与 kernel/fork.c](https://www.kernel.org/pub/linux/kernel/Historic/old-versions/linux-0.11.tar.gz)
+阅读复制循环时，外层跟踪页目录范围的推进，内层跟踪一组表项的处理；size 表示需要处理的范围，要结合循环中的地址和长度变化理解。[Linux 0.11 mm/memory.c 与 kernel/fork.c](https://www.kernel.org/pub/linux/kernel/Historic/old-versions/linux-0.11.tar.gz)
 
-## 3. 写入时发生什么？
+## 3. 写保护异常与私有页分离 {#_3-写入时发生什么}
 
 [![Linux0.11背景的写时复制流程](/assets/notes/operating-systems/os-cow.png)](/assets/notes/operating-systems/os-cow.png)
 
@@ -51,7 +51,7 @@ nr是任务槽号，不是任意PID直接乘64MiB；64MiB是线性范围间隔�
 
 原版 memory.c 与 init/main.c 对首次 fork 的低内存共享和栈使用有特殊说明，不能把这个特例抹掉，也不能用它证明一般父子进程的可变私有栈就是同一个共享对象。
 
-本册采用“常规 fork 的 API 语义”和“0.11 特殊实现分支”分开叙述，避免现代 man-page 与早期内核注释相互覆盖。没有重新编译历史内核验证启动。
+常规 fork 的 API 语义与 0.11 首次 fork 的特殊分支应分别阅读。前者说明进程可观察的行为，后者解释历史实现的特殊处理；本文未重新编译内核验证启动。
 
 ## 5. TLB 与回收必须配套
 

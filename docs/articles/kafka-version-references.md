@@ -1,9 +1,9 @@
 ---
 id: kafka-version-references
 title: 附录 A：版本与技术依据
-description: 本册复核日期为 2026-10-22。以 Kafka 3.9 为固定的机制复盘基线，用 Kafka 4.0 说明明确的演进边界，librdkafka 则固定为 v2.8.0。选择这些版本不代表推荐用于新建生产环境，也不表示本册覆盖了截至该日期的全部新特性。
+description: "本册复核日期为 2026-10-22。以 Kafka 3.9 为固定的机制复盘基线，用 Kafka 4.0 说明明确的演进边界，librdkafka 则固定为 v2.8.0。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: reference
 tags:
@@ -23,7 +23,7 @@ order: 90
 
 本册复核日期为 2026-10-22。以 Kafka 3.9 为固定的机制复盘基线，用 Kafka 4.0 说明明确的演进边界，librdkafka 则固定为 v2.8.0。选择这些版本不代表推荐用于新建生产环境，也不表示本册覆盖了截至该日期的全部新特性。
 
-原文包含较早 ZooKeeper 与消息格式资料。保留其学习线索，正文将现代机制和历史背景拆开；未改写原始导出文件，未公开发布私人笔记。
+本册分别说明早期 ZooKeeper、旧消息格式与现代机制，阅读时按章节标出的版本定位来源。原始私人导出文件不属于正文或配图。
 
 ## 主要核对入口
 
@@ -55,11 +55,11 @@ order: 90
 
 已进行原文覆盖映射、技术依据核对、链接与代码块静态检查、SVG/PNG 图示检查。C 片段未编译，命令未执行，Mermaid 未运行渲染器，HTML 未经过完整交互式浏览器验收；不冒充实测记录。图示用于解释核心关系，不代替完整协议状态机。
 
-正式公开前需再次审查内容授权、引用和敏感信息。原图保存在私有来源，正文新图采用 #0369A1，并提供可编辑图源。
+公开维护时应继续检查内容授权、引用与敏感信息。原图保存在私有来源，正文使用重新表达机制的教学图；有配套 SVG 的图可编辑，仅提供 PNG 的版本按其实际格式使用。
 
 ## 历史运维材料
 
-本轮精确核对补充：[Java3.9.0 BuiltInPartitioner.partitionForKey](https://github.com/apache/kafka/blob/3.9.0/clients/src/main/java/org/apache/kafka/clients/producer/internals/BuiltInPartitioner.java)、[C2.8.0 rdkafka_msg.c分区器](https://github.com/confluentinc/librdkafka/blob/v2.8.0/src/rdkafka_msg.c)、头文件中的consumer_close/close_queue/closed/flush，以及3.9的delete.retention.ms与Consumer事务读取。固定字节映射只运行了独立哈希算术，没有启动客户端发送。
+关键实现定位：[Java3.9.0 BuiltInPartitioner.partitionForKey](https://github.com/apache/kafka/blob/3.9.0/clients/src/main/java/org/apache/kafka/clients/producer/internals/BuiltInPartitioner.java)、[C2.8.0 rdkafka_msg.c分区器](https://github.com/confluentinc/librdkafka/blob/v2.8.0/src/rdkafka_msg.c)、头文件中的consumer_close/close_queue/closed/flush，以及3.9的delete.retention.ms与Consumer事务读取。固定字节映射只运行了独立哈希算术，没有启动客户端发送。
 
 旧记录包含 ZooKeeper 启动、旧 --zookeeper 管理命令，以及 Java/C/Python 不同组件的安装步骤，不能直接拼成 Kafka4.0 教程。Broker 服务、Java 客户端包、librdkafka 与封装库应分别管理；新建环境时，应另行选择受支持的版本。下载时需核对可信发布入口和签名/校验和；仅计算本地 SHA256 并不等于验证了发布者身份。
 

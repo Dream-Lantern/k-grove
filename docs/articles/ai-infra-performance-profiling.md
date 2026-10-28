@@ -1,7 +1,7 @@
 ---
 id: ai-infra-performance-profiling
 title: 第 12 章 性能分析：先看时间线，再看 Kernel
-description: GPU 利用率很高，模型服务却仍然缓慢时，应先定位耗时环节，再选择测量工具。本章区分“系统时间线”“kernel 内部效率”和“长期监控”，避免同时启用所有 profiler。
+description: "GPU 性能分析先把业务延迟拆到 CPU、提交、搬运与设备计算等阶段，再选择适合该层次的工具。本章按系统时间线、选定 kernel 和长期监控的顺序，说明如何从现象缩小到可验证的瓶颈假设。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 12
 
 # 第 12 章 性能分析：先看时间线，再看 Kernel
 
-GPU 利用率很高，模型服务却仍然缓慢时，应先定位耗时环节，再选择测量工具。本章区分“系统时间线”“kernel 内部效率”和“长期监控”，避免同时启用所有 profiler。
+GPU 性能分析先把业务延迟拆到 CPU、提交、搬运与设备计算等阶段，再选择适合该层次的工具。本章按系统时间线、选定 kernel 和长期监控的顺序，说明如何从现象缩小到可验证的瓶颈假设。
 
 ## 1. 工具分工
 
@@ -42,7 +42,7 @@ nsys profile --trace=cuda,nvtx --delay=5 --duration=10 \
 nsys stats trial.nsys-rep
 ```
 
-保留原文 NVTX 自定义标记的思路：用请求处理、prefill、decode、数据加载等业务阶段对齐时间线。先预热并关注稳定区间，避免把首次 JIT 或模型加载误当作每次请求成本。[Nsight Systems User Guide](https://docs.nvidia.com/nsight-systems/UserGuide/index.html)
+可以用 NVTX 自定义标记对齐业务阶段：用请求处理、prefill、decode、数据加载等业务阶段对齐时间线。先预热并关注稳定区间，避免把首次 JIT 或模型加载误当作每次请求成本。[Nsight Systems User Guide](https://docs.nvidia.com/nsight-systems/UserGuide/index.html)
 
 ## 3. 再缩小到一个 Kernel
 
@@ -52,7 +52,7 @@ ncu --set basic --launch-count 1 --output=kernel-trial python app.py
 
 该命令只展示最小采集思路，不保证首个 kernel 就是目标，实际使用时应按名称和启动范围筛选。Nsight Compute 可能通过 replay 收集多组计数器，因此测得的时间不等于无采集条件下的业务延迟。metric 名称也会随硬件和版本变化，应查询支持列表后再选择。[Nsight Compute Profiling Guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)
 
-## 4. Occupancy 和 Roofline 怎么用
+## 4. 用 Occupancy 与 Roofline 分析瓶颈假设 {#_4-occupancy-和-roofline-怎么用}
 
 较高的 Occupancy 可能有助于隐藏延迟，但它本身不是优化目标。如果增加常驻 warp 导致寄存器溢出，运行反而可能更慢。判断时需要综合考虑共享内存、寄存器和 block 数的约束。
 
@@ -60,7 +60,7 @@ Roofline 用算术强度 `I = 运算次数 / 数据字节数` 连接计算峰值
 
 ## 5. 一次可复查的优化实验
 
-固定版本和输入 → 正确性基线 → 无采集端到端基线 → 定位热点 → 只改一个因素 → 同样负载复测。报告同时列出均值和尾延迟、重复次数、预热、并发及是否启用 profiler。删掉“开启某选项就固定快 3 倍”这样的无条件承诺，保留可复现实验方法。
+固定版本和输入 → 正确性基线 → 无采集端到端基线 → 定位热点 → 只改一个因素 → 同样负载复测。报告同时列出均值和尾延迟、重复次数、预热、并发及是否启用 profiler。改动收益按上述条件下的复测结果报告，说明改善幅度及其适用范围。
 
 ## 6. Trace、GPU Metrics 和 Replay 分开标注
 

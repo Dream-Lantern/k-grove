@@ -1,7 +1,7 @@
 ---
 id: kafka-connect-streams
 title: 第 23 章：Connect、Streams 与演进路线
-description: 直接使用 Producer/Consumer API，可以控制业务处理和依赖，但需要自己维护位点、错误、模式、并发和恢复。若主要目标是把外部系统接入 Kafka，重复编写同样的连接与运行管理代码可能没有必要。
+description: "直接使用 Producer/Consumer API，可以控制业务处理和依赖，但需要自己维护位点、错误、模式、并发和恢复。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -21,9 +21,9 @@ order: 23
 
 > 版本导航：3.9生态入口 / 4.0演进旁注。
 >
-> 学习目标：在原文基础上补齐常见生态定位，并把已确认的版本变化作为索引，不把新特性清单混进旧 C API 教程。
+> 学习目标：按数据接入、流处理和跨集群恢复的职责理解生态组件，并区分 3.9、4.0 与 C 客户端的支持范围。
 
-## 1. 自写 Consumer 只是其中一条路线
+## 1. Producer/Consumer API 与 Connect 连接器 {#_1-自写-consumer-只是其中一条路线}
 
 直接使用 Producer/Consumer API，可以控制业务处理和依赖，但需要自己维护位点、错误、模式、并发和恢复。若主要目标是把外部系统接入 Kafka，重复编写同样的连接与运行管理代码可能没有必要。
 
@@ -31,13 +31,13 @@ Kafka Connect 提供连接器运行框架，由 Source 将外部数据接入 Kaf
 
 [![生态组件按职责选择，而非都叫消费者](/assets/notes/kafka/kf-ecosystem.png)](/assets/notes/kafka/kf-ecosystem.png)
 
-## 2. Kafka Streams 处理的是什么
+## 2. Streams 的流表、窗口与状态恢复 {#_2-kafka-streams-处理的是什么}
 
 Streams 是构建 Kafka 流处理应用的 Java 库，涉及流表模型、窗口、聚合、状态存储及恢复。它不是需要另行安装在每台 Broker 上的通用 SQL 数据库，也不是 C Consumer 的同义名称。
 
 窗口与事件时间还会引入乱序、迟到和状态保留问题。选择 Streams 时，应先理解输入输出、Key、分区和状态恢复，不要因为启用某个处理保证就忽略外部副作用。
 
-## 3. 跨集群复制不等于同步多主事务
+## 3. 跨集群复制与业务灾备切换 {#_3-跨集群复制不等于同步多主事务}
 
 MirrorMaker 等复制路线用于跨集群数据流动，但复制延迟、位点映射、故障切换、循环复制和目标命名都需要单独管理。异步复制通常存在可量化的恢复点风险，不能直接宣传为两地任意切换零丢失。
 

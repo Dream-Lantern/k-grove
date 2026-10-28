@@ -1,9 +1,9 @@
 ---
 id: kubernetes-resources-pdb
 title: 第十四章 资源请求、限制与可用性预算
-description: 运行时 CPU 节流可能表现为延迟增加，内存超限则可能触发 OOM 终止，具体行为还取决于系统、cgroup 与运行时配置。OOMKilled、驱逐和应用主动退出需要分别查证，不能仅凭一次重启就将它们归为一类。
+description: "requests 描述资源请求，是调度等机制的重要输入；limits 描述适用的运行约束。调度器不是只看某一刻的 CPU 空闲率，就随意把所有 Pod 堆到看起来空闲的节点。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: engineering
 type: explanation
 tags:
@@ -19,7 +19,7 @@ order: 14
 
 # 第十四章 资源请求、限制与可用性预算
 
-> 新增基础章节，补充原笔记中发布、调度和 HPA 共用的前置知识。以 Kubernetes 1.28 的容器级 CPU、内存配置为主，不引入后来版本的 Pod 级资源配置。没有压测或真实资源变更。
+> 本章介绍发布、调度和 HPA 共用的资源基础，以 Kubernetes 1.28 的容器级 CPU、内存配置为主。数值示例用于纸面推演，实际资源值需要负载测试支持。
 
 ## 1. 调度需要的数字与运行时限制
 
@@ -79,7 +79,7 @@ overhead 若由 RuntimeClass 等机制提供，应按实际保存的 Pod 核算�
 
 计算时应把普通 init、Pod 开销和已启用的特性一起纳入。详细条件参见 [Kubernetes 1.28 容器资源管理](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/configuration/manage-resources-containers.md)。
 
-## 4. QoS、配额与默认值解决不同问题
+## 4. QoS、配额与默认值的分工 {#_4-qos、配额与默认值解决不同问题}
 
 在本章普通 1.28 场景，应按默认化后的配置，同时检查普通应用和 init 容器的 CPU、内存：
 
@@ -99,7 +99,7 @@ ResourceQuota 可限制命名空间等适用范围的资源总量或对象数量
 
 ## 5. PodDisruptionBudget 管什么
 
-PDB 是新增补充，用于约束适用的自愿中断中的可用性，例如通过 Eviction API 进行节点维护时。它不会阻止所有故障，也不保证机器断电时依然保留某个副本数。
+PDB 用于约束适用的自愿中断中的可用性，例如通过 Eviction API 进行节点维护时。它不会阻止所有故障，也不保证机器断电时依然保留某个副本数。
 
 PDB 的 `minAvailable` 或 `maxUnavailable` 与 Deployment 滚动更新策略中的同名字段属于不同对象。PDB 不能代替 Deployment 自己的更新预算，也不能让应用在没有健康副本时凭空可用。
 
@@ -130,6 +130,6 @@ kubectl describe node NODE_NAME
 kubectl get resourcequota,limitrange -n NAMESPACE
 ```
 
-命令未执行。资源管理关注容量与约束，可用性预算关注特定中断路径；两者都需要与应用的真实服务能力一起验证。
+资源管理关注容量与约束，可用性预算关注特定中断路径；两者都需要与应用的真实服务能力一起验证。
 
 [catalog 案例：把资源数字放回 Pod](/articles/kubernetes-practice-guide.html) · [版本与门控表](/articles/kubernetes-version-references.html) · [返回本册目录](/collections/kubernetes/)

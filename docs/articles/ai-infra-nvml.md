@@ -1,7 +1,7 @@
 ---
 id: ai-infra-nvml
 title: 第 10 章 NVML：设备、进程和 MIG 对象的只读观察
-description: NVML 是 NVIDIA Management Library，面向设备管理与监控。它适合读取 UUID、显存、温度和进程信息，但不是用来测量每个 kernel 的精确执行时间。
+description: "NVML（NVIDIA Management Library）提供设备管理与监控接口，可以读取 UUID、显存、温度和进程等信息。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,15 +19,15 @@ order: 10
 
 # 第 10 章 NVML：设备、进程和 MIG 对象的只读观察
 
-NVML 是 NVIDIA Management Library，面向设备管理与监控。它适合读取 UUID、显存、温度和进程信息，但不是用来测量每个 kernel 的精确执行时间。
+NVML（NVIDIA Management Library）提供设备管理与监控接口，可以读取 UUID、显存、温度和进程等信息。使用时先定位设备与实例身份，再选择该对象支持的字段；kernel 级执行时间则由相应性能分析工具观察。
 
-## 1. 设备索引不是稳定身份
+## 1. 用 UUID 记录设备身份 {#_1-设备索引不是稳定身份}
 
 GPU 0 只是当前枚举中的编号。重启、调整可见设备设置或设备发生变化后，索引与物理卡的对应关系可能改变。长期记录应保存 UUID，并关联 PCI Bus ID、节点和设备类型；容器内的编号也可能与宿主不同。
 
 [![NVML：查询对象不能混用](/assets/notes/ai-infra/nvml-objects.svg)](/assets/notes/ai-infra/nvml-objects.svg)
 
-GPU handle、GI handle、CI handle 和 MIG device handle 不是可任意互换的值。尤其 `nvmlGpuInstanceGetComputeInstanceById` 的父对象应为 GI handle，不是物理 GPU handle；原文相关示例需要修正。[NVML API](https://docs.nvidia.com/deploy/nvml-api/latest/index.html)
+GPU handle、GI handle、CI handle 和 MIG device handle 表示不同层次的对象。`nvmlGpuInstanceGetComputeInstanceById` 从父 GI 查询 CI，因此其父对象使用 GI handle。[NVML API](https://docs.nvidia.com/deploy/nvml-api/latest/index.html)
 
 ## 2. 一个只读 Python 教学例
 
@@ -51,7 +51,7 @@ finally:
     pynvml.nvmlShutdown()
 ```
 
-## 3. MIG 枚举不能依赖硬编码数字
+## 3. 根据当前模式与 Profile 枚举 MIG 实例 {#_3-mig-枚举不能依赖硬编码数字}
 
 先确认设备支持和当前 MIG 模式，再查询可用 profile、GI/CI 及其 UUID。profile 枚举值、profile ID、创建出的 instance ID、设备索引是不同概念。“整卡时 id 一律填 0”“最多八张卡”“A30 只有两种 profile”都不应成为跨型号规则。
 

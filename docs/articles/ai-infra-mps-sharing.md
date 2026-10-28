@@ -1,7 +1,7 @@
 ---
 id: ai-infra-mps-sharing
 title: 第 15 章 MPS 与其他共享方式：并发不等于硬隔离
-description: 多个小 CUDA 进程各自无法充分利用整卡时，MPS（Multi-Process Service）可能提高资源复用率。它与 MIG 的目标不同，不能简单判断“哪个一定更快”。
+description: "MPS（Multi-Process Service）通过协作多个 CUDA 进程复用设备资源，适合研究小任务的并发机会。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 15
 
 # 第 15 章 MPS 与其他共享方式：并发不等于硬隔离
 
-多个小 CUDA 进程各自无法充分利用整卡时，MPS（Multi-Process Service）可能提高资源复用率。它与 MIG 的目标不同，不能简单判断“哪个一定更快”。
+MPS（Multi-Process Service）通过协作多个 CUDA 进程复用设备资源，适合研究小任务的并发机会。实际收益取决于负载与资源争用；它与 MIG 的资源划分方式不同，比较时应先明确复用、隔离和性能目标。
 
 ## 1. 先分清历史实现
 
@@ -29,7 +29,7 @@ order: 15
 
 图中分支只是选择起点，不是固定推荐。例如已划分的 MIG 实例中也可以在支持条件下使用 MPS。
 
-## 2. 百分比参数不表示预留同等算力
+## 2. 百分比参数限制的资源与性能范围 {#_2-百分比参数不表示预留同等算力}
 
 legacy MPS 的 active thread percentage 限制可使用的执行资源，并非把每个应用的吞吐、延迟都精确锁定为某个百分比。硬件粒度可能导致取整。显存限制、线程资源限制和带宽隔离也是不同机制。[Legacy MPS v2 接口](https://docs.nvidia.com/deploy/mps/latest/mpsv2-interface.html)
 
@@ -41,13 +41,13 @@ legacy MPS 的 active thread percentage 限制可使用的执行资源，并非�
 | MIG        | 受支持硬件的资源实例化         | 整卡级故障完全隔离                     |
 | vGPU       | 虚拟机等场景的设备虚拟化体系   | 一律只采用时间片；也有 MIG-backed 路径 |
 
-## 3. 故障和退出行为不能靠框架名担保
+## 3. 按版本管理在途工作与退出顺序 {#_3-故障和退出行为不能靠框架名担保}
 
 停止服务时，应先排空并同步未完成的工作，再按相应版本的管理流程退出。不要从信号处理器直接调用复杂的 CUDA API，这并不能保证异步信号安全。还应保存 server 日志、客户端映射和故障前的时间线。
 
-## 4. SIGKILL 不能被框架捕获后优雅清理
+## 4. 强制中断、故障传播与受控终止 {#_4-sigkill-不能被框架捕获后优雅清理}
 
-Linux 的 SIGKILL 不能被捕获、阻塞或忽略。因此“kill -9 后别的任务没受影响”不能归因为框架在信号处理器里完成了清理。原实验缺少在途工作、server 状态和日志，应保留为现象，不推断原因。[Linux signal(7)](https://man7.org/linux/man-pages/man7/signal.7.html)
+Linux 的 SIGKILL 不能被捕获、阻塞或忽略。因此“kill -9 后别的任务没受影响”不能归因为框架在信号处理器里完成了清理。仅观察到其他任务未受影响，还不足以解释机制；进一步判断需要当时的在途工作、server 状态和日志。[Linux signal(7)](https://man7.org/linux/man-pages/man7/signal.7.html)
 
 | 事件                    | 必须区分的条件                    | 不应给出的通用保证       |
 | ----------------------- | --------------------------------- | ------------------------ |

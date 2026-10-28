@@ -1,7 +1,7 @@
 ---
 id: redis-extensions
 title: 第三十三章 Bloom Filter、JSON、Search 与扩展边界
-description: 返回本册目录
+description: "Redis 的扩展能力包括近似成员过滤、结构化 JSON 与索引查询等不同用途。本章先解释 Bloom Filter 的查询语义和更新条件，再介绍 JSON、Search 与发行方式，便于按需求选择和验证。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -21,7 +21,7 @@ order: 33
 
 [返回本册目录](/collections/redis/)
 
-原笔记记录了编译加载 Bloom 扩展的做法。本章先讲问题与数据语义，再解释现代发行方式差异，不把旧安装命令直接当成通用方案。
+Redis 的扩展能力包括近似成员过滤、结构化 JSON 与索引查询等不同用途。本章先解释 Bloom Filter 的查询语义和更新条件，再介绍 JSON、Search 与发行方式，便于按需求选择和验证。
 
 ## 1. Bloom Filter 回答“可能存在”
 
@@ -48,7 +48,7 @@ BF.EXISTS demo:bloom:items item-99
 
 “数据结构在理论假设下无假阴性”和“整个业务系统不会漏掉存在数据”是两件事。初始化不完整、异步更新滞后或恢复错版本，都会破坏业务假设。
 
-## 3. JSON 与 Search 不是字符串格式的别名
+## 3. JSON 结构化操作与 Search 索引查询 {#_3-json-与-search-不是字符串格式的别名}
 
 把 JSON 文本存入 String，Redis 默认只看见字节序列；JSON 类型能力则支持相应路径上的结构化操作。Search 进一步通过索引与查询模型提供全文、标签、范围或向量等检索能力。
 
@@ -60,4 +60,4 @@ BF.EXISTS demo:bloom:items item-99
 
 外部扩展需要检查来源、支持版本、架构、许可证、持久化兼容性与安全维护。来源不明的二进制不应因教程里有一条 MODULE LOAD 就直接加载到真实服务。
 
-本章补充选择与验证框架，没有下载、编译或安装任何 Redis 扩展。对新能力先形成小而完整的验证用例，比只收集更多安装步骤更有价值。
+本章提供选择与验证框架，尚无扩展下载、编译或安装记录。实践时先用有限数据验证命令、索引和恢复行为，再决定部署方式。

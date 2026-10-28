@@ -1,6 +1,6 @@
-# AI Infra：从 GPU 到模型服务
+# GPU 与大模型：从执行到推理 {#ai-infra-从-gpu-到模型服务}
 
-从 CUDA 执行模型出发，理解资源共享、推理服务和 Checkpoint / Restore。
+从 GPU 与 CUDA 执行模型出发，学习资源管理、大模型运行原理与 Checkpoint / Restore。
 
 ## 学习目标
 
@@ -8,7 +8,7 @@
 
 ## 前置知识与适用读者
 
-希望了解 AI 基础设施的开发者。了解进程、内存与容器基础。
+希望学习 GPU 与大模型运行基础的开发者，需了解进程、内存与容器基础。
 
 <TopicOutline topic="ai-infrastructure" />
 

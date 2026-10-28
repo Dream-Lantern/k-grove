@@ -1,9 +1,9 @@
 ---
 id: redis-streams
 title: 第十二章 Streams、消费组与重复处理
-description: Stream 保存带有 ID 的条目，每条条目包含字段和值。应用可以按位置读取，消费组则在日志条目之外维护读取进度和待确认等状态。
+description: "Stream 保存带有 ID 的条目，每条条目包含字段和值。应用可以按位置读取，消费组则在日志条目之外维护读取进度和待确认等状态。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -19,7 +19,7 @@ order: 12
 
 # 第十二章 Streams、消费组与重复处理
 
-> 新增补充章节。Streams 自 Redis 5.0 提供；本章基础流程面向支持相应命令的版本，XAUTOCLAIM 标明 6.2+，8.x 新接口不混进旧流程。未创建流或消费者。
+> 版本范围：Streams 自 Redis 5.0 提供；XAUTOCLAIM 按 6.2+ 说明，8.x 新接口单独列出。以下为机制与教学命令，未实际创建流或消费者。
 
 ## 1. 条目日志与消费状态
 
@@ -73,7 +73,7 @@ XREADGROUP GROUP workers consumer-a COUNT 10 STREAMS demo:events 0
 
 这里非 `>` 的 ID 路径用于读取 consumer-a 自己的 pending 历史，不是任意领取其他消费者的 pending。实际返回可能受已有数据和并发影响，不能预先写死为“恰好一条”。此流程没有在任何实例执行。
 
-## 4. 发现与接管失败消费者
+## 4. 从 Pending 检查到空闲条目接管 {#_4-发现与接管失败消费者}
 
 XPENDING 可查看待确认状态。Redis 6.2+ 的 XAUTOCLAIM 能按空闲时间等条件接管适用条目；它不是证明旧消费者已经停止。[XAUTOCLAIM](https://redis.io/docs/latest/commands/xautoclaim/)
 
@@ -112,10 +112,10 @@ Redis 8.2+ 的 XACKDEL 等能力进一步组合确认和条件删除，不能在
 
 省略策略不等于等待所有组处理完成。假设组 A 已完成、组 B 尚未读取，删除本体会影响 B 之后取得内容；保留 PEL 引用也不意味着本体仍在。不能把旧流程的 XACK 机械替换成无选项 XACKDEL。删除行为与逐 ID 返回还应按目标版本核对，本节不执行清理操作。
 
-## 6. 验证要覆盖故障时刻
+## 6. 按领取、提交与确认阶段验证恢复 {#_6-验证要覆盖故障时刻}
 
 应分别测试领取前、领取后、业务提交后、确认前后、修剪期间和节点切换时的行为。同时观察积压数量、最老 pending、处理失败与去重结果，不能只确认消费者进程仍在运行。
 
-本章只给出可审阅的机制和示意命令，不声称已验证你的任务系统。
+本章给出机制与教学命令，实际任务系统仍需按上述阶段验证处理、恢复和业务结果。
 
 [返回本册目录](/collections/redis/)

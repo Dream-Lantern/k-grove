@@ -1,7 +1,7 @@
 ---
 id: ai-agent-multi-agent
 title: 第10章 多 Agent 协作
-description: 上下文与拓扑是不同的设计维度，不能只用“有几个 Agent”来描述协作架构。
+description: "从上下文共享、协作拓扑和任务交接理解多 Agent，结合翻译实验说明角色分工、版本冲突与收益评估。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: ai-agent
@@ -19,7 +19,7 @@ order: 10
 
 # 第10章 多 Agent 协作
 
-## 10.1 先分两个设计维度
+## 10.1 上下文组织与协作拓扑 {#_10-1-先分两个设计维度}
 
 **维度一：上下文是否共享**。
 
@@ -36,7 +36,7 @@ order: 10
 
 ## 10.2 多 Agent 何时值得做
 
-**一个实际检验问题**：多 Agent 是否引入单 Agent 无法廉价获得的**新信息、新能力或有效并行**？
+多 Agent 的价值来自**新信息、新能力或有效并行**。当角色隔离或并行带来的收益超过协调成本时，才有必要增加 Agent。
 
 | 情形                                 | 是否适合多 Agent               |
 | ------------------------------------ | ------------------------------ |
@@ -48,9 +48,9 @@ order: 10
 
 要把 **性能收益、总 Token、总耗时、错误率、协调成本** 放在同一评估框架下。
 
-## 10.3 协作时传递什么
+## 10.3 任务交接的结构化信息 {#_10-3-协作时传递什么}
 
-最稳妥的 handoff 不是把全部对话复制过去，而是提供**结构化合同**：
+任务交接（handoff）可使用**结构化契约**，传递目标、约束、进度与可复核证据：
 
 ```yaml
 handoff:
@@ -89,7 +89,7 @@ IPC（Inter-Process Communication）可类比两种方式：
 
 示例：
 
-[本章修订流程图（含失败/未知路径）](/assets/notes/ai-agent/10-multi-agent.svg)
+[多 Agent 的角色分工与依赖流程](/assets/notes/ai-agent/10-multi-agent.svg)
 
 并非每个盒子都必须是独立 LLM Agent。**Benchmark Worker、校验器和资源调度服务可能应主要由确定性代码实现**。Orchestrator 可保留用户意图分类与解释能力；Planner 可提方案，但持久化写入与状态转换遵守统一业务服务。
 
@@ -117,7 +117,7 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 
 [![多 Agent：翻译角色分工示例](/assets/notes/ai-agent/10-multi-agent.svg)](/assets/notes/ai-agent/10-multi-agent.svg)
 
-配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/10-multi-agent.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/10-multi-agent.dot)供对照，不是本版配图的可编辑源文件。
+图中以翻译任务展示术语、章节翻译、审校和管理者之间的依赖关系；具体并发能力以实现为准。[放大查看 SVG](/assets/notes/ai-agent/10-multi-agent.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/10-multi-agent.dot)供对照，不是本版配图的可编辑源文件。
 
 ### 推荐消融与公平基线
 
@@ -131,7 +131,7 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 
 - [chapter10/book-translation/agents.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/agents.py)
 - [当前仓库正文](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/book/chapter10.md)
-- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html) · 统一验证入口（仅保留于本地审阅资料，公开版不提供）
+- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html)
 
 ## 10.8 指定译法命中、混用与严格遵从
 
@@ -150,13 +150,13 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 
 图10明确展示依赖顺序，不表示该翻译代码已经并发调度章节Worker。共享术语表不等于共享完整历史；若另做并行实验，需独立上下文、不同输出文件和汇聚校验。协作消息与版本冲突沿用 [第4章公共事件契约](/articles/ai-agent-tools-events.html#event-contract)。
 
-## 检查理解
+## 本章要点 {#检查理解}
 
-1. “上下文共享”和“管理者模式”是什么关系？
-2. 哪些子任务值得并行，哪些不值得？
-3. 怎样避免两个 Coding Agent 覆盖彼此文件？
-4. 为什么业务校验服务不能完全由 Planner Agent 代替？
-5. 如何验证新增 Reviewer Agent 真正提升质量而不只是增加成本？
+1. 上下文是否共享与协作拓扑是两个设计维度，管理者模式也可以使用隔离的子 Agent 上下文。
+2. 互不依赖、产物可汇合的任务适合并行；协作收益需连同总成本和错误率评价。
+3. 共享工作区可通过分支、worktree、版本检查和任务边界控制覆盖冲突。
+4. Planner 可提出方案，业务校验和权限约束由确定性服务落实。
+5. Reviewer 的贡献需在同任务、同模型和公平资料条件下对照，并统计质量、返工和全体用量。
 
 ## 学习资料与代码出处
 

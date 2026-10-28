@@ -1,7 +1,7 @@
 ---
 id: kubernetes-admission-webhooks
 title: 第二十九章 准入 Webhook 与安全边界
-description: 即使调用者通过认证并获得了相应写权限，提交的对象仍可能不满足集群策略。例如，策略可能要求声明某个标签，或禁止某类主机权限。准入机制在适用的对象写入流程中检查这些条件。
+description: "即使调用者通过认证并获得了相应写权限，提交的对象仍可能不满足集群策略。例如，策略可能要求声明某个标签，或禁止某类主机权限。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,9 +19,9 @@ order: 29
 
 # 第二十九章 准入 Webhook 与安全边界
 
-> 以 Kubernetes 1.28 的 admissionregistration.k8s.io/v1 为主。补充原 Webhook 短条目，未部署 Webhook、修改证书或更改准入策略。
+> 本章以 Kubernetes 1.28 的 admissionregistration.k8s.io/v1 为范围，解释对象写入时的策略检查、Webhook 匹配和故障处理。
 
-## 1. 为什么有权限创建，还可能被拒绝
+## 1. 写权限之后的对象策略检查 {#_1-为什么有权限创建-还可能被拒绝}
 
 即使调用者通过认证并获得了相应写权限，提交的对象仍可能不满足集群策略。例如，策略可能要求声明某个标签，或禁止某类主机权限。准入机制在适用的对象写入流程中检查这些条件。
 
@@ -33,7 +33,7 @@ order: 29
 
 MutatingWebhookConfiguration 配置相应的变更 Webhook，可以在允许的机制中修改请求对象；ValidatingWebhookConfiguration 配置验证 Webhook，按条件接受或拒绝。
 
-没有一个标准资源就叫 `admissionWebhook`。Webhook 服务本身也不是仅创建配置对象就自动可用：需要适用的服务地址、证书信任、实现和网络可达。
+两类配置资源声明 Webhook 的调用方式和匹配规则；实际服务还需要实现、地址、证书信任与网络可达性。
 
 变更阶段与验证阶段有顺序关系，但不能假定多个变更 Webhook 会按某个未经保证的固定顺序执行。重新调用、默认化和其他准入组件也会影响结果。实现时应考虑幂等，避免重复注入相同字段。[动态准入机制](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 
@@ -65,6 +65,6 @@ Webhook 服务账户应只获得必要权限，日志不应打印请求中的真
 
 对象保存不保证镜像能拉取、Pod 能调度、应用能启动，也不证明应用具有业务权限。准入是 API 策略边界之一，与容器安全上下文、网络策略和应用认证分别负责不同问题。
 
-可以在明确授权的测试环境中设计允许、拒绝、超时、证书错误、dry-run 和恢复等用例。本次没有执行这些实验，候选稿不声称 Webhook 高可用方案已通过验收。
+可以在明确授权的测试环境中设计允许、拒绝、超时、证书错误、dry-run 和恢复等用例。这些用例尚未实际执行，高可用与故障恢复需由对应环境的测试记录支持。
 
 [返回本册目录](/collections/kubernetes/)

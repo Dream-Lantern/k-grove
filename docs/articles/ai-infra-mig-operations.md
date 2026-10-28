@@ -1,7 +1,7 @@
 ---
 id: ai-infra-mig-operations
 title: 第 14 章 MIG 操作复盘：查询、规划、变更和恢复
-description: MIG 变更会改变可分配设备和正在运行的工作。这里保留原笔记的操作链，但不把它写成可以在任意服务器复制执行的安装脚本。
+description: "按设备清点、实例变更和结果验证组织 MIG 操作记录，说明 Profile、GI/CI、placement 与工作负载之间的关系。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 14
 
 # 第 14 章 MIG 操作复盘：查询、规划、变更和恢复
 
-## 1. 变更前必须保存哪些证据
+## 1. 变更前记录布局、身份与工作负载 {#_1-变更前必须保存哪些证据}
 
 记录 GPU UUID、型号、驱动、MIG 模式、现有 GI/CI、profile 和 placement，以及容器/Pod 与设备的对应。确认维护窗口、业务退出和调度侧摘除方式。不能默认把所有占用进程 `kill -9` 作为准备步骤。
 
@@ -42,7 +42,7 @@ nvidia-smi mig -i 0 -lci
 
 即使总剩余容量足够，也可能无法创建目标实例，因为 profile 对 placement 有限制。
 
-## 3. mig常用命令
+## 3. MIG 查询与变更命令示例 {#_3-mig常用命令}
 
 ```text
 nvidia-smi -i <GPU_UUID> -mig 1
@@ -54,7 +54,7 @@ nvidia-smi -i <GPU_UUID> -mig 0
 
 销毁时通常先处理 CI，再处理 GI；日常示例不应使用未限定设备和实例范围的批量销毁命令。恢复需要按已记录的布局重建、重新获取标识并重新分配工作。
 
-## 4. 模式持久性与布局持久性不是一回事
+## 4. 分别核对模式保留与布局恢复 {#_4-模式持久性与布局持久性不是一回事}
 
 Ampere 与 Hopper+ 启用模式时的 reset、模式跨重启保留行为不同。当前文档说明 Hopper+ 的 MIG 模式随驱动驻留，不跨系统重启持久；而“模式仍启用”也不等于 GI/CI 布局自动恢复。[MIG Getting Started](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/latest/getting-started-with-mig.html)
 

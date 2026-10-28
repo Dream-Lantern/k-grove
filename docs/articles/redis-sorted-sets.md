@@ -1,9 +1,9 @@
 ---
 id: redis-sorted-sets
 title: 第七章 Sorted Set、排名与分数范围
-description: Sorted Set（有序集合，常写作 Zset）同时维护唯一成员与 score。成员不能重复，score 可以相同；同一个成员更新分数不会变成另一名成员。
+description: "Sorted Set（有序集合，常写作 Zset）同时维护唯一成员与 score。成员不能重复，score 可以相同；同一个成员更新分数不会变成另一名成员。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -35,7 +35,7 @@ ZRANK demo:rank user-a
 ZREVRANK demo:rank user-a
 ```
 
-前一个范围按 rank 位置选择，后一个按 score 选择。rank 从 0 开始；score 是业务值，不一定等于名次。原文的 zrevrand 应为 ZREVRANK，WITHSCORES 也是复数拼写。[ZRANGE 的范围与版本](https://redis.io/docs/latest/commands/zrange/)
+前一个范围按 rank 位置选择，后一个按 score 选择。rank 从 0 开始；score 是业务值，不一定等于名次。反向排名命令为 ZREVRANK，返回分数的选项为 WITHSCORES。[ZRANGE 的范围与版本](https://redis.io/docs/latest/commands/zrange/)
 
 同分成员有相应的字节字典序规则，不能把插入时间当成通用同分裁决。若业务要求“先达到分数的排前面”，需要明确建模与精度约束，而不是默认平台替你保存这个规则。
 
@@ -53,7 +53,7 @@ ZINCRBY 可按增量修改分数。score 使用 64 位 double，可连续精确�
 
 ZRANGE 返回大量成员时，即使定位操作的复杂度合适，返回 M 个成员的成本仍然存在。极深分页、很大的 LIMIT 或全量 WITHSCORES 都可能增加 CPU、内存与带宽压力。
 
-历史 ZRANGEBYSCORE、ZREVRANGE 等命令仍会在旧笔记出现，新稿解释其用途，同时以明确版本的统一命令为教学入口，不把不同参数顺序混用。
+历史 ZRANGEBYSCORE、ZREVRANGE 等命令按各自参数解释；本章以注明版本的统一 ZRANGE 为教学入口，范围、顺序和分数选项分别查阅。
 
 ## 4. 排行榜之外的用途
 
@@ -67,7 +67,7 @@ ZUNIONSTORE、ZINTERSTORE 等聚合可结合权重与 SUM/MIN/MAX 处理分数�
 
 容量分析应同时看成员数、成员长度、读写模式与内部编码。旧版 ziplist、较新的 listpack/skiplist 路线，以及更后续紧凑结构属于版本实现，API 含义不随编码名称改变。
 
-## 6. 读这个结构时的检查清单
+## 6. 将成员、精度与槽关系落实到接口 {#_6-读这个结构时的检查清单}
 
 应明确唯一成员是什么、同分如何处理、score 是否会丢失精度、单次读取多少、是否需要原子领取，以及所有参与键的槽关系。把这些约束写进接口约定，比只记住“排行榜用 Zset”更能避免错误。
 

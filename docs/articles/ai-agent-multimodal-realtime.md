@@ -1,7 +1,7 @@
 ---
 id: ai-agent-multimodal-realtime
 title: 第9章 多模态与实时交互
-description: 一次性文本处理可以容忍较长等待；语音、GUI 和机器人交互则要求持续感知和低延迟响应。多模态能力不只在于识别图片，还在于持续输入、动作反馈、不同模态时间同步。
+description: "一次性文本处理可以容忍较长等待；语音、GUI 和机器人交互则要求持续感知和低延迟响应。多模态能力不只在于识别图片，还在于持续输入、动作反馈、不同模态时间同步。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: ai-agent
@@ -19,7 +19,7 @@ order: 9
 
 # 第9章 多模态与实时交互
 
-## 9.1 实时多模态为什么特别难
+## 9.1 实时多模态的处理链与交互方式 {#_9-1-实时多模态为什么特别难}
 
 一次性文本处理可以容忍较长等待；语音、GUI 和机器人交互则要求持续感知和低延迟响应。多模态能力不只在于识别图片，还在于**持续输入、动作反馈、不同模态时间同步**。
 
@@ -72,9 +72,9 @@ order: 9
 
 机器人操作把 Agent 的工具输出变成物理动作，常见框架涉及视觉-语言-动作（VLA）模型、实时控制、仿真和 Sim2Real。相比网页 Agent，物理环境存在碰撞、延迟抖动、观测误差、运动学限制，因此需要更严格的安全控制与低层控制器兜底。
 
-## 9.6 语音打断的关键是“已交付状态”
+## 9.6 语音打断与已交付状态 {#_9-6-语音打断的关键是-已交付状态}
 
-当前仓库对应 `chapter6/streaming-speech/interruption_manager.py`。最值得读的不是某个低延迟数字，而是 `DuplexInterruptionManager.handle_barge_in()`：它停止播放、清理待播音频、标记最后一轮被打断，再生成重规划事件。若当前未播放，则返回`ignored`，只表示未播放状态下不再取消。该方法没有外部输入event_id和目标播放代次，不能提供跨回复代次的事件去重。
+上游实现位于 `chapter6/streaming-speech/interruption_manager.py`。沿 `DuplexInterruptionManager.handle_barge_in()` 可以理解一次打断的状态变化：它停止播放、清理待播音频、标记最后一轮被打断，再生成重规划事件。若当前未播放，则返回`ignored`，只表示未播放状态下不再取消。该方法没有外部输入event_id和目标播放代次，不能提供跨回复代次的事件去重。
 
 源码节选（上下文依赖见原文件）：[chapter6/streaming-speech/interruption_manager.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter6/streaming-speech/interruption_manager.py#L307-L318)。
 
@@ -97,7 +97,7 @@ if self.dialogue_context:
 
 [![语音打断：合法输入才触发重规划](/assets/notes/ai-agent/09-barge-in.svg)](/assets/notes/ai-agent/09-barge-in.svg)
 
-配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 SVG](/assets/notes/ai-agent/09-barge-in.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/09-barge-in.dot)供对照，不是本版配图的可编辑源文件。
+图中对合法输入、播放状态与目标代次分别检查，再发出取消和重规划请求；停止确认仍需播放器反馈。[放大查看 SVG](/assets/notes/ai-agent/09-barge-in.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/09-barge-in.dot)供对照，不是本版配图的可编辑源文件。
 
 ### 推荐实验：播放状态保护与事件身份分别测试
 
@@ -111,7 +111,7 @@ if self.dialogue_context:
 
 - [chapter6/streaming-speech/interruption_manager.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter6/streaming-speech/interruption_manager.py)
 - [当前仓库正文](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/book/chapter6.md)
-- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html) · 统一验证入口（仅保留于本地审阅资料，公开版不提供）
+- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html)
 
 ## 9.7 明确音频输入契约，再谈检测
 
@@ -121,7 +121,7 @@ if self.dialogue_context:
 
 本地`AudioSpec/normalize_audio()`给出严格固定帧教学实现，覆盖低振幅int16、容器等价、立体声、奇数字节和空帧。它不是音频编解码库；实际链路还要验证设备格式与时间戳。
 
-### RMS活动不等于人声VAD
+### RMS 能量门控与人声 VAD 的分工 {#rms活动不等于人声vad}
 
 上游`is_voice_active()`只做能量与阈值比较；直流、高能量噪声、播放回声都可能触发。图中因此写作“RMS能量门控”；本地`EnergyGate`返回`energy_active`并明确`speech_verified=false`，不把它包装成已识别人声。
 
@@ -135,12 +135,12 @@ if self.dialogue_context:
 
 这是进程内内存状态示例，未提供持久化去重、跨进程原子性、真实播放器或网络投递保障。检验同ID、同ID不同代次冲突、旧代次晚到、新代次真打断，并分开记录取消请求与停止确认。
 
-## 检查理解
+## 本章要点 {#检查理解}
 
-1. 为什么“能识别一段完整录音”不等于“支持实时全双工语音”？
-2. 流式优化后，为什么端到端延迟不能直接把所有阶段简单相加？
-3. Computer Use 在点击提交前应如何验证目标元素与权限？
-4. GUI Agent 和机器人控制的共同架构问题是什么？
+1. 实时交互需持续接收与输出，并处理重叠、打断和时间同步；离线录音识别只覆盖其中一环。
+2. 流式阶段可能重叠执行，应沿时间线测量端到端延迟，避免重复累加。
+3. Computer Use 在动作前确认页面、目标与权限，动作后重新观察实际结果。
+4. GUI 与机器人 Agent 都依赖观察、动作、反馈闭环；物理动作还需低层控制器处理碰撞与运动约束。
 
 ## 学习资料与代码出处
 

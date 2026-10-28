@@ -1,7 +1,7 @@
 ---
 id: ai-infra-quantization-memory
 title: 第 20 章 量化与显存预算：低位宽不等于等比例加速
-description: "整理仿射量化、误差与显存预算，区分低位宽表示和实际推理性能。"
+description: "从量化表示与误差出发，说明精度、分组、元数据及显存预算的关系，区分权重、KV Cache 和运行时开销。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,7 +19,7 @@ order: 20
 
 # 第 20 章 量化与显存预算：低位宽不等于等比例加速
 
-## 1. 量化如何表示数值
+## 1. 用尺度与零点表示量化数值 {#_1-量化如何表示数值}
 
 一种常见的仿射整数表示为 `q = clamp(round(x/s)+z)`，还原近似值为 `x̂ = s(q-z)`。scale `s`、zero point `z`、量化范围及分组粒度影响误差和元数据开销。对称与非对称量化属于这种模型中的不同选择，不能代表所有低精度格式。
 
@@ -42,13 +42,13 @@ PTQ 在训练后做量化，可能使用校准数据；QAT 在训练中考虑量
 
 教学算例：7×10^9 个参数按 16bit 存储，权重约 14×10^9 字节，即约 13.04 GiB；理想 4bit 数据约 3.5×10^9 字节，即约 3.26 GiB。后者还没有包含 scale、其他精度张量与任何运行时内存，不能据此保证“4GB 卡一定可运行”。
 
-## 4. 修正 SGLang 原估算
+## 4. 按模型与运行配置建立 SGLang 预算 {#_4-修正-sglang-原估算}
 
-当前文档将 `mem-fraction-static` 关联到权重和 KV 池的预算比例，并要求为激活和 Graph 等保留空间。原式 `chunked_prefill_size × 1.5 + cuda_graph_max_bs × 2` 没有自洽的字节单位和模型条件，不能用于估算 GB，应删除。[SGLang 参数调优](https://docs.sglang.io/docs/advanced_features/hyperparameter_tuning)
+文档将 `mem-fraction-static` 关联到权重和 KV 池的预算比例，同时要求为激活与 Graph 等保留空间。`chunked_prefill_size` 和 `cuda_graph_max_bs` 属于运行配置，其数值需要结合模型维度、张量类型和实现换算；直接采用 `chunked_prefill_size × 1.5 + cuda_graph_max_bs × 2` 无法得到有依据的 GB 估算。[SGLang 参数调优](https://docs.sglang.io/docs/advanced_features/hyperparameter_tuning)
 
 应固定模型、精度、上下文、并发和 Graph 配置，读取启动预算，再测试最坏的 prefill/decode 负载并预留余量。每次增加配额后，都要重新检查 OOM、p99 和质量。
 
-## 5. 正确的 INT8 数值例子
+## 5. INT8 量化、存储与反量化算例 {#_5-正确的-int8-数值例子}
 
 [![INT8量化与反量化误差](/assets/notes/ai-infra/int8-affine-example.png)](/assets/notes/ai-infra/int8-affine-example.png)
 

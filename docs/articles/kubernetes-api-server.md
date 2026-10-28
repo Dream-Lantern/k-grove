@@ -1,7 +1,7 @@
 ---
 id: kubernetes-api-server
 title: 第三章：kube-apiserver——请求如何变成集群状态？
-description: 运行一次 kubectl get pods 和提交一份 Deployment，看起来都只是访问 API Server，后续工作却不一样：前者读取对象，后者改变期望状态，随后还可能触发多个控制循环。
+description: "运行一次 kubectl get pods 和提交一份 Deployment，看起来都只是访问 API Server，后续工作却不一样：前者读取对象，后者改变期望状态，随后还可能触发多个控制循环。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -23,7 +23,7 @@ order: 3
 
 这一章把三件事分开：**请求能否进入、对象能否保存，以及保存以后谁继续工作。** 原理以 Kubernetes 1.28 已具备的基础 API 机制为学习范围；不把主线文档后来增加的缓存优化或 API 特性写成当年默认行为。
 
-## 1. API Server 管什么，不管什么？
+## 1. API Server 的职责与请求类型 {#_1-api-server-管什么-不管什么}
 
 kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 kubelet 可以基于各自权限读取或修改 API 对象。
 
@@ -50,7 +50,7 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 客户端需要按配置校验 API Server 的服务端身份，并保护传输。使用 HTTPS 不能直接推导出“每个客户端都必须持有一张客户端证书”。
 
-客户端证书是认证方式之一。Bearer Token 等机制也可能用于识别调用者；是否启用及怎样校验由集群配置决定。原笔记中“强制双向证书才能访问”的说法已经改为这个更明确的边界。
+客户端证书是认证方式之一。Bearer Token 等机制也可能用于识别调用者；是否启用及怎样校验由集群配置决定。TLS 保护连接，客户端身份由启用的认证机制确认。
 
 不要为绕过证书错误，直接把跳过 TLS 校验当作正常使用方式。证书的可信来源、API 地址和时间等问题应该分别检查。
 
@@ -58,7 +58,7 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 认证关注调用者身份。例如，一份 kubeconfig 可以指明客户端使用哪种认证材料。
 
-得到身份不代表具有管理员权限。同一个 API Server 对不同身份可以作出不同授权决定。原记录里把 HTTP Basic Authentication 与其他方式并列，不能直接保留为 Kubernetes 1.28 的推荐或现存通用配置。
+认证得到调用者身份，授权再决定其操作范围。同一个 API Server 对不同身份可以作出不同授权决定；学习 1.28 的认证配置时，应使用该版本实际支持的机制，而非照搬历史 Basic Authentication 配置。
 
 ### 2.3 授权：你能对什么做什么？
 
@@ -76,13 +76,13 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 在常见内置资源路径中，API Server 处理通过检查的状态变更，并使用配置好的存储后端保存对象。etcd 是标准控制平面的关键状态存储，但不是所有用户、控制器和节点都直接操作它。
 
-原笔记的“只有 API Server 能与 etcd 通信”容易被理解成绝对的网络禁令。更合适的表述是：**标准控制平面组件主要经 API Server 访问 Kubernetes API 状态；管理员和备份工具在受控条件下也可能直接访问 etcd。**
+**标准控制平面组件主要经 API Server 访问 Kubernetes API 状态；管理员和备份工具在受控条件下也可能直接访问 etcd。** 这是 API 数据的正常访问路径与管理操作之间的区别。
 
 不能由此开放 etcd 给普通客户端。直接读写其内部数据会绕开 Kubernetes API 的处理边界，并且可能破坏系统状态。
 
 还要区分对象持久存储与应用持久数据：创建一个数据库 Pod，不意味着数据库文件由 API Server 写入 etcd。业务数据的卷、备份和恢复仍由应用及存储方案负责。
 
-## 4. Watch 不是“etcd 回调下一个组件”
+## 4. Watch 与组件的独立观察 {#_4-watch-不是-etcd-回调下一个组件}
 
 假设用户创建了 Deployment。相关控制器需要知道新的期望，Scheduler 之后也需要知道是否出现未绑定 Pod。
 
@@ -102,7 +102,7 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 因此，“注册了 Watch”并不意味着“永远不会漏掉状态更新、恰好处理一次每个事件”。对控制器而言，恢复后能根据当前状态重新协调，往往比依赖某一次通知更重要。[1.28 API 的观察与版本约定](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/using-api/api-concepts.md)
 
-## 5. 创建 Deployment 的请求，为什么不能直接等同于创建容器？
+## 5. Deployment 创建后的协调流程 {#_5-创建-deployment-的请求-为什么不能直接等同于创建容器}
 
 沿用第一章的三副本教学例子：
 
@@ -116,7 +116,7 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 成功保存 Deployment 的响应，不能证明镜像已经拉取、Pod 已经就绪或 Service 已经可访问。将“API 操作成功”与“业务目标达成”分开，能避免很多排障误判。[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 
-## 6. 为什么“GET Pod 列表”不需要启动一个 Pod 控制器？
+## 6. 读取请求与已观察状态 {#_6-为什么-get-pod-列表-不需要启动一个-pod-控制器}
 
 读取对象的请求由相应 API 处理路径完成，不是让 Pod 控制器临时向所有节点收集进程，再同步返回。
 
@@ -126,7 +126,7 @@ API 状态也是已经观察、更新并保存的状态表示，不能把某个�
 
 ## 7. 日常观察：命令回答的是哪一个问题？
 
-下面仅给出阅读用命令示意，没有在你的集群运行：
+下面的命令分别观察客户端上下文、资源种类、对象状态与授权结果：
 
 ```bash
 kubectl config current-context

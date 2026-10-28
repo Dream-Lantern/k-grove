@@ -1,7 +1,7 @@
 ---
 id: distributed-two-phase-commit
 title: 第二十一章 两阶段提交与故障恢复状态机
-description: Two-Phase Commit（2PC）用于协调多个事务资源的提交决定。它并非主从复制的默认步骤，也不是跨服务业务的唯一方案。理解它的关键在于准备之后的状态：参与者已承诺可以提交，却可能尚不知道全局最终决定。
+description: "Two-Phase Commit（2PC，两阶段提交）用于协调多个事务资源，让它们接受同一个提交或中止决定。流程分为准备与决定两个阶段：参与者先保存可提交的承诺，协调者收集结果后持久化全局决定，再通知各方完成。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -21,7 +21,7 @@ order: 21
 
 > 阅读标签：经典2PC原子提交 / 产品示例另标。
 
-Two-Phase Commit（2PC）用于协调多个事务资源的提交决定。它并非主从复制的默认步骤，也不是跨服务业务的唯一方案。理解它的关键在于准备之后的状态：参与者已承诺可以提交，却可能尚不知道全局最终决定。
+Two-Phase Commit（2PC，两阶段提交）用于协调多个事务资源，让它们接受同一个提交或中止决定。流程分为准备与决定两个阶段：参与者先保存可提交的承诺，协调者收集结果后持久化全局决定，再通知各方完成。下面沿这条主线观察故障恢复。
 
 ## 1. 角色与前提
 
@@ -33,7 +33,7 @@ Two-Phase Commit（2PC）用于协调多个事务资源的提交决定。它并�
 
 [![2PC：准备请求、参与者投票与全局决议](/assets/notes/distributed-systems/dist-2pc.svg)](/assets/notes/distributed-systems/dist-2pc.svg)
 
-协调者询问是否能提交。参与者在返回 YES 前，保存足以在故障后恢复 Prepared 状态的信息，并保留必要资源；不能回一个内存 ACK 后就忘掉事务。全体愿意提交，才具备作出 COMMIT 决定的条件。[Gray 与 Lamport 的原子提交分析 §2—3](https://lamport.azurewebsites.net/video/consensus-on-transaction-commit.pdf)
+协调者向各参与者发出准备请求。参与者在返回 YES 前，保存足以在故障后恢复 Prepared 状态的信息，并保留必要资源。协调者收到全体愿意提交的结果后，才具备作出 COMMIT 决定的条件。[Gray 与 Lamport 的原子提交分析 §2—3](https://lamport.azurewebsites.net/video/consensus-on-transaction-commit.pdf)
 
 参与者返回 NO，或协调者在尚未作出提交决定时无法满足条件，可以选择 ABORT；这与“决定可能已存在，但我没有收到”不是一回事。
 
@@ -52,15 +52,15 @@ Two-Phase Commit（2PC）用于协调多个事务资源的提交决定。它并�
 | 协调者持久保存 COMMIT，部分通知丢失 | 恢复后继续传播 COMMIT  | 不能因超时改为 ABORT        |
 | 参与者已提交，确认丢失              | 对重复决定返回相容结果 | 不再重复产生业务效果        |
 
-原笔记“协调者发 COMMIT 前崩溃，参与者可以直接 Abort”不安全：旁观者未见到 COMMIT，并不能证明没有持久化提交决定。必须按恢复日志和具体协议判断。
+参与者进入 Prepared 后，若尚未收到全局决定，应查询权威状态或等待恢复。协调者可能已经持久化 COMMIT，只是通知尚未到达；恢复判断需要依据日志与具体协议，超时本身不足以决定中止。
 
-## 5. 阻塞影响的是相关资源，不是所有节点停工
+## 5. Prepared 状态中的资源占用与等待 {#_5-阻塞影响的是相关资源-不是所有节点停工}
 
 Prepared 事务可能长时间占有锁或其他资源，使冲突操作等待；不是整个服务器从投票开始就无法执行任何无关请求。PostgreSQL 的准备事务也会继续持有适用锁，长时间遗留有运维风险。[PostgreSQL 17 PREPARE TRANSACTION](https://www.postgresql.org/docs/17/sql-prepare-transaction.html)
 
 复制协调者状态可提高决策恢复能力，但没有把“所有业务参与者都同意”变成“只要任意多数参与者同意”。Raft 负责某复制组的状态一致，2PC 负责多个资源的原子决定，层次不同。
 
-## 6. 日志回收不能靠猜测
+## 6. 决定完成后的记录回收与恢复约定 {#_6-日志回收不能靠猜测}
 
 决定完成后何时可以遗忘事务，需要结合确认、恢复、重复消息和协议的 presumed-abort/commit 等约定设计。对于未知事务 ID 的 COMMIT，仅仅统一回复 ACK，并不能证明此前已完成处理。
 

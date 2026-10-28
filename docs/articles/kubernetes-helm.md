@@ -1,7 +1,7 @@
 ---
 id: kubernetes-helm
 title: 第二十七章 Helm、Chart 与发布记录
-description: Chart 是一组模板、默认值和元数据等组成的包。用户结合 Values 渲染 Kubernetes 对象，通过安装或升级形成一次 Release 的管理记录。一个 Chart 可以形成多个 Release，不能把包名、应用名和发布实例名混为一谈。
+description: "Chart 是一组模板、默认值和元数据等组成的包。用户结合 Values 渲染 Kubernetes 对象，通过安装或升级形成一次 Release 的管理记录。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,7 +19,7 @@ order: 27
 
 # 第二十七章 Helm、Chart 与发布记录
 
-> Helm 3 学习笔记，服务于 Kubernetes 1.28 复盘。原记录混有不同 Helm 压缩包版本，本章不提供安装步骤，也不安装 Chart 或访问真实集群。
+> 本章介绍 Helm 3 的包结构、模板渲染与 Release 管理，服务于 Kubernetes 1.28 学习。工具和 Chart 需分别固定版本，示例为命令阅读材料。
 
 ## 1. Chart 与 Release 分别是什么
 
@@ -51,7 +51,7 @@ helm show values ./chart
 
 这些命令适合检查包与模板，但不能替代目标集群的实际验收。模板、插件和依赖应来自可信来源，不应随意执行未知插件或把真实 Secret 打印到终端日志。
 
-不要继续把历史 stable 仓库理解成“现在所有官方 Chart 都迁移到某个聚合目录”。Chart 仓库、OCI 分发与索引站点是不同角色；具体来源、维护状态和版本应在使用时核对。
+Chart 仓库负责包分发，OCI 提供另一种分发方式，索引站点帮助发现资源。使用历史 stable 仓库资料时，需重新核对实际包来源、维护状态与版本。
 
 ## 4. 安装、升级与回滚分别改什么
 
@@ -72,7 +72,7 @@ helm rollback RELEASE REVISION -n NAMESPACE
 
 卸载主要按 Release 管理关系处理适用资源。CRD、钩子资源、显式保留对象和持久数据可能有单独生命周期，不能保证“卸载后环境完全恢复为安装前”。
 
-正式维护前列出对象与数据，确认回收策略、备份和业务停机条件。当前整理没有执行 uninstall，也没有清理任何 Release。
+正式维护前列出对象与数据，确认回收策略、备份和业务停机条件；卸载结果需同时核对集群对象与外部资源。
 
 关于命令选项和实际语义，参阅 [Helm 3 文档](https://helm.sh/docs/v3/)，并与使用的具体版本帮助对应。Chart 是可审计的交付包，不能替代应用发布与数据恢复设计。
 

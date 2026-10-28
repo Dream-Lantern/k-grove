@@ -1,7 +1,7 @@
 ---
 id: kubernetes-device-plugin
 title: 第三十一章 Device Plugin 与设备资源管理
-description: 调度器需要知道节点提供哪些可分配资源，容器运行时又需要知道进程怎样访问实际设备。设备插件与 kubelet 协作，把这两个阶段连接起来。
+description: "调度器需要知道节点提供哪些可分配资源，容器运行时又需要知道进程怎样访问实际设备。设备插件与 kubelet 协作，把这两个阶段连接起来。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -29,7 +29,7 @@ order: 31
 
 [![Device Plugin：调度与分配边界](/assets/notes/kubernetes/k8s-device-plugin-detail.svg)](/assets/notes/kubernetes/k8s-device-plugin-detail.svg)
 
-原图中的 API Server 不负责亲自执行全局调度。这里把调度器决策与 kubelet 的节点侧分配明确分开，也不把插件部署为 DaemonSet 写成接口强制要求。
+图中区分调度器的节点选择与 kubelet 的节点侧分配。设备插件常采用 DaemonSet 部署，但部署方式与插件接口是两个层次。
 
 ## 2. 注册 socket 与插件服务
 
@@ -49,7 +49,7 @@ Node capacity/allocatable、调度中的已请求数量、插件报告的健康�
 
 设备变为不健康时，后续可分配信息和已有工作负载的处理也不是同一件事。健康上报不代表所有已使用该设备的容器会立即被安全迁移。
 
-## 4. 扩展资源不必然等于整张物理卡
+## 4. 整数资源单位与实际设备能力 {#_4-扩展资源不必然等于整张物理卡}
 
 经典扩展资源必须按整数单位请求，不能超卖；同一容器同时声明 request 和 limit 时两者必须相等。只声明 limit 时，相应 request 可按默认规则形成；只声明 request 而缺少这类资源要求的 limit，也不是完整合法配置。[v1.28.0 资源校验](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/apis/core/validation/validation.go) · [扩展资源整数判定](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/apis/core/helper/helpers.go)
 
@@ -81,6 +81,6 @@ PodResources API 可以提供适用的 Pod、容器与设备分配信息，用�
 
 把默认 Docker runtime 改成某个厂商值不是 Kubernetes 1.28 containerd 环境的通用修复。驱动、设备文件、运行时和插件需要对应；没有具体版本信息时，本章不补造一个可执行安装方案。
 
-性能与隔离验证要明确设备型号、分区或共享模式、驱动、运行时、负载和测量口径。原笔记没有这些实验结果，本稿不新增吞吐或开销数字。
+性能与隔离验证要明确设备型号、分区或共享模式、驱动、运行时、负载和测量口径。这些性能与隔离结果尚待对应环境实验确认。
 
 [返回本册目录](/collections/kubernetes/)

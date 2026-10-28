@@ -1,9 +1,9 @@
 ---
 id: kafka-librdkafka-ownership
 title: 第 15 章：librdkafka 对象与内存所有权
-description: 创建本地 Topic 句柄不等于显式执行 Admin CreateTopics。后续访问元数据时是否触发自动创建 Topic，还取决于服务端和客户端设置，因此不能把 rd_kafka_topic_new() 当成可靠的集群建 Topic 操作。
+description: "rd_kafka_t 是客户端实例；rd_kafka_conf_t 是全局客户端配置；rd_kafka_topic_t 是本地 Topic 句柄；rd_kafka_topic_partition_list_t 是 Topic-Partition 条目容器。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -23,7 +23,7 @@ order: 15
 >
 > 学习目标：从接口清单进一步理解对象关系与生命周期。范围固定为 librdkafka v2.8.0 C API；cppkafka、Python 封装和 Java 不是同一个接口。
 
-## 1. 四类对象先建立心智模型
+## 1. 四类对象及其职责 {#_1-四类对象先建立心智模型}
 
 `rd_kafka_t` 是客户端实例；`rd_kafka_conf_t` 是全局客户端配置；`rd_kafka_topic_t` 是本地 Topic 句柄；`rd_kafka_topic_partition_list_t` 是 Topic-Partition 条目容器。它们不是网络上某个实体的直接指针，也不应由应用自行复制内部结构。
 
@@ -37,7 +37,7 @@ order: 15
 
 Topic 配置的消费契约不应照抄全局配置：`rd_kafka_topic_new()` 文档规定传入的 Topic 配置由该调用消费，之后应用不再释放。建议把创建和失败清理集中在少量函数里，显式标记哪个指针已转移。
 
-## 3. 列表是有容量的容器，不是固定长度链表
+## 3. 分区列表的容量、条目与释放 {#_3-列表是有容量的容器-不是固定长度链表}
 
 `rd_kafka_topic_partition_list_new(size)` 的 size 用于初始容量，条目可通过 add 增加；不要把它理解成已经生成了 size 个有效订阅。条目中 Topic、Partition、Offset 等字段是否参与操作，要看具体 API。
 
@@ -53,7 +53,7 @@ Payload 是字节数组，不保证以零结尾。打印或解析应使用 len�
 
 逐项检查配置设置、客户端创建、列表构造、订阅、消息错误及释放过程，确认调用失败时哪些对象仍归应用持有，哪些已由接口接管。销毁客户端前，应先完成相应的 Producer flush 或 Consumer close；回调依赖的上下文必须保留到回调不再发生为止。
 
-本章按固定头文件校对契约，但没有在本机编译 C 程序。实际项目还应使用编译器告警、内存检查和故障测试验证资源管理，不能把静态审阅当成无泄漏证明。
+本章按固定头文件解释接口契约，尚无本机编译运行记录。实际项目应继续结合编译器告警、内存检查和故障测试验证创建、使用与释放路径。
 
 ## 参考
 

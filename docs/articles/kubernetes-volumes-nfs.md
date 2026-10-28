@@ -1,7 +1,7 @@
 ---
 id: kubernetes-volumes-nfs
 title: 第二十二章 Volume、emptyDir、hostPath 与 NFS
-description: 容器镜像提供文件系统基础，运行中的可写层不适合作为跨 Pod 生命周期的数据保留承诺。卷让容器通过某个路径访问适用的数据来源。
+description: "容器镜像提供文件系统基础，运行中的可写层不适合作为跨 Pod 生命周期的数据保留承诺。卷让容器通过某个路径访问适用的数据来源。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,7 +19,7 @@ order: 22
 
 # 第二十二章 Volume、emptyDir、hostPath 与 NFS
 
-> 以 Kubernetes 1.28 的 Linux 场景为主。比较数据生命周期，复盘原 NFS 笔记中的安全和命令问题；本次不安装 NFS、不挂载、不卸载、不修改导出配置。
+> 本章以 Kubernetes 1.28 的 Linux 场景为主，比较临时卷、节点目录与远端文件系统的数据生命周期，并说明 NFS 导出配置和维护命令的含义。
 
 ## 1. 卷把路径与数据来源连接起来
 
@@ -69,11 +69,11 @@ NFS 的名称是 Network File System。Pod 卸载或删除后，远端数据通�
 
 客户端节点需要具备适用的挂载支持，服务端需要导出目录、网络可达和正确权限。不能只在一台节点测试成功，就宣称整个集群都可用。
 
-原记录的 `no_root_splash` 是拼写错误，正确选项为 `no_root_squash`。它关闭 root squashing，使客户端 UID/GID 0 不再按该机制映射为匿名身份，但不会绕过所有其他权限检查。它会改变安全边界，不宜作为通用默认；应分别核对客户端范围、身份映射、目录权限和读写需求。[exports(5) 的身份映射选项](https://man7.org/linux/man-pages/man5/exports.5.html)
+`no_root_squash` 用于关闭 root squashing。它关闭 root squashing，使客户端 UID/GID 0 不再按该机制映射为匿名身份，但不会绕过所有其他权限检查。它会改变安全边界，不宜作为通用默认；应分别核对客户端范围、身份映射、目录权限和读写需求。[exports(5) 的身份映射选项](https://man7.org/linux/man-pages/man5/exports.5.html)
 
-## 5. 命令纠错与保留的前提
+## 5. exportfs 与卸载操作的含义 {#_5-命令纠错与保留的前提}
 
-原记录将 `exportfs -f` 写成常规重新加载，并使用了不存在的 `unmnt`。常见卸载命令是 `umount`；exportfs 的选项则应分别理解：
+常见卸载命令是 `umount`；`exportfs` 则管理导出状态。重新导出和清空导出表是不同操作，各选项含义如下：
 
 | 选项 | 含义，不是执行建议                                 |
 | ---- | -------------------------------------------------- |
@@ -82,7 +82,7 @@ NFS 的名称是 Network File System。Pod 卸载或删除后，远端数据通�
 | -a   | 针对全部适用目录执行相应导出或取消导出动作         |
 | -v   | 输出详细信息                                       |
 
-这里仅对照工具语义，没有刷新或卸载任何文件系统。实施时还需查目标系统随附手册，原历史环境的发行版和 nfs-utils 版本仍未确定。
+历史环境的发行版和 nfs-utils 版本仍未确定，实际维护前需核对目标系统随附手册。
 
 这里不提供可直接复制的服务端改配命令，因为原记录缺少发行版、服务端版本和维护窗口。Linux 上的命令语义可对照 [nfs-utils 的 exportfs 手册](https://man7.org/linux/man-pages/man8/exportfs.8.html)；实施时仍以目标系统随附文档为准。
 

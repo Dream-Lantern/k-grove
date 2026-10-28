@@ -1,7 +1,7 @@
 ---
 id: kubernetes-hpa
 title: 第二十五章 HPA 与指标驱动扩缩容
-description: HorizontalPodAutoscaler 根据指标与目标，通过目标资源的 scale 能力调整期望副本数。Deployment、StatefulSet 是常见目标，但能力边界不是“只支持这两个名字”。
+description: "HorizontalPodAutoscaler 根据指标与目标，通过目标资源的 scale 能力调整期望副本数。Deployment、StatefulSet 是常见目标，但能力边界不是“只支持这两个名字”。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -19,7 +19,7 @@ order: 25
 
 # 第二十五章 HPA 与指标驱动扩缩容
 
-> Kubernetes 1.28、autoscaling/v2 学习范围。未安装 Metrics Server，未跳过证书校验，未创建 HPA 或改变副本。
+> 本章以 Kubernetes 1.28 的 autoscaling/v2 为范围，说明指标来源、扩缩容建议与稳定策略。示例为纸面推导，实际收益需要负载测试验证。
 
 ## 1. HPA 改变什么
 
@@ -35,7 +35,7 @@ HPA 不直接增加节点，也不能解决数据库响应慢的问题。新增�
 
 排查时，先确认指标是否可用、时间是否合适、目标是否支持 scale，再检查算法，不要一开始就调低目标利用率。
 
-原笔记中的 `--kubelet-insecure-tls` 不作为正常安装步骤。证书或信任配置问题应按部署环境解决，跳过验证会改变安全条件；本次没有安装任何指标组件。
+指标组件访问 kubelet 时也需要正确的证书和信任配置。`--kubelet-insecure-tls` 会跳过相应验证，不能代替对证书问题的定位与修复。
 
 ## 3. 利用率的分母是 request
 
@@ -53,7 +53,7 @@ HPA 不直接增加节点，也不能解决数据库响应慢的问题。新增�
 
 例如各 Pod request 均为 250m、使用均为 200m 时，这个 80% 可以直接解释为 200m/250m。它不是占节点总 CPU 的 80%，也不是相对 CPU limit 的 80%。如果仅有单个容器，本例就可以与第十四章的容器 request 对照；多个容器则还需核对 Resource 指标计算所包含的容器范围。
 
-不同 Pod request 不相同时，不应照搬这个等 request 算例并直接取各百分比的算术平均。复核报告提出了按总 usage/总 request 聚合的实现说明；本轮未能独立取得 [v1.28.0 GetResourceUtilizationRatio 源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/controller/podautoscaler/metrics/utilization.go)，因此没有将异构 request 的精确公式升级为已完成核验的通用结论。本文的计算练习保持在上述等 request 范围；真实算法还会筛选数据并处理缺失值。
+不同 Pod request 不相同时，不应照搬这个等 request 算例并直接取各百分比的算术平均。异构 request 的精确聚合方式仍需结合 [v1.28.0 GetResourceUtilizationRatio 源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/controller/podautoscaler/metrics/utilization.go) 核对，这一部分尚待验证。本文的计算练习限定于等 request 场景；真实算法还会筛选数据并处理缺失值。
 
 ## 4. 一份只用于解释的 HPA
 

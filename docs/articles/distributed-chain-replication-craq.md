@@ -1,7 +1,7 @@
 ---
 id: distributed-chain-replication-craq
 title: 第十八章 Chain Replication 与 CRAQ 读扩展
-description: 链复制将写入沿有序链传播，CRAQ 则利用版本状态将读取分散到链上。这里的“任意副本可读”以 clean/dirty 规则和有效链配置为前提，并非忽略写入进度、直接返回本地最新值。
+description: "链复制把副本排成有序链，写入由 Head 向 Tail 传播。CRAQ 在此基础上维护版本的 clean/dirty 状态，使部分读取可以由链上的其他节点处理。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -21,7 +21,7 @@ order: 18
 
 > 阅读标签：Chain Replication / CRAQ2009论文。
 
-链复制将写入沿有序链传播，CRAQ 则利用版本状态将读取分散到链上。这里的“任意副本可读”以 clean/dirty 规则和有效链配置为前提，并非忽略写入进度、直接返回本地最新值。
+链复制把副本排成有序链，写入由 Head 向 Tail 传播。CRAQ 在此基础上维护版本的 clean/dirty 状态，使部分读取可以由链上的其他节点处理。理解它的过程，可以先跟踪一笔写入如何提交，再看读请求怎样选择已提交版本。
 
 ## 1. 基础 Chain Replication
 
@@ -29,7 +29,7 @@ Head 接收写入并向后继传递，逐步到达 Tail；基础协议将到达 
 
 原始链复制可由 Tail 回复客户端；CRAQ 论文实现为了复用客户端 TCP 连接，由确认沿链返回后让 Head 回复。两者要按抽象与实现分别描述，不能把“只能由 Tail 直接回复”当作不变接口。[CRAQ 论文 §2.2](https://www.cs.princeton.edu/courses/archive/fall22/cos418/papers/craq.pdf)
 
-## 2. CRAQ 怎样安全地分散读？
+## 2. 用 clean/dirty 状态选择读取路径 {#_2-craq-怎样安全地分散读}
 
 [![CRAQ：写传播与读选择是两条不同路径](/assets/notes/distributed-systems/dist-craq.png)](/assets/notes/distributed-systems/dist-craq.png)
 
@@ -43,13 +43,13 @@ Head 接收写入并向后继传递，逐步到达 Tail；基础协议将到达 
 
 节点保留必要的旧版本，是为了在获知已提交版本后返回相应内容。如果立即删除所有旧版本，只留下未经确认的新对象，即使查询到版本号，也无法返回所需数据。
 
-## 4. 链成员变化不只是删除一个数组元素
+## 4. 链成员变化与在途更新恢复 {#_4-链成员变化不只是删除一个数组元素}
 
 Head、Tail 或中间节点故障时，链的前后关系与在途更新都需重建。中间节点可能接收了尚未转发的请求；新链需要依据确认状态补传，不能假设所有幸存节点天然具有相同进度。
 
 Configuration Manager 提供配置权威；但一个权威存在，不代表旧节点和旧客户端已经收到新配置。配置代际、旧资格隔离、重试和网络分区必须共同处理。它自身也需要一致、可恢复的实现，不能说“因为只有一个角色决策，所以绝不会脑裂”。
 
-## 5. 和 Raft 比较时看负载，而不是判定谁永远更快
+## 5. 结合负载比较复制与读取成本 {#_5-和-raft-比较时看负载-而不是判定谁永远更快}
 
 链把逐节点传输成本分散出去，CRAQ 在读多、clean 比例高等条件下增加本地读机会；Raft 则以领导者日志复制和多数规则组织提交。两者的故障恢复、读路径与复制确认集合不同。
 

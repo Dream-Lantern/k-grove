@@ -1,7 +1,7 @@
 ---
 id: redis-memory-eviction
 title: 第二十五章 内存核算、淘汰与碎片诊断
-description: 返回本册目录
+description: "分析 Redis 内存时，先区分数据对象、分配器统计和操作系统驻留内存三种口径，再判断压力来自对象、缓冲、保留页还是主机峰值。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -21,7 +21,7 @@ order: 25
 
 [返回本册目录](/collections/redis/)
 
-“Redis 用了多少内存”至少有三种口径：数据对象占用、Redis 分配器统计、操作系统看到的驻留内存。它们不相等。排障第一步不是调淘汰策略，而是确定是哪种内存压力。
+分析 Redis 内存时，先区分数据对象、分配器统计和操作系统驻留内存三种口径，再判断压力来自对象、缓冲、保留页还是主机峰值。确定来源后，才能评估容量、淘汰或碎片处理方案。
 
 ![四种观察口径](/assets/notes/redis/redis-study-memory.svg)
 
@@ -33,7 +33,7 @@ RSS 是操作系统口径。分配器保留但尚未还给系统的页面、代�
 
 比率小于 1 不足以证明已经 swap；应进一步看系统交换、页错误、进程驻留和采样时刻。比率大于 1 也不能直接推出需要重启。[INFO memory 字段解释](https://redis.io/docs/latest/commands/info/)
 
-## 2. maxmemory 不是 RSS 硬上限
+## 2. maxmemory 的核算范围与角色差异 {#_2-maxmemory-不是-rss-硬上限}
 
 maxmemory 用于 Redis 内存管理，部分缓冲统计有特殊处理；实际进程与主机内存还需要预留持久化、复制、COW、其他进程和操作系统空间。
 
@@ -59,7 +59,7 @@ allkeys 类策略在全部适用键中选择；volatile 类策略只在具有 TT
 
 后续版本还可能增加策略，例如第 32 章介绍的 8.6 LRM。选择策略前，应先判断哪些数据可以丢弃；仅仅“换个更聪明算法”，无法保证唯一业务状态的安全。[淘汰策略](https://redis.io/docs/latest/develop/reference/eviction/)
 
-## 4. 碎片处理要从证据出发
+## 4. 用分配器与 RSS 证据定位碎片 {#_4-碎片处理要从证据出发}
 
 大量大小不一对象反复创建删除后，可能出现分配器空洞。active defrag 的可用性与成本依构建和版本；MEMORY PURGE 则是要求适用分配器尝试归还空闲页，不能把两者写成同一功能。
 

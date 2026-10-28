@@ -1,7 +1,7 @@
 ---
 id: ai-infra-dcgm-monitoring
 title: 第 11 章 DCGM 与 Exporter：部署拓扑、实体与指标
-description: 本章先介绍指标来源，再说明如何避免将其他节点或整卡的数据误归到某个任务。
+description: "DCGM 提供 GPU 实体与性能字段的观测能力，Exporter 将相应指标暴露给监控系统。本章从部署拓扑开始，依次确定查询实体、字段含义、节点身份和采样窗口，使指标能够与实际任务对应。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: gpu-infra
@@ -19,13 +19,13 @@ order: 11
 
 # 第 11 章 DCGM 与 Exporter：部署拓扑、实体与指标
 
-本章先介绍指标来源，再说明如何避免将其他节点或整卡的数据误归到某个任务。
+DCGM 提供 GPU 实体与性能字段的观测能力，Exporter 将相应指标暴露给监控系统。本章从部署拓扑开始，依次确定查询实体、字段含义、节点身份和采样窗口，使指标能够与实际任务对应。
 
-## 1. 两种部署模式不要混搭成重复采集
+## 1. 嵌入式与外部 hostengine 部署 {#_1-两种部署模式不要混搭成重复采集}
 
 [![DCGM Exporter：hostengine 使用方式](/assets/notes/ai-infra/dcgm-deployment-modes.svg)](/assets/notes/ai-infra/dcgm-deployment-modes.svg)
 
-Exporter 可以使用嵌入式 hostengine，或连接受管理的已有 hostengine；选择其一并记录实际进程与连接。外部模式通过 `-r Host:Port` 等受支持配置连接，不能继续写成“DCGM 与 exporter 一律不能并存”。客户端 `libdcgm` 与服务端版本也要检查兼容，不只检查 exporter 镜像是否能启动。[DCGM Exporter 部署说明](https://docs.nvidia.com/datacenter/cloud-native/gpu-telemetry/latest/dcgm-exporter.html)
+Exporter 可以使用嵌入式 hostengine，或连接受管理的已有 hostengine；选择其一并记录实际进程与连接。外部模式通过 `-r Host:Port` 等受支持配置连接，需结合目标进程与连接关系确定实际采集拓扑。客户端 `libdcgm` 与服务端版本也要检查兼容，不只检查 exporter 镜像是否能启动。[DCGM Exporter 部署说明](https://docs.nvidia.com/datacenter/cloud-native/gpu-telemetry/latest/dcgm-exporter.html)
 
 ## 2. 指标字典：实体、分母和单位一起读
 
@@ -57,7 +57,7 @@ DCGM_FI_DEV_GPU_TEMP, gauge, GPU temperature (C).
 DCGM_FI_DEV_FB_USED, gauge, Framebuffer used (MiB).
 ```
 
-## 4. 按节点监控，不能只依赖一个共享 Service 名
+## 4. 逐节点发现并保留设备身份标签 {#_4-按节点监控-不能只依赖一个共享-service-名}
 
 [![逐节点抓取：不要把 Service 名当节点身份](/assets/notes/ai-infra/dcgm-node-targets.png)](/assets/notes/ai-infra/dcgm-node-targets.png)
 

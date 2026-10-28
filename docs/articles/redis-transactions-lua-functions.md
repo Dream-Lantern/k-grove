@@ -1,9 +1,9 @@
 ---
 id: redis-transactions-lua-functions
 title: 第十八章 事务、WATCH、Lua 与 Functions
-description: 返回本册目录
+description: "Redis 提供事务队列、WATCH 和服务端脚本等组合操作方式。理解它们时，可以分别观察命令何时排队、何时执行、错误如何返回，以及并发条件如何检查。"
 date: '2026-10-25'
-updated: '2026-10-25'
+updated: '2026-10-28'
 category: distributed-systems
 type: explanation
 tags:
@@ -21,11 +21,11 @@ order: 18
 
 [返回本册目录](/collections/redis/)
 
-Redis 中的原子执行，通常指一段命令执行期间不会插入其他客户端的命令，并不等于关系数据库式的自动回滚。原笔记中“全部成功或全部失败”的说法需要分情况理解，否则容易据此写出错误的补偿逻辑。
+Redis 提供事务队列、WATCH 和服务端脚本等组合操作方式。理解它们时，可以分别观察命令何时排队、何时执行、错误如何返回，以及并发条件如何检查。原子执行约束其他客户端命令的插入，自动回滚则是另一项需要单独确认的语义。
 
 ![组合操作的选择](/assets/notes/redis/redis-study-transaction.svg)
 
-## 1. MULTI / EXEC 实际保证什么
+## 1. MULTI 排队与 EXEC 连续执行 {#_1-multi-exec-实际保证什么}
 
 MULTI 后的命令先进入事务队列；EXEC 让队列内命令连续执行。排队阶段发生语法或命令参数错误，现代版本会拒绝执行该事务；但执行阶段发生类型错误，并不会撤销已经成功的命令，也不会阻止后续命令继续执行。[事务错误处理](https://redis.io/docs/latest/develop/using-commands/transactions/)
 
@@ -40,7 +40,7 @@ SET demo:tx:finished yes
 EXEC
 ```
 
-中间 LPUSH 会因为键是 String 而失败，但不能因此断言计数没有增加、最后一条 SET 没有执行。客户端必须逐项检查 EXEC 返回的数组。DISCARD 用于放弃尚未执行的队列，不是撤销已经提交的写入。
+中间 LPUSH 因键是 String 而失败时，其余命令仍按事务执行规则处理。客户端应逐项检查 EXEC 返回数组，分别确定计数与最后一条 SET 的结果。DISCARD 用于放弃尚未执行的队列，不是撤销已经提交的写入。
 
 预期推演：若示例计数键原先不存在，没有并发修改、权限或资源错误，EXEC 的三个位置依次是整数 1、WRONGTYPE 错误、OK；计数键为 1，finished 键为 yes。若计数键已有值，第一项不能继续写死为 1；若它不是可递增的整数，也会单独报错。这里解释的是事务逐项执行语义，不是本机实测输出。
 

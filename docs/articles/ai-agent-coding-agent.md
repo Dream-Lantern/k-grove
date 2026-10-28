@@ -1,7 +1,7 @@
 ---
 id: ai-agent-coding-agent
 title: 第5章 Coding Agent 与代码生成的元能力
-description: Coding Agent 在可写工作区内反复执行：搜索理解 → 修改文件 → 静态检查 → 运行测试 → 分析反馈 → 修复。执行环境能提供模型此前不知道的新事实，因此它比单次“生成代码”更容易形成反馈闭环。
+description: "Coding Agent 在可写工作区内反复执行：搜索理解 → 修改文件 → 静态检查 → 运行测试 → 分析反馈 → 修复。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: ai-agent
@@ -19,11 +19,11 @@ order: 5
 
 # 第5章 Coding Agent 与代码生成的元能力
 
-## 5.1 Coding Agent 的关键不是“能输出代码”
+## 5.1 Coding Agent 的执行与反馈闭环 {#_5-1-coding-agent-的关键不是-能输出代码}
 
 Coding Agent 在可写工作区内反复执行：**搜索理解 → 修改文件 → 静态检查 → 运行测试 → 分析反馈 → 修复**。执行环境能提供模型此前不知道的新事实，因此它比单次“生成代码”更容易形成反馈闭环。
 
-[本章修订流程图](/assets/notes/ai-agent/05-coding.png)
+[Coding Agent 的搜索、编辑与验证流程](/assets/notes/ai-agent/05-coding.png)
 
 ### 搜索工具分工
 
@@ -39,11 +39,11 @@ Diff/Patch 比整文件重写更利于审查，旧字符串替换适合简单稳
 
 ## 5.2 Sessionless：状态外置
 
-**Sessionless 并不等于没有任务状态**。它意味着把长期任务进展写到可恢复的工作区/任务记录中，而不是只保存在单次模型上下文。
+**Sessionless 将长期任务状态外置**：任务进展写入可恢复的工作区或任务记录，后续会话据此继续工作。模型上下文承载当前决策所需信息，外置记录承载跨会话进展。
 
 推荐外置状态：`requirements.md`、`design.md`、`tasks.md`、运行日志摘要、Git diff、测试结果、已知风险及下一步。复用时检查状态与实际文件是否一致，避免继承过时摘要。
 
-## 5.3 失败恢复不是无限重试
+## 5.3 按错误类型选择恢复策略 {#_5-3-失败恢复不是无限重试}
 
 | 错误类型   | 示例               | 建议                     |
 | ---------- | ------------------ | ------------------------ |
@@ -67,7 +67,7 @@ Diff/Patch 比整文件重写更利于审查，旧字符串替换适合简单稳
 
 使用最小权限、沙盒、命令审查、强制测试、人工批准与版本回滚。**“通过单元测试”不代表安全，也不代表需求完整。**
 
-## 5.5 代码为什么是 Agent 的元能力？
+## 5.5 代码作为 Agent 的通用能力 {#_5-5-代码为什么是-agent-的元能力}
 
 代码除了实现需求，还能扮演：
 
@@ -116,7 +116,7 @@ class ToolResult:
 
 [![Coding Agent：完成出口与再次迭代](/assets/notes/ai-agent/05-coding.png)](/assets/notes/ai-agent/05-coding.png)
 
-配图用于概念与学习流程说明，适用版本和实现边界以正文为准，不代表整链已实测。[放大查看 PNG](/assets/notes/ai-agent/05-coding.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/05-coding.dot)供对照，不是本版配图的可编辑源文件。
+图中将环境反馈接回下一轮编辑，并在目标验证通过后结束；代码生成、执行与验证各有独立职责。[放大查看 PNG](/assets/notes/ai-agent/05-coding.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/05-coding.dot)供对照，不是本版配图的可编辑源文件。
 
 **值得补到系统设计中的状态**：工作目录、已读文件、工具计数、最近错误、剩余预算、待验证改动。它们应来自运行时和文件状态，不能只靠模型在自然语言里维护。
 
@@ -125,14 +125,14 @@ class ToolResult:
 ### 源码与实验入口
 
 - [当前仓库正文](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/book/chapter5.md)
-- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html) · 统一验证入口（仅保留于本地审阅资料，公开版不提供）
+- [实验优先级与复现记录](/articles/ai-agent-source-experiments.html)
 
-## 检查理解
+## 本章要点 {#检查理解}
 
-1. 为什么 Coding Agent 必须有环境反馈，不宜只看生成代码的文字质量？
-2. Sessionless 和 Context Compression 是什么关系？
-3. 如何阻止 Agent 为了让测试通过而删除失败测试？
-4. 何时应该重试，何时应该终止并请求人工处理？
+1. 环境反馈提供编译、测试和实际文件状态，帮助 Agent 根据可观察结果继续修复。
+2. Sessionless 维护跨会话状态，Context Compression 缩减当前上下文；二者可共同服务于长任务。
+3. 测试、Diff 审阅和需求验证需要共同检查，测试变绿本身不能证明需求完成。
+4. 临时故障适合有限重试；参数错误需修正输入，权限或预算问题则应停止并报告。
 
 ## 学习资料与代码出处
 
