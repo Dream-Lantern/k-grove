@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1050" viewBox="0 0 1440 1050" role="img" aria-labelledby="title desc"><title id="title">从业务 Key 到日志顺序，再到业务完成顺序</title><desc id="desc">Kafka Java 3.9.0 / librdkafka v2.8.0 · 有 Key 路由；4 分区算例为离线计算，不是发送实测。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1050" rx="16" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">从业务 Key 到日志顺序，再到业务完成顺序</text>
+<text x="40" y="83" font-size="20" fill="#475569" font-weight="400">Kafka Java 3.9.0 / librdkafka v2.8.0 · 有 Key 路由；4 分区算例为离线计算，不是发送实测。</text>
+<rect x="40" y="130" width="1360" height="100" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-opacity=".4"/>
+<text x="60" y="164" font-size="23" fill="#0F172A" font-weight="650">① 选择需要共同排序的实体</text>
+<text x="60" y="195" font-size="20" fill="#475569" font-weight="400">order_id → Key；示例 order-42 → UTF-8 字节 6f 72 64 65 72 2d 34 32</text>
+<path d="M720 230V285" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<rect x="40" y="285" width="420" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="319" font-size="23" fill="#0F172A" font-weight="650">② Java 内置有 Key 路径</text>
+<text x="60" y="350" font-size="20" fill="#475569" font-weight="400">Murmur2 → 清除符号位 → % N</text>
+<text x="60" y="377" font-size="20" fill="#475569" font-weight="400">501153024 % 4 = P0</text>
+<rect x="510" y="285" width="420" height="112" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="530" y="319" font-size="23" fill="#0F172A" font-weight="650">② C 默认 consistent_random</text>
+<text x="530" y="350" font-size="20" fill="#475569" font-weight="400">非零长度 Key：CRC32 → % N</text>
+<text x="530" y="377" font-size="20" fill="#475569" font-weight="400">1475806942 % 4 = P2</text>
+<rect x="980" y="285" width="420" height="112" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="1000" y="319" font-size="23" fill="#0F172A" font-weight="650">② C murmur2_random</text>
+<text x="1000" y="350" font-size="20" fill="#475569" font-weight="400">非 NULL Key：兼容 Java 哈希</text>
+<text x="1000" y="377" font-size="20" fill="#475569" font-weight="400">501153024 % 4 = P0</text>
+<path d="M250 230V285" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<path d="M1190 230V285" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<rect x="40" y="460" width="1360" height="115" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="494" font-size="23" fill="#0F172A" font-weight="650">路径边界</text>
+<text x="60" y="525" font-size="20" fill="#475569" font-weight="400">显式 Partition / 自定义 Partitioner 可覆盖默认规则；Java ignore.keys=true 会忽略 Key。</text>
+<text x="60" y="552" font-size="20" fill="#475569" font-weight="400">Null 与零长度字节数组不同；C 默认空 Key 可走随机 / 粘性路径。热点 Key 不因增加分区自动拆散。</text>
+<path d="M250 397V460" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<path d="M720 397V460" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<path d="M1190 397V460" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<rect x="40" y="640" width="620" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="674" font-size="23" fill="#0F172A" font-weight="650">③ 追加到某一分区：A → B</text>
+<text x="60" y="705" font-size="20" fill="#475569" font-weight="400">另一个教学时间线：同一 P1 中 A=10，B=11</text>
+<text x="60" y="732" font-size="20" fill="#475569" font-weight="400">Offset 是分区内逻辑位置，不是文件字节地址</text>
+<path d="M350 575V640" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<rect x="780" y="640" width="620" height="112" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="800" y="674" font-size="23" fill="#0F172A" font-weight="650">④ Consumer 交给线程池</text>
+<text x="800" y="705" font-size="20" fill="#475569" font-weight="400">先读 A 再读 B；B 可先完成、A 后完成</text>
+<text x="800" y="732" font-size="20" fill="#475569" font-weight="400">需要顺序时按分区 / Key 串行或校验业务版本</text>
+<path d="M660 696H780" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="677" y="674" font-size="18" fill="#2563EB" font-weight="550">读取顺序</text>
+<rect x="40" y="835" width="620" height="112" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="869" font-size="23" fill="#0F172A" font-weight="650">扩分区：映射可能改变</text>
+<text x="60" y="900" font-size="20" fill="#475569" font-weight="400">假设哈希 17：17 % 4 = 1 → 17 % 6 = 5</text>
+<text x="60" y="927" font-size="20" fill="#475569" font-weight="400">旧记录仍留 P1，新记录可能进入 P5</text>
+<rect x="780" y="835" width="620" height="112" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="800" y="869" font-size="23" fill="#0F172A" font-weight="650">顺序需要端到端维护</text>
+<text x="800" y="900" font-size="20" fill="#475569" font-weight="400">重试幂等约束 Producer；多 Producer 需业务协调</text>
+<text x="800" y="927" font-size="20" fill="#475569" font-weight="400">增加 Broker ≠ 增加分区；迁移需切换边界</text>
+<text x="40" y="1010" font-size="20" fill="#475569" font-weight="400">17 只是扩容教学输入；A / B 的 P1 时间线独立于上方 order-42 路由算例。Kafka 不自动提供跨分区总顺序。</text>
+</g></svg>

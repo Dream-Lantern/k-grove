@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1220" viewBox="0 0 1440 1220" role="img" aria-labelledby="title desc"><title id="title">acks=all：追加、复制报告、成功与未知结果</title><desc id="desc">Kafka 3.9.0 · 教学时序：RF=3、minISR=2、ISR=A/B/C；初始 LEO/HW=100，请求记录 100～104。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1220" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">acks=all：追加、复制报告、成功与未知结果</text>
+<text x="40" y="85" font-size="20" fill="#475569" font-weight="400">Kafka 3.9.0 · 教学时序：RF=3、minISR=2、ISR=A/B/C；初始 LEO/HW=100，请求记录 100～104。</text>
+<rect x="40" y="130" width="220" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="164" font-size="23" fill="#0F172A" font-weight="650">Producer</text>
+<path d="M150 195V830" stroke="#CBD5E1" stroke-dasharray="6 5"/>
+<rect x="430" y="130" width="220" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="450" y="164" font-size="23" fill="#0F172A" font-weight="650">A / Leader</text>
+<path d="M540 195V830" stroke="#CBD5E1" stroke-dasharray="6 5"/>
+<rect x="840" y="130" width="220" height="65" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="860" y="164" font-size="23" fill="#0F172A" font-weight="650">B / Follower</text>
+<path d="M950 195V830" stroke="#CBD5E1" stroke-dasharray="6 5"/>
+<rect x="1170" y="130" width="220" height="65" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="1190" y="164" font-size="23" fill="#0F172A" font-weight="650">C / Follower</text>
+<path d="M1280 195V830" stroke="#CBD5E1" stroke-dasharray="6 5"/>
+<path d="M150 240H540" fill="none" stroke="#2563EB" stroke-width="2.4"  marker-end="url(#blue)"/>
+<text x="165" y="228" font-size="19" fill="#2563EB" font-weight="550">① Produce，acks=-1</text>
+<rect x="560" y="265" width="610" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="580" y="299" font-size="23" fill="#0F172A" font-weight="650">② 检查 minISR 后追加：A LEO=105</text>
+<path d="M950 370H540" fill="none" stroke="#7C3AED" stroke-width="2.4"  marker-end="url(#purple)"/>
+<text x="555" y="358" font-size="19" fill="#7C3AED" font-weight="550">③ B Fetch：位置 100</text>
+<path d="M540 420H950" fill="none" stroke="#7C3AED" stroke-width="2.4" stroke-dasharray="7 5" marker-end="url(#purple)"/>
+<text x="555" y="408" font-size="19" fill="#7C3AED" font-weight="550">④ 返回记录；B 本地追加到 105</text>
+<path d="M950 470H540" fill="none" stroke="#7C3AED" stroke-width="2.4"  marker-end="url(#purple)"/>
+<text x="555" y="458" font-size="19" fill="#7C3AED" font-weight="550">⑤ B 再次 Fetch：报告 105</text>
+<path d="M1280 530H540" fill="none" stroke="#7C3AED" stroke-width="2.4"  marker-end="url(#purple)"/>
+<text x="555" y="518" font-size="19" fill="#7C3AED" font-weight="550">⑥ C Fetch：位置 100</text>
+<path d="M540 580H1280" fill="none" stroke="#7C3AED" stroke-width="2.4" stroke-dasharray="7 5" marker-end="url(#purple)"/>
+<text x="555" y="568" font-size="19" fill="#7C3AED" font-weight="550">⑦ 返回记录；C 本地追加到 105</text>
+<path d="M1280 630H540" fill="none" stroke="#7C3AED" stroke-width="2.4"  marker-end="url(#purple)"/>
+<text x="555" y="618" font-size="19" fill="#7C3AED" font-weight="550">⑧ C 再次 Fetch：报告 105</text>
+<rect x="560" y="665" width="730" height="75" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="580" y="699" font-size="23" fill="#0F172A" font-weight="650">⑨ 条件满足：HW → 105，完成复制确认等待</text>
+<path d="M540 785H150" fill="none" stroke="#059669" stroke-width="2.4" stroke-dasharray="7 5" marker-end="url(#green)"/>
+<text x="165" y="773" font-size="19" fill="#059669" font-weight="550">⑩ Produce 成功响应</text>
+<rect x="40" y="870" width="650" height="120" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-opacity=".4"/>
+<text x="60" y="904" font-size="23" fill="#0F172A" font-weight="650">替代分支 A：追加前不满足 minISR</text>
+<text x="60" y="937" font-size="21" fill="#475569" font-weight="400">NOT_ENOUGH_REPLICAS：本次尝试被拒绝。</text>
+<text x="60" y="966" font-size="21" fill="#475569" font-weight="400">不代表同一业务事件的其他尝试从未写入。</text>
+<rect x="750" y="870" width="650" height="120" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="770" y="904" font-size="23" fill="#0F172A" font-weight="650">替代分支 B：追加后等待失败</text>
+<text x="770" y="937" font-size="21" fill="#475569" font-weight="400">ISR / Leader 变化、AFTER_APPEND 或等待超时。</text>
+<text x="770" y="966" font-size="21" fill="#475569" font-weight="400">不是发生错误就自动回滚已追加的尾部。</text>
+<rect x="40" y="1040" width="1360" height="115" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="60" y="1074" font-size="23" fill="#0F172A" font-weight="650">替代分支 C：成功响应在网络中丢失 → Producer 结果未知</text>
+<text x="60" y="1107" font-size="21" fill="#475569" font-weight="400">Broker 可能已复制提交；客户端超时不能证明没有写入。协议幂等处理相应重试，业务仍需稳定事件 ID。</text>
+<text x="60" y="1136" font-size="21" fill="#475569" font-weight="400">acks=1 在本地追加后可提前响应；acks=0 不等待 Broker 生产响应。各路线都不等于逐副本 fsync 或外部业务成功。</text>
+<text x="40" y="1200" font-size="20" fill="#475569" font-weight="400">异常框是替代路径，不是每次请求都会经过的后续步骤；Follower 不直接给 Producer 回 ACK。</text>
+</g></svg>

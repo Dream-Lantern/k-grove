@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1250" viewBox="0 0 1440 1250" role="img" aria-labelledby="title desc"><title id="title">KRaft 控制面、业务分区与消费组协调</title><desc id="desc">Kafka 3.9 · 分离部署示意；Controller 元数据日志、orders 业务日志、组位点日志相互独立。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1250" rx="16" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">KRaft 控制面、业务分区与消费组协调</text>
+<text x="40" y="83" font-size="20" fill="#475569" font-weight="400">Kafka 3.9 · 分离部署示意；Controller 元数据日志、orders 业务日志、组位点日志相互独立。</text>
+<text x="40" y="125" font-size="23" fill="#7C3AED" font-weight="650">控制面：3 个投票 Controller，多数派为 2</text>
+<rect x="40" y="190" width="400" height="112" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="60" y="224" font-size="23" fill="#0F172A" font-weight="650">C1 / Active Controller</text>
+<text x="60" y="255" font-size="20" fill="#475569" font-weight="400">Metadata Log / __cluster_metadata</text>
+<text x="60" y="282" font-size="20" fill="#475569" font-weight="400">Quorum Leader；产生元数据变更</text>
+<rect x="520" y="190" width="400" height="112" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="540" y="224" font-size="23" fill="#0F172A" font-weight="650">C2 / Follower Controller</text>
+<text x="540" y="255" font-size="20" fill="#475569" font-weight="400">主动 Fetch 元数据日志</text>
+<text x="540" y="282" font-size="20" fill="#475569" font-weight="400">有投票权</text>
+<rect x="1000" y="190" width="400" height="112" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="1020" y="224" font-size="23" fill="#0F172A" font-weight="650">C3 / Follower Controller</text>
+<text x="1020" y="255" font-size="20" fill="#475569" font-weight="400">主动 Fetch 元数据日志</text>
+<text x="1020" y="282" font-size="20" fill="#475569" font-weight="400">有投票权</text>
+<path d="M520 218H440" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<text x="448" y="204" font-size="18" fill="#7C3AED" font-weight="550">Fetch</text>
+<path d="M440 277H520" fill="none" stroke="#7C3AED" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#purple)"/>
+<text x="445" y="265" font-size="18" fill="#7C3AED" font-weight="550">日志响应</text>
+<path d="M1200 190V151H240V190" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<text x="840" y="143" font-size="18" fill="#7C3AED" font-weight="550">C3 → C1：Fetch 请求</text>
+<path d="M240 302V345H1200V302" fill="none" stroke="#7C3AED" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#purple)"/>
+<text x="850" y="336" font-size="18" fill="#7C3AED" font-weight="550">C1 → C3：日志响应</text>
+<rect x="40" y="390" width="1360" height="115" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="60" y="424" font-size="23" fill="#0F172A" font-weight="650">多数派提交 → Broker 元数据视图</text>
+<text x="60" y="455" font-size="20" fill="#475569" font-weight="400">Controller 复制进度推进元数据 HW；Broker 作为 Observer 主动获取并应用已提交更新。</text>
+<text x="60" y="482" font-size="20" fill="#475569" font-weight="400">Snapshot 保存元数据状态；追赶时加载快照并重放后续日志，不是订单数据备份。</text>
+<path d="M240 345V390" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<path d="M240 505V580" fill="none" stroke="#7C3AED" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#purple)"/>
+<path d="M720 505V580" fill="none" stroke="#7C3AED" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#purple)"/>
+<path d="M1200 505V580" fill="none" stroke="#7C3AED" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#purple)"/>
+<text x="54" y="554" font-size="18" fill="#7C3AED" font-weight="550">已提交元数据供各 Broker 应用（虚线表示元数据路径）</text>
+<rect x="40" y="580" width="400" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="614" font-size="23" fill="#0F172A" font-weight="650">Broker A / orders P0 Leader</text>
+<text x="60" y="645" font-size="20" fill="#475569" font-weight="400">承载订单分区日志</text>
+<text x="60" y="672" font-size="20" fill="#475569" font-weight="400">接受 Produce，默认服务消费 Fetch</text>
+<rect x="520" y="580" width="400" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="540" y="614" font-size="23" fill="#0F172A" font-weight="650">Broker B / P0 Follower</text>
+<text x="540" y="645" font-size="20" fill="#475569" font-weight="400">拉取订单记录副本</text>
+<text x="540" y="672" font-size="20" fill="#475569" font-weight="400">与 Controller 日志不是同一机制</text>
+<rect x="1000" y="580" width="400" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="1020" y="614" font-size="23" fill="#0F172A" font-weight="650">Broker C / P0 Follower</text>
+<text x="1020" y="645" font-size="20" fill="#475569" font-weight="400">拉取订单记录副本</text>
+<text x="1020" y="672" font-size="20" fill="#475569" font-weight="400">业务复制提交基于 ISR 等条件</text>
+<path d="M520 607H440" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="448" y="594" font-size="18" fill="#2563EB" font-weight="550">Fetch</text>
+<path d="M440 667H520" fill="none" stroke="#2563EB" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#blue)"/>
+<text x="445" y="654" font-size="18" fill="#2563EB" font-weight="550">订单响应</text>
+<path d="M1200 692V747H240V692" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="850" y="738" font-size="18" fill="#2563EB" font-weight="550">C → A：业务 Fetch 请求</text>
+<path d="M240 692V790H1270V692" fill="none" stroke="#2563EB" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#blue)"/>
+<text x="850" y="781" font-size="18" fill="#2563EB" font-weight="550">A → C：业务记录响应</text>
+<rect x="40" y="880" width="400" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="914" font-size="23" fill="#0F172A" font-weight="650">Producer / Consumer</text>
+<text x="60" y="945" font-size="20" fill="#475569" font-weight="400">Producer 写 P0；Consumer 主动读 P0</text>
+<text x="60" y="972" font-size="20" fill="#475569" font-weight="400">不是向 Controller 发送每条订单</text>
+<path d="M140 880V692" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="55" y="839" font-size="18" fill="#2563EB" font-weight="550">Produce / Fetch</text>
+<path d="M340 692V880" fill="none" stroke="#2563EB" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#blue)"/>
+<text x="355" y="854" font-size="18" fill="#2563EB" font-weight="550">请求结果</text>
+<rect x="830" y="880" width="570" height="112" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="850" y="914" font-size="23" fill="#0F172A" font-weight="650">某 Broker / Group Coordinator</text>
+<text x="850" y="945" font-size="20" fill="#475569" font-weight="400">处理组成员协调与 OffsetCommit / OffsetFetch</text>
+<text x="850" y="972" font-size="20" fill="#475569" font-weight="400">持久化到负责的 __consumer_offsets 分区</text>
+<path d="M440 908H830" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<text x="475" y="896" font-size="18" fill="#059669" font-weight="550">组协调 / 提交恢复位点</text>
+<path d="M830 965H440" fill="none" stroke="#059669" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#green)"/>
+<text x="475" y="953" font-size="18" fill="#059669" font-weight="550">协调 / 提交结果</text>
+<rect x="40" y="1080" width="1360" height="115" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="1114" font-size="23" fill="#0F172A" font-weight="650">角色与故障边界</text>
+<text x="60" y="1145" font-size="20" fill="#475569" font-weight="400">一个 Broker 可兼任多个分区角色及 Coordinator；合并部署时也可承载 Controller。</text>
+<text x="60" y="1172" font-size="20" fill="#475569" font-weight="400">Controller 多数派丢失会阻塞新元数据提交；已有业务能否继续，另看业务 Leader、ISR 与后续故障。</text>
+<text x="40" y="1230" font-size="18" fill="#475569" font-weight="400">实线为请求或流程方向；虚线为响应 / 元数据传播，均以文字标签区分。Broker 的 Observer Fetch 请求在上方摘要中说明。</text>
+</g></svg>

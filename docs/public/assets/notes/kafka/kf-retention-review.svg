@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1200" viewBox="0 0 1440 1200" role="img" aria-labelledby="title desc"><title id="title">Delete 与 Compact：两条清理路径</title><desc id="desc">Kafka 3.9.0 · Cleaner 核心路径，不穷举事务、恢复和异常分支；消费组提交不触发即时删除。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1200" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">Delete 与 Compact：两条清理路径</text>
+<text x="40" y="85" font-size="20" fill="#475569" font-weight="400">Kafka 3.9.0 · Cleaner 核心路径，不穷举事务、恢复和异常分支；消费组提交不触发即时删除。</text>
+<rect x="40" y="130" width="1360" height="100" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-opacity=".4"/>
+<text x="60" y="164" font-size="23" fill="#0F172A" font-weight="650">已追加的分区日志</text>
+<text x="60" y="196" font-size="20" fill="#475569" font-weight="400">组位点与日志保留独立；cleanup.policy 可选 delete、compact，或组合二者。</text>
+<rect x="40" y="310" width="430" height="140" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="344" font-size="23" fill="#0F172A" font-weight="650">Delete：按时间 / 大小评估</text>
+<text x="60" y="376" font-size="20" fill="#475569" font-weight="400">以符合条件的旧段为清理单位。</text>
+<text x="60" y="404" font-size="20" fill="#475569" font-weight="400">不等待所有 Consumer Group 读完。</text>
+<text x="60" y="432" font-size="20" fill="#475569" font-weight="400">活动段与异步检查影响回收。</text>
+<rect x="590" y="310" width="810" height="110" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="610" y="344" font-size="23" fill="#0F172A" font-weight="650">① Compact：资格与范围判断</text>
+<text x="610" y="376" font-size="20" fill="#475569" font-weight="400">Clean / Dirty、字节比例、Compaction Lag、LSO、非活动段。</text>
+<text x="610" y="404" font-size="20" fill="#475569" font-weight="400">不合格继续等待；不是每条写入都同步清理。</text>
+<path d="M260 230V310" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<path d="M1000 230V310" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<rect x="590" y="490" width="810" height="100" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="610" y="524" font-size="23" fill="#0F172A" font-weight="650">② 构建 Key → 最新 Offset 映射</text>
+<text x="610" y="556" font-size="20" fill="#475569" font-weight="400">本轮可覆盖范围内建映射，受内存与扫描上界限制。</text>
+<path d="M1000 420V490" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<text x="1020" y="460" font-size="18" fill="#7C3AED" font-weight="400">合格</text>
+<rect x="590" y="660" width="810" height="110" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="610" y="694" font-size="23" fill="#0F172A" font-weight="650">③ 重写 Segment 与索引</text>
+<text x="610" y="726" font-size="20" fill="#475569" font-weight="400">保留适用的新值、仍需保留的 Tombstone 和必要批次状态。</text>
+<text x="610" y="754" font-size="20" fill="#475569" font-weight="400">不是在原文件逐条挖洞，也不重新编号 Offset。</text>
+<path d="M1000 590V660" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<rect x="590" y="840" width="810" height="100" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="610" y="874" font-size="23" fill="#0F172A" font-weight="650">④ 替换段，更新清理进度</text>
+<text x="610" y="906" font-size="20" fill="#475569" font-weight="400">受控替换后按适用流程回收旧文件；不伪造同步完成时刻。</text>
+<path d="M1000 770V840" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<rect x="40" y="530" width="430" height="120" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="564" font-size="23" fill="#0F172A" font-weight="650">Delete 结果</text>
+<text x="60" y="596" font-size="20" fill="#475569" font-weight="400">旧段可被淘汰，日志起点可前移。</text>
+<text x="60" y="624" font-size="20" fill="#475569" font-weight="400">不能从 earliest 找回已删除历史。</text>
+<path d="M260 450V530" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<rect x="40" y="840" width="430" height="100" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="874" font-size="23" fill="#0F172A" font-weight="650">等待 / 异常处理</text>
+<text x="60" y="906" font-size="20" fill="#475569" font-weight="400">不满足条件或失败时不宣称已清理。</text>
+<path d="M590 365H515V890H470" fill="none" stroke="#D97706" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#orange)"/>
+<text x="483" y="710" font-size="18" fill="#D97706" font-weight="400">等待</text>
+<rect x="40" y="1020" width="1360" height="110" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-opacity=".4"/>
+<text x="60" y="1054" font-size="23" fill="#0F172A" font-weight="650">⑤ 消费者继续读取实际保留的记录</text>
+<text x="60" y="1086" font-size="20" fill="#475569" font-weight="400">例：10:A=v1，11:B=x1，12:A=v2，13:A=null → 清理后可能保留 11/13 → 删除标记后续也可能回收。</text>
+<text x="60" y="1114" font-size="20" fill="#475569" font-weight="400">以上均有正文中的资格与窗口前提；Compact 内部空洞与 Delete 推进起点不是同一件事。</text>
+<path d="M1000 940V1020" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<path d="M260 650V780H15V1075H40" fill="none" stroke="#D97706" stroke-width="2.3"  marker-end="url(#orange)"/>
+</g></svg>

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1270" viewBox="0 0 1440 1270" role="img" aria-labelledby="title desc"><title id="title">Magic=2 Record Batch：批头、校验范围与批内记录</title><desc id="desc">Kafka 3.9.0 · 字节偏移来自 DefaultRecordBatch 定义；Offset/时间戳算例为教学值，不是文件实测。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1270" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">Magic=2 Record Batch：批头、校验范围与批内记录</text>
+<text x="40" y="85" font-size="20" fill="#475569" font-weight="400">Kafka 3.9.0 · 字节偏移来自 DefaultRecordBatch 定义；Offset/时间戳算例为教学值，不是文件实测。</text>
+<rect x="40" y="130" width="1360" height="100" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-opacity=".4"/>
+<text x="60" y="164" font-size="23" fill="#0F172A" font-weight="650">批次总大小 = 12 + batchLength；records 区域从第 61 字节开始</text>
+<text x="60" y="197" font-size="21" fill="#475569" font-weight="400">baseOffset 是逻辑 Offset；下方“第 N 字节”才是相对于批次开头的物理位置。</text>
+<text x="40" y="280" font-size="24" fill="#0F172A" font-weight="650">批头字段：起始字节 / 长度</text>
+<rect x="40" y="310" width="650" height="68" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="344" font-size="23" fill="#0F172A" font-weight="650">0 / 8    baseOffset</text>
+<text x="60" y="366" font-size="18" fill="#475569" font-weight="400">逻辑基准 Offset</text>
+<rect x="750" y="310" width="650" height="68" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="770" y="344" font-size="23" fill="#0F172A" font-weight="650">8 / 4    batchLength</text>
+<text x="770" y="366" font-size="18" fill="#475569" font-weight="400">后续批次长度</text>
+<rect x="40" y="391" width="650" height="68" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="425" font-size="23" fill="#0F172A" font-weight="650">12 / 4    partitionLeaderEpoch</text>
+<text x="60" y="447" font-size="18" fill="#475569" font-weight="400">分区领导代际</text>
+<rect x="750" y="391" width="650" height="68" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="770" y="425" font-size="23" fill="#0F172A" font-weight="650">16 / 1    magic = 2</text>
+<text x="770" y="447" font-size="18" fill="#475569" font-weight="400">格式标识</text>
+<rect x="40" y="472" width="650" height="68" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="506" font-size="23" fill="#0F172A" font-weight="650">17 / 4    crc</text>
+<text x="60" y="528" font-size="18" fill="#475569" font-weight="400">CRC-32C 值</text>
+<rect x="750" y="472" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="770" y="506" font-size="23" fill="#0F172A" font-weight="650">21 / 2    attributes</text>
+<text x="770" y="528" font-size="18" fill="#475569" font-weight="400">压缩 / 时间戳 / 事务标志</text>
+<rect x="40" y="553" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="60" y="587" font-size="23" fill="#0F172A" font-weight="650">23 / 4    lastOffsetDelta</text>
+<text x="60" y="609" font-size="18" fill="#475569" font-weight="400">批末逻辑位点差</text>
+<rect x="750" y="553" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="770" y="587" font-size="23" fill="#0F172A" font-weight="650">27 / 8    baseTimestamp</text>
+<text x="770" y="609" font-size="18" fill="#475569" font-weight="400">基准时间戳</text>
+<rect x="40" y="634" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="60" y="668" font-size="23" fill="#0F172A" font-weight="650">35 / 8    maxTimestamp</text>
+<text x="60" y="690" font-size="18" fill="#475569" font-weight="400">最大时间戳</text>
+<rect x="750" y="634" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="770" y="668" font-size="23" fill="#0F172A" font-weight="650">43 / 8    producerId</text>
+<text x="770" y="690" font-size="18" fill="#475569" font-weight="400">生产者身份</text>
+<rect x="40" y="715" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="60" y="749" font-size="23" fill="#0F172A" font-weight="650">51 / 2    producerEpoch</text>
+<text x="60" y="771" font-size="18" fill="#475569" font-weight="400">生产者代际</text>
+<rect x="750" y="715" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="770" y="749" font-size="23" fill="#0F172A" font-weight="650">53 / 4    baseSequence</text>
+<text x="770" y="771" font-size="18" fill="#475569" font-weight="400">分区序列基准</text>
+<rect x="40" y="796" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="60" y="830" font-size="23" fill="#0F172A" font-weight="650">57 / 4    recordsCount</text>
+<text x="60" y="852" font-size="18" fill="#475569" font-weight="400">记录数量</text>
+<rect x="750" y="796" width="650" height="68" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="770" y="830" font-size="23" fill="#0F172A" font-weight="650">61 / 可变    records</text>
+<text x="770" y="852" font-size="18" fill="#475569" font-weight="400">可压缩的批内记录区域</text>
+<rect x="40" y="920" width="650" height="115" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="60" y="954" font-size="23" fill="#0F172A" font-weight="650">CRC-32C：从第 21 字节至批次末尾</text>
+<text x="60" y="987" font-size="21" fill="#475569" font-weight="400">不含 baseOffset、length、epoch、magic 和 crc 自身。</text>
+<text x="60" y="1016" font-size="21" fill="#475569" font-weight="400">与 Key 路由的 CRC32 算法不同；不是安全签名。</text>
+<rect x="750" y="920" width="650" height="115" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="770" y="954" font-size="23" fill="#0F172A" font-weight="650">批内 Record：可变长编码</text>
+<text x="770" y="987" font-size="21" fill="#475569" font-weight="400">length / attributes / timestampDelta / offsetDelta</text>
+<text x="770" y="1016" font-size="21" fill="#475569" font-weight="400">Key / Value / Headers；批头不一起压缩。</text>
+<rect x="40" y="1090" width="1360" height="120" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="1124" font-size="23" fill="#0F172A" font-weight="650">逻辑值推演与清理空洞</text>
+<text x="60" y="1157" font-size="21" fill="#475569" font-weight="400">Offset：base=1000、delta=6 → 1006；CreateTime 示例：1700000000000 + 25ms。</text>
+<text x="60" y="1186" font-size="21" fill="#475569" font-weight="400">Compaction 后若只留 1001 / 1006 / 1008：recordsCount=3，但 lastOffsetDelta 仍可为 8，不重新编号。</text>
+<text x="40" y="1250" font-size="19" fill="#475569" font-weight="400">颜色区分校验覆盖与说明区域；图为字段表而非按字节比例缩放。格式解析应按固定版本源码，不使用旧 Message 偏移表。</text>
+</g></svg>

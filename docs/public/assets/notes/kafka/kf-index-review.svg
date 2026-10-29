@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1050" viewBox="0 0 1440 1050" role="img" aria-labelledby="title desc"><title id="title">Offset 1006：先选 Segment，再查 Index，最后解析 Batch</title><desc id="desc">Kafka 3.9.0 · 合成条目与物理字节位置；不是实际日志测量。baseOffset=1000，不把 Offset 当字节数。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1050" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">Offset 1006：先选 Segment，再查 Index，最后解析 Batch</text>
+<text x="40" y="85" font-size="20" fill="#475569" font-weight="400">Kafka 3.9.0 · 合成条目与物理字节位置；不是实际日志测量。baseOffset=1000，不把 Offset 当字节数。</text>
+<rect x="40" y="130" width="430" height="150" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-opacity=".4"/>
+<text x="60" y="164" font-size="23" fill="#0F172A" font-weight="650">① 分区目录 orders-0</text>
+<text x="60" y="197" font-size="21" fill="#475569" font-weight="400">base=0：较早段</text>
+<text x="60" y="226" font-size="21" fill="#475569" font-weight="400">base=1000：目标段</text>
+<text x="60" y="255" font-size="21" fill="#475569" font-weight="400">base=2000：本例活动段</text>
+<rect x="600" y="130" width="800" height="150" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="620" y="164" font-size="23" fill="#0F172A" font-weight="650">② 选择 base=1000 的段文件集合</text>
+<text x="620" y="197" font-size="21" fill="#475569" font-weight="400">00000000000000001000.log / .index / .timeindex</text>
+<text x="620" y="226" font-size="21" fill="#475569" font-weight="400">适用事务路径还有 .txnindex；不是每条记录一个文件。</text>
+<text x="620" y="255" font-size="21" fill="#475569" font-weight="400">目标在保留/可读范围内，下一段基准为 2000。</text>
+<path d="M470 205H600" fill="none" stroke="#2563EB" stroke-width="2.4"  marker-end="url(#blue)"/>
+<text x="485" y="185" font-size="18" fill="#475569" font-weight="400">选目标段</text>
+<rect x="40" y="350" width="650" height="210" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="60" y="384" font-size="23" fill="#0F172A" font-weight="650">③ 相对索引：1006 - 1000 = 6</text>
+<text x="62" y="417" font-size="19" fill="#475569" font-weight="400">relativeOffset</text>
+<text x="267" y="417" font-size="19" fill="#475569" font-weight="400">absoluteOffset</text>
+<text x="472" y="417" font-size="19" fill="#475569" font-weight="400">position（字节）</text>
+<text x="62" y="453" font-size="21" fill="#475569" font-weight="400">0</text>
+<text x="267" y="453" font-size="21" fill="#475569" font-weight="400">1000</text>
+<text x="472" y="453" font-size="21" fill="#475569" font-weight="400">0</text>
+<text x="62" y="483" font-size="21" fill="#475569" font-weight="400">4</text>
+<text x="267" y="483" font-size="21" fill="#475569" font-weight="400">1004</text>
+<text x="472" y="483" font-size="21" fill="#475569" font-weight="400">320</text>
+<text x="62" y="513" font-size="21" fill="#475569" font-weight="400">8</text>
+<text x="267" y="513" font-size="21" fill="#475569" font-weight="400">1008</text>
+<text x="472" y="513" font-size="21" fill="#475569" font-weight="400">900</text>
+<rect x="800" y="350" width="600" height="210" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="820" y="384" font-size="23" fill="#0F172A" font-weight="650">④ lookup(1006)，不是 lookup(6)</text>
+<text x="820" y="417" font-size="21" fill="#475569" font-weight="400">选最大下界：relative=4 ≤ 6</text>
+<text x="820" y="446" font-size="21" fill="#475569" font-weight="400">返回 OffsetPosition(1004, 320)</text>
+<text x="820" y="475" font-size="21" fill="#475569" font-weight="400">append(1004, 320) 才是 API 的输入形式。</text>
+<text x="820" y="504" font-size="21" fill="#475569" font-weight="400">相对值由索引内部计算；条目为 4+4 字节。</text>
+<path d="M1000 280V350" fill="none" stroke="#7C3AED" stroke-width="2.4"  marker-end="url(#purple)"/>
+<path d="M690 450H800" fill="none" stroke="#7C3AED" stroke-width="2.4"  marker-end="url(#purple)"/>
+<text x="700" y="430" font-size="18" fill="#475569" font-weight="400">下界搜索</text>
+<rect x="40" y="650" width="650" height="150" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="684" font-size="23" fill="#0F172A" font-weight="650">⑤ 从 .log 物理位置 320 继续扫描</text>
+<text x="60" y="717" font-size="21" fill="#475569" font-weight="400">Position 是批次扫描入口，不是目标 Record 的地址。</text>
+<text x="60" y="746" font-size="21" fill="#475569" font-weight="400">跳过不覆盖目标的批次，按需解压 records。</text>
+<text x="60" y="775" font-size="21" fill="#475569" font-weight="400">不能 baseOffset + position 来计算消息 Offset。</text>
+<rect x="800" y="650" width="600" height="150" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="820" y="684" font-size="23" fill="#0F172A" font-weight="650">⑥ 查找 Record 或后续可用记录</text>
+<text x="820" y="717" font-size="21" fill="#475569" font-weight="400">Record offset = batch.baseOffset + offsetDelta</text>
+<text x="820" y="746" font-size="21" fill="#475569" font-weight="400">1006 可能因 Compaction 已消失。</text>
+<text x="820" y="775" font-size="21" fill="#475569" font-weight="400">还要服从日志起点、HW / LSO 等可见范围。</text>
+<path d="M1100 560V605H360V650" fill="none" stroke="#2563EB" stroke-width="2.4"  marker-end="url(#blue)"/>
+<text x="700" y="595" font-size="18" fill="#475569" font-weight="400">到数据文件扫描</text>
+<path d="M690 725H800" fill="none" stroke="#2563EB" stroke-width="2.4"  marker-end="url(#blue)"/>
+<text x="700" y="705" font-size="18" fill="#475569" font-weight="400">解析记录</text>
+<rect x="40" y="875" width="1360" height="115" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="909" font-size="23" fill="#0F172A" font-weight="650">稀疏与生命周期边界</text>
+<text x="60" y="942" font-size="21" fill="#475569" font-weight="400">index.interval.bytes 按累计字节与追加边界建索引，不是每条消息都建。索引为空时从段基准、位置 0 扫描。</text>
+<text x="60" y="971" font-size="21" fill="#475569" font-weight="400">Append / Roll / Flush / Retention / Compaction 是不同动作；3 个副本各有本地文件，不共享一份磁盘目录。</text>
+</g></svg>

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1270" viewBox="0 0 1440 1270" role="img" aria-labelledby="title desc"><title id="title">协议幂等：身份、批次范围与投递结果</title><desc id="desc">Kafka 3.9.0 / librdkafka v2.8.0 · PID=100、Epoch=0、orders-0，序列与 Offset 均为教学数据。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1270" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">协议幂等：身份、批次范围与投递结果</text>
+<text x="40" y="85" font-size="20" fill="#475569" font-weight="400">Kafka 3.9.0 / librdkafka v2.8.0 · PID=100、Epoch=0、orders-0，序列与 Offset 均为教学数据。</text>
+<rect x="40" y="130" width="500" height="120" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="164" font-size="23" fill="#0F172A" font-weight="650">① Producer 发送 Batch1</text>
+<text x="60" y="196" font-size="20" fill="#475569" font-weight="400">baseSequence=0，lastSequence=2。</text>
+<text x="60" y="224" font-size="20" fill="#475569" font-weight="400">应用事件 ID 与协议序列不是同一个字段。</text>
+<rect x="750" y="130" width="650" height="120" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="770" y="164" font-size="23" fill="#0F172A" font-weight="650">② Broker 校验生产者状态</text>
+<text x="770" y="196" font-size="20" fill="#475569" font-weight="400">ProducerStateManager：按分区维护 PID / Epoch 等。</text>
+<text x="770" y="224" font-size="20" fill="#475569" font-weight="400">正常序列、代际、适用事务状态需合法。</text>
+<path d="M540 190H750" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="565" y="168" font-size="18" fill="#475569" font-weight="400">Produce 请求</text>
+<rect x="750" y="350" width="650" height="120" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="770" y="384" font-size="23" fill="#0F172A" font-weight="650">③ 追加并保存最近批次元数据</text>
+<text x="770" y="416" font-size="20" fill="#475569" font-weight="400">假设日志 Offset=500～502，复制确认完成。</text>
+<text x="770" y="444" font-size="20" fill="#475569" font-weight="400">缓存同 Epoch 的完整序列范围等信息。</text>
+<path d="M1075 250V350" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<rect x="40" y="350" width="500" height="120" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="384" font-size="23" fill="#0F172A" font-weight="650">④ ACK 在网络中丢失</text>
+<text x="60" y="416" font-size="20" fill="#475569" font-weight="400">Producer 看到未知结果。</text>
+<text x="60" y="444" font-size="20" fill="#475569" font-weight="400">不是 Broker 自动回滚了本次追加。</text>
+<path d="M750 410H540" fill="none" stroke="#D97706" stroke-width="2.3" stroke-dasharray="7 5" marker-end="url(#orange)"/>
+<text x="560" y="388" font-size="18" fill="#D97706" font-weight="400">响应丢失的情形</text>
+<rect x="40" y="570" width="500" height="120" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="604" font-size="23" fill="#0F172A" font-weight="650">⑤ 协议重试相同 Batch</text>
+<text x="60" y="636" font-size="20" fill="#475569" font-weight="400">保留 PID=100 / Epoch=0 / Seq=0～2。</text>
+<text x="60" y="664" font-size="20" fill="#475569" font-weight="400">不是应用重新 send 一条新记录。</text>
+<path d="M290 470V570" fill="none" stroke="#D97706" stroke-width="2.3"  marker-end="url(#orange)"/>
+<rect x="750" y="570" width="650" height="120" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="770" y="604" font-size="23" fill="#0F172A" font-weight="650">⑥ 命中重复范围 → 返回原结果</text>
+<text x="770" y="636" font-size="20" fill="#475569" font-weight="400">findDuplicateBatch：相同 Epoch、first/last Sequence。</text>
+<text x="770" y="664" font-size="20" fill="#475569" font-weight="400">不再次追加；不合法且未命中的序列走错误/恢复路径。</text>
+<path d="M540 630H750" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="565" y="608" font-size="18" fill="#475569" font-weight="400">同批次重试</text>
+<text x="40" y="765" font-size="24" fill="#0F172A" font-weight="650">C Delivery Report：以下是独立的状态判断分支，不是本例同时出现三种状态</text>
+<rect x="40" y="805" width="420" height="130" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="839" font-size="23" fill="#0F172A" font-weight="650">NOT_PERSISTED</text>
+<text x="60" y="871" font-size="20" fill="#475569" font-weight="400">未发送或确定本次未写入。</text>
+<text x="60" y="899" font-size="20" fill="#475569" font-weight="400">按预算恢复，仍需考虑其他尝试。</text>
+<rect x="510" y="805" width="420" height="130" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="530" y="839" font-size="23" fill="#0F172A" font-weight="650">POSSIBLY_PERSISTED</text>
+<text x="530" y="871" font-size="20" fill="#475569" font-weight="400">已发送但确认未知。</text>
+<text x="530" y="899" font-size="20" fill="#475569" font-weight="400">保留证据，新 send 有重复风险。</text>
+<rect x="980" y="805" width="420" height="130" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="1000" y="839" font-size="23" fill="#0F172A" font-weight="650">PERSISTED</text>
+<text x="1000" y="871" font-size="20" fill="#475569" font-weight="400">按适用确认语义已写入并确认。</text>
+<text x="1000" y="899" font-size="20" fill="#475569" font-weight="400">不是 fsync / 事务 / 业务成功证明。</text>
+<text x="1000" y="927" font-size="20" fill="#475569" font-weight="400">仅在 acks=all 下信任此状态。</text>
+<rect x="40" y="1020" width="1360" height="140" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-opacity=".4"/>
+<text x="60" y="1054" font-size="23" fill="#0F172A" font-weight="650">新业务发送、Java 处理与能力边界</text>
+<text x="60" y="1086" font-size="20" fill="#475569" font-weight="400">应用新 send / Outbox 重发通常是新序列，仍需 event_id 和消费端幂等；相同 Key 不自动去重。</text>
+<text x="60" y="1114" font-size="20" fill="#475569" font-weight="400">Java 用本地异常、Future / Callback 判断，没有同名 C 状态 API；get 等待超时不等于发送被取消。</text>
+<text x="60" y="1142" font-size="20" fill="#475569" font-weight="400">最近批次缓存与恢复有边界；gapless 的实验性选项不覆盖消息超时，应用 1～5 不保证全部连续成功。</text>
+<text x="40" y="1230" font-size="20" fill="#475569" font-weight="400">箭头标明请求、状态演进和响应丢失情形；未知结果不是确定失败。业务序列缺口与 Compaction 的 Offset 空洞不同。</text>
+</g></svg>

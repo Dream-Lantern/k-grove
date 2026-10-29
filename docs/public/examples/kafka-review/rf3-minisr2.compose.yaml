@@ -1,0 +1,69 @@
+# Teaching-only Kafka 3.9.0 replica lab. Not executed in this revision.
+# Start only with a dedicated Compose project; never reuse existing Kafka volumes.
+# No host ports are published. Clients run via exec inside the lab network.
+x-broker-env: &broker-env
+  CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+  KAFKA_PROCESS_ROLES: broker
+  KAFKA_CONTROLLER_QUORUM_VOTERS: 100@controller:9093
+  KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+  KAFKA_LISTENERS: PLAINTEXT://:9092
+  KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  KAFKA_LOG_DIRS: /var/lib/kafka/data
+  KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+  KAFKA_MIN_INSYNC_REPLICAS: "2"
+
+services:
+  controller:
+    image: apache/kafka:3.9.0
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: "100"
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 100@controller:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENERS: CONTROLLER://:9093
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - controller-data:/var/lib/kafka/data
+
+  broker-a:
+    image: apache/kafka:3.9.0
+    depends_on:
+      - controller
+    environment:
+      <<: *broker-env
+      KAFKA_NODE_ID: "1"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-a:9092
+    volumes:
+      - broker-a-data:/var/lib/kafka/data
+
+  broker-b:
+    image: apache/kafka:3.9.0
+    depends_on:
+      - controller
+    environment:
+      <<: *broker-env
+      KAFKA_NODE_ID: "2"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-b:9092
+    volumes:
+      - broker-b-data:/var/lib/kafka/data
+
+  broker-c:
+    image: apache/kafka:3.9.0
+    depends_on:
+      - controller
+    environment:
+      <<: *broker-env
+      KAFKA_NODE_ID: "3"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-c:9092
+    volumes:
+      - broker-c-data:/var/lib/kafka/data
+
+volumes:
+  controller-data:
+  broker-a-data:
+  broker-b-data:
+  broker-c-data:

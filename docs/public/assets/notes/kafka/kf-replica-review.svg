@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1230" viewBox="0 0 1440 1230" role="img" aria-labelledby="title desc"><title id="title">复制进度、ISR 资格与分区提交边界</title><desc id="desc">Kafka 3.9.0 · 教学数据：RF=3、minISR=2；A 是业务分区 Leader，不是 Controller Quorum Leader。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1230" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">复制进度、ISR 资格与分区提交边界</text>
+<text x="40" y="85" font-size="20" fill="#475569" font-weight="400">Kafka 3.9.0 · 教学数据：RF=3、minISR=2；A 是业务分区 Leader，不是 Controller Quorum Leader。</text>
+<rect x="40" y="130" width="350" height="115" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="164" font-size="23" fill="#0F172A" font-weight="650">① Producer → A</text>
+<text x="60" y="197" font-size="21" fill="#475569" font-weight="400">Produce：记录 100～104</text>
+<text x="60" y="226" font-size="21" fill="#475569" font-weight="400">A 的 LEO：100 → 105</text>
+<rect x="545" y="130" width="350" height="115" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="565" y="164" font-size="23" fill="#0F172A" font-weight="650">② B/C 主动 Fetch</text>
+<text x="565" y="197" font-size="21" fill="#475569" font-weight="400">A 返回记录，Follower 本地追加</text>
+<text x="565" y="226" font-size="21" fill="#475569" font-weight="400">下一轮 Fetch 报告更大位置</text>
+<rect x="1050" y="130" width="350" height="115" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="1070" y="164" font-size="23" fill="#0F172A" font-weight="650">③ A 更新已知状态</text>
+<text x="1070" y="197" font-size="21" fill="#475569" font-weight="400">不是直接观察远端磁盘 LEO</text>
+<text x="1070" y="226" font-size="21" fill="#475569" font-weight="400">据此评估 ISR / HW</text>
+<path d="M390 188H545" fill="none" stroke="#2563EB" stroke-width="2.4"  marker-end="url(#blue)"/>
+<text x="410" y="169" font-size="18" fill="#475569" font-weight="400">本地追加</text>
+<path d="M895 188H1050" fill="none" stroke="#2563EB" stroke-width="2.4"  marker-end="url(#blue)"/>
+<text x="907" y="169" font-size="18" fill="#475569" font-weight="400">报告进度</text>
+<rect x="40" y="310" width="1360" height="115" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-opacity=".4"/>
+<text x="60" y="344" font-size="23" fill="#0F172A" font-weight="650">正常复制主线</text>
+<text x="60" y="377" font-size="21" fill="#475569" font-weight="400">A 追加 → B/C Fetch → 本地追加 → 再次 Fetch 报告 → A 评估 HW / ISR → 后续 Fetch 传播 HW</text>
+<text x="60" y="406" font-size="21" fill="#475569" font-weight="400">Follower 复制请求不是 Producer 确认；ISR 更新要经过控制面，不是 Leader 单方面改完就立即生效。</text>
+<path d="M1225 245V310" fill="none" stroke="#7C3AED" stroke-width="2.4"  marker-end="url(#purple)"/>
+<text x="40" y="478" font-size="25" fill="#0F172A" font-weight="650">连续时间线（实际 LEO 与 A 已知进度分别记录）</text>
+<rect x="40" y="500" width="1360" height="327" rx="12" fill="#F8FAFC" stroke="#E2E8F0"/>
+<text x="60" y="536" font-size="21" fill="#0F172A" font-weight="650">时刻</text>
+<text x="180" y="536" font-size="21" fill="#0F172A" font-weight="650">实际 LEO：A / B / C</text>
+<text x="590" y="536" font-size="21" fill="#0F172A" font-weight="650">A 已知：B / C</text>
+<text x="930" y="536" font-size="21" fill="#0F172A" font-weight="650">生效 ISR</text>
+<text x="1200" y="536" font-size="21" fill="#0F172A" font-weight="650">A 的 HW</text>
+<text x="60" y="580" font-size="21" fill="#475569" font-weight="400">T0</text>
+<text x="180" y="580" font-size="21" fill="#475569" font-weight="400">100 / 100 / 100</text>
+<text x="590" y="580" font-size="21" fill="#475569" font-weight="400">100 / 100</text>
+<text x="930" y="580" font-size="21" fill="#475569" font-weight="400">A,B,C</text>
+<text x="1200" y="580" font-size="21" fill="#475569" font-weight="400">100</text>
+<text x="60" y="623" font-size="21" fill="#475569" font-weight="400">T1</text>
+<text x="180" y="623" font-size="21" fill="#475569" font-weight="400">105 / 100 / 100</text>
+<text x="590" y="623" font-size="21" fill="#475569" font-weight="400">100 / 100</text>
+<text x="930" y="623" font-size="21" fill="#475569" font-weight="400">A,B,C</text>
+<text x="1200" y="623" font-size="21" fill="#475569" font-weight="400">100</text>
+<text x="60" y="666" font-size="21" fill="#475569" font-weight="400">T3</text>
+<text x="180" y="666" font-size="21" fill="#475569" font-weight="400">105 / 105 / 100</text>
+<text x="590" y="666" font-size="21" fill="#475569" font-weight="400">103 / 100</text>
+<text x="930" y="666" font-size="21" fill="#475569" font-weight="400">A,B,C</text>
+<text x="1200" y="666" font-size="21" fill="#475569" font-weight="400">100</text>
+<text x="60" y="709" font-size="21" fill="#475569" font-weight="400">T5</text>
+<text x="180" y="709" font-size="21" fill="#475569" font-weight="400">105 / 105 / 100</text>
+<text x="590" y="709" font-size="21" fill="#475569" font-weight="400">105 / 100</text>
+<text x="930" y="709" font-size="21" fill="#475569" font-weight="400">A,B</text>
+<text x="1200" y="709" font-size="21" fill="#475569" font-weight="400">105</text>
+<text x="60" y="752" font-size="21" fill="#475569" font-weight="400">T7</text>
+<text x="180" y="752" font-size="21" fill="#475569" font-weight="400">105 / 105 / 105</text>
+<text x="590" y="752" font-size="21" fill="#475569" font-weight="400">105 / 103</text>
+<text x="930" y="752" font-size="21" fill="#475569" font-weight="400">A,B</text>
+<text x="1200" y="752" font-size="21" fill="#475569" font-weight="400">105</text>
+<text x="60" y="795" font-size="21" fill="#475569" font-weight="400">T8</text>
+<text x="180" y="795" font-size="21" fill="#475569" font-weight="400">105 / 105 / 105</text>
+<text x="590" y="795" font-size="21" fill="#475569" font-weight="400">105 / 105</text>
+<text x="930" y="795" font-size="21" fill="#475569" font-weight="400">A,B,C</text>
+<text x="1200" y="795" font-size="21" fill="#475569" font-weight="400">105</text>
+<rect x="40" y="865" width="650" height="120" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="899" font-size="23" fill="#0F172A" font-weight="650">ISR 收缩 / 扩张</text>
+<text x="60" y="932" font-size="21" fill="#475569" font-weight="400">T5：C 超时且收缩完成；不是“差 5 条即移除”。</text>
+<text x="60" y="961" font-size="21" fill="#475569" font-weight="400">T8：进度、Epoch 与节点资格满足，再完成加入。</text>
+<rect x="750" y="865" width="650" height="120" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="770" y="899" font-size="23" fill="#0F172A" font-weight="650">HW / 读取边界</text>
+<text x="770" y="932" font-size="21" fill="#475569" font-weight="400">低于有效 minISR 时，HW 不再推进。</text>
+<text x="770" y="961" font-size="21" fill="#475569" font-weight="400">HW 用已知进度；传播有延迟，事务还受 LSO 限制。</text>
+<rect x="40" y="1040" width="410" height="115" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="60" y="1074" font-size="23" fill="#0F172A" font-weight="650">Clean：A 故障，B 合格</text>
+<text x="60" y="1107" font-size="21" fill="#475569" font-weight="400">B 可接管已提交历史</text>
+<text x="60" y="1136" font-size="21" fill="#475569" font-weight="400">若只剩 B，all 写入仍不足 minISR</text>
+<rect x="515" y="1040" width="410" height="115" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="535" y="1074" font-size="23" fill="#0F172A" font-weight="650">仅 C 存活，禁止 Unclean</text>
+<text x="535" y="1107" font-size="21" fill="#475569" font-weight="400">C 不在 ISR：等待合格副本</text>
+<text x="535" y="1136" font-size="21" fill="#475569" font-weight="400">无 Leader，业务分区不能正常读写</text>
+<rect x="990" y="1040" width="410" height="115" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-opacity=".4"/>
+<text x="1010" y="1074" font-size="23" fill="#0F172A" font-weight="650">允许 Unclean：C 接管</text>
+<text x="1010" y="1107" font-size="21" fill="#475569" font-weight="400">可能丢失已确认的 100～104</text>
+<text x="1010" y="1136" font-size="21" fill="#475569" font-weight="400">C 单副本仍不满足 minISR=2</text>
+<text x="40" y="1200" font-size="20" fill="#475569" font-weight="400">故障案例独立初始状态：LEO=105/105/100、HW=105、ISR=A/B；正常存储与控制面前提见正文。</text>
+</g></svg>

@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1050" viewBox="0 0 1440 1050" role="img" aria-labelledby="title desc"><title id="title">订单事件：写入、独立消费与恢复位点</title><desc id="desc">Kafka 3.9 · 教学推演：orders / P0，库存组已处理至 798；编号不是跨客户端同步屏障。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1050" rx="16" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">订单事件：写入、独立消费与恢复位点</text>
+<text x="40" y="83" font-size="20" fill="#475569" font-weight="400">Kafka 3.9 · 教学推演：orders / P0，库存组已处理至 798；编号不是跨客户端同步屏障。</text>
+<rect x="40" y="150" width="360" height="112" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-opacity=".4"/>
+<text x="60" y="184" font-size="23" fill="#0F172A" font-weight="650">① 订单服务</text>
+<text x="60" y="215" font-size="20" fill="#475569" font-weight="400">数据库提交订单 O-42</text>
+<text x="60" y="242" font-size="20" fill="#475569" font-weight="400">event_id = evt-42</text>
+<rect x="540" y="150" width="360" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="560" y="184" font-size="23" fill="#0F172A" font-weight="650">② Producer</text>
+<text x="560" y="215" font-size="20" fill="#475569" font-weight="400">序列化 Key / Value，选择 P0</text>
+<text x="560" y="242" font-size="20" fill="#475569" font-weight="400">观察异步结果，不只看入队成功</text>
+<path d="M400 206H540" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="412" y="184" font-size="18" fill="#2563EB" font-weight="550">OrderCreated</text>
+<rect x="1040" y="150" width="360" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="1060" y="184" font-size="23" fill="#0F172A" font-weight="650">③ Broker / P0 Leader</text>
+<text x="1060" y="215" font-size="20" fill="#475569" font-weight="400">追加记录：Offset 799</text>
+<text x="1060" y="242" font-size="20" fill="#475569" font-weight="400">Follower 主动 Fetch 复制</text>
+<path d="M900 206H1040" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="914" y="184" font-size="18" fill="#2563EB" font-weight="550">Produce 请求</text>
+<path d="M1130 150V119H720V150" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<text x="746" y="111" font-size="18" fill="#059669" font-weight="550">④ 写入结果：确认条件满足；不代表库存已完成</text>
+<rect x="40" y="335" width="860" height="150" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="369" font-size="23" fill="#0F172A" font-weight="650">成功边界与保留规则</text>
+<text x="60" y="400" font-size="20" fill="#475569" font-weight="400">acks / ISR / 错误处理决定发送结果；响应丢失可能导致结果未知。</text>
+<text x="60" y="427" font-size="20" fill="#475569" font-weight="400">库存成功与 Kafka 写入是两件事；读过或提交位点不触发即时删除。</text>
+<text x="60" y="454" font-size="20" fill="#475569" font-weight="400">普通日志由 retention 等保留策略管理；库存数据库与 Kafka 双写见正文。</text>
+<rect x="1040" y="335" width="360" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="1060" y="369" font-size="23" fill="#0F172A" font-weight="650">共享逻辑日志</text>
+<text x="1060" y="400" font-size="20" fill="#475569" font-weight="400">… 798 ｜ 799 ｜ 800 …</text>
+<text x="1060" y="427" font-size="20" fill="#475569" font-weight="400">799 的 Value 为订单事件</text>
+<path d="M1220 262V335" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<rect x="40" y="625" width="390" height="112" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="659" font-size="23" fill="#0F172A" font-weight="650">⑤ 库存组 inventory</text>
+<text x="60" y="690" font-size="20" fill="#475569" font-weight="400">负责 P0 的成员主动 Fetch</text>
+<text x="60" y="717" font-size="20" fill="#475569" font-weight="400">poll 后 Position 可到 800</text>
+<rect x="535" y="625" width="390" height="112" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="555" y="659" font-size="23" fill="#0F172A" font-weight="650">⑥ 库存业务数据库</text>
+<text x="555" y="690" font-size="20" fill="#475569" font-weight="400">验证、去重、扣减库存</text>
+<text x="555" y="717" font-size="20" fill="#475569" font-weight="400">确认 799 及此前连续成功</text>
+<path d="M430 681H535" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="441" y="661" font-size="18" fill="#2563EB" font-weight="550">处理 799</text>
+<rect x="1030" y="625" width="370" height="112" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="1050" y="659" font-size="23" fill="#0F172A" font-weight="650">统计组 analytics</text>
+<text x="1050" y="690" font-size="20" fill="#475569" font-weight="400">独立 Fetch 同一份日志</text>
+<text x="1050" y="717" font-size="20" fill="#475569" font-weight="400">可仍停在恢复位置 799</text>
+<path d="M1210 447V500H235V625" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<text x="360" y="526" font-size="18" fill="#2563EB" font-weight="550">Fetch 响应：记录 799（消费者发起请求）</text>
+<path d="M1250 447V625" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<text x="1268" y="558" font-size="18" fill="#7C3AED" font-weight="550">独立读取</text>
+<rect x="535" y="845" width="390" height="112" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="555" y="879" font-size="23" fill="#0F172A" font-weight="650">⑦ 各组的 Coordinator</text>
+<text x="555" y="910" font-size="20" fill="#475569" font-weight="400">保存组 / Topic / 分区恢复位点</text>
+<text x="555" y="937" font-size="20" fill="#475569" font-weight="400">__consumer_offsets</text>
+<path d="M730 737V845" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<text x="747" y="790" font-size="18" fill="#059669" font-weight="550">业务确认后提交 800</text>
+<path d="M1215 737V901H925" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<text x="1055" y="835" font-size="18" fill="#7C3AED" font-weight="550">独立提交 799</text>
+<rect x="40" y="845" width="390" height="112" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="879" font-size="23" fill="#0F172A" font-weight="650">故障恢复</text>
+<text x="60" y="910" font-size="20" fill="#475569" font-weight="400">从已提交位置重新开始</text>
+<text x="60" y="937" font-size="20" fill="#475569" font-weight="400">提交 800 → 下一次从 800 读</text>
+<path d="M535 901H430" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<text x="440" y="879" font-size="18" fill="#7C3AED" font-weight="550">恢复依据</text>
+<text x="40" y="1010" font-size="21" fill="#475569" font-weight="400">异常边界：业务失败不前移提交；业务已成功但提交失败可能重复。独立组共享记录，不共享处理进度。</text>
+</g></svg>

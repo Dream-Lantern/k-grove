@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1240" viewBox="0 0 1440 1240" role="img" aria-labelledby="title desc"><title id="title">Producer：本地接受、后台发送与最终结果</title><desc id="desc">Kafka Java 3.9.0 与 librdkafka v2.8.0 分别说明；Batch 是分区聚合单位，不等于整份 ProduceRequest。</desc><defs>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748B"/></marker>
+</defs><rect width="1440" height="1240" fill="white"/><g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="48" font-size="30" fill="#0F172A" font-weight="700">Producer：本地接受、后台发送与最终结果</text>
+<text x="40" y="85" font-size="20" fill="#475569" font-weight="400">Kafka Java 3.9.0 与 librdkafka v2.8.0 分别说明；Batch 是分区聚合单位，不等于整份 ProduceRequest。</text>
+<rect x="40" y="130" width="410" height="115" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="164" font-size="23" fill="#0F172A" font-weight="650">Java ① send / doSend</text>
+<text x="60" y="196" font-size="20" fill="#475569" font-weight="400">元数据、序列化、大小检查、路由。</text>
+<text x="60" y="224" font-size="20" fill="#475569" font-weight="400">本地等待仍受相应预算约束。</text>
+<rect x="515" y="130" width="410" height="115" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="535" y="164" font-size="23" fill="#0F172A" font-weight="650">Java ② append</text>
+<text x="535" y="196" font-size="20" fill="#475569" font-weight="400">RecordAccumulator 累积记录。</text>
+<text x="535" y="224" font-size="20" fill="#475569" font-weight="400">形成分区 ProducerBatch / Future。</text>
+<rect x="990" y="130" width="410" height="115" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="1010" y="164" font-size="23" fill="#0F172A" font-weight="650">Java ③ ready / drain</text>
+<text x="1010" y="196" font-size="20" fill="#475569" font-weight="400">判断就绪，按 Broker 取出批次。</text>
+<text x="1010" y="224" font-size="20" fill="#475569" font-weight="400">linger / 大小 / 退避等共同作用。</text>
+<path d="M450 188H515" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<path d="M925 188H990" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<rect x="990" y="335" width="410" height="115" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="1010" y="369" font-size="23" fill="#0F172A" font-weight="650">Java ④ Sender / Network</text>
+<text x="1010" y="401" font-size="20" fill="#475569" font-weight="400">构造并发送 ProduceRequest。</text>
+<text x="1010" y="429" font-size="20" fill="#475569" font-weight="400">一个请求可含多个分区。</text>
+<path d="M1195 245V335" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<rect x="515" y="335" width="410" height="115" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="535" y="369" font-size="23" fill="#0F172A" font-weight="650">Broker 响应</text>
+<text x="535" y="401" font-size="20" fill="#475569" font-weight="400">成功、可重试错误或最终失败。</text>
+<text x="535" y="429" font-size="20" fill="#475569" font-weight="400">按 acks / 副本等条件处理。</text>
+<path d="M990 393H925" fill="none" stroke="#7C3AED" stroke-width="2.3"  marker-end="url(#purple)"/>
+<text x="935" y="372" font-size="17" fill="#7C3AED" font-weight="400">结果</text>
+<rect x="40" y="335" width="410" height="115" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="60" y="369" font-size="23" fill="#0F172A" font-weight="650">Java ⑤ Future / Callback</text>
+<text x="60" y="401" font-size="20" fill="#475569" font-weight="400">成功或最终异常，不能丢弃结果。</text>
+<text x="60" y="429" font-size="20" fill="#475569" font-weight="400">可重试错误还可能重新排队。</text>
+<path d="M515 393H450" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<rect x="40" y="535" width="1360" height="110" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="60" y="569" font-size="23" fill="#0F172A" font-weight="650">未知分区与错误边界</text>
+<text x="60" y="601" font-size="20" fill="#475569" font-weight="400">Java 内置无 Key 选择可在 append 路径完成；C 元数据不足时可有内部待决队列，不能当已知分区 Batch。</text>
+<text x="60" y="629" font-size="20" fill="#475569" font-weight="400">本地入队错误、协议重试与最终投递失败分别处理；超时不是 Broker 肯定没写入。</text>
+<rect x="40" y="735" width="410" height="115" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="60" y="769" font-size="23" fill="#0F172A" font-weight="650">C ① producev / 本地队列</text>
+<text x="60" y="801" font-size="20" fill="#475569" font-weight="400">应用先编码字节；检查入队结果。</text>
+<text x="60" y="829" font-size="20" fill="#475569" font-weight="400">Queue Full 可有限 poll / 退避。</text>
+<rect x="515" y="735" width="410" height="115" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-opacity=".4"/>
+<text x="535" y="769" font-size="23" fill="#0F172A" font-weight="650">C ② 后台 Broker 线程</text>
+<text x="535" y="801" font-size="20" fill="#475569" font-weight="400">队列聚合、压缩、请求发送。</text>
+<text x="535" y="829" font-size="20" fill="#475569" font-weight="400">不是 Java 的 Sender 实现。</text>
+<rect x="990" y="735" width="410" height="115" rx="12" fill="#ECFDF5" stroke="#059669" stroke-opacity=".4"/>
+<text x="1010" y="769" font-size="23" fill="#0F172A" font-weight="650">C ③ Delivery Report</text>
+<text x="1010" y="801" font-size="20" fill="#475569" font-weight="400">应用 poll 处理报告与其他回调。</text>
+<text x="1010" y="829" font-size="20" fill="#475569" font-weight="400">查看最终错误及消息状态。</text>
+<path d="M450 793H515" fill="none" stroke="#2563EB" stroke-width="2.3"  marker-end="url(#blue)"/>
+<path d="M925 793H990" fill="none" stroke="#059669" stroke-width="2.3"  marker-end="url(#green)"/>
+<rect x="40" y="945" width="650" height="140" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-opacity=".4"/>
+<text x="60" y="979" font-size="23" fill="#0F172A" font-weight="650">批次预算与客户端差异</text>
+<text x="60" y="1011" font-size="20" fill="#475569" font-weight="400">Java 3.9：batch.size=16384B，linger=0ms。</text>
+<text x="60" y="1039" font-size="20" fill="#475569" font-weight="400">C 2.8：1000000B、5ms、最多 10000 条/批。</text>
+<text x="60" y="1067" font-size="20" fill="#475569" font-weight="400">默认值不是跨客户端相同实现的证明。</text>
+<rect x="750" y="945" width="650" height="140" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-opacity=".4"/>
+<text x="770" y="979" font-size="23" fill="#0F172A" font-weight="650">Backpressure / 关闭</text>
+<text x="770" y="1011" font-size="20" fill="#475569" font-weight="400">有界队列、节流、失败记录及告警。</text>
+<text x="770" y="1039" font-size="20" fill="#475569" font-weight="400">flush 超时不代表未写入；destroy 不保证成功。</text>
+<text x="770" y="1067" font-size="20" fill="#475569" font-weight="400">编码压缩与第 7 章 Compact 是不同操作。</text>
+<text x="40" y="1190" font-size="20" fill="#475569" font-weight="400">教学量级：1000 条/s × 5ms ≈ 5 条、2500B Payload；均匀到 10 分区约每分区 0.5 条，不是实测 Batch。</text>
+</g></svg>
