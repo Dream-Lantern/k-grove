@@ -102,8 +102,8 @@ docs/
 content-config/            # 分类词表与公开展示白名单
 lib/                       # 内容读取、校验和共享查询
 templates/                 # 不同文章类型的 Markdown 模板
-skill-pack/                # 三个自定义 Skill 的维护源
-diagrams/                  # Mermaid 图源与渲染配置
+skill-pack/                # 自定义 Skill 的维护源
+diagrams/                  # Mermaid 与可编辑 SVG 图源、渲染配置
 scripts/                   # 内容、构建产物检查和图示导出
 tests/                     # 内容与导航测试及 fixtures/ 模拟夹具
 governance/                # 内容规范、工具说明与验收记录
@@ -127,11 +127,12 @@ Frontmatter 必填字段为 `id`、`title`、`description`、`date`、`updated`�
 
 ### 辅助 Skill
 
-| Skill                                                    | 职责                                   |
-| -------------------------------------------------------- | -------------------------------------- |
-| [note-organizer](skill-pack/note-organizer/SKILL.md)     | 分类、重复候选、合并建议与来源关系     |
-| [tech-reviewer](skill-pack/tech-reviewer/SKILL.md)       | 技术结论、适用版本、引用证据和待验证项 |
-| [technical-writer](skill-pack/technical-writer/SKILL.md) | 文章结构、术语和表述整理，保留技术结论 |
+| Skill                                                                        | 职责                                    |
+| ---------------------------------------------------------------------------- | --------------------------------------- |
+| [note-organizer](skill-pack/note-organizer/SKILL.md)                         | 分类、重复候选、合并建议与来源关系      |
+| [tech-reviewer](skill-pack/tech-reviewer/SKILL.md)                           | 技术结论、适用版本、引用证据和待验证项  |
+| [technical-writer](skill-pack/technical-writer/SKILL.md)                     | 文章结构、术语和表述整理，保留技术结论  |
+| [technical-diagram-designer](skill-pack/technical-diagram-designer/SKILL.md) | 中文技术图表设计、可编辑 SVG 与渲染验收 |
 
 Skill 源码随项目维护，使用前需安装到 Codex 的用户技能目录。它们辅助整理与审核，不自动删除原文、决定技术争议或授予公开权限。
 

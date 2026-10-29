@@ -1,0 +1,4 @@
+interface:
+  display_name: "中文技术图表设计"
+  short_description: "结合正文绘制可编辑 SVG 技术图表，保留分支与验证边界并渲染验收"
+  default_prompt: "请使用 $technical-diagram-designer 优化指定文章的图表，先核对技术关系，制作一张 SVG 样例并实际渲染检查。"

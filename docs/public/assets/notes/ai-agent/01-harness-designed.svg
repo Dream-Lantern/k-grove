@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1060" viewBox="0 0 1440 1060" role="img" aria-labelledby="title desc">
+<title id="title">Harness：动作选择与明确退出</title>
+<desc id="desc">提交上下文后检查预算，可继续时请求模型并选择工具、回答、等待或拒绝。工具写回轨迹并进入下一轮；回答验证通过才输出结果，未通过且可重试则回到预算检查。等待保持暂停，拒绝或预算耗尽明确退出。虚线节点为建议设计。</desc>
+<defs><marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#2563EB"/></marker><marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#7C3AED"/></marker><marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#059669"/></marker><marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#D97706"/></marker><marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#DC2626"/></marker></defs>
+<style>text{font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#0F172A}.title{font-size:36px;font-weight:700}.subtitle{font-size:23px;fill:#64748B}.node-title{font-size:26px;font-weight:700}.body{font-size:22px;fill:#475569}.small{font-size:20px;fill:#64748B}.label{font-size:21px;font-weight:600;paint-order:stroke;stroke:#FFF;stroke-width:9px;stroke-linejoin:round}.wire{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}</style>
+<rect width="1440" height="1060" rx="20" fill="#FFFFFF"/>
+<text x="60" y="57" class="title">Harness：动作选择与明确退出</text>
+<text x="60" y="94" class="subtitle">以当前状态驱动动作；用预算、验证与明确退出约束循环。</text>
+<rect x="60" y="125" width="1320" height="860" rx="20" fill="#F8FAFC" stroke="#E2E8F0"/>
+<path class="wire" d="M420 226H540" stroke="#2563EB" marker-end="url(#arrow-blue)"/>
+<path class="wire" d="M900 226H1020" stroke="#2563EB" marker-end="url(#arrow-blue)"/>
+<text x="924" y="211" class="label" style="fill:#2563EB">可继续</text>
+<path class="wire" d="M1200 290V386H900" stroke="#2563EB" marker-end="url(#arrow-blue)"/>
+<path class="wire" d="M720 444V491M195 491H1245" stroke="#94A3B8"/>
+<path class="wire" d="M195 491V550" stroke="#2563EB" marker-end="url(#arrow-blue)"/>
+<path class="wire" d="M545 491V550" stroke="#059669" marker-end="url(#arrow-green)"/>
+<path class="wire" d="M895 491V550" stroke="#D97706" marker-end="url(#arrow-orange)"/>
+<path class="wire" d="M1245 491V550" stroke="#DC2626" marker-end="url(#arrow-red)"/>
+<path class="wire" d="M60 612H28V141H720V162" stroke="#2563EB" marker-end="url(#arrow-blue)"/>
+<text x="100" y="137" class="label" style="fill:#2563EB">下一轮：携带当前状态与轨迹</text>
+<path class="wire" d="M410 775H28" stroke="#7C3AED" marker-end="url(#arrow-purple)"/>
+<text x="78" y="758" class="label" style="fill:#7C3AED">未满足且可重试</text>
+<path class="wire" d="M545 674V720" stroke="#7C3AED" marker-end="url(#arrow-purple)"/>
+<text x="565" y="706" class="label" style="fill:#7C3AED">验证结果</text>
+<path class="wire" d="M545 830V869" stroke="#059669" marker-end="url(#arrow-green)"/>
+<text x="567" y="856" class="label" style="fill:#059669">通过</text>
+<path class="wire" d="M895 674V720" stroke="#D97706" marker-end="url(#arrow-orange)"/>
+<path class="wire" d="M1245 674V720" stroke="#DC2626" marker-end="url(#arrow-red)"/>
+<path class="wire" d="M900 178H980V110H1412V775H1380" stroke="#DC2626" marker-end="url(#arrow-red)"/>
+<text x="1094" y="137" class="label" style="fill:#DC2626">预算耗尽</text>
+<g id="context"><rect x="60" y="162" width="360" height="128" rx="14" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="2"/>
+<circle cx="90" cy="194" r="17" fill="#2563EB"/><text x="90" y="201" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">1</text>
+<text x="117" y="203" class="node-title">提交上下文</text>
+<text x="82" y="241" class="body">固定提交片段</text>
+<text x="82" y="272" class="body">用户目标与当前状态</text>
+</g>
+<g id="budget"><rect x="540" y="162" width="360" height="128" rx="14" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="2"/>
+<circle cx="570" cy="194" r="17" fill="#7C3AED"/><text x="570" y="201" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">2</text>
+<text x="597" y="203" class="node-title">评估是否继续</text>
+<text x="562" y="241" class="body">固定提交片段</text>
+<text x="562" y="272" class="body">检查步数 / 可用预算</text>
+</g>
+<g id="model"><rect x="1020" y="162" width="360" height="128" rx="14" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="2"/>
+<circle cx="1050" cy="194" r="17" fill="#2563EB"/><text x="1050" y="201" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">3</text>
+<text x="1077" y="203" class="node-title">请求模型</text>
+<text x="1042" y="241" class="body">组装实际消息</text>
+<text x="1042" y="272" class="body">模型产生动作请求</text>
+</g>
+<g id="decision"><rect x="540" y="330" width="360" height="114" rx="14" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="2" stroke-dasharray="7 5"/>
+<circle cx="570" cy="362" r="17" fill="#7C3AED"/><text x="570" y="369" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">4</text>
+<text x="597" y="371" class="node-title">选择动作类型</text>
+<text x="562" y="409" class="body">工具 / 回答 / 等待 / 拒绝</text>
+</g>
+<text x="142" y="530" class="label" style="fill:#2563EB">工具调用</text>
+<text x="504" y="530" class="label" style="fill:#059669">直接回答</text>
+<text x="845" y="530" class="label" style="fill:#D97706">等待 / 追问</text>
+<text x="1202" y="530" class="label" style="fill:#DC2626">拒绝执行</text>
+<g id="tool"><rect x="60" y="550" width="270" height="124" rx="14" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="2"/>
+<circle cx="90" cy="582" r="17" fill="#2563EB"/><text x="90" y="589" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">A</text>
+<text x="117" y="591" class="node-title">执行工具</text>
+<text x="82" y="629" class="body">校验与授权后执行</text>
+<text x="82" y="660" class="body">结果 / 错误写回轨迹</text>
+</g>
+<g id="answer"><rect x="410" y="550" width="270" height="124" rx="14" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="2" stroke-dasharray="7 5"/>
+<circle cx="440" cy="582" r="17" fill="#059669"/><text x="440" y="589" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">B</text>
+<text x="467" y="591" class="node-title">候选回答</text>
+<text x="432" y="629" class="body">模型给出回答</text>
+<text x="432" y="660" class="body">不等于任务已完成</text>
+</g>
+<g id="wait"><rect x="760" y="550" width="270" height="124" rx="14" fill="#FFFBEB" stroke="#FDE68A" stroke-width="2" stroke-dasharray="7 5"/>
+<circle cx="790" cy="582" r="17" fill="#D97706"/><text x="790" y="589" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">C</text>
+<text x="817" y="591" class="node-title">等待或追问</text>
+<text x="782" y="629" class="body">等待事件 / 用户输入</text>
+<text x="782" y="660" class="body">检查点为建议设计</text>
+</g>
+<g id="refuse"><rect x="1110" y="550" width="270" height="124" rx="14" fill="#FEF2F2" stroke="#FECACA" stroke-width="2" stroke-dasharray="7 5"/>
+<circle cx="1140" cy="582" r="17" fill="#DC2626"/><text x="1140" y="589" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">D</text>
+<text x="1167" y="591" class="node-title">拒绝执行</text>
+<text x="1132" y="629" class="body">记录拒绝原因</text>
+<text x="1132" y="660" class="body">不进入成功输出</text>
+</g>
+<g id="verify"><rect x="410" y="720" width="270" height="110" rx="14" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="2" stroke-dasharray="7 5"/>
+<circle cx="440" cy="752" r="17" fill="#7C3AED"/><text x="440" y="759" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">5</text>
+<text x="467" y="761" class="node-title">验证结束条件</text>
+<text x="432" y="799" class="body">完成任务并验证结果？</text>
+</g>
+<g id="paused"><rect x="760" y="720" width="270" height="110" rx="14" fill="#FFFBEB" stroke="#FDE68A" stroke-width="2" stroke-dasharray="7 5"/>
+<circle cx="790" cy="752" r="17" fill="#D97706"/><text x="790" y="759" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">…</text>
+<text x="817" y="761" class="node-title">暂停等待</text>
+<text x="782" y="799" class="body">不是成功结束</text>
+</g>
+<g id="stop"><rect x="1110" y="720" width="270" height="124" rx="14" fill="#FEF2F2" stroke="#FECACA" stroke-width="2" stroke-dasharray="7 5"/>
+<circle cx="1140" cy="752" r="17" fill="#DC2626"/><text x="1140" y="759" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">×</text>
+<text x="1167" y="761" class="node-title">明确退出</text>
+<text x="1132" y="799" class="body">拒绝 / 预算耗尽</text>
+<text x="1132" y="830" class="body">保留未完成原因</text>
+</g>
+<g id="done"><rect x="410" y="869" width="620" height="104" rx="14" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="2" stroke-dasharray="7 5"/>
+<circle cx="440" cy="901" r="17" fill="#059669"/><text x="440" y="908" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#FFF">✓</text>
+<text x="467" y="910" class="node-title">输出结果与证据</text>
+<text x="432" y="948" class="body">仅在结束验证通过后输出</text>
+</g>
+<text x="60" y="1009" class="small">实线框：固定提交可定位步骤　 ·　 虚线框：建议设计（含动作分类与终止验证）</text>
+<text x="60" y="1040" class="small">源码基线 dbc046eb896a；教学归纳，非整链实测。等待后的恢复触发需另行设计。</text></svg>
