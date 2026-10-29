@@ -1,0 +1,88 @@
+{
+  "type": "object",
+  "properties": {
+    "article_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "original_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_version": {
+      "type": "string",
+      "enum": [
+        "doc-review-v1.1"
+      ]
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "handled": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CHANGED",
+              "SKIPPED",
+              "HUMAN_REQUIRED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "finding_id",
+          "status",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "changed_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "diagram_requests": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "article_id",
+    "original_sha256",
+    "input_sha256",
+    "policy_version",
+    "round",
+    "summary",
+    "handled",
+    "changed_files",
+    "diagram_requests"
+  ],
+  "additionalProperties": false
+}

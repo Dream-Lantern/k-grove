@@ -1,0 +1,290 @@
+{
+  "type": "object",
+  "properties": {
+    "article_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "original_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "current_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_version": {
+      "type": "string",
+      "enum": [
+        "doc-review-v1.1"
+      ]
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "INITIAL",
+        "RE_REVIEW"
+      ]
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "BLOCKED"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dimension_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "technical_accuracy",
+              "concept_explanation",
+              "mechanism_depth",
+              "examples_reasoning",
+              "learning_order",
+              "practice_validation",
+              "diagram_quality",
+              "sources"
+            ]
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "ISSUE",
+              "UNVERIFIED",
+              "NOT_APPLICABLE"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "dimension",
+          "verdict",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "pattern": "^P[012]-[0-9]{3,}$"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "P0",
+              "P1",
+              "P2"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "technical_accuracy",
+              "beginner_clarity",
+              "examples",
+              "diagrams",
+              "organization",
+              "sources",
+              "format"
+            ]
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "line_start": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "line_end": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "quote": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "line_start",
+              "line_end",
+              "quote"
+            ],
+            "additionalProperties": false
+          },
+          "problem": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "pattern": "^https?://[^\\s]+$"
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "checked_at": {
+                  "type": "string",
+                  "pattern": "^20[0-9]{2}-[0-9]{2}-[0-9]{2}$"
+                },
+                "verification": {
+                  "type": "string",
+                  "enum": [
+                    "SUPPORTED",
+                    "INSUFFICIENT",
+                    "CONFLICT",
+                    "UNVERIFIED"
+                  ]
+                },
+                "basis": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "url",
+                "version",
+                "checked_at",
+                "verification",
+                "basis"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "suggested_fix": {
+            "type": "string",
+            "minLength": 1
+          },
+          "acceptance": {
+            "type": "string",
+            "minLength": 1
+          },
+          "risk": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ]
+          },
+          "requires_human": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "finding_id",
+          "severity",
+          "category",
+          "section",
+          "location",
+          "problem",
+          "evidence",
+          "sources",
+          "suggested_fix",
+          "acceptance",
+          "risk",
+          "requires_human"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "resolutions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RESOLVED",
+              "UNRESOLVED",
+              "INTRODUCED",
+              "HUMAN_REQUIRED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "finding_id",
+          "status",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "diagram_requests": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "article_id",
+    "original_sha256",
+    "current_sha256",
+    "policy_version",
+    "round",
+    "phase",
+    "decision",
+    "summary",
+    "dimension_checks",
+    "findings",
+    "resolutions",
+    "diagram_requests",
+    "limitations"
+  ],
+  "additionalProperties": false
+}
