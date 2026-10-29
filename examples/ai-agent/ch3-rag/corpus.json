@@ -1,0 +1,12 @@
+[
+  {
+    "doc_id": "A",
+    "text": "DemoServe 1.0 配置说明：默认端口 9000，可通过 --port 修改监听端口。"
+  },
+  {
+    "doc_id": "B",
+    "text": "DemoServe 1.0 启动示例：使用 --port 9100，让服务监听端口 9100。"
+  },
+  { "doc_id": "X", "text": "Python 列表支持按索引读取元素。" },
+  { "doc_id": "Y", "text": "GPU 显存用于保存设备上的张量。" }
+]

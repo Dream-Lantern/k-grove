@@ -3,7 +3,7 @@ id: ai-agent-multi-agent
 title: 第10章 多 Agent 协作
 description: "从上下文共享、协作拓扑和任务交接理解多 Agent，结合翻译实验说明角色分工、版本冲突与收益评估。"
 date: '2026-10-25'
-updated: '2026-10-28'
+updated: '2026-10-30'
 category: ai-agent
 type: explanation
 tags:
@@ -24,7 +24,7 @@ order: 10
 **维度一：上下文是否共享**。
 
 - 共享：角色切换时继承完整轨迹，信息丢失少，但长上下文开销高。
-- 隔离：子 Agent 只得到任务目标和必要证据，便于并行和权限隔离，但交接质量成为关键。
+- 隔离：子 Agent 只得到任务目标和必要证据，可减轻上下文并为独立任务并行创造条件，但交接质量成为关键。上下文隔离本身不限制进程或工具能访问哪些文件，权限仍须由执行系统落实。
 
 **维度二：协作拓扑**。
 
@@ -68,12 +68,14 @@ handoff:
 
 ## 10.4 IPC 与共享文件系统并发问题
 
-IPC（Inter-Process Communication）可类比两种方式：
+IPC（Inter-Process Communication，进程间通信）专指操作系统进程之间的通信。多 Agent 可能只是同一进程中的不同调用或上下文，角色交接也可以通过函数、消息、文件引用或远程 API 完成，不一定发生 OS 级 IPC。常见的数据交换方式包括：
 
 - 共享文件/存储：读写快且灵活，但面临竞态和覆盖。
 - 消息/API：界限清晰，有显式载荷，适合异步；需要投递保障和幂等。
 
 共享工作区中的常见冲突是：两个 Agent 同时修改同一文件，后保存的内容覆盖先保存的内容。可通过 Git worktree/分支隔离、乐观版本检查、细粒度任务划分和合并测试处理。共享数据库任务则需要事务与状态机，不能仅靠提示词要求“别冲突”。
+
+文件交接也要带版本：Worker 读取 `ch2@v1` 后提交修订，应声明预期输入版本或 Hash；如果索引已变成 `ch2@v2`，Manager 应拒绝旧产物覆盖并重新仲裁。不同角色名或不同 Prompt 并不会自动带来工具权限隔离；只读范围、写目录和可用凭据须由运行时分别限制。角色增加后，还要重新测量协调、调用和返修开销，不能从架构图的盒子数量推导性能。
 
 ## 10.5 多 Agent 常见失败
 
@@ -87,7 +89,7 @@ IPC（Inter-Process Communication）可类比两种方式：
 
 ## 10.6 结合 Agent 评测平台做拆分
 
-示例：
+可把评测任务按职责拆开，但下图展示的是翻译角色概览，只用来帮助理解编排关系，不是 Benchmark Worker 的完整执行架构：
 
 [多 Agent 的角色分工与依赖流程](/assets/notes/ai-agent/10-multi-agent.svg)
 
@@ -98,6 +100,23 @@ IPC（Inter-Process Communication）可类比两种方式：
 ## 10.7 用翻译实验理解管理者上下文隔离
 
 `chapter10/book-translation/agents.py` 的 `run_orchestration()` 是一条值得跟读的实现：Glossary Agent 先生成术语表，章节翻译 Agent 读取必要原文，Proofreading Agent 检查一致性，Manager 依据报告安排修订。Manager 维护任务、进度、文件索引和调用摘要，避免长期持有所有章节全文。
+
+### 两章翻译怎样完成一次交接
+
+下面用两个短章节构造教学案例。原文 `source/ch1.md@src-v1`、`source/ch2.md@src-v1` 都包含 token；约定统一译为“词元”。`@v1` 等是本例的版本标记，不是上游已有的版本协议，文件引用还应保存实际内容 Hash。
+
+| 角色与顺序           | 输入及上下文边界                                                              | 输出产物、状态与验证                                                                               |
+| -------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Manager 制定任务     | 两章引用、目标语言、术语要求、预算；索引记版本和状态                          | 分派 Glossary；维护任务、文件索引与摘要，不把所有译文塞回主上下文                                  |
+| Glossary             | 本例两章原文与编辑要求；不需要主会话其他历史                                  | `glossary.json@g-v1`：token→词元；结构和必需条目检查后记 READY                                     |
+| Translation 逐章执行 | 每次仅本章原文、g-v1、翻译指南；不继承另一章的完整调用历史                    | `ch1_zh.md@v1`、`ch2_zh.md@v1`；分别记 TRANSLATED，尚不是质量验收通过                              |
+| Proofreading         | 两章译文与 g-v1，因为跨章一致性确实需要这些内容                               | `proofreading_report.json@p-v1` 引用 ch1-v1/ch2-v1，标出 ch2 混用“词元”和“标记”，记 NEEDS_REVISION |
+| Manager 安排一次返修 | 文件索引、报告摘要和剩余返修预算；给 Translation 传 ch2 原文、g-v1 和明确意见 | 仅 ch2 产生 v2；提交时检查输入版本，过期产物不得覆盖新版本                                         |
+| Manager 汇总         | 确认索引已指向 ch2-v2，重新执行术语与结构检查                                 | 本例词面检查通过后记 READY_FOR_HUMAN；如仍有问题且预算用尽，停止并列出待确认项                     |
+
+例如 ch1-v1 为“词元决定序列长度”，ch2-v1 为“先统计词元，再合并标记”。审校报告给出 `chapter=ch2, expected=词元, observed=标记` 及引用版本；Manager 只把相关意见发回第二章，修订为“先统计词元，再合并词元”。这个小例子检验术语，不证明整段译文的语义和文风质量。
+
+上游 `run_orchestration()` 实际逐章调用，审校后至多安排一轮修订，代码不是无限互审。其默认 Proofreading 输入是译文和术语表，不能由此证明它已逐字对照原文验证代码、图片或遗漏；这些还需独立结构比对和人工/语义审查。上表的显式版本校验与修后重新验证是本地教学契约，不能冒充上游已经具备的完整门禁。
 
 源码节选（上下文依赖见原文件）：[chapter10/book-translation/agents.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/agents.py#L481-L489)。
 
@@ -117,7 +136,19 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 
 [![多 Agent：翻译角色分工示例](/assets/notes/ai-agent/10-multi-agent.svg)](/assets/notes/ai-agent/10-multi-agent.svg)
 
-图中以翻译任务展示术语、章节翻译、审校和管理者之间的依赖关系；具体并发能力以实现为准。[放大查看 SVG](/assets/notes/ai-agent/10-multi-agent.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/10-multi-agent.dot)供对照，不是本版配图的可编辑源文件。
+这张 SVG 仅概括“Manager 制定任务→Worker 翻译→审阅统一→合并验收”四步，未单列 Glossary、返修与指标节点；不能据此判断完整执行架构。DOT 才细化术语先行、逐章翻译、限次返修和评价，且不是该 SVG 的直接生成源。固定提交的章节翻译是顺序调用，本例不主张并发加速。[放大查看 SVG](/assets/notes/ai-agent/10-multi-agent.svg)。[原始 DOT 语义图源](/assets/notes/ai-agent/10-multi-agent.dot)供对照，不是本版配图的可编辑源文件。
+
+### 对照图源时，哪些是概览省略
+
+| 关系               | SVG 概览             | DOT / 正文                                                             |
+| ------------------ | -------------------- | ---------------------------------------------------------------------- |
+| Manager 的持久职责 | 制定任务与最终合并   | 任务、摘要、文件索引贯穿流程；正文交接表补版本与状态                   |
+| 术语先于翻译       | 未单独画出           | Manager→Glossary→逐章 Translation                                      |
+| 章节完成后审校     | Worker→审阅统一      | Translation→Proofreading，之后可限次返修                               |
+| 失败与退出         | 没有展开返修或失败边 | DOT 有返修回边；正文明确预算用尽停止、保留待确认，不以合并动作冒充通过 |
+| 评价与公平对照     | 没有细化指标         | DOT 细化命中/混用/覆盖，以及同术语表的单 Agent 基线                    |
+
+现有两份图都保留。完整的教学交接还要结合上表和文件版本契约阅读；概览中的合并是流程阶段，并不保证审校一定成功。
 
 ### 推荐消融与公平基线
 
@@ -126,6 +157,58 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 `consistency.py` 提供术语漂移/指定译法检查，并剔除代码块后统计。本地实验直接调用这份代码，验证跨章混用译名会被发现；字符串统计仍不是翻译语义质量评判，需要独立核对含义、遗漏和代码保真。指标的覆盖和严格口径见下一节。
 
 研究并行能力时，可继续阅读 `parallel-web-research`，重点是独立浏览器上下文、超时隔离、锁保护的单次结算、级联终止和资源关闭，而不只是 `gather()`。比较加速效果时，串行和并行应访问同一批来源，并记录超时与失败；不能因任务未完成、耗时较短，就将其计为效率提升。
+
+### 上游历史结果：少用 Token，也可能更慢
+
+固定提交的 [README：2026-07-30 正式实跑结果](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/README.md)记录了英文书第 1～2 章、26 个翻译单元的历史实验：原文 242,090 字节、23 个插图引用、14 个围栏代码块。翻译使用 `doubao-seed-1-6-flash-250615`，匿名裁判使用 `doubao-seed-1-6-250615`，均关闭 thinking。下表转述上游记录，本地没有重新调用模型执行：
+
+| 指标                             | 四角色管理者组 | 单 Agent 组 |
+| -------------------------------- | -------------: | ----------: |
+| 翻译 API 调用数                  |             29 |          26 |
+| 翻译总 Token                     |        203,277 |   1,317,808 |
+| 主上下文峰值                     |          4,618 |      94,355 |
+| 翻译墙钟时间                     |      270.829 s |   254.127 s |
+| 编辑部指定译法遵从率（上游口径） |            75% |          0% |
+| 确定性字符串术语一致率           |            50% |       87.5% |
+
+翻译总 Token 较少，墙钟时间却更长，说明减少重复上下文并不自动抵消调度与调用开销。表中的 Manager 峰值是管理状态序列化后用 tiktoken 计算的局部峰值，单 Agent 峰值来自调用上下文；它们不是全体 Agent 的 Token 总成本，也不能直接当成相同口径的计费输入。翻译 Token 和时间还应与裁判等其他阶段开销分开记录。
+
+指定译法指标提高，但宽泛字符串一致率反而较低，`embedding` 也没有遵守“嵌入向量”。这些指标与严格遵从率、翻译语义质量不同，详见 §10.8。共享术语信息本身也是变量，不能把全部差异归因于 Agent 数量。
+
+结构方面也有负结果：两组虽然保留代码块和图片数量，却都改动了代码 payload、增加了标题；管理者组改动了图片目标，单 Agent 组的图片目标序列则保持不变。数量相同不能证明结构保真。上游“完整执行与溯源门通过”只说明实验完成，不表示所有质量假设成立；这也不是本地复现证据。相关原始记录见 [v4 evidence.json](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/validation/real_20260730T061500Z_v4/evidence.json)。
+
+### 分级复现：先不调用模型
+
+在获取的上游工作副本中固定到 `dbc046eb896ac4e39aa19c7774c8bf49583b89a6`。从其根目录创建并激活 Python 3.12 独立环境，安装这个项目的依赖；以下是待执行的准备命令，不是本地已运行回执：
+
+```bash
+python -m venv .venv-translation
+# 激活后再执行下列命令；Windows PowerShell 使用 ./.venv-translation/Scripts/Activate.ps1
+# macOS/Linux 使用 source .venv-translation/bin/activate
+cd chapter10/book-translation
+python -m pip install -r requirements.txt
+python -m pip install pytest
+```
+
+这会安装 OpenAI SDK、tiktoken、python-dotenv 和测试工具，不需要 GPU。tiktoken 首次初始化可能需要下载编码数据，严格离线使用前应准备缓存。下列各步都在 `chapter10/book-translation` 目录执行：
+
+| 层级        | 命令                                                                                                                             | Key / 费用                                      | 输出与可验证结论                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1：预演     | `python demo.py --dry-run`                                                                                                       | 无需 Key，无模型 API 费用；依赖和编码缓存须就绪 | 终端协作图、计划与 Token 预算估算；不生成真实译文，不证明质量或实际 usage                 |
+| 2：回归     | `python -m pytest tests`                                                                                                         | 调用被测试替身替换，无需 Key、无 API 费         | pytest 结果与临时产物；验证空值/非法术语表和报告处理，未证明翻译质量                      |
+| 3：真实调用 | `python demo.py --out-dir output/full`                                                                                           | 需可用提供方 Key、模型配置，实际计费            | full 下 orchestration/single_agent 的术语表、章节文件及启用时的审校报告，终端用量与对比表 |
+| 4：消融     | `python demo.py --no-glossary --out-dir output/no-glossary`；`python demo.py --no-proofreading --out-dir output/no-proofreading` | 同上，分别产生真实调用费用                      | 独立目录避免覆盖；同章节、模型、预算与质量检查下比较关闭组件的影响                        |
+
+真实调用前应自行配置合适的模型与服务端点，确认价格、配额和材料授权；本练习不要求初学者完成付费步骤。`--no-glossary` 仅关闭抽取角色，源码仍补入编辑部指定术语；`--no-proofreading` 同时关闭审校及其 Manager 修订闭环，不能解释成只减少一次读取。`--skip-single` 会跳过单 Agent 对照，因而无法用该次输出完成两组比较。
+
+另有本仓库的纯标准库练习，目录在项目根目录下，不需要安装上游 SDK：
+
+```bash
+python examples/ai-agent/ch9-11-review/translation_contracts.py
+python -m unittest discover -s examples/ai-agent/ch9-11-review -p "test_translation*.py" -v
+```
+
+它以两章固定短句验证词面命中、混用、一次有限修订和版本冲突，不调用真实 Agent，也不替代完整 Markdown/语义保真评估。上游回归测试、这份教学实验和真实翻译是三个不同层次。
 
 ### 源码与实验入口
 

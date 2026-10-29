@@ -1,0 +1,20 @@
+flowchart TB
+  subgraph offline["离线：接入或更新文档"]
+    direction TB
+    P["解析获准文档及来源元数据"] --> C["Chunking：分块并保留原文定位"]
+    C --> B["建立或更新词项、向量索引"]
+    B --> S[("索引存储：内容、版本、访问范围")]
+  end
+  subgraph online["在线：回答当前用户"]
+    direction TB
+    Q["处理问题，确定目标版本"] --> A["由可信身份确定访问范围"]
+    A --> R["授权范围内召回候选"]
+    R --> F["各路去重与候选融合"]
+    F --> T["重排候选"]
+    T --> E{"证据是否足够且适用？"}
+    E -->|是| G["按证据生成并核对引用"]
+    E -->|否| U["补检索、追问或明确未知"]
+  end
+  S -->|"按身份与版本过滤后读取"| R
+  classDef blue fill:#E0F2FE,stroke:#0369A1,color:#0F172A;
+  class P,C,B,S,Q,A,R,F,T,E,G,U blue;

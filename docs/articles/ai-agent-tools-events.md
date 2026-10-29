@@ -3,7 +3,7 @@ id: ai-agent-tools-events
 title: 第4章 工具、MCP 与异步事件系统
 description: "工具调用的基本流程是：模型依据描述选择工具并生成参数，执行器校验参数与权限，工具执行后返回可供下一轮判断的结果。工具描述负责说明用途，实际校验由实现承担。"
 date: '2026-10-25'
-updated: '2026-10-28'
+updated: '2026-10-29'
 category: ai-agent
 type: explanation
 tags:
@@ -33,7 +33,7 @@ order: 4
 
 ## 4.2 工具设计：粒度、保真与幂等
 
-一个良好的工具契约最好包含：
+一个良好的工具契约最好包含以下信息。这是**示意契约，不能直接作为 MCP Tool 配置执行**：其中的自然语言占位符不是真正的参数 Schema，授权和幂等也需要服务端实现。
 
 ```yaml
 name: create_benchmark_task
@@ -55,11 +55,96 @@ errors: ["INVALID_INPUT", "CONFLICT", "FORBIDDEN"]
 
 仅靠“先查一下再写”不足以保证幂等，并发时仍可能重复写入。应通过幂等键、唯一约束、事务或状态机处理重复请求。
 
+### 从设计清单到可执行的参数检查
+
+Schema（结构定义）约束输入形状，服务端授权则判断调用者是否有权操作具体对象。用只读的 `get_task_status` 举例，下面是可以交给 JSON Schema 验证器的定义；它可以作为 MCP 工具定义的 `inputSchema`，但本身不是完整工具注册或 MCP 消息：
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "task_id": {"type": "string", "pattern": "^task-[0-9]+$"},
+    "detail": {"type": "string", "enum": ["summary", "full"]},
+    "log_limit": {"type": "integer", "minimum": 0, "maximum": 50}
+  },
+  "required": ["task_id"],
+  "additionalProperties": false
+}
+```
+
+`task_id` 必填且有格式约束；`detail` 只能取两个枚举值；`log_limit` 只能是 0～50 的整数。省略可选项不代表验证器会填入默认值，默认值由处理函数决定。`{"task_id":42}` 或 `{"task_id":"task-42","log_limit":51}` 在执行前就应失败；即使输入合法，也不能因此读取其他用户的任务。
+
+本仓库的 `examples/ai-agent/ch4-tools/` 提供小型可运行示例，核心顺序如下：
+
+```python
+def get_task_status(arguments, principal):
+    VALIDATOR.validate(arguments)
+    task_id = arguments["task_id"]
+    if task_id not in principal.allowed_task_ids:
+        raise PermissionError("task access denied")
+    # 通过上述检查后，才读取该任务；示例返回合成数据。
+```
+
+这段是配套文件的节选，完整文件定义了验证器、可信身份 `Principal` 及返回值。`principal` 来自已认证的服务端会话，不能由模型在 `arguments` 中自报。输入额外的 `principal` 字段会被 Schema 拒绝；合法输入 `task-99` 仍会在用户只获准访问 `task-42` 时被拒绝。
+
+在当前知识库根目录安装 `examples/ai-agent/requirements.txt` 的依赖后，进入 `examples/ai-agent/ch4-tools`，运行 `python -m pytest -q`。测试覆盖类型、必填、枚举、范围、额外字段和对象授权；这里只验证本地函数，没有启动 MCP Server 或接入数据库。Schema 规则参见 [JSON Schema 对象约束](https://json-schema.org/understanding-json-schema/reference/object)。
+
 ## 4.3 MCP 与 Skills 的分工 {#_4-3-mcp-与-skills-不同}
 
 这里的协议示例限定为 [MCP 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)，不推定已安装SDK的版本。MCP（Model Context Protocol）提供工具/资源等能力的标准化接入形态，但**统一接入协议不等于自动获得权限安全、可信输出或任务持久化**。外部 MCP Server 可能是低信任组件，必须有连接授权、范围限制、工具 allowlist、输出审核与超时。
 
 Skill 提供“何时和怎样做”的说明；MCP Tool 提供“能调用什么接口”。一个 Skill 可以使用多个 MCP Tool；一个 Tool 也能被多个 Skill 复用。
+
+### Host、Client、Server 各自做什么
+
+MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内的 MCP Client 维护与某个 Server 的连接，处理协商和消息路由；MCP Server 暴露具体能力，并在接入业务系统前执行相应校验。一个 Host 可以管理多个 Client，每个 Client 对应一个 Server 连接，见 [2025-11-25 架构说明](https://modelcontextprotocol.io/specification/2025-11-25/architecture)。
+
+| 能力                | 作用                           | 本例可怎样使用                          |
+| ------------------- | ------------------------------ | --------------------------------------- |
+| Tools（工具）       | 可调用操作，带参数与结果契约   | `get_task_status(task_id)` 查询某项任务 |
+| Resources（资源）   | 以 URI 标识的上下文数据        | 读取获准公开的任务状态说明或数据结构    |
+| Prompts（提示模板） | 可发现、带参数的结构化消息模板 | 用户选用“解释测试结果”的提示模板        |
+
+三者并非“有副作用／无副作用”的分类：查询 Tool 也可以只读。规范分别描述了工具通常由模型选择、资源通常由应用组织、提示模板通常由用户选择的交互方式，但不强制唯一界面。参见 [Tools](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)、[Resources](https://modelcontextprotocol.io/specification/2025-11-25/server/resources)、[Prompts](https://modelcontextprotocol.io/specification/2025-11-25/server/prompts)。Skill 的任务步骤可以指导 Host 怎样组合这些能力，它不是 MCP 三种原语中的第四种，也不等同于某个 Tool。
+
+### 一次 `get_task_status` 调用的完整次序
+
+以下为 MCP **2025-11-25** 的消息教学推演，不依赖某个 SDK，也未运行网络服务。JSON-RPC 2.0 是请求／响应的消息格式；请求带 `id`，响应使用相同 `id`，通知不带 `id`。省略传输层封装不等于省略协议初始化。
+
+| 次序 | 方向与消息                                   | 需要检查的内容                                                                                                                |
+| ---- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Client → Server：`initialize` 请求，`id=1`   | `params` 包含 `protocolVersion: "2025-11-25"`、`capabilities: {}` 和 `clientInfo: {"name":"tutorial-host","version":"1.0.0"}` |
+| 2    | Server → Client：同一 `id=1` 的结果          | 返回协商版本、`capabilities: {"tools": {}}`、`serverInfo` 的名称和版本；客户端不能把不支持的版本当成协商成功                  |
+| 3    | Client → Server：`notifications/initialized` | 通知无 `id`；成功协商后再进入常规操作                                                                                         |
+| 4    | Client → Server：`tools/list` 请求，`id=2`   | 发现工具；Server 的 `result.tools` 给出名称、说明及真实 `inputSchema`，必要时继续分页                                         |
+| 5    | Host 中的模型提议查询 `task-42`              | Host 按暴露范围和策略决定是否调用；模型不会直接连接数据库                                                                     |
+| 6    | Client → Server：`tools/call` 请求，`id=3`   | Server 检查输入及可信调用者对该任务的权限，随后调用业务查询实现                                                               |
+| 7    | Server → Client：同一 `id=3` 的结果          | Host 解释协议／工具结果，再把安全且相关的信息交给模型；模型据此回答用户                                                       |
+
+第 6、7 步的正常消息可以是：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {"name": "get_task_status", "arguments": {"task_id": "task-42", "detail": "summary"}}
+}
+```
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [{"type": "text", "text": "task-42 当前处于 RUNNING"}],
+    "isError": false
+  }
+}
+```
+
+这里返回运行中状态，不表示任务已经完成。输入校验、业务拒绝和内部故障如何映射为 JSON-RPC 协议错误或带 `isError` 的工具结果，应依据该版本的错误分类和服务实现明确约定，不能把五层业务状态直接当成 MCP 原生字段。初始化顺序依据 [2025-11-25 生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)；本文没有混入其他版本的 SDK 接口。
 
 ## 4.4 高风险动作的执行护栏
 
@@ -88,6 +173,29 @@ Sidecar/Guard Agent 可以参与风险审查，但最后一道授权边界应由
 ```
 
 **工程补充**：任务长时间执行时，状态不能只藏在 LLM 对话中。可以用 Outbox（事务内写事件）、Worker Lease/Fencing（防旧消费者乱写）、Checkpoint（恢复状态）等机制。
+
+### 创建测试任务后，Worker 崩溃了怎么办
+
+下面是本地教学推演，任务和状态均是假设，没有部署数据库、消息队列或 Worker。Outbox 是和业务记录一起保存待发送事件的表或记录；Relay 是负责发送这些事件的转发进程；Worker 是执行任务的消费者。
+
+| 时点           | 动作或故障                                                                                                       | 持久状态及下一步                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 创建任务       | 请求带业务幂等键 `tenant-a/create/request-7`；在同一数据库事务内写任务 `task-42` 和 Outbox 事件 `evt-created-42` | 提交后两条记录都存在；回滚则都不生效，避免“任务已建但事件没保存”           |
+| 投递事件       | Relay 发送事件后，在标记“已发送”前崩溃                                                                           | 重启后可能重发同一个 `event_id`，所以 Outbox 不保证消息只投递一次          |
+| 开始执行       | W1 获得任务租约和 fencing token `101`，开始代次 1 的测试，消费状态为处理中                                       | 租约限定占有期限；尚未确认的事件不能仅凭“见过 ID”就当成处理完成            |
+| Worker 崩溃    | 远端测试可能已启动，但 W1 没保存结果或确认消息                                                                   | 环境效果为未知，既不能宣称失败无副作用，也不能无条件重新启动               |
+| 重复投递与恢复 | 租约到期后 W2 取得更大的 token `102`，收到相同事件                                                               | 先查持久消费状态和远端效果；已完成则复用结果，未完成则恢复或对账           |
+| 安全重试或结算 | 若远端支持业务幂等，按 `tenant-a/start/task-42/g1` 查询／重试同次启动；否则在效果不明时保留未知并人工处理        | 业务结果与本地消费完成标记可在同一数据库事务提交；远端副作用仍不在该事务内 |
+
+**Outbox 的原子性边界是同一数据库事务中的业务记录和事件记录**，不包含消息代理已收到消息、Worker 已执行、远端测试已启动这些事实。Relay 的“发送成功但未记账”窗口和消费者崩溃都可能导致再次投递，见 [Transactional Outbox 原始模式说明](https://microservices.io/patterns/data/transactional-outbox.html)。
+
+业务幂等键识别“同一次业务意图”，`event_id` 识别“同一条事件”：创建任务和启动测试是不同操作，因此上表使用两个不同作用域的业务键。一次意图可以产生多条不同事件；不同事件也可能重复请求同一业务动作。消息去重不能代替业务幂等，处理中的事件还要能恢复。
+
+Fencing（隔离旧持有者）要求接收写入的存储或服务检查递增 token：W2 接管后，W1 即使恢复并继续运行，token `101` 也应被拒绝。只在 Worker 自己检查租约时间，无法阻止它暂停后携带旧资格写入；不支持 token 校验的外部系统也不会自动获得这项保护。机制依据见 [Kleppmann 对 lease 与 fencing token 的解释](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html)。
+
+`target_generation` 则区分**任务执行代次**，不是租约编号。W2 接管同一次执行仍可处于代次 1；若任务重开为代次 2，服务端需同时核对当前代次与写入资格，拒绝代次 1 的晚到结果。代次 2 内仍可能发生租约交接，需要 fencing 继续约束旧 Worker。
+
+最后，取消应先记录 `CANCEL_REQUESTED`，再向可取消的执行端发送请求，等待实际停止确认并查询已有副作用。请求取消不等于远端已停止，已发送的通知或已写入的数据也不会自动撤回；必要时另做补偿并记录结果。
 
 ## 4.6 工具发现与按需加载 {#_4-6-工具发现-避免把全量工具塞满上下文}
 
@@ -168,6 +276,18 @@ def _is_safe_path(self, path: Path) -> bool:
 幂等针对同一次业务意图的重投递，不阻止用户有意执行两次相同参数动作。契约需注明键的租户/操作作用域、存活期、同键不同参数冲突、请求状态查询以及补偿方式。超时后先按原请求ID查询效果，未知时不能盲目重放不可逆动作。[AWS幂等API说明](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/)讨论了请求身份与相同参数的区别。
 
 本地`revised_contracts.tool_envelope()`仅演示状态分层，不实现网络、授权、事务或支付补偿。覆盖案例：业务拒绝不抛异常、超时效果未知、执行成功但验证失败。
+
+### 三组输入与状态输出
+
+下面是五层教学契约的推演，不是上述本地函数已经运行的记录。值的顺序仍是协议、执行、业务、效果和验证；每一层回答不同问题。
+
+| 输入场景                                                            | 五层输出                                                                                                                   | 下一步                                                                           |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 创建任务请求正常返回“额度不足，未创建”                              | `protocol=OK`；`execution=SUCCEEDED`；`business=FAILED`；`effect=NOT_APPLIED`；`validation=UNKNOWN`                        | 请求处理正常不代表创建成功；先解决业务条件，不因 `OK` 无限重试创建               |
+| 启动 `task-42` 时超时，服务可能已收到请求                           | 协议响应未获得，记为本地 `protocol=ERROR`；`execution=TIMEOUT`；`business=UNKNOWN`；`effect=UNKNOWN`；`validation=UNKNOWN` | 保留原业务键，先查询是否已启动；只有幂等契约或查明未生效才考虑重试，否则人工对账 |
+| 成功执行“把测试报告保存为指定 JSON”，文件已写入，但内容缺少必需字段 | `protocol=OK`；`execution=SUCCEEDED`；`business=SUCCEEDED`；`effect=APPLIED`；`validation=FAILED`                          | 保存不合格产物与验证错误，修正生成过程；不能把“写入完成”作为用户目标达成证据     |
+
+第二行的 `protocol=ERROR` 是应用对“未拿到完整响应”的本地记录，不是假设收到了 MCP 错误消息。第三行中业务成功仅指保存操作完成，用户要求的合格报告仍未得到。是否升级人工还取决于错误能否局部修复、重试预算及既有授权，不由一个通用 `success` 字段决定。
 
 <a id="event-contract"></a>
 

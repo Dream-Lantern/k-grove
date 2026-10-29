@@ -3,7 +3,7 @@ id: ai-agent-post-training
 title: 第7章 模型后训练：SFT、RL、偏好优化
 description: "介绍 SFT、LoRA、强化学习和偏好优化的基本机制，并结合精确复制与工具使用说明训练信号、硬约束和验证方法。"
 date: '2026-10-25'
-updated: '2026-10-28'
+updated: '2026-10-30'
 category: ai-agent
 type: explanation
 tags:
@@ -33,6 +33,24 @@ order: 7
 
 **注意**：是否 Mask 掉用户 Token 取决于训练任务/数据模板/实现，不可当成所有 SFT 都必须如此。高质量示范可以教会格式、任务流程、工具调用样式，但模型对未覆盖的环境变化仍可能泛化不足。
 
+### 一条问答怎样变成训练信号
+
+用“用户：2+2 等于几？助手：4”作教学样本。实际训练先用 **Chat Template（聊天模板）**把角色和消息拼成模型约定的序列，再由 Tokenizer 编码。下面只画出逻辑位置；`<user>` 等是示意标记，`4` 也不保证在所有 Tokenizer 中恰好是一个 Token：
+
+```text
+输入上下文：  <user> 2+2 等于几？ <assistant>
+目标回答：                                   4 <结束>
+损失标签：    忽略用户与提示位置              监督回答与约定的结束位置
+```
+
+Assistant Token 是属于助手目标回答的 Token。采用 **Teacher Forcing（教师强制）**时，每个预测位置看到的是正确的前缀，而不是模型上一步随机生成的错误前缀。例如目标回答有多个 Token，预测第二个时输入中提供正确的第一个 Token。实现可并行计算各位置，但因果注意力不允许模型偷看当前待预测 Token 及后文。
+
+**Cross-Entropy Loss（交叉熵损失）**对目标 Token 取负对数概率，并按约定的有效位置归约。假设 `4` 在此样本中是一个目标 Token，模型给它的条件概率为 0.25，该位置损失是 `-ln(0.25) ≈ 1.386`；概率提高到 0.5，损失降到约 0.693。优化器根据损失梯度更新可训练参数，从而提高这类上下文下目标输出的概率。全参微调更新选定的基础权重；使用 LoRA 时通常冻结基础权重，更新适配器参数。
+
+常见 SFT 只在助手目标位置计算损失，是因为任务要学习“给定用户输入后怎样回答”，不一定需要学习“怎样续写用户的问题”。**Loss Masking（损失掩码）**排除的是相应目标位置的直接损失，不是把用户输入删掉；用户上下文仍参与前向计算，也会影响助手位置的梯度。Padding、系统消息、工具观察、结束标记是否计入目标，要按训练实现明确。
+
+聊天模板机制见 [Transformers v4.51.3 文档](https://huggingface.co/docs/transformers/v4.51.3/chat_templating)。本章第 7.9 节的固定源码 `train_sft.py` 在 `encode()` 中给提示标签填 `-100`，保留目标及 EOS 标签，再按长度截断；这是该实现的选择，并不意味着所有 SFT 都采用同一种掩码或截断规则。
+
 ### LoRA（Low-Rank Adaptation）
 
 经典LoRA写为 `W = W0 + (α/r) B A`：`W0`冻结，`A∈R^(r×d_in)`、`B∈R^(d_out×r)`可训练。对给定LoRA参数，增量**等于**缩放后的BA；“近似”描述对完整更新空间的低秩限制，不是这条参数化等式的不精确。rsLoRA等变体可用`α/√r`缩放，记录rank/alpha时也应记录实现选项与库版本。依据：[LoRA原论文](https://arxiv.org/abs/2106.09685)、[PEFT v0.21.0 LoraConfig](https://huggingface.co/docs/peft/v0.21.0/package_reference/lora)。
@@ -43,6 +61,21 @@ order: 7
 - 全参微调 vs LoRA：取决于数据量、部署目标、显存与遗忘风险。
 
 **参数经验的适用范围**：书中归纳了 `SFT rank 64–256、RL rank 8–32、学习率约全参 10 倍、LoRA 1%–5% 参数` 等部分实验/实践经验。选择参数时需结合模型、目标模块与数据规模，通过小规模实验和回归确认适用性。
+
+### 单个矩阵的 LoRA 参数手算
+
+取一个 `4096 × 4096` 权重矩阵，令 `r=8`：
+
+| 对象      | 形状          | 参数数       |
+| --------- | ------------- | ------------ |
+| 原矩阵 W0 | `4096 × 4096` | `16,777,216` |
+| A         | `8 × 4096`    | `32,768`     |
+| B         | `4096 × 8`    | `32,768`     |
+| A、B 合计 | 两个低秩矩阵  | `65,536`     |
+
+因此适配器的可训练参数量相对该原矩阵是 `65,536 / 16,777,216 = 1/256 = 0.390625%`。若 `alpha=16`，经典缩放系数 `alpha/r=2`，前向计算使用 `W0x + 2B(Ax)`；缩放改变增量幅度，不增加 A、B 的元素数。rsLoRA 的缩放口径见上文，不应套用这个系数。
+
+这里只统计一个矩阵、无额外可训练偏置等参数的情况。全模型还取决于选择多少层与模块；训练显存还包含基础权重、激活、梯度、优化器状态等，不能把 0.390625% 当作整个模型的训练显存比例。
 
 ## 7.3 RL（Reinforcement Learning）
 
@@ -58,6 +91,22 @@ order: 7
 
 探索与利用需要平衡：始终选择最有把握的行为，无法学习新策略；一直随机尝试，也无法稳定完成任务。
 
+### Coding Agent 的一次轨迹与一次训练更新
+
+假设任务是修复一个函数的边界错误，测试与代码仓库都在隔离环境中。下面是教学轨迹，不代表已经运行过的模型实验：
+
+| 环节                   | 本例内容                                                     | 对应概念                                     |
+| ---------------------- | ------------------------------------------------------------ | -------------------------------------------- |
+| 读到失败用例与相关代码 | 当前测试说明空输入处理错误；真实环境状态还包括仓库与测试文件 | 观察 observation，是 Agent 可见的状态信息    |
+| 提议并执行代码编辑     | 策略选择编辑函数，而非删除测试                               | 动作 action，由策略决定                      |
+| 再次运行测试           | 工具返回退出码、失败详情与输出                               | 环境反馈，形成下一步观察                     |
+| 通过独立检查           | 测试与过程约束均通过，任务才记成功                           | 可验证奖励；本例可约定合规成功为 1，否则为 0 |
+| 汇集多次执行记录       | 保存观察、动作、反馈、奖励和后续观察                         | 轨迹 trajectory，用于后续训练或分析          |
+
+普通 Agent 在推理时也会“看报错→改代码→再测试”，但如果没有计算训练目标并由优化器更新模型参数，这仍是执行循环。RL 训练会利用多条轨迹中的奖励或优势估计优化策略参数，让较有利的动作在类似上下文中更可能被选择。具体梯度估计、是否另训价值函数以及采样方式随算法而变。
+
+同一任务可以产生不同训练信号：SFT 模仿经过筛选的正确编辑与调用轨迹；RLVR 用测试等可验证反馈构造奖励；DPO 则以“保留测试并修复”优于“删掉测试”的偏好对直接优化。DPO 不要求先在线执行一套 RL 交互循环。三者都需要防止评测泄漏，测试通过也不能豁免删除测试、越权写入等过程违规。
+
 ## 7.4 SFT 与 RL 如何选择
 
 | 问题                 | SFT                            | RL                               |
@@ -71,12 +120,17 @@ order: 7
 
 原书借用 `mass-covering` 与 `mode-seeking` 解释监督学习和偏好/强化学习的一种倾向。**注意**：这是帮助理解的概念对比，不应被理解为“所有 SFT 必然覆盖所有模式”或“所有 RL 必然坍缩”。
 
+`mass-covering` 可理解为给数据中多个有效模式保留概率：例如两种都正确的修复路径都出现在示范里，学习时不希望漏掉其中一种。`mode-seeking` 则强调把概率集中到较受偏好或奖励的模式。它们与分布间损失方向、采样分布及优化约束有关，不是“SFT 等于前者、RL 等于后者”的算法定义；集中到一条可靠路径也不等于已经发生有害坍缩。
+
 ## 7.5 RLHF、RLVR、DPO
 
 - **RLHF**：Reinforcement Learning from Human Feedback；从人类偏好训练奖励模型，再以 RL 等方法优化策略。不是唯一的人类反馈路线。
 - **RLVR**：Reinforcement Learning with Verifiable Rewards；使用可程序判定的正确性结果（测试通过、数学答案、格式验证等）做奖励。
 - **DPO**：Direct Preference Optimization；利用偏好成对样本直接训练策略，不必显式训练单独的在线奖励模型。
-- **PPO/GRPO**：后训练中不同的策略优化技术，具体优劣受训练配置与实现影响。
+- **PPO（Proximal Policy Optimization，近端策略优化）**：约束策略更新幅度的一类方法；常见 PPO-Clip 用概率比裁剪限制目标中的激励。
+- **GRPO（Group Relative Policy Optimization，组相对策略优化）**：利用同一问题的一组采样结果的相对奖励构造优势；原始设计不需要单独的价值模型。它与 PPO 的具体优劣仍受训练配置与实现影响。
+
+算法背景可对照 [PPO 原论文 v2](https://arxiv.org/abs/1707.06347v2)与引入 GRPO 的 [DeepSeekMath v3，§4](https://arxiv.org/html/2402.03300v3#S4)。组内奖励若无法区分候选，或验证器本身有漏洞，增加优化步骤也不会自动产生可靠的学习信号。
 
 在工具型 Agent 中，不能把环境工具输出的 Token 当成模型自己应预测的动作目标；训练 Masking 与角色边界尤为重要。
 
@@ -94,6 +148,10 @@ order: 7
 能由程序规则识别的违规行为，应通过不可绕过的约束阻止，而不只是纳入模型的软奖励。对于长期多轮任务，需要定位导致失败的工具调用，不能在结束时笼统地对所有步骤作相同处理。
 
 ## 7.7 On-policy蒸馏的研究边界
+
+**蒸馏（Distillation）**用教师的输出或概率分布监督学生。**OPD（On-Policy Distillation，同策略蒸馏）**让学生先生成序列，再沿学生实际经过的前缀接受教师反馈，减少“训练只见教师前缀、推理却要面对自己错误”的分布差异。**OPSD（On-Policy Self-Distillation，同策略自蒸馏）**进一步使用同一模型或相关参数版本承担师生角色，具体反馈来源仍需看论文。
+
+**GKD（Generalized Knowledge Distillation，广义知识蒸馏）**是下表中的一种具体方法，不是 OPD 的同义缩写。教师分布是对“下一个 Token 的概率”提供软监督，不是已经证明整段回答正确；rollout 指策略生成并展开一条序列或交互轨迹。
 
 “在轨/同策略”指学习所用轨迹由当前学生策略生成。以下以明确论文为实例，不把所有OPD/OPSD变体归为同一算法：
 
@@ -125,12 +183,70 @@ out.append({"id": row["id"], "kind": row["kind"], "exact": int(pb == tb), "predi
 
 这段评估在比较 UTF-8 字节之前对预测调用 `.strip()`。因此它测量的是“去掉预测首尾空白后的匹配”，并不是未经处理的完整输出 byte-exact。若空格或换行本身就是 `old_string` 的一部分，必须额外记录原始输出，报告 raw exact 与 normalized exact 两个指标。后处理契约允许去掉空白时可以保留，但需在指标名称里说明。
 
-### 推荐实验顺序
+<a id="推荐实验顺序"></a>
 
-1. 固定目标字符串，在模型前后、JSON 编解码前后、工具入口分别计算 UTF-8 长度和 Hash，找到第一个发生变化的边界。
-2. 先运行 `python tokenizer_audit.py` 检查 round-trip；这一步也需要对应 Tokenizer 的模型文件，首次可能下载。
-3. 确认问题确实在模型生成后，才对照基座与 LoRA。训练、留出和边界集按随机种子、字符组合、长度及包装上下文隔离。
-4. 同时检查原始字节一致性、首个分歧位置和真实工具参数是否匹配；只看自然语言相似度会漏掉这一类失败。
+### 分三级做精确复制实验
+
+三个层级回答不同的问题。第一层检查数据链路，第二层检查真实 Tokenizer，第三层才比较模型生成能力；前两层失败时，应先定位原因，避免把链路损坏归因于模型。
+
+#### 第一层：本地字符串与字节审计，无需 GPU
+
+在本项目仓库根目录，使用 Python 3.11～3.13 运行独立教学示例，仅依赖标准库：
+
+```bash
+python examples/ai-agent/ch6-8-review/copy_audit.py
+python -m unittest discover -s examples/ai-agent/ch6-8-review -p "test_*.py" -v
+```
+
+脚本分别记录原始预测、目标、UTF-8 长度和 SHA-256，比较 `raw_exact` 与仅对预测执行 `.strip()` 后的 `normalized_exact`，并定位原始字节首个分歧。这里的 normalized 只指该项后处理，不隐含 Unicode 归一化。
+
+| 输入差异（教学数据）          | 应怎样解释                                                      |
+| ----------------------------- | --------------------------------------------------------------- |
+| 预测 `" abc\n"`，目标 `"abc"` | raw 不匹配，strip 后匹配；指标变化来自后处理                    |
+| 预测 `"abc"`，目标 `" abc "`  | 两种口径均不匹配；目标不做 strip                                |
+| `é` 与 `e` 加组合重音         | 可能显示相同，UTF-8 字节不同；NFC 诊断不能擅自改变复制契约      |
+| 中文经过 JSON 转义再解码      | JSON 文本字节可以变化；解码后的字符串应保持一致，要分别审计两层 |
+| 内部 CRLF 与 LF               | strip 不会消除内部换行差异                                      |
+
+NFC（Unicode Normalization Form C，规范组合形式）可将某些等价字符表示转换为统一形式，例如组合重音与预组合字符；它用于解释差异，不表示原始字节相等。把同一字符串在模型输出、JSON 解码、工具入口分别记录，找到 Hash 第一次改变的边界；日志本身也要避免泄漏真实敏感内容。这一步不加载模型，不能证明 Tokenizer 或模型复制能力。
+
+#### 第二层：真实 Tokenizer 的 round-trip
+
+在单独的上游实验工作副本中固定到 `dbc046eb896ac4e39aa19c7774c8bf49583b89a6`，使用兼容 Python 环境。下列命令从该副本根目录开始：
+
+```bash
+python -m pip install -e ".[torch]"
+cd chapter8/exact-copy-sft
+python generate_data.py
+python -c "from pathlib import Path; Path('validation').mkdir(exist_ok=True)"
+python tokenizer_audit.py
+```
+
+`generate_data.py` 是标准库脚本，固定生成 `data/train.jsonl`、`eval.jsonl`、`boundary.jsonl`，数量分别为 1024、256、256，种子分别为 719、1729、2718。不同种子不等于所有难度因素已经隔离：固定源码仍使用相同字符生成规则和长度公式；若要验证未见长度或包装的泛化，需要另建明确隔离的测试，并记录改动。
+
+`tokenizer_audit.py` 没有 `--model` 参数，固定审计 Qwen3-8B、Qwen2.5-0.5B-Instruct、Mistral-7B-v0.1 三个 Tokenizer，读取 eval 与 boundary 的 `source` 字段，进行 encode/decode 往返比较。需要相应 Tokenizer 文件、依赖及模型仓库访问权限；这项审计不加载模型权重，也不要求 GPU。这里的 `.[torch]` 是上游提供的依赖组，包含 Transformers 与 PyTorch，会有较大安装开销，并非只安装 Tokenizer 的最小依赖。
+
+检查 `validation/tokenizer_audit.json` 的 `probe_count`、各模型的 `roundtrip_rate` 与失败样本，并记录实际依赖和 Tokenizer 版本。它检查的是 source 字符串能否往返，不是模型回答是否正确，也不覆盖所有 Chat Template 和工具 JSON 路径。本文未执行这一层，不提供虚构的通过率。
+
+#### 第三层：基座与 LoRA 对照
+
+需要适配的 CUDA GPU、驱动与训练栈，以及足够的权重、激活和优化器显存。固定训练脚本采用 bf16，并在没有 CUDA 时退出；显存需求不能仅靠模型名称或 LoRA 参数比例确定。在独立实验副本根目录安装训练依赖，再使用第二层生成并审核过的数据：
+
+```bash
+python -m pip install -e ".[train]"
+cd chapter8/exact-copy-sft
+python evaluate.py --model Qwen/Qwen3-8B --label base --split eval
+python evaluate.py --model Qwen/Qwen3-8B --label base --split boundary
+python train_sft.py --model Qwen/Qwen3-8B
+python evaluate.py --model Qwen/Qwen3-8B --adapter output/adapter --label adapted --split eval
+python evaluate.py --model Qwen/Qwen3-8B --adapter output/adapter --label adapted --split boundary
+```
+
+命令参数与输入输出来自固定提交的 [生成脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/generate_data.py)、[Tokenizer 审计](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/tokenizer_audit.py)、[训练脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/train_sft.py)、[评估脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/evaluate.py)及 [依赖声明](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/pyproject.toml)。这些依赖范围不是完整锁定环境；复现时还要保存实际解析版本、模型与 Tokenizer revision、数据 Hash、硬件和种子。
+
+检查训练生成的 `output/adapter`、`validation/latest.json` 指向的训练回执，以及四份 `validation/eval_{label}_{split}.json`。在同一任务上对齐基座与适配器的结果，分别报告留出与边界集，不能根据训练损失下降就宣布工具调用更可靠。上游 `byte_exact` 仍是前述 strip 后口径，文件没有保存 strip 前预测；要报告 raw exact，需在独立实验副本中额外保存原始 decode 输出后再重新评估，不能从既有结果倒推出原始指标。
+
+本层未在此运行，没有新增模型准确率或训练收益结论；上游历史回执也不能替代当前硬件与协议下的实测。真实工具集成还需在相同数据边界下核对参数与执行结果。
 
 [![训练改进：条件对照与独立评估](/assets/notes/ai-agent/07-training.png)](/assets/notes/ai-agent/07-training.png)
 

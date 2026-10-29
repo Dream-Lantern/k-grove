@@ -3,7 +3,7 @@ id: ai-agent-coding-agent
 title: 第5章 Coding Agent 与代码生成的元能力
 description: "Coding Agent 在可写工作区内反复执行：搜索理解 → 修改文件 → 静态检查 → 运行测试 → 分析反馈 → 修复。"
 date: '2026-10-25'
-updated: '2026-10-28'
+updated: '2026-10-29'
 category: ai-agent
 type: explanation
 tags:
@@ -42,6 +42,24 @@ Diff/Patch 比整文件重写更利于审查，旧字符串替换适合简单稳
 **Sessionless 将长期任务状态外置**：任务进展写入可恢复的工作区或任务记录，后续会话据此继续工作。模型上下文承载当前决策所需信息，外置记录承载跨会话进展。
 
 推荐外置状态：`requirements.md`、`design.md`、`tasks.md`、运行日志摘要、Git diff、测试结果、已知风险及下一步。复用时检查状态与实际文件是否一致，避免继承过时摘要。
+
+### 编辑后会话结束，新会话如何接手
+
+以第 5.6 节的平均值修复为例，假设上一会话已经补上空输入检查，但还没运行修复后的测试。它可以留下下面的**教学状态记录**：
+
+```yaml
+task: "空列表求平均值时抛出明确的 ValueError，保留非空输入行为"
+workspace: ".tools/average-demo"
+changed_files: ["average.py"]
+last_test: "修复前：2 passed, 1 failed，失败为 ZeroDivisionError"
+current_status: "已编辑，修复后待测试；摘要可能过时"
+remaining: ["读取当前文件和 Diff", "运行完整示例测试", "核对需求与副作用"]
+next_step: "先核对环境，不直接宣称修复完成"
+```
+
+新会话先重新确认工作目录，读取 `average.py` 和测试文件，再用 `git diff --no-index -- before/average.py average.py` 查看真实变化，随后运行测试。若文件仍是初始版本，就以实际内容为准；若测试仍报错，也不能沿用“已修复”的摘要。测试结果必须能对应当前文件，而非另一个工作区或编辑前版本。
+
+例如当前文件确实新增了 `ValueError` 检查，但最后一份结果仍是旧的 `ZeroDivisionError`，这说明**旧结果不能评价新代码**，下一步是重跑测试。反过来，即使记录写着“3 passed”，发现测试文件被删或改弱后仍需重新验收。Sessionless 让任务可以恢复，不会使摘要自动成为事实。
 
 ## 5.3 按错误类型选择恢复策略 {#_5-3-失败恢复不是无限重试}
 
@@ -92,9 +110,88 @@ Diff/Patch 比整文件重写更利于审查，旧字符串替换适合简单稳
 
 实现一个“修复失败测试”的 Agent：提供只读 `search/read`、受控 `apply_patch`、受限 `pytest`；每个工具设置允许目录、超时和输出截断。评估 20 个固定失败用例，记录修复成功率、平均 Tool Calls、费用、回归引入率；用“工具反馈是否可见”的消融实验比较。
 
+### 最小可运行案例：空列表求平均值
+
+先做一个不调用模型的小实验。原始需求是：输入为数字列表；非空列表返回算术平均值；空列表抛出 `ValueError("values must not be empty")`，而不是返回 0 或泄露除零错误。这里不扩展到任意迭代器、混合类型或浮点特殊值。
+
+配套代码位于知识库仓库的 `examples/ai-agent/ch5-average/`。`before/average.py` 保留初始实现：
+
+```python
+def average(values):
+    return sum(values) / len(values)
+```
+
+pytest 是 Python 测试工具。先写需求对应的测试，保留它们不变，再修改实现：
+
+```python
+import pytest
+from average import average
+
+
+def test_integer_values():
+    assert average([2, 4]) == 3
+
+
+def test_decimal_values():
+    assert average([1.5, 2.5]) == 2
+
+
+def test_empty_input_has_explicit_error():
+    with pytest.raises(ValueError, match="values must not be empty"):
+        average([])
+```
+
+下面固定一条**教学 Agent 轨迹**：它描述应怎样定位和修复，不是实际运行 Codex 或其他模型后截取的日志。Python 测试可以独立执行，不能用这条预设轨迹证明模型具备自主修复能力。
+
+| 步骤            | 读取或动作                             | 反馈及判断                                                              |
+| --------------- | -------------------------------------- | ----------------------------------------------------------------------- |
+| 接收需求        | 读取上述输入范围、异常类型和错误信息   | 空输入的约定已经明确，不能自行改成 0                                    |
+| 搜索定位        | 搜索 `def average`、读取实现与三项测试 | 除法的分母来自 `len(values)`，空列表时为 0                              |
+| 复现失败        | 在初始代码上运行 `python -m pytest -q` | 前两项应通过；第三项得到 `ZeroDivisionError`，不符合需求的 `ValueError` |
+| 修改代码        | 在除法前增加空列表检查                 | 只改实现，保留原测试和非空计算路径                                      |
+| 再次验证        | 在相同环境重跑三项测试                 | 应为 `3 passed`；若只运行前两项，不能证明空输入已修复                   |
+| 审查需求与 Diff | 比较初始版、修复版及测试文件           | 确认没有删测试、捕获并吞掉所有异常或引入其他文件改动                    |
+
+修复版 `average.py` 为：
+
+```python
+def average(values):
+    if not values:
+        raise ValueError("values must not be empty")
+    return sum(values) / len(values)
+```
+
+在知识库根目录准备独立环境，然后使用一个**不存在的新目录**建立实验副本。下面使用 PowerShell，不修改本仓库的示例原件：
+
+```powershell
+python -m venv .tools/average-demo-venv
+& ./.tools/average-demo-venv/Scripts/Activate.ps1
+python -m pip install 'pytest>=8,<9'
+$notesRoot = (Get-Location).Path
+$demo = Join-Path $notesRoot '.tools/average-demo'
+if (Test-Path -LiteralPath $demo) { throw '实验目录已存在，请换一个空目录' }
+Copy-Item -LiteralPath examples/ai-agent/ch5-average -Destination $demo -Recurse
+Set-Location $demo
+Copy-Item -LiteralPath before/average.py -Destination average.py
+python -m pytest -q
+```
+
+此处初始测试退出码应为 1，因为需求尚未满足。按上面的修复版编辑临时副本的 `average.py`，再执行：
+
+```powershell
+python -m pytest -q
+git diff --no-index -- before/average.py average.py
+```
+
+第二次 pytest 应退出 0；`git diff --no-index` 仅比较两份文件，不需要创建仓库或提交，它在发现差异时退出 1，这是差异存在的信号，不是测试失败。Diff 应只增加两行空输入检查，测试文件保持原样。通过这三项只证明约定范围内的示例行为，不能推广为任意输入都安全正确。
+
+本轮实际用同一份测试分别检查了初始代码和修复代码；测试结果与依赖版本保存在独立验收记录中。没有运行真实模型调用，也没有执行前述 20 用例的 Agent 对照实验。
+
 ## 5.7 Coding Agent 的工具结果与失败反馈
 
-优先读 `coding-agent/tools/base.py`、`tools/edit_tool.py`、`system_state.py`，再看主循环。`BaseTool.execute()` 统一统计调用次数、时间和错误，具体工具实现 `_execute_impl()`；这让执行器能把失败作为下一轮观察，而不是丢掉异常后让模型猜测。
+优先读 `coding-agent/tools/base.py`、`tools/edit_tool.py`、`system_state.py`，再看主循环。`BaseTool.execute()` 递增工具调用次数、记录调用时间戳，并捕获具体工具 `_execute_impl()` 抛出的异常；这让执行器能把失败作为下一轮观察，而不是丢掉异常后让模型猜测。
+
+固定提交记录的是调用实现前取得的 `datetime.now()` 时间戳，格式精确到秒，**没有计算工具执行耗时**。要测耗时，应另存开始与结束时间；测量持续时间通常用 `time.perf_counter()` 这类单调时钟取差，不能把一个时间戳当成持续时间。实现位置见 [BaseTool.execute()](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter5/coding-agent/tools/base.py#L38-L81)。
 
 源码节选（上下文依赖见原文件）：[chapter5/coding-agent/tools/base.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter5/coding-agent/tools/base.py#L11-L26)。
 
@@ -118,6 +215,18 @@ class ToolResult:
 ```
 
 这里有两个需要分开的契约：`ToolResult.success` 属于对象字段，但 `to_dict()` 主要返回 `data` 并追加 `error/_metadata`，不会统一写入 `success`。因此消费端不能凭 `to_dict().get('success', True)` 判成功；也不能只用 HTTP 状态码判业务动作成功。本地实验会同时检查返回对象和序列化结果。更进一步，`BaseTool.execute()`只要`_execute_impl()`不抛异常就构造对象`success=True`；子类返回`{"success": false, "error": "denied"}`时，外层对象仍可能为真。执行包装未抛异常、业务成功和目标验证通过是不同层次，统一定义见 [第4章工具状态](/articles/ai-agent-tools-events.html#tool-status)。
+
+### 对照三个真实包装分支
+
+以下用固定提交的 `BaseTool` 构造最小测试子类，只改变 `_execute_impl()` 的返回或抛异常行为。业务载荷为教学数据；列出的包装和序列化行为来自该版本源码，不能外推成所有工具框架的约定。
+
+| `_execute_impl()` 行为                              | 对象上的 `success` | `data` 中的业务信息                               | `to_dict()` 的输出                                                                | 用户目标是否通过                               |
+| --------------------------------------------------- | ------------------ | ------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 返回 `{"status":"SUCCEEDED","value":3}`             | `True`             | 明确报告操作成功和值 3                            | 上述数据加 `_metadata`，不额外写对象的 `success`                                  | 仍要按需求验证值及真实产物，不能只信状态字符串 |
+| 返回 `{"success":False,"error":"denied"}`，不抛异常 | `True`             | 字典明确报告业务失败                              | 保留数据里的 `success=False`、`error`，加 `_metadata`；不会用对象的 `True` 覆盖它 | 业务未完成，不能因包装成功而通过               |
+| 抛出 `ValueError("boom")`                           | `False`            | 包装器创建 `error`、`error_type`、`tool`、`input` | 错误数据加 `_metadata`，仍不统一序列化对象的 `success`                            | 需要诊断错误；若调用有副作用，还需独立查询效果 |
+
+第一行的对象成功只说明该实现没有抛出被捕获的异常。第二行中对象的 `error` 字段仍为 `None`，但 `data` 已含 `error`；第三行才走异常包装分支。该方法捕获的是 `Exception`，不是所有 `BaseException`；它也不会自动验证目标或回滚外部副作用。读取结果时，应先明确当前拿到的是 Python 对象还是 `to_dict()` 后的字典，再按业务与目标证据判断下一步。
 
 ### 推荐实验：反馈、编辑失败与状态恢复
 

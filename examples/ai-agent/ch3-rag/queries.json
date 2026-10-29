@@ -1,0 +1,7 @@
+[
+  {
+    "query": "DemoServe 1.0 默认端口 启动示例 --port",
+    "expected": ["A", "B"],
+    "category": "synthetic-config"
+  }
+]

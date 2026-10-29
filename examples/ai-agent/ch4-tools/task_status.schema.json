@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "task_id": { "type": "string", "pattern": "^task-[0-9]+$" },
+    "detail": { "type": "string", "enum": ["summary", "full"] },
+    "log_limit": { "type": "integer", "minimum": 0, "maximum": 50 }
+  },
+  "required": ["task_id"],
+  "additionalProperties": false
+}
