@@ -1,5 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">Watch：通知后重读当前状态</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">Watch：通知后重读当前状态</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">箭头表示逻辑推进；异常分支与成立条件见正文。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">读取状态并注册适用 Watch</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">避免先读后注册造成的窗口；具体 API 各有触发条件</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">收到通知或连接状态变化</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">通知是变化线索，不是完整变更日志</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">重读并按版本校验本地视图</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">传统 Watch 触发后重设；重连与过期分别处理</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">重复协调到有效状态</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">版本化配置与单一发布指针减少混合版本</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">ZooKeeper 3.6+ 另有持久 Watch；不能由通知机制推出跨节点事务。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="1300" viewBox="0 0 1320 1300" role="img" aria-labelledby="title desc">
+<title id="title">传统 Watch：一次通知，重读时可能已跨过多次更新</title><desc id="desc">读并注册 v1，v2 触发一次性 Watch，v3 在重新注册前发生，通知后重读得到 v3；断连恢复与过期分别处理。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">传统 Watch：一次通知，重读时可能已跨过多次更新</text>
+<text x="40" y="100" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">通知触发状态协调；标准 Watch 不保存全部业务变更。</text>
+<rect x="110" y="145" width="1100" height="110" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="130" y="180" font-size="23" fill="#2563EB" text-anchor="start" font-weight="700">T1 · 读并注册</text>
+<text x="130" y="214" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">getData(&quot;/config&quot;, watch=true) → v1 + Stat</text>
+<path d="M660 258 L660 290" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="110" y="300" width="1100" height="110" rx="12" fill="#F8FAFC" stroke="#7C3AED" stroke-width="2"/>
+<text x="130" y="335" font-size="23" fill="#7C3AED" text-anchor="start" font-weight="700">T2 · 节点更新为 v2</text>
+<text x="130" y="369" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">Watch 触发并移除；通知可能仍在途中。</text>
+<path d="M660 413 L660 445" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="110" y="455" width="1100" height="110" rx="12" fill="#F8FAFC" stroke="#D97706" stroke-width="2"/>
+<text x="130" y="490" font-size="23" fill="#D97706" text-anchor="start" font-weight="700">T3 · 节点再次更新为 v3</text>
+<text x="130" y="524" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">尚未重新注册，不必再产生第二份通知。</text>
+<path d="M660 568 L660 600" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="110" y="610" width="1100" height="110" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="130" y="645" font-size="23" fill="#2563EB" text-anchor="start" font-weight="700">T4 · 收到通知</text>
+<text x="130" y="679" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">回调只安排有界重读任务，不把通知直接当成业务动作。</text>
+<path d="M660 723 L660 755" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="110" y="765" width="1100" height="110" rx="12" fill="#F8FAFC" stroke="#059669" stroke-width="2"/>
+<text x="130" y="800" font-size="23" fill="#059669" text-anchor="start" font-weight="700">T5 · 重读并重新注册</text>
+<text x="130" y="834" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">得到 v3 + Stat，校验世代 / 版本，再协调本地状态。</text>
+<path d="M660 885 L345 940" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M660 885 L975 940" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="40" y="955" width="600" height="180" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="60" y="990" font-size="22" fill="#D97706" text-anchor="start" font-weight="700">Disconnected → 保守模式</text>
+<text x="60" y="1024" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">同一会话恢复连接：</text>
+<text x="60" y="1058" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">核对 Watch 与对象状态，重新协调。</text>
+<text x="60" y="1092" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">不能靠缓存直接恢复资格。</text>
+<rect x="680" y="955" width="600" height="180" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="700" y="990" font-size="22" fill="#DC2626" text-anchor="start" font-weight="700">Expired → 丢弃旧身份</text>
+<text x="700" y="1024" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">旧会话、临时节点及资格失效。</text>
+<text x="700" y="1058" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">新会话重建注册与对象状态。</text>
+<text x="700" y="1092" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">不能沿用旧申请继续执行。</text>
+<text x="40" y="1200" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">持久 Watch：触发后不自动移除，但仍须读取当前状态；新会话仍需恢复注册。</text>
+<text x="40" y="1240" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">持久递归 Watch：观察适用后代事件，不触发 NodeChildrenChanged。</text>
+</g></svg>

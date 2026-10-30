@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120" role="img" aria-labelledby="title desc">
+<!-- 原生可编辑 SVG 即维护图源；图中的数字为教学推演。 -->
+<title id="title">一致性哈希：三台物理机器扩为四台，只改变部分键的归属</title><desc id="desc">0 到 99 顺时针递增，99 后回到 0。A 在 10、70；B 在 30、85；C 在 50、95。新增 D 在 40、80；接管 (30,40] 与 (70,80]。八个示例键中只有 k35、k75 迁移。虚拟位置不是副本。</desc>
+<defs>
+<marker id="blue" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+</defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="32" y="47" font-size="28" fill="#2563EB" text-anchor="start" font-weight="600">一致性哈希：三台物理机器扩为四台，只改变部分键的归属</text>
+<text x="32" y="85" font-size="21" fill="#0F172A" text-anchor="start">教学环：位置 0～99，键归属顺时针第一个令牌。每台物理机器有两个虚拟位置；不展示数据副本。</text>
+<rect x="40" y="130" width="740" height="700" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<text x="410" y="171" font-size="24" fill="#2563EB" text-anchor="middle" font-weight="600">扩容前：A、B、C，六个虚拟位置</text>
+<circle cx="410" cy="490" r="195" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3"/>
+<path d="M595.46 550.26A195 195 0 0 1 524.62 647.76" fill="none" stroke="#D97706" stroke-width="16"/>
+<path d="M224.54 550.26A195 195 0 0 1 224.54 429.74" fill="none" stroke="#D97706" stroke-width="16"/>
+<path d="M430.09 428.18A65 65 0 0 1 473.85 502.18" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="410" y="498" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">顺时针</text>
+<text x="410" y="527" font-size="17" fill="#0F172A" text-anchor="middle">0 → 99 → 0</text>
+<text x="410" y="270" font-size="18" fill="#0F172A" text-anchor="middle">0</text>
+<circle cx="524.62" cy="332.24" r="9" fill="#2563EB" stroke="#FFFFFF" stroke-width="2"/>
+<text x="562.82" y="286.66" font-size="20" fill="#2563EB" text-anchor="start" font-weight="600">A1=10</text>
+<circle cx="595.46" cy="550.26" r="9" fill="#7C3AED" stroke="#FFFFFF" stroke-width="2"/>
+<text x="657.27" y="577.34" font-size="20" fill="#7C3AED" text-anchor="start" font-weight="600">B1=30</text>
+<circle cx="410.00" cy="685.00" r="9" fill="#059669" stroke="#FFFFFF" stroke-width="2"/>
+<text x="410.0" y="757.0" font-size="20" fill="#059669" text-anchor="middle" font-weight="600">C1=50</text>
+<circle cx="224.54" cy="550.26" r="9" fill="#2563EB" stroke="#FFFFFF" stroke-width="2"/>
+<text x="162.73" y="577.34" font-size="20" fill="#2563EB" text-anchor="end" font-weight="600">A2=70</text>
+<circle cx="252.24" cy="375.38" r="9" fill="#7C3AED" stroke="#FFFFFF" stroke-width="2"/>
+<text x="199.66" y="344.18" font-size="20" fill="#7C3AED" text-anchor="end" font-weight="600">B2=85</text>
+<circle cx="349.74" cy="304.54" r="9" fill="#059669" stroke="#FFFFFF" stroke-width="2"/>
+<text x="329.66" y="249.73" font-size="20" fill="#059669" text-anchor="end" font-weight="600">C2=95</text>
+<circle cx="457.90" cy="342.59" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="447" y="382" font-size="18" fill="#0F172A" text-anchor="middle">k05</text>
+<path d="M457.90 342.59L466.55 315.96" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="557.41" cy="442.10" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="524" y="459" font-size="18" fill="#0F172A" text-anchor="middle">k20</text>
+<path d="M557.41 442.10L584.04 433.45" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="535.40" cy="581.11" r="5" fill="#D97706" stroke="#FFFFFF" stroke-width="2"/>
+<text x="507" y="567" font-size="18" fill="#D97706" text-anchor="middle" font-weight="600">k35</text>
+<path d="M535.40 581.11L558.05 597.56" fill="none" stroke="#D97706" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="457.90" cy="637.41" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="447" y="610" font-size="18" fill="#0F172A" text-anchor="middle">k45</text>
+<path d="M457.90 637.41L466.55 664.04" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="318.89" cy="615.40" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="339" y="593" font-size="18" fill="#0F172A" text-anchor="middle">k60</text>
+<path d="M318.89 615.40L302.44 638.05" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="255.00" cy="490.00" r="5" fill="#D97706" stroke="#FFFFFF" stroke-width="2"/>
+<text x="290" y="496" font-size="18" fill="#D97706" text-anchor="middle" font-weight="600">k75</text>
+<path d="M255.00 490.00L227.00 490.00" fill="none" stroke="#D97706" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="318.89" cy="364.60" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="339" y="399" font-size="18" fill="#0F172A" text-anchor="middle">k90</text>
+<path d="M318.89 364.60L302.44 341.95" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="390.57" cy="336.22" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="395" y="377" font-size="18" fill="#0F172A" text-anchor="middle">k98</text>
+<path d="M390.57 336.22L387.06 308.44" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<text x="410" y="785" font-size="21" fill="#D97706" text-anchor="middle">橙色弧：(30,40] 与 (70,80]</text>
+<rect x="820" y="130" width="740" height="700" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<text x="1190" y="171" font-size="24" fill="#2563EB" text-anchor="middle" font-weight="600">扩容后：加入 D1=40、D2=80</text>
+<circle cx="1190" cy="490" r="195" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="3"/>
+<path d="M1375.46 550.26A195 195 0 0 1 1304.62 647.76" fill="none" stroke="#D97706" stroke-width="16"/>
+<path d="M1004.54 550.26A195 195 0 0 1 1004.54 429.74" fill="none" stroke="#D97706" stroke-width="16"/>
+<path d="M1210.09 428.18A65 65 0 0 1 1253.85 502.18" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="1190" y="498" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">顺时针</text>
+<text x="1190" y="527" font-size="17" fill="#0F172A" text-anchor="middle">0 → 99 → 0</text>
+<text x="1190" y="270" font-size="18" fill="#0F172A" text-anchor="middle">0</text>
+<circle cx="1304.62" cy="332.24" r="9" fill="#2563EB" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1342.82" y="286.66" font-size="20" fill="#2563EB" text-anchor="start" font-weight="600">A1=10</text>
+<circle cx="1375.46" cy="550.26" r="9" fill="#7C3AED" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1437.27" y="577.34" font-size="20" fill="#7C3AED" text-anchor="start" font-weight="600">B1=30</text>
+<circle cx="1190.00" cy="685.00" r="9" fill="#059669" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1190.0" y="757.0" font-size="20" fill="#059669" text-anchor="middle" font-weight="600">C1=50</text>
+<circle cx="1004.54" cy="550.26" r="9" fill="#2563EB" stroke="#FFFFFF" stroke-width="2"/>
+<text x="942.73" y="577.34" font-size="20" fill="#2563EB" text-anchor="end" font-weight="600">A2=70</text>
+<circle cx="1032.24" cy="375.38" r="9" fill="#7C3AED" stroke="#FFFFFF" stroke-width="2"/>
+<text x="979.66" y="344.18" font-size="20" fill="#7C3AED" text-anchor="end" font-weight="600">B2=85</text>
+<circle cx="1129.74" cy="304.54" r="9" fill="#059669" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1109.66" y="249.73" font-size="20" fill="#059669" text-anchor="end" font-weight="600">C2=95</text>
+<circle cx="1304.62" cy="647.76" r="9" fill="#D97706" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1342.82" y="707.34" font-size="20" fill="#D97706" text-anchor="start" font-weight="600">D1=40</text>
+<circle cx="1004.54" cy="429.74" r="9" fill="#D97706" stroke="#FFFFFF" stroke-width="2"/>
+<text x="942.73" y="416.66" font-size="20" fill="#D97706" text-anchor="end" font-weight="600">D2=80</text>
+<circle cx="1237.90" cy="342.59" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1227" y="382" font-size="18" fill="#0F172A" text-anchor="middle">k05</text>
+<path d="M1237.90 342.59L1246.55 315.96" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="1337.41" cy="442.10" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1304" y="459" font-size="18" fill="#0F172A" text-anchor="middle">k20</text>
+<path d="M1337.41 442.10L1364.04 433.45" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="1315.40" cy="581.11" r="5" fill="#D97706" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1287" y="567" font-size="18" fill="#D97706" text-anchor="middle" font-weight="600">k35</text>
+<path d="M1315.40 581.11L1338.05 597.56" fill="none" stroke="#D97706" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="1237.90" cy="637.41" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1227" y="610" font-size="18" fill="#0F172A" text-anchor="middle">k45</text>
+<path d="M1237.90 637.41L1246.55 664.04" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="1098.89" cy="615.40" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1119" y="593" font-size="18" fill="#0F172A" text-anchor="middle">k60</text>
+<path d="M1098.89 615.40L1082.44 638.05" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="1035.00" cy="490.00" r="5" fill="#D97706" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1070" y="496" font-size="18" fill="#D97706" text-anchor="middle" font-weight="600">k75</text>
+<path d="M1035.00 490.00L1007.00 490.00" fill="none" stroke="#D97706" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="1098.89" cy="364.60" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1119" y="399" font-size="18" fill="#0F172A" text-anchor="middle">k90</text>
+<path d="M1098.89 364.60L1082.44 341.95" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<circle cx="1170.57" cy="336.22" r="5" fill="#0F172A" stroke="#FFFFFF" stroke-width="2"/>
+<text x="1175" y="377" font-size="18" fill="#0F172A" text-anchor="middle">k98</text>
+<path d="M1170.57 336.22L1167.06 308.44" fill="none" stroke="#0F172A" stroke-width="1" stroke-dasharray="3 4"/>
+<text x="1190" y="785" font-size="21" fill="#D97706" text-anchor="middle">橙色弧：(30,40] 与 (70,80]</text>
+<rect x="40" y="858" width="1520" height="212" rx="10" fill="#FFF7ED" stroke="#FDBA74"/>
+<text x="65" y="899" font-size="24" fill="#D97706" text-anchor="start" font-weight="600">新增 D 只接管两段键空间：</text>
+<text x="85" y="941" font-size="22" fill="#0F172A" text-anchor="start">(30,40]：k35 从 C1=50 → D1=40</text>
+<text x="85" y="980" font-size="22" fill="#0F172A" text-anchor="start">(70,80]：k75 从 B2=85 → D2=80</text>
+<text x="880" y="941" font-size="21" fill="#0F172A" text-anchor="start">k05、k20、k45、k60、k90、k98 均不移动</text>
+<text x="880" y="980" font-size="21" fill="#0F172A" text-anchor="start">移除 D 时，两段分别交回后继 C1、B2</text>
+<text x="65" y="1032" font-size="20" fill="#0F172A" text-anchor="start">键名中的数字就是哈希位置；k98 绕过 99 和 0 后归 A1=10。橙色是迁移范围，不是新增副本。</text>
+<text x="40" y="1100" font-size="20" fill="#0F172A" text-anchor="start">A=蓝，B=紫，C=绿，D=橙；同一字母的两个令牌仍属于同一台物理机器、同一故障域。</text>
+</g></svg>

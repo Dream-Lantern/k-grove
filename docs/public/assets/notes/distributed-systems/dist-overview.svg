@@ -1,5 +1,48 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" role="img" aria-labelledby="title desc">
-<title id="title">分布式系统：把请求、数据与控制分开</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">分布式系统：把请求、数据与控制分开</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">逻辑角色可由多个实例实现，不是单机部署清单。</tspan></text><rect x="430" y="135" width="340" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="172" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">客户端与入口</tspan></text><text x="600.0" y="209" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">负载均衡、超时、身份</tspan></text><rect x="100" y="345" width="400" height="120" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="300.0" y="382" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="300.0" dy="0">业务计算层</tspan></text><text x="300.0" y="419" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="300.0" dy="0">业务不变量 / 幂等 / 任务</tspan></text><rect x="700" y="345" width="400" height="120" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="900.0" y="382" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="900.0" dy="0">数据层</tspan></text><text x="900.0" y="419" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="900.0" dy="0">分片 / 复制 / 恢复</tspan></text><rect x="100" y="610" width="400" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="300.0" y="647" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="300.0" dy="0">协调与配置</tspan></text><text x="300.0" y="684" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="300.0" dy="0">成员、选主与资格</tspan></text><rect x="700" y="610" width="400" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="900.0" y="647" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="900.0" dy="0">观测与运维</tspan></text><text x="900.0" y="684" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="900.0" dy="0">追踪、指标与恢复验证</tspan></text><path d="M520 245 L520 290 L300 290 L300 345" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M500 400 L700 400" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M300 465 L300 610" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M900 465 L900 610" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="600.0" y="812" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">复制不替代备份；角色健康不等于端到端业务可用。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+<!-- 原生可编辑 SVG 即图源；直接编辑本文件，无独立生成产物。 -->
+<title id="title">分布式系统：请求、控制与观测</title><desc id="desc">教学架构。实线：入口到业务层到数据层；虚线：协调配置到业务与数据层；点线：入口、业务、数据向观测系统发送遥测。</desc>
+<defs>
+<marker id="blue" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+</defs><rect width="100%" height="100%" fill="#fff"/><g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="32" y="45" font-size="27" fill="#2563EB" text-anchor="start" font-weight="600">分布式系统：请求、控制与观测</text>
+<text x="32" y="80" font-size="18" fill="#0F172A" text-anchor="start">逻辑职责示意；协调与观测不位于业务请求的串行路径。</text>
+<rect x="50" y="130" width="260" height="100" rx="10" fill="#EFF6FF" stroke="#2563EB"/>
+<text x="180.0" y="166" font-size="23" fill="#2563EB" text-anchor="middle" font-weight="600">客户端与入口</text>
+<text x="180.0" y="201" font-size="18" fill="#0F172A" text-anchor="middle">路由 / 身份 / 超时</text>
+<rect x="450" y="130" width="280" height="100" rx="10" fill="#EFF6FF" stroke="#2563EB"/>
+<text x="590.0" y="166" font-size="23" fill="#2563EB" text-anchor="middle" font-weight="600">业务计算层</text>
+<text x="590.0" y="201" font-size="18" fill="#0F172A" text-anchor="middle">订单 / 库存 / 幂等</text>
+<rect x="870" y="130" width="280" height="100" rx="10" fill="#EFF6FF" stroke="#2563EB"/>
+<text x="1010.0" y="166" font-size="23" fill="#2563EB" text-anchor="middle" font-weight="600">数据层</text>
+<text x="1010.0" y="201" font-size="18" fill="#0F172A" text-anchor="middle">分片 / 复制 / 恢复</text>
+<path d="M310 180H450" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="380" y="162" font-size="18" fill="#2563EB" text-anchor="middle">业务请求</text>
+<path d="M730 180H870" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="800" y="162" font-size="18" fill="#2563EB" text-anchor="middle">数据访问</text>
+<rect x="410" y="365" width="360" height="105" rx="10" fill="#F5F3FF" stroke="#7C3AED"/>
+<text x="590.0" y="401" font-size="23" fill="#7C3AED" text-anchor="middle" font-weight="600">协调与配置</text>
+<text x="590.0" y="436" font-size="18" fill="#0F172A" text-anchor="middle">成员 / 配置 / 执行资格</text>
+<path d="M520 365V230" fill="none" stroke="#7C3AED" stroke-width="2" stroke-dasharray="9 6" marker-end="url(#purple)"/>
+<text x="500" y="305" font-size="18" fill="#7C3AED" text-anchor="end">控制</text>
+<path d="M770 410H1105V230" fill="none" stroke="#7C3AED" stroke-width="2" stroke-dasharray="9 6" marker-end="url(#purple)"/>
+<text x="1000" y="394" font-size="18" fill="#7C3AED" text-anchor="middle">控制与配置</text>
+<rect x="410" y="550" width="360" height="105" rx="10" fill="#ECFDF5" stroke="#059669"/>
+<text x="590.0" y="586" font-size="23" fill="#059669" text-anchor="middle" font-weight="600">观测系统</text>
+<text x="590.0" y="621" font-size="18" fill="#0F172A" text-anchor="middle">指标 / 日志 / 追踪</text>
+<path d="M130 230V603H410" fill="none" stroke="#059669" stroke-width="2" stroke-dasharray="2 7" marker-end="url(#green)"/>
+<text x="145" y="530" font-size="18" fill="#059669" text-anchor="start">入口遥测</text>
+<path d="M655 230V300H810V580H770" fill="none" stroke="#059669" stroke-width="2" stroke-dasharray="2 7" marker-end="url(#green)"/>
+<text x="828" y="500" font-size="18" fill="#059669" text-anchor="start">业务遥测</text>
+<path d="M950 230V625H770" fill="none" stroke="#059669" stroke-width="2" stroke-dasharray="2 7" marker-end="url(#green)"/>
+<text x="968" y="545" font-size="18" fill="#059669" text-anchor="start">数据遥测</text>
+<path d="M50 704H110" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="122" y="711" font-size="17" fill="#0F172A" text-anchor="start">请求 / 数据</text>
+<path d="M350 704H410" fill="none" stroke="#7C3AED" stroke-width="2" stroke-dasharray="9 6" marker-end="url(#purple)"/>
+<text x="422" y="711" font-size="17" fill="#0F172A" text-anchor="start">控制 / 配置</text>
+<path d="M685 704H745" fill="none" stroke="#059669" stroke-width="2" stroke-dasharray="2 7" marker-end="url(#green)"/>
+<text x="757" y="711" font-size="17" fill="#0F172A" text-anchor="start">观测数据（组件 → 收集端）</text>
+</g></svg>

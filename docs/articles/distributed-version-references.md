@@ -24,6 +24,8 @@ order: 90
 | 主题            | 基线与主要依据                                                                                                                                                                                                                               | 阅读时关注                                        |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | 事件顺序        | [Lamport 1978](https://lamport.azurewebsites.net/pubs/time-clocks.pdf)                                                                                                                                                                       | 因果偏序、逻辑时钟，逆命题不成立                  |
+| Linux 时间 API  | [Linux man-pages 6.9.1：clock_gettime(2)，Debian trixie](https://manpages.debian.org/trixie/manpages-dev/clock_gettime.2.en.html)                                                                                                            | REALTIME 可跳变；MONOTONIC 受频率调整、不计挂起；BOOTTIME 计入挂起 |
+| NTPv4         | [RFC 5905 基础规范](https://datatracker.ietf.org/doc/html/rfc5905)、[IETF 更新状态](https://datatracker.ietf.org/doc/rfc5905/)                                                                                                                      | 同步误差与时钟模型；需结合后续更新阅读                             |
 | 线性一致性      | [Herlihy、Wing 1990](https://cs.brown.edu/~mph/HerlihyW90/p463-herlihy.pdf)                                                                                                                                                                  | 调用区间、实时约束、对象顺序规范                  |
 | CAP             | [Gilbert、Lynch 2012 回顾](https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf)                                                                                                                                                      | 分区与请求保证，不是任意三选二                    |
 | FLP             | [Fischer、Lynch、Paterson 1985](https://groups.csail.mit.edu/tds/papers/Lynch/jacm85.pdf)                                                                                                                                                    | 完全异步、确定性与终止限制                        |
@@ -55,3 +57,8 @@ order: 90
 - [ZooKeeper release-3.9.3 DataTree.createStat](https://github.com/apache/zookeeper/blob/release-3.9.3/zookeeper-server/src/main/java/org/apache/zookeeper/server/DataTree.java)：新对象version初始化为0，结合setData API推导同路径重建ABA。
 - [PostgreSQL17同步/异步提交](https://www.postgresql.org/docs/17/wal-async-commit.html)：提交记录的持久化屏障与成功回复。
 - fencing资源尚未看到新代际、Outbox发布逆序等为有前提的应用历史推演，不冒充论文规定的通用实现。
+
+## 2026-10-30 时间资料核查 {#_2026-10-30时间资料核查}
+
+- Linux：上述手册的 DESCRIPTION 各时钟条目支持第三章的 Linux 行为表；文档版本为 man-pages 6.9.1，未在本机执行 Linux API 或挂起实验。
+- NTP：RFC 5905 §6 描述时钟偏移、频率与误差模型；它是 NTPv4 基础规范，不是无后续修订的最新完整规范。核查时 IETF 状态页列出更新：[RFC 7822](https://datatracker.ietf.org/doc/html/rfc7822)（扩展字段格式）、[RFC 8573](https://datatracker.ietf.org/doc/html/rfc8573)（MAC 算法）、[RFC 9109](https://datatracker.ietf.org/doc/html/rfc9109)（端口随机化）、[RFC 9748](https://datatracker.ietf.org/doc/html/rfc9748)（更新 NTP 注册表）、[RFC 9769](https://datatracker.ietf.org/doc/html/rfc9769)（NTP 交错模式）。具体实现还应结合相关更新与勘误，不能从“使用 NTP”推导任意节点时间完全一致。

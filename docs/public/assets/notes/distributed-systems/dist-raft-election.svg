@@ -1,5 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">Raft：任期不是固定时间租约</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">Raft：任期不是固定时间租约</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">箭头表示逻辑推进；异常分支与成立条件见正文。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">Follower 观察有效领导者消息</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">超时只代表怀疑；旧任期消息不能无限延长权威</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">开始新一轮选举</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">提高 currentTerm，记录投票，发送 RequestVote</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">投票同时检查日志资格</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">比较最后日志任期，再比较最后索引</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">满足多数后成为 Leader</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">持续心跳；看到更高任期时退回 Follower</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">一个任期至多选出一个 Leader；不同任期的角色判断可暂时重叠。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="1450" viewBox="0 0 1300 1450" role="img" aria-labelledby="title desc">
+<!-- 原生可编辑 SVG 即维护图源；时间向下，数字及场景为教学推演。 -->
+<title id="title">Raft：B 从选举超时到多数当选</title><desc id="desc">三个节点初始为任期 6 的 Follower。B 超时，进入任期 7，自投票并请求 A C 投票；A 检查任期、投票和日志资格后授票，B 取得两票成为 Leader，发送心跳。独立分支展示分票重试和发现更高任期时退回 Follower。</desc>
+<defs>
+<marker id="blue" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+</defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="32" y="45" font-size="27" fill="#2563EB" text-anchor="start" font-weight="600">Raft：B 从选举超时到多数当选</text>
+<text x="32" y="82" font-size="18" fill="#0F172A" text-anchor="start">教学时序：固定成员 A、B、C；成功分支与底部两个独立分支分别阅读。</text>
+<rect x="150.0" y="120" width="200" height="44" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="250" y="149" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">A</text>
+<path d="M250 164V1015" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 6"/>
+<text x="250" y="205" font-size="18" fill="#0F172A" text-anchor="middle">Follower，currentTerm=6</text>
+<rect x="550.0" y="120" width="200" height="44" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="650" y="149" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">B</text>
+<path d="M650 164V1015" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 6"/>
+<text x="650" y="205" font-size="18" fill="#0F172A" text-anchor="middle">Follower，currentTerm=6</text>
+<rect x="950.0" y="120" width="200" height="44" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="1050" y="149" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">C</text>
+<path d="M1050 164V1015" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 6"/>
+<text x="1050" y="205" font-size="18" fill="#0F172A" text-anchor="middle">Follower，currentTerm=6</text>
+<rect x="475" y="235" width="350" height="110" rx="10" fill="#FFF7ED" stroke="#D97706"/>
+<text x="650.0" y="264" font-size="20" fill="#D97706" text-anchor="middle" font-weight="600">B 选举超时 → Candidate</text>
+<text x="650.0" y="292" font-size="18" fill="#0F172A" text-anchor="middle">currentTerm：6 → 7；自投 B</text>
+<text x="650.0" y="320" font-size="18" fill="#0F172A" text-anchor="middle">先持久化，再重置计时并发请求</text>
+<path d="M650 385H250" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="450.0" y="375" font-size="18" fill="#2563EB" text-anchor="middle">RequestVote(t=7, lastLog=(5,12))</text>
+<path d="M650 445H1050" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="850.0" y="435" font-size="18" fill="#2563EB" text-anchor="middle">RequestVote(t=7, lastLog=(5,12))</text>
+<rect x="65" y="480" width="370" height="138" rx="10" fill="#F5F3FF" stroke="#7C3AED"/>
+<text x="250.0" y="509" font-size="20" fill="#7C3AED" text-anchor="middle" font-weight="600">A 检查后授票</text>
+<text x="250.0" y="537" font-size="18" fill="#0F172A" text-anchor="middle">任期有效、本轮未投其他候选人</text>
+<text x="250.0" y="565" font-size="18" fill="#0F172A" text-anchor="middle">B 的最后日志至少与本地一样新</text>
+<text x="250.0" y="593" font-size="18" fill="#0F172A" text-anchor="middle">持久化 term=7、vote=B，重置计时</text>
+<path d="M250 650H650" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="450.0" y="640" font-size="18" fill="#059669" text-anchor="middle">任期 7：授票给 B</text>
+<rect x="475" y="685" width="350" height="82" rx="10" fill="#ECFDF5" stroke="#059669"/>
+<text x="650.0" y="714" font-size="20" fill="#059669" text-anchor="middle" font-weight="600">B：自票 + A 的票 = 2 / 3</text>
+<text x="650.0" y="742" font-size="18" fill="#0F172A" text-anchor="middle">取得多数 → Leader(term=7)</text>
+<path d="M650 815H250" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="450.0" y="805" font-size="18" fill="#2563EB" text-anchor="middle">心跳 AppendEntries(term=7)</text>
+<path d="M650 875H1050" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="850.0" y="865" font-size="18" fill="#2563EB" text-anchor="middle">心跳 AppendEntries(term=7)</text>
+<rect x="70" y="905" width="360" height="82" rx="10" fill="#ECFDF5" stroke="#059669"/>
+<text x="250.0" y="934" font-size="20" fill="#059669" text-anchor="middle" font-weight="600">A 保持 Follower</text>
+<text x="250.0" y="962" font-size="18" fill="#0F172A" text-anchor="middle">识别当前领导者消息，重置计时</text>
+<rect x="880" y="925" width="360" height="82" rx="10" fill="#ECFDF5" stroke="#059669"/>
+<text x="1060.0" y="954" font-size="20" fill="#059669" text-anchor="middle" font-weight="600">C 跟随 term=7 的 Leader</text>
+<text x="1060.0" y="982" font-size="18" fill="#0F172A" text-anchor="middle">保持 Follower，重置计时</text>
+<text x="32" y="1045" font-size="18" fill="#0F172A" text-anchor="start">日志匹配是否成功另行判断；低任期 AppendEntries 不能靠重置计时器压制选举。</text>
+<rect x="35" y="1080" width="600" height="265" rx="10" fill="#FFF7ED" stroke="#FDBA74"/>
+<text x="55" y="1117" font-size="22" fill="#D97706" text-anchor="start" font-weight="600">独立分支一：分票，没有 Leader</text>
+<text x="55" y="1160" font-size="19" fill="#0F172A" text-anchor="start">例如三者都先自投，各仅有 1 / 3 票。</text>
+<text x="55" y="1200" font-size="19" fill="#0F172A" text-anchor="start">候选人再次超时 → 进入下一轮任期。</text>
+<text x="55" y="1240" font-size="19" fill="#0F172A" text-anchor="start">重新随机选择超时、自投，再发 RequestVote。</text>
+<text x="55" y="1290" font-size="18" fill="#0F172A" text-anchor="start">随机化减少重复分票，不保证任意网络下终止。</text>
+<rect x="665" y="1080" width="600" height="265" rx="10" fill="#F5F3FF" stroke="#C4B5FD"/>
+<text x="685" y="1117" font-size="22" fill="#7C3AED" text-anchor="start" font-weight="600">独立分支二：发现更高任期</text>
+<text x="685" y="1160" font-size="19" fill="#0F172A" text-anchor="start">B 收到 RPC 请求或响应，携带 term=9。</text>
+<text x="685" y="1200" font-size="19" fill="#0F172A" text-anchor="start">currentTerm：7 → 9，清除旧任期投票。</text>
+<text x="685" y="1240" font-size="19" fill="#0F172A" text-anchor="start">持久化状态，Leader / Candidate → Follower。</text>
+<text x="685" y="1290" font-size="18" fill="#0F172A" text-anchor="start">更高任期不等于无条件授票，仍要检查日志。</text>
+<text x="35" y="1395" font-size="19" fill="#0F172A" text-anchor="start">选举只决定谁协调复制；日志匹配、领导者完整性和提交规则还要共同保护已提交历史。</text>
+</g></svg>

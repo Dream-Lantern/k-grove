@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="970" viewBox="0 0 1400 970" role="img" aria-labelledby="title desc">
+<title id="title">ZooKeeper 排队锁：观察紧邻前驱，通知后重算资格</title><desc id="desc">A 持有最小顺序节点 10；B 的 11 监听 A，C 的 12 监听 B。A 删除主要唤醒 B；B 重新列举，确认最小后才取得资格。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">ZooKeeper 排队锁：观察紧邻前驱，通知后重算资格</text>
+<text x="40" y="100" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">父路径 /locks/order/；为突出顺序，图中省略申请 GUID 前缀。</text>
+<rect x="40" y="165" width="380" height="135" rx="12" fill="#F8FAFC" stroke="#059669" stroke-width="2"/>
+<text x="60" y="200" font-size="21" fill="#059669" text-anchor="start" font-weight="700">A · lock-0000000010</text>
+<text x="60" y="234" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">最小序号：当前队列资格</text>
+<rect x="510" y="165" width="380" height="135" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="530" y="200" font-size="21" fill="#2563EB" text-anchor="start" font-weight="700">B · lock-0000000011</text>
+<text x="530" y="234" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">等待 A</text>
+<rect x="980" y="165" width="380" height="135" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="1000" y="200" font-size="21" fill="#2563EB" text-anchor="start" font-weight="700">C · lock-0000000012</text>
+<text x="1000" y="234" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">等待 B</text>
+<path d="M510 355 L420 355" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="465.0" y="342" font-size="19" fill="#7C3AED" text-anchor="middle" font-weight="400">B Watch A</text>
+<path d="M980 355 L890 355" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="935.0" y="342" font-size="19" fill="#7C3AED" text-anchor="middle" font-weight="400">C Watch B</text>
+<rect x="40" y="415" width="1320" height="105" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="60" y="450" font-size="23" fill="#059669" text-anchor="start" font-weight="700">A 删除自己的节点 → 主要唤醒 B；C 不因 A 删除而直接取得资格。</text>
+<text x="60" y="484" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">B 必须重新 getChildren、筛选排序并确认自己仍存在且最小。</text>
+<rect x="300" y="570" width="800" height="100" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="320" y="605" font-size="23" fill="#7C3AED" text-anchor="start" font-weight="700">非最小：exists(紧邻前驱, watch=true)</text>
+<text x="320" y="639" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">把“确认前驱存在”和“注册通知”组合，覆盖等待竞态。</text>
+<path d="M520 680 L345 725" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M880 680 L1055 725" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="40" y="740" width="600" height="130" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="60" y="775" font-size="22" fill="#D97706" text-anchor="start" font-weight="700">前驱已不存在</text>
+<text x="60" y="809" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">立即重新列举；不等待一个不会再来的删除。</text>
+<rect x="720" y="740" width="640" height="130" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="740" y="775" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">前驱仍存在</text>
+<text x="740" y="809" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">等待通知 / 连接事件，再重新列举确认资格。</text>
+<text x="40" y="925" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">create 结果未知：同一有效会话中按 GUID 找回；过期则旧申请失效。</text>
+</g></svg>

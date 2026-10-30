@@ -1,5 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
-<title id="title">Quorum 交集：数量条件不是完整协议</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="770" viewBox="0 0 1280 770" role="img" aria-labelledby="title desc">
+<title id="title">固定副本集 Quorum：集合相交是必要的几何条件</title><desc id="desc">固定副本集有 A、B、C、D、E 五个节点。写集合 A B C，读集合 C D E，在 C 相交；单靠这个计数关系不能证明完整协议线性一致。</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#64748B"/></marker></defs>
 <rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">Quorum 交集：数量条件不是完整协议</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">固定副本集合 {A,B,C,D,E}，W=3，R=3。</tspan></text><rect x="60" y="175" width="490" height="130" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="305.0" y="212" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="305.0" dy="0">写集合 {A,B,C}</tspan></text><text x="305.0" y="249" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="305.0" dy="0">某次写入成功到达的副本</tspan></text><rect x="650" y="175" width="490" height="130" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="895.0" y="212" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="895.0" dy="0">读集合 {C,D,E}</tspan></text><text x="895.0" y="249" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="895.0" dy="0">读取观察到的副本</tspan></text><rect x="365" y="420" width="470" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="457" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">交集 {C}</tspan></text><text x="600.0" y="494" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">还需版本、并发和未完成写处理</tspan></text><path d="M305 305 L305 370 L475 370 L475 420" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M895 305 L895 370 L725 370 L725 420" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="600.0" y="612" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">sloppy quorum 的实际集合变化时，不能不经核对就直接套 R+W&gt;N。</tspan></text></g></svg>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="53" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">固定副本集 Quorum：集合相交是必要的几何条件</text>
+<text x="40" y="103" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">N = 5，W = 3，R = 3；同一个对象、同一个固定副本集。</text>
+<rect x="55" y="180" width="710" height="335" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<rect x="530" y="250" width="700" height="335" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="85" y="220" font-size="24" fill="#2563EB" text-anchor="start" font-weight="700">写确认集合 W = {A, B, C}</text>
+<text x="750" y="555" font-size="24" fill="#7C3AED" text-anchor="middle" font-weight="700">读响应集合 R = {C, D, E}</text>
+<circle cx="180" cy="375" r="64" fill="#FFFFFF" stroke="#64748B" stroke-width="3"/>
+<text x="180" y="390" font-size="40" fill="#0F172A" text-anchor="middle" font-weight="700">A</text>
+<circle cx="405" cy="375" r="64" fill="#FFFFFF" stroke="#64748B" stroke-width="3"/>
+<text x="405" y="390" font-size="40" fill="#0F172A" text-anchor="middle" font-weight="700">B</text>
+<circle cx="630" cy="375" r="64" fill="#ECFDF5" stroke="#059669" stroke-width="3"/>
+<text x="630" y="390" font-size="40" fill="#059669" text-anchor="middle" font-weight="700">C</text>
+<circle cx="855" cy="375" r="64" fill="#FFFFFF" stroke="#64748B" stroke-width="3"/>
+<text x="855" y="390" font-size="40" fill="#0F172A" text-anchor="middle" font-weight="700">D</text>
+<circle cx="1080" cy="375" r="64" fill="#FFFFFF" stroke="#64748B" stroke-width="3"/>
+<text x="1080" y="390" font-size="40" fill="#0F172A" text-anchor="middle" font-weight="700">E</text>
+<text x="630" y="478" font-size="23" fill="#059669" text-anchor="middle" font-weight="700">交集 C</text>
+<rect x="40" y="625" width="1200" height="105" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="60" y="660" font-size="21" fill="#D97706" text-anchor="start" font-weight="700">R + W &gt; N → 两集合必有交集；2W &gt; N → 两个写集合必有交集。</text>
+<text x="60" y="694" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">还需版本选择、并发处理、失败写入与读写协议；Sloppy Quorum 的实际集合可能不同。</text>
+</g></svg>

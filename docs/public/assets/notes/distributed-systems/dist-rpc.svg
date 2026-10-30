@@ -1,5 +1,114 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">RPC：超时只说明没有及时取得结果</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">RPC：超时只说明没有及时取得结果</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">箭头表示逻辑推进；异常分支与成立条件见正文。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">提交带业务标识的请求</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">客户端保留 operation_id；服务端绑定参数与结果</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">服务端可能已经提交</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">回复丢失与请求未到达，在客户端都可能表现为超时</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">查询状态或有限重试</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">沿用同一标识，检查重复请求与参数冲突</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">保护下游与重试预算</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">退避、抖动、截止时间和持久化去重共同参与</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学模型，不承诺网络只投递一次；外部副作用必须纳入协议。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500" role="img" aria-labelledby="title desc">
+<!-- 原生可编辑 SVG 即图源；直接编辑本文件，无独立生成产物。 -->
+<title id="title">RPC：三种独立超时历史与同 ID 重试</title><desc id="desc">教学时序，三个面板是互斥的独立历史。四条泳道分别为 Client、Network、Server、Database。时间向下；每个面板最终恢复后返回成功。</desc>
+<defs>
+<marker id="blue" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+</defs><rect width="100%" height="100%" fill="#fff"/><g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="32" y="45" font-size="27" fill="#2563EB" text-anchor="start" font-weight="600">RPC：三种独立超时历史与同 ID 重试</text>
+<text x="32" y="80" font-size="18" fill="#0F172A" text-anchor="start">每个面板独立；时间向下，非等比例。所有请求使用 operation_id=pay-42。</text>
+<rect x="25" y="105" width="1150" height="360" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<text x="45" y="135" font-size="22" fill="#2563EB" text-anchor="start" font-weight="600">① 请求未到达服务端：重试后首次执行</text>
+<rect x="77" y="150" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="150" y="174" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Client</text>
+<path d="M150 189V450" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="377" y="150" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="450" y="174" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Network</text>
+<path d="M450 189V450" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="677" y="150" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="750" y="174" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Server</text>
+<path d="M750 189V450" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="977" y="150" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="1050" y="174" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Database</text>
+<path d="M1050 189V450" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<path d="M150 225H450" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="300.0" y="217" font-size="17" fill="#2563EB" text-anchor="middle">首次扣款请求</text>
+<text x="465" y="232" font-size="18" fill="#DC2626" text-anchor="start">× 请求丢失</text>
+<rect x="43" y="246" width="215" height="31" rx="5" fill="#FFF7ED" stroke="#FDBA74"/>
+<text x="150" y="268" font-size="18" fill="#D97706" text-anchor="middle">超时：结果未知</text>
+<path d="M150 315H750" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="450.0" y="307" font-size="17" fill="#2563EB" text-anchor="middle">同 ID 重试：pay-42</text>
+<path d="M750 365H1050" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="900.0" y="357" font-size="17" fill="#2563EB" text-anchor="middle">首次占用键并写入扣款</text>
+<rect x="1000" y="372" width="100" height="25" rx="4" fill="#ECFDF5" stroke="#6EE7B7"/>
+<text x="1050" y="390" font-size="16" fill="#059669" text-anchor="middle">COMMIT</text>
+<path d="M1050 415H750" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="900.0" y="407" font-size="17" fill="#059669" text-anchor="middle">已提交</text>
+<path d="M750 448H150" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="450.0" y="440" font-size="17" fill="#059669" text-anchor="middle">返回成功（经 Network）</text>
+<rect x="25" y="490" width="1150" height="470" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<text x="45" y="520" font-size="22" fill="#2563EB" text-anchor="start" font-weight="600">② 服务端正在执行：客户端先超时，重试等待原操作</text>
+<rect x="77" y="535" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="150" y="559" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Client</text>
+<path d="M150 574V945" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="377" y="535" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="450" y="559" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Network</text>
+<path d="M450 574V945" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="677" y="535" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="750" y="559" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Server</text>
+<path d="M750 574V945" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="977" y="535" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="1050" y="559" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Database</text>
+<path d="M1050 574V945" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<path d="M150 610H750" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="450.0" y="602" font-size="17" fill="#2563EB" text-anchor="middle">首次扣款请求</text>
+<rect x="725" y="620" width="50" height="204" rx="4" fill="#FFF7ED" stroke="#FDBA74"/>
+<text x="786" y="648" font-size="17" fill="#D97706" text-anchor="start">原操作处理中</text>
+<rect x="43" y="651" width="215" height="31" rx="5" fill="#FFF7ED" stroke="#FDBA74"/>
+<text x="150" y="673" font-size="18" fill="#D97706" text-anchor="middle">超时：结果未知</text>
+<path d="M150 715H725" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="437.5" y="707" font-size="17" fill="#2563EB" text-anchor="middle">同 ID 重试：pay-42</text>
+<text x="790" y="748" font-size="17" fill="#D97706" text-anchor="start">重复请求等待原事务</text>
+<text x="790" y="774" font-size="17" fill="#D97706" text-anchor="start">（不再次扣款）</text>
+<path d="M750 820H1050" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="900.0" y="812" font-size="17" fill="#2563EB" text-anchor="middle">提交扣款与结果</text>
+<rect x="1000" y="827" width="100" height="25" rx="4" fill="#ECFDF5" stroke="#6EE7B7"/>
+<text x="1050" y="845" font-size="16" fill="#059669" text-anchor="middle">COMMIT</text>
+<path d="M1050 866H750" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="900.0" y="858" font-size="17" fill="#059669" text-anchor="middle">已提交</text>
+<path d="M750 902H1050" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="900.0" y="894" font-size="17" fill="#2563EB" text-anchor="middle">重试读取已存结果</text>
+<path d="M1050 931H750" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="900.0" y="923" font-size="17" fill="#059669" text-anchor="middle">原操作结果</text>
+<path d="M750 950H150" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="450.0" y="942" font-size="17" fill="#059669" text-anchor="middle">向重试返回成功（经 Network）</text>
+<rect x="25" y="985" width="1150" height="440" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<text x="45" y="1015" font-size="22" fill="#2563EB" text-anchor="start" font-weight="600">③ 已提交但响应丢失：重试读取已有结果</text>
+<rect x="77" y="1030" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="150" y="1054" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Client</text>
+<path d="M150 1069V1410" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="377" y="1030" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="450" y="1054" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Network</text>
+<path d="M450 1069V1410" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="677" y="1030" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="750" y="1054" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Server</text>
+<path d="M750 1069V1410" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<rect x="977" y="1030" width="146" height="34" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="1050" y="1054" font-size="19" fill="#2563EB" text-anchor="middle" font-weight="600">Database</text>
+<path d="M1050 1069V1410" stroke="#CBD5E1" stroke-dasharray="5 5"/>
+<path d="M150 1105H750" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="450.0" y="1097" font-size="17" fill="#2563EB" text-anchor="middle">首次扣款请求</text>
+<path d="M750 1150H1050" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="900.0" y="1142" font-size="17" fill="#2563EB" text-anchor="middle">提交扣款与结果</text>
+<rect x="1000" y="1157" width="100" height="25" rx="4" fill="#ECFDF5" stroke="#6EE7B7"/>
+<text x="1050" y="1175" font-size="16" fill="#059669" text-anchor="middle">COMMIT</text>
+<path d="M1050 1198H750" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="900.0" y="1190" font-size="17" fill="#059669" text-anchor="middle">已提交</text>
+<path d="M750 1240H450" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="600.0" y="1232" font-size="17" fill="#059669" text-anchor="middle">首次成功响应</text>
+<text x="432" y="1263" font-size="17" fill="#DC2626" text-anchor="end">× 响应丢失</text>
+<rect x="43" y="1266" width="215" height="31" rx="5" fill="#FFF7ED" stroke="#FDBA74"/>
+<text x="150" y="1288" font-size="18" fill="#D97706" text-anchor="middle">超时：结果未知</text>
+<path d="M150 1330H750" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="450.0" y="1322" font-size="17" fill="#2563EB" text-anchor="middle">同 ID 重试：pay-42</text>
+<path d="M750 1370H1050" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="900.0" y="1362" font-size="17" fill="#2563EB" text-anchor="middle">查询 COMPLETED 结果</text>
+<path d="M1050 1398H750" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="900.0" y="1390" font-size="17" fill="#059669" text-anchor="middle">已保存结果</text>
+<path d="M750 1420H150" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="450.0" y="1412" font-size="17" fill="#059669" text-anchor="middle">返回原成功结果（经 Network）</text>
+<text x="32" y="1470" font-size="18" fill="#0F172A" text-anchor="start">教学前提：网络最终恢复、原操作最终完成；持续故障时应停止自动重试并保留查询入口。</text>
+</g></svg>

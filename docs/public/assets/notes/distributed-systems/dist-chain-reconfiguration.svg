@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1510" viewBox="0 0 1560 1510" role="img" aria-labelledby="title desc">
+<title id="title">Chain Replication：故障后的配置与在途更新恢复</title><desc id="desc">CR 2004 Fail-stop 模型下三种故障的缩链及在途请求处理；配置服务重建前后继并通知客户端。另示 CRAQ 新节点双向同步和旧配置隔离边界。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">Chain Replication：故障后的配置与在途更新恢复</text>
+<text x="40" y="100" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">图例：蓝 = 新链 / 更新传播；红叉 = 停止节点；紫色虚线 = 配置控制；绿 = 恢复所需状态。</text>
+<rect x="40" y="145" width="1480" height="100" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="60" y="180" font-size="22" fill="#7C3AED" text-anchor="start" font-weight="700">Configuration Manager：检测停止，更新角色 / 前后继，通知客户端路由</text>
+<text x="60" y="214" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">CR 2004 假设可靠权威，原型用 Paxos 复制；CRAQ 2009 使用 ZooKeeper 成员与链元数据。</text>
+<text x="40" y="310" font-size="26" fill="#DC2626" text-anchor="start" font-weight="700">Head A 停止</text>
+<rect x="330" y="275" width="120" height="65" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="390" y="316" font-size="26" fill="#DC2626" text-anchor="middle" font-weight="400">A ×</text>
+<path d="M455 310 L500 310" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="505" y="275" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="565" y="316" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">B</text>
+<path d="M630 310 L675 310" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="680" y="275" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="740" y="316" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">C</text>
+<path d="M805 310 L850 310" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="855" y="275" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="915" y="316" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">D</text>
+<text x="1070" y="315" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">故障前角色与链</text>
+<rect x="330" y="375" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="350" y="410" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">B</text>
+<path d="M515 407 L565 407" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="570" y="375" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="590" y="410" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">C</text>
+<path d="M755 407 L805 407" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="810" y="375" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="830" y="410" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">D</text>
+<text x="1070" y="415" font-size="21" fill="#2563EB" text-anchor="start" font-weight="400">新链（角色已重配）</text>
+<text x="40" y="495" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">只有 A 收到且尚未转发的请求可能丢失；客户端处理未完成结果。</text>
+<path d="M1400 250 L1400 265" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<text x="40" y="560" font-size="26" fill="#DC2626" text-anchor="start" font-weight="700">Tail D 停止</text>
+<rect x="330" y="525" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="390" y="566" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">A</text>
+<path d="M455 560 L500 560" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="505" y="525" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="565" y="566" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">B</text>
+<path d="M630 560 L675 560" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="680" y="525" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="740" y="566" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">C</text>
+<path d="M805 560 L850 560" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="855" y="525" width="120" height="65" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="915" y="566" font-size="26" fill="#DC2626" text-anchor="middle" font-weight="400">D ×</text>
+<text x="1070" y="565" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">故障前角色与链</text>
+<rect x="330" y="625" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="350" y="660" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">A</text>
+<path d="M515 657 L565 657" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="570" y="625" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="590" y="660" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">B</text>
+<path d="M755 657 L805 657" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="810" y="625" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="830" y="660" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">C</text>
+<text x="1070" y="665" font-size="21" fill="#2563EB" text-anchor="start" font-weight="400">新链（角色已重配）</text>
+<text x="40" y="745" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">C 的历史包含旧 Tail 前缀；接管后可完成其已有的待提交更新。</text>
+<path d="M1400 250 L1400 515" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<text x="40" y="810" font-size="26" fill="#DC2626" text-anchor="start" font-weight="700">中间 C 停止</text>
+<rect x="330" y="775" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="390" y="816" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">A</text>
+<path d="M455 810 L500 810" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="505" y="775" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="565" y="816" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">B</text>
+<path d="M630 810 L675 810" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="680" y="775" width="120" height="65" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="740" y="816" font-size="26" fill="#DC2626" text-anchor="middle" font-weight="400">C ×</text>
+<path d="M805 810 L850 810" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="855" y="775" width="120" height="65" rx="12" fill="#F8FAFC" stroke="#64748B" stroke-width="2"/>
+<text x="915" y="816" font-size="26" fill="#0F172A" text-anchor="middle" font-weight="400">D</text>
+<text x="1070" y="815" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">故障前角色与链</text>
+<rect x="330" y="875" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="350" y="910" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">A</text>
+<path d="M515 907 L565 907" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="570" y="875" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="590" y="910" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">B</text>
+<path d="M755 907 L805 907" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="810" y="875" width="180" height="65" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="830" y="910" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">D</text>
+<text x="1070" y="915" font-size="21" fill="#2563EB" text-anchor="start" font-weight="400">新链（角色已重配）</text>
+<text x="40" y="995" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">先询问 D 的最后序号，再让 B 从 Sent 补传缺失后缀，之后继续新更新。</text>
+<path d="M1400 250 L1400 765" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<rect x="40" y="1080" width="1480" height="150" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="60" y="1115" font-size="24" fill="#059669" text-anchor="start" font-weight="700">CRAQ 加入示例：A → X（新节点）→ B</text>
+<text x="60" y="1149" font-size="24" fill="#0F172A" text-anchor="start" font-weight="400">A 向 X 前传；B 向 X 反传最新 Clean + 全部较新 Dirty 状态。</text>
+<text x="60" y="1183" font-size="24" fill="#0F172A" text-anchor="start" font-weight="400">X 与后继就对象达成一致前拒绝该对象读取；恢复中再故障仍需继续补齐状态。</text>
+<rect x="40" y="1280" width="1480" height="145" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="60" y="1315" font-size="23" fill="#D97706" text-anchor="start" font-weight="700">生效条件：传播前缀与在途状态恢复，角色 / 路由安全切换，旧角色不再服务。</text>
+<text x="60" y="1349" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">原始 Fail-stop 模型中旧节点已停止；分区 / 重启环境还要设计旧配置隔离。</text>
+<text x="60" y="1383" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">不是只删除一个链表元素；也不把 CRAQ 的 DHT 定长链变化等同于上面的简单缩链。</text>
+</g></svg>
