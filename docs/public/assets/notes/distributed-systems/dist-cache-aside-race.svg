@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1040" viewBox="0 0 1560 1040" role="img" aria-labelledby="title desc">
+<title id="title">Cache-Aside：删除后，旧查询仍可能迟到回填</title><desc id="desc">四泳道教学时序。缓存未命中，A读到100暂停，B将数据库改为120并删除缓存，A最后回填100，导致数据库与缓存不一致。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">Cache-Aside：删除后，旧查询仍可能迟到回填</text>
+<text x="40" y="100" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">教学竞态 · 初始数据库 price=100，缓存未命中；没有版本校验或串行协调。</text>
+<rect x="25" y="145" width="330" height="75" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="45" y="180" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">请求 A · 读取</text>
+<path d="M190 230 L190 800" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="415" y="145" width="330" height="75" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="435" y="180" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">请求 B · 更新</text>
+<path d="M580 230 L580 800" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="805" y="145" width="330" height="75" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="825" y="180" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Database · 权威数据</text>
+<path d="M970 230 L970 800" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="1195" y="145" width="330" height="75" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1215" y="180" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Cache · 缓存</text>
+<path d="M1360 230 L1360 800" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<path d="M190 290 L1360 290" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="775.0" y="277" font-size="23" fill="#2563EB" text-anchor="middle" font-weight="400">A 查缓存：未命中</text>
+<path d="M190 370 L970 370" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="580.0" y="357" font-size="23" fill="#2563EB" text-anchor="middle" font-weight="400">T1 · A 查询数据库</text>
+<path d="M970 435 L190 435" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="580.0" y="422" font-size="23" fill="#2563EB" text-anchor="middle" font-weight="400">返回 price=100；A 暂未回填</text>
+<path d="M580 535 L970 535" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="775.0" y="522" font-size="23" fill="#059669" text-anchor="middle" font-weight="400">T2 · B 提交 price=120</text>
+<path d="M580 635 L1360 635" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="970.0" y="622" font-size="23" fill="#059669" text-anchor="middle" font-weight="400">T3 · B 删除缓存</text>
+<path d="M190 745 L1360 745" fill="none" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="775.0" y="732" font-size="23" fill="#DC2626" text-anchor="middle" font-weight="400">T4 · A 恢复，将旧 price=100 回填</text>
+<rect x="40" y="850" width="710" height="135" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="60" y="885" font-size="25" fill="#059669" text-anchor="start" font-weight="700">最终 Database = 120</text>
+<text x="60" y="919" font-size="25" fill="#0F172A" text-anchor="start" font-weight="400">B 的数据库更新已经提交。</text>
+<rect x="810" y="850" width="710" height="135" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="830" y="885" font-size="25" fill="#DC2626" text-anchor="start" font-weight="700">最终 Cache = 100</text>
+<text x="830" y="919" font-size="25" fill="#0F172A" text-anchor="start" font-weight="400">删除不能撤销在途旧查询的回填。</text>
+<text x="40" y="1020" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">版本下界、可靠失效与修复需要额外协议；TTL 和固定延迟双删都不是强一致性证明。</text>
+</g></svg>

@@ -1,5 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">Paxos：高编号不能随意选择新值</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">Paxos：高编号不能随意选择新值</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">箭头表示逻辑推进；异常分支与成立条件见正文。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">Prepare：提出唯一编号 n</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">收集多数承诺及它们已接受的最高编号和值</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">选择阶段二的值</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">若有历史接受值，沿用回复中最高编号的值</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">Accept：请求接受 n 与选定值</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">Acceptor 仅在不违背更高承诺时接受</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">达到多数后成为 chosen</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">未获知结果不等于未选定；更高提案仍要遵守继承规则</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">这是单槽 Basic Paxos 的主线；活性、日志槽与成员变更另有机制。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1260" viewBox="0 0 1400 1260" role="img" aria-labelledby="title desc">
+<!-- 原生可编辑 SVG 即维护图源；时间向下，数字及场景为教学推演。 -->
+<title id="title">Paxos：询问历史、继承 blue，再让 Learner 获知</title><desc id="desc">单槽教学时序。A B 曾接受 (5,blue)，blue 已 Chosen，但 Learner 尚未获知。新 Proposer 向 B C Prepare(8)，B 返回 (5,blue)，C 无历史；继承 blue，阶段二被 B C 接受，再由通知使 Learner 获知。</desc>
+<defs>
+<marker id="blue" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+</defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="32" y="45" font-size="27" fill="#2563EB" text-anchor="start" font-weight="600">Paxos：询问历史、继承 blue，再让 Learner 获知</text>
+<text x="32" y="82" font-size="18" fill="#0F172A" text-anchor="start">初始：A、B 已接受 (5, blue)，blue 已 Chosen；Learner 尚未获知。固定三个 Acceptor。</text>
+<rect x="55.0" y="120" width="190" height="44" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="150" y="149" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">Proposer</text>
+<path d="M150 164V1065" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 6"/>
+<rect x="355.0" y="120" width="190" height="44" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="450" y="149" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">Acceptor A</text>
+<path d="M450 164V1065" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 6"/>
+<rect x="605.0" y="120" width="190" height="44" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="700" y="149" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">Acceptor B</text>
+<path d="M700 164V1065" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 6"/>
+<rect x="855.0" y="120" width="190" height="44" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="950" y="149" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">Acceptor C</text>
+<path d="M950 164V1065" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 6"/>
+<rect x="1125.0" y="120" width="190" height="44" rx="6" fill="#EFF6FF" stroke="#BFDBFE"/>
+<text x="1220" y="149" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="600">Learner</text>
+<path d="M1220 164V1065" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 6"/>
+<text x="450" y="207" font-size="17" fill="#0F172A" text-anchor="middle">Accepted=(5,blue)</text>
+<text x="700" y="207" font-size="17" fill="#0F172A" text-anchor="middle">Accepted=(5,blue)</text>
+<text x="950" y="207" font-size="17" fill="#0F172A" text-anchor="middle">Accepted=无</text>
+<text x="1220" y="207" font-size="17" fill="#D97706" text-anchor="middle">尚未 Learned</text>
+<path d="M150 280H700" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="425.0" y="270" font-size="18" fill="#2563EB" text-anchor="middle">Phase 1：Prepare(8)</text>
+<path d="M150 345H950" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<text x="550.0" y="335" font-size="18" fill="#2563EB" text-anchor="middle">Prepare(8)</text>
+<path d="M700 410H150" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="425.0" y="400" font-size="18" fill="#059669" text-anchor="middle">Promise(8)，历史 (5, blue)</text>
+<path d="M950 475H150" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="550.0" y="465" font-size="18" fill="#059669" text-anchor="middle">Promise(8)，历史为空</text>
+<rect x="35" y="505" width="320" height="110" rx="10" fill="#F5F3FF" stroke="#7C3AED"/>
+<text x="195.0" y="534" font-size="20" fill="#7C3AED" text-anchor="middle" font-weight="600">收集多数回复 B、C</text>
+<text x="195.0" y="562" font-size="18" fill="#0F172A" text-anchor="middle">继承最高接受编号的 blue</text>
+<text x="195.0" y="590" font-size="18" fill="#0F172A" text-anchor="middle">编号变大不允许随意改 red</text>
+<path d="M150 650H700" fill="none" stroke="#7C3AED" stroke-width="2" marker-end="url(#purple)"/>
+<text x="425.0" y="640" font-size="18" fill="#7C3AED" text-anchor="middle">Phase 2：Accept(8, blue)</text>
+<path d="M150 710H950" fill="none" stroke="#7C3AED" stroke-width="2" marker-end="url(#purple)"/>
+<text x="550.0" y="700" font-size="18" fill="#7C3AED" text-anchor="middle">Accept(8, blue)</text>
+<rect x="985" y="730" width="370" height="82" rx="10" fill="#ECFDF5" stroke="#059669"/>
+<text x="1170.0" y="759" font-size="20" fill="#059669" text-anchor="middle" font-weight="600">B、C 已持久化接受 (8, blue)</text>
+<text x="1170.0" y="787" font-size="18" fill="#0F172A" text-anchor="middle">提案 8 也达到多数：Chosen</text>
+<path d="M700 815H150" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="425.0" y="805" font-size="18" fill="#059669" text-anchor="middle">Accepted(8, blue)</text>
+<path d="M950 875H150" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="550.0" y="865" font-size="18" fill="#059669" text-anchor="middle">Accepted(8, blue)</text>
+<path d="M700 935H1220" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="960.0" y="925" font-size="18" fill="#059669" text-anchor="middle">接受通知：B，(8, blue)</text>
+<path d="M950 995H1220" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#green)"/>
+<text x="1085.0" y="985" font-size="18" fill="#059669" text-anchor="middle">接受通知：C，(8, blue)</text>
+<rect x="1040" y="1020" width="340" height="82" rx="10" fill="#ECFDF5" stroke="#059669"/>
+<text x="1210.0" y="1049" font-size="20" fill="#059669" text-anchor="middle" font-weight="600">同槽、同号的多数证据齐备</text>
+<text x="1210.0" y="1077" font-size="18" fill="#0F172A" text-anchor="middle">Learner 获知 blue</text>
+<rect x="35" y="1130" width="1330" height="96" rx="10" fill="#FFF7ED" stroke="#FDBA74"/>
+<text x="55" y="1166" font-size="22" fill="#D97706" text-anchor="start">旧多数 {A,B} ∩ 新多数 {B,C} = {B}；交集让新轮次能获得接受历史。</text>
+<text x="55" y="1204" font-size="19" fill="#0F172A" text-anchor="start">多数交集、值继承和持久化共同保护安全；Chosen 是协议事实，Learned 是某观察者已知的事实。</text>
+</g></svg>

@@ -1,5 +1,95 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
-<title id="title">线性一致性：调用与响应使用共同时间轴</title><desc id="desc">R1与W1重叠可排在写前或写后；R2开始晚于W1完成，且无其他写。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">线性一致性：调用与响应使用共同时间轴</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">初值x=0；W1=[1,4]，R1=[2,3]，R2=[5,6]，与正文同一个并发示例。</tspan></text><rect x="275" y="210" width="435" height="90" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="492.5" y="247" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="492.5" dy="0">W1 写1</tspan></text><text x="492.5" y="284" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="492.5" dy="0"></tspan></text><text x="275" y="190" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="275" dy="0">调用</tspan></text><text x="710" y="330" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="710" dy="0">响应</tspan></text><rect x="420" y="370" width="145" height="90" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="492.5" y="407" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="492.5" dy="0">R1 读0或1</tspan></text><text x="492.5" y="444" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="492.5" dy="0"></tspan></text><text x="420" y="350" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="420" dy="0">调用</tspan></text><text x="565" y="490" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="565" dy="0">响应</tspan></text><rect x="855" y="530" width="145" height="90" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="927.5" y="567" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="927.5" dy="0">R2 必须读1</tspan></text><text x="927.5" y="604" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="927.5" dy="0"></tspan></text><text x="855" y="510" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="855" dy="0">调用</tspan></text><text x="1000" y="650" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="1000" dy="0">响应</tspan></text><path d="M130 690 L1140 690" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="130" y="725" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="130" dy="0">0</tspan></text><text x="275" y="725" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="275" dy="0">1</tspan></text><text x="420" y="725" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="420" dy="0">2</tspan></text><text x="565" y="725" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="565" dy="0">3</tspan></text><text x="710" y="725" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="710" dy="0">4</tspan></text><text x="855" y="725" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="855" dy="0">5</tspan></text><text x="1000" y="725" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="1000" dy="0">6</tspan></text><text x="600.0" y="770" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600.0" dy="0">R1与W1重叠可排在写前或写后；R2开始晚于W1完成，且无其他写。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+<!-- 原生可编辑 SVG 即维护图源；图中的数字为教学推演。 -->
+<title id="title">线性一致性：区间、线性化点与合法结果</title><desc id="desc">初值 x=0；W1 写 1，调用区间 1 到 4；R1 区间 2 到 3；R2 区间 5 到 6。两个独立面板展示 R1=0 或 1，R2 都为 1。圆点是一组可行的线性化点。</desc>
+<defs>
+<marker id="blue" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563EB"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7C3AED"/></marker>
+<marker id="green" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+<marker id="orange" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#D97706"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#DC2626"/></marker>
+</defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="32" y="47" font-size="28" fill="#2563EB" text-anchor="start" font-weight="600">线性一致性：区间、线性化点与合法结果</text>
+<text x="32" y="84" font-size="18" fill="#0F172A" text-anchor="start">教学历史：A 发起 W1，B 顺序发起 R1、R2；没有其他写入。</text>
+<rect x="25" y="110" width="1150" height="315" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<text x="48" y="143" font-size="23" fill="#2563EB" text-anchor="start" font-weight="600">合法解释一：R1 → W1 → R2</text>
+<text x="50" y="206" font-size="20" fill="#0F172A" text-anchor="start">W1：写 x=1</text>
+<rect x="385" y="188" width="420" height="24" rx="5" fill="#F5F3FF" stroke="#7C3AED"/>
+<path d="M385 182V218" fill="none" stroke="#7C3AED" stroke-width="2"/>
+<path d="M805 182V218" fill="none" stroke="#7C3AED" stroke-width="2"/>
+<circle cx="595.00" cy="200.00" r="7" fill="#7C3AED" stroke="#FFFFFF" stroke-width="2"/>
+<text x="385" y="177" font-size="16" fill="#7C3AED" text-anchor="middle">调用</text>
+<text x="805" y="239" font-size="16" fill="#7C3AED" text-anchor="middle">返回：成功</text>
+<text x="595.0" y="177" font-size="17" fill="#7C3AED" text-anchor="middle">线性化点 2.5</text>
+<text x="50" y="272" font-size="20" fill="#0F172A" text-anchor="start">R1：读 x</text>
+<rect x="525" y="254" width="140" height="24" rx="5" fill="#ECFDF5" stroke="#059669"/>
+<path d="M525 248V284" fill="none" stroke="#059669" stroke-width="2"/>
+<path d="M665 248V284" fill="none" stroke="#059669" stroke-width="2"/>
+<circle cx="560.00" cy="266.00" r="7" fill="#059669" stroke="#FFFFFF" stroke-width="2"/>
+<text x="525" y="243" font-size="16" fill="#059669" text-anchor="middle">调用</text>
+<text x="665" y="305" font-size="16" fill="#059669" text-anchor="middle">返回：0</text>
+<text x="50" y="338" font-size="20" fill="#0F172A" text-anchor="start">R2：读 x</text>
+<rect x="945" y="320" width="140" height="24" rx="5" fill="#ECFDF5" stroke="#059669"/>
+<path d="M945 314V350" fill="none" stroke="#059669" stroke-width="2"/>
+<path d="M1085 314V350" fill="none" stroke="#059669" stroke-width="2"/>
+<circle cx="1015.00" cy="332.00" r="7" fill="#059669" stroke="#FFFFFF" stroke-width="2"/>
+<text x="945" y="309" font-size="16" fill="#059669" text-anchor="middle">调用</text>
+<text x="1085" y="371" font-size="16" fill="#059669" text-anchor="middle">返回：1</text>
+<path d="M245 395H1140" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<path d="M245 391V399" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="245" y="417" font-size="16" fill="#0F172A" text-anchor="middle">0</text>
+<path d="M385 391V399" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="385" y="417" font-size="16" fill="#0F172A" text-anchor="middle">1</text>
+<path d="M525 391V399" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="525" y="417" font-size="16" fill="#0F172A" text-anchor="middle">2</text>
+<path d="M665 391V399" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="665" y="417" font-size="16" fill="#0F172A" text-anchor="middle">3</text>
+<path d="M805 391V399" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="805" y="417" font-size="16" fill="#0F172A" text-anchor="middle">4</text>
+<path d="M945 391V399" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="945" y="417" font-size="16" fill="#0F172A" text-anchor="middle">5</text>
+<path d="M1085 391V399" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="1085" y="417" font-size="16" fill="#0F172A" text-anchor="middle">6</text>
+<rect x="25" y="445" width="1150" height="315" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<text x="48" y="478" font-size="23" fill="#2563EB" text-anchor="start" font-weight="600">合法解释二：W1 → R1 → R2</text>
+<text x="50" y="541" font-size="20" fill="#0F172A" text-anchor="start">W1：写 x=1</text>
+<rect x="385" y="523" width="420" height="24" rx="5" fill="#F5F3FF" stroke="#7C3AED"/>
+<path d="M385 517V553" fill="none" stroke="#7C3AED" stroke-width="2"/>
+<path d="M805 517V553" fill="none" stroke="#7C3AED" stroke-width="2"/>
+<circle cx="595.00" cy="535.00" r="7" fill="#7C3AED" stroke="#FFFFFF" stroke-width="2"/>
+<text x="385" y="512" font-size="16" fill="#7C3AED" text-anchor="middle">调用</text>
+<text x="805" y="574" font-size="16" fill="#7C3AED" text-anchor="middle">返回：成功</text>
+<text x="595.0" y="512" font-size="17" fill="#7C3AED" text-anchor="middle">线性化点 2.5</text>
+<text x="50" y="607" font-size="20" fill="#0F172A" text-anchor="start">R1：读 x</text>
+<rect x="525" y="589" width="140" height="24" rx="5" fill="#ECFDF5" stroke="#059669"/>
+<path d="M525 583V619" fill="none" stroke="#059669" stroke-width="2"/>
+<path d="M665 583V619" fill="none" stroke="#059669" stroke-width="2"/>
+<circle cx="630.00" cy="601.00" r="7" fill="#059669" stroke="#FFFFFF" stroke-width="2"/>
+<text x="525" y="578" font-size="16" fill="#059669" text-anchor="middle">调用</text>
+<text x="665" y="640" font-size="16" fill="#059669" text-anchor="middle">返回：1</text>
+<text x="50" y="673" font-size="20" fill="#0F172A" text-anchor="start">R2：读 x</text>
+<rect x="945" y="655" width="140" height="24" rx="5" fill="#ECFDF5" stroke="#059669"/>
+<path d="M945 649V685" fill="none" stroke="#059669" stroke-width="2"/>
+<path d="M1085 649V685" fill="none" stroke="#059669" stroke-width="2"/>
+<circle cx="1015.00" cy="667.00" r="7" fill="#059669" stroke="#FFFFFF" stroke-width="2"/>
+<text x="945" y="644" font-size="16" fill="#059669" text-anchor="middle">调用</text>
+<text x="1085" y="706" font-size="16" fill="#059669" text-anchor="middle">返回：1</text>
+<path d="M245 730H1140" fill="none" stroke="#2563EB" stroke-width="2" marker-end="url(#blue)"/>
+<path d="M245 726V734" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="245" y="752" font-size="16" fill="#0F172A" text-anchor="middle">0</text>
+<path d="M385 726V734" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="385" y="752" font-size="16" fill="#0F172A" text-anchor="middle">1</text>
+<path d="M525 726V734" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="525" y="752" font-size="16" fill="#0F172A" text-anchor="middle">2</text>
+<path d="M665 726V734" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="665" y="752" font-size="16" fill="#0F172A" text-anchor="middle">3</text>
+<path d="M805 726V734" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="805" y="752" font-size="16" fill="#0F172A" text-anchor="middle">4</text>
+<path d="M945 726V734" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="945" y="752" font-size="16" fill="#0F172A" text-anchor="middle">5</text>
+<path d="M1085 726V734" fill="none" stroke="#2563EB" stroke-width="2"/>
+<text x="1085" y="752" font-size="16" fill="#0F172A" text-anchor="middle">6</text>
+<rect x="25" y="786" width="1150" height="86" rx="10" fill="#FFF7ED" stroke="#FDBA74"/>
+<text x="45" y="820" font-size="20" fill="#DC2626" text-anchor="start">非法：R2=0。W1 在 4 已返回，R2 在 5 才调用，因此 R2 必须读到 1。</text>
+<text x="45" y="851" font-size="18" fill="#0F172A" text-anchor="start">区间端点是调用 / 返回；圆点是为解释历史选定的位置，不是测得的内部提交时间。</text>
+</g></svg>

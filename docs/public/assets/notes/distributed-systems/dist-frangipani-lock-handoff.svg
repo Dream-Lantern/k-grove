@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="1500" viewBox="0 0 1640 1500" role="img" aria-labelledby="title desc">
+<title id="title">Frangipani 1997：先完成缓存交接，再授权</title><desc id="desc">四泳道A B LockService Petal。Read到Write先失效释放；Write到Read先日志持久和脏数据写回再降级，可保留缓存。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">Frangipani 1997：先完成缓存交接，再授权</text>
+<text x="40" y="100" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">教学时序 · Request / Grant / Revoke / Release 为锁服务消息；Petal I/O 走独立路径。</text>
+<rect x="55" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="75" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">File Server A</text>
+<text x="75" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">含 Clerk</text>
+<path d="M190 230 L190 1350" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="475" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="495" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">File Server B</text>
+<text x="495" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">含 Clerk</text>
+<path d="M610 230 L610 1350" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="895" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="915" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">Lock Service</text>
+<text x="915" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">分布式锁服务</text>
+<path d="M1030 230 L1030 1350" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="1315" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1335" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">Petal</text>
+<text x="1335" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">共享虚拟磁盘</text>
+<path d="M1450 230 L1450 1350" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<text x="40" y="280" font-size="24" fill="#2563EB" text-anchor="start" font-weight="700">场景 1 · A 持有 Read，B 请求 Write</text>
+<path d="M610 350 L1030 350" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="820.0" y="337" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="400">Request(Write)</text>
+<path d="M1030 425 L190 425" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="610.0" y="412" font-size="22" fill="#D97706" text-anchor="middle" font-weight="400">Revoke(Read)：要求释放</text>
+<rect x="55" y="455" width="300" height="90" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="75" y="490" font-size="20" fill="#D97706" text-anchor="start" font-weight="700">A 使缓存失效</text>
+<text x="75" y="524" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">等待适用操作结束</text>
+<path d="M190 600 L1030 600" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="610.0" y="587" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="400">Release(Read) · 缓存已失效</text>
+<path d="M1030 675 L610 675" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="820.0" y="662" font-size="21" fill="#059669" text-anchor="middle" font-weight="400">Grant(Write)</text>
+<path d="M610 750 L1450 750" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1030.0" y="737" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">B 从 Petal 读取，随后按写锁规则修改</text>
+<text x="40" y="835" font-size="24" fill="#2563EB" text-anchor="start" font-weight="700">场景 2 · A 已获 Write 并修改本地缓存，B 请求 Read</text>
+<path d="M610 900 L1030 900" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="820.0" y="887" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="400">Request(Read)</text>
+<path d="M1030 970 L190 970" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="610.0" y="957" font-size="22" fill="#D97706" text-anchor="middle" font-weight="400">Revoke(Write)：要求消除冲突</text>
+<path d="M190 1040 L1450 1040" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="820.0" y="1027" font-size="22" fill="#7C3AED" text-anchor="middle" font-weight="400">A：必要元数据日志先持久化到 Petal</text>
+<path d="M190 1110 L1450 1110" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="820.0" y="1097" font-size="22" fill="#7C3AED" text-anchor="middle" font-weight="400">A：将脏数据写回永久位置，完成后才能降级</text>
+<path d="M190 1180 L1030 1180" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="610.0" y="1167" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="400">A 同意降级为 Read · 可保留缓存</text>
+<path d="M1030 1250 L610 1250" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="820.0" y="1237" font-size="21" fill="#059669" text-anchor="middle" font-weight="400">Grant(Read)</text>
+<path d="M610 1320 L1450 1320" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1030.0" y="1307" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">B 读取已更新数据</text>
+<rect x="40" y="1380" width="1560" height="80" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="60" y="1415" font-size="23" fill="#DC2626" text-anchor="start" font-weight="700">Write → Write：A 同样先写回，但释放时必须使缓存失效。依据：论文 §5—6。</text>
+</g></svg>
