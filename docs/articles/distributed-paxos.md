@@ -60,11 +60,11 @@ Promise 不等于接受值，Prepare 也不是 Accept。Acceptor 的准入检查
 
 教学例子：A、B 接受了提案 `(5, blue)`，已达到三个 Acceptor 中的多数。新的 Proposer 发起 `Prepare(8)`，从 B、C 收到 Promise；B 报告已接受 `(5, blue)`，C 没有接受值。新提案必须继承蓝色 blue，不能因为编号更大就换成红色 red。
 
-| 节点 | Promise | Accepted |
-| --- | --- | --- |
-| A | 5 | (5, blue) |
-| B | 8 | (5, blue) |
-| C | 8 | 无 |
+| 节点 | Promise | Accepted  |
+| ---- | ------- | --------- |
+| A    | 5       | (5, blue) |
+| B    | 8       | (5, blue) |
+| C    | 8       | 无        |
 
 这张状态表表示新一轮 Prepare 已完成、Accept 尚未开始的教学时刻。下一步应发送 `Accept(8, blue)`。原多数 `{A,B}` 与新多数 `{B,C}` 的交集为 `{B}`，因此新轮次能从 B 得到接受历史。若 B 报告了更高编号的已接受提案，就按最高编号规则继承；协议的安全性保证合法历史中的这些继承不会推翻已选定值。
 
@@ -72,11 +72,11 @@ Promise 不等于接受值，Prepare 也不是 Accept。Acceptor 的准入检查
 
 ### Accepted、Chosen 与 Learned
 
-| 概念 | 定义 |
-| --- | --- |
-| 已接受（Accepted） | 某个 Acceptor 已接受某编号及其值，这是单节点事实 |
-| 已选定（Chosen） | 同一实例中，同一个提案 `(n,v)` 已被多数 Acceptor 接受，这是协议事实 |
-| 已获知（Learned） | 某个 Learner 已有足够证据知道值被选定，这是该观察者的知识状态 |
+| 概念               | 定义                                                                |
+| ------------------ | ------------------------------------------------------------------- |
+| 已接受（Accepted） | 某个 Acceptor 已接受某编号及其值，这是单节点事实                    |
+| 已选定（Chosen）   | 同一实例中，同一个提案 `(n,v)` 已被多数 Acceptor 接受，这是协议事实 |
+| 已获知（Learned）  | 某个 Learner 已有足够证据知道值被选定，这是该观察者的知识状态       |
 
 教学消息丢失案例：A、B 已接受 `(5, blue)`，所以 blue 已 Chosen；通知 Learner 的消息却丢失，它仍未 Learned。后续没有及时收到结果，不会把已选定值变回未选定。
 

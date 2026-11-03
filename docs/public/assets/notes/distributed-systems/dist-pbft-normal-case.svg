@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1780" height="1910" viewBox="0 0 1780 1910" role="img" aria-labelledby="title desc">
+<title id="title">经典 PBFT：f=1 的正常路径与三种计数</title><desc id="desc">五泳道Client P B1 B2 B3。B3本次沉默。显示全部正确副本之间的Prepare和Commit，B1用自身和B2两个Prepare，用P自身B2三个Commit，再按序执行，客户端获得两份相同回复。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">经典 PBFT：f=1 的正常路径与三种计数</text>
+<text x="40" y="100" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">依据：Castro / Liskov 1999 §4.1—4.2 · N=4，最多 f=1 故障；本例 B3 沉默。</text>
+<rect x="25" y="140" width="290" height="100" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="45" y="175" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Client</text>
+<text x="45" y="209" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">等待相同结果</text>
+<path d="M170 245 L170 1565" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="375" y="140" width="290" height="100" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="395" y="175" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">P · Primary</text>
+<text x="395" y="209" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">发 Pre-Prepare</text>
+<path d="M520 245 L520 1565" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="725" y="140" width="290" height="100" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="745" y="175" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">B1 · Backup</text>
+<text x="745" y="209" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">重点观察计数</text>
+<path d="M870 245 L870 1565" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="1075" y="140" width="290" height="100" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="1095" y="175" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">B2 · Backup</text>
+<text x="1095" y="209" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">正确副本</text>
+<path d="M1220 245 L1220 1565" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="1425" y="140" width="290" height="100" rx="12" fill="#F8FAFC" stroke="#D97706" stroke-width="2"/>
+<text x="1445" y="175" font-size="22" fill="#D97706" text-anchor="start" font-weight="700">B3 · Backup</text>
+<text x="1445" y="209" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">本例沉默</text>
+<path d="M1570 245 L1570 1565" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<path d="M170 305 L520 305" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="345.0" y="292" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="400">① Request</text>
+<path d="M520 385 L870 385" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="695.0" y="372" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="400">② Pre-Prepare</text>
+<path d="M520 445 L1220 445" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="870.0" y="432" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="400">同一 (view, n, digest)</text>
+<path d="M520 505 L1570 505" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1045.0" y="492" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="400">Pre-Prepare；B3 本次不响应</text>
+<path d="M870 605 L520 605" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="695.0" y="592" font-size="22" fill="#7C3AED" text-anchor="middle" font-weight="400">③ Prepare · B1</text>
+<path d="M1220 665 L520 665" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="870.0" y="652" font-size="22" fill="#7C3AED" text-anchor="middle" font-weight="400">Prepare · B2</text>
+<path d="M870 725 L1220 725" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1045.0" y="712" font-size="22" fill="#7C3AED" text-anchor="middle" font-weight="400">Prepare · B1</text>
+<path d="M1220 785 L870 785" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1045.0" y="772" font-size="22" fill="#7C3AED" text-anchor="middle" font-weight="400">Prepare · B2</text>
+<text x="40" y="835" font-size="22" fill="#7C3AED" text-anchor="start" font-weight="400">P、B1、B2 各已具备准备证据；B1 的两份 Prepare = 自身 + B2，不含 P 的 Pre-Prepare。</text>
+<path d="M520 900 L870 900" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="695.0" y="887" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">④ Commit · P</text>
+<path d="M520 960 L1220 960" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="870.0" y="947" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">Commit · P</text>
+<path d="M870 1020 L520 1020" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="695.0" y="1007" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">Commit · B1</text>
+<path d="M870 1080 L1220 1080" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1045.0" y="1067" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">Commit · B1</text>
+<path d="M1220 1140 L520 1140" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="870.0" y="1127" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">Commit · B2</text>
+<path d="M1220 1200 L870 1200" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1045.0" y="1187" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">Commit · B2</text>
+<text x="40" y="1250" font-size="23" fill="#059669" text-anchor="start" font-weight="400">B1：已 prepared + 来自 P、B1、B2 的三份 Commit → committed-local。</text>
+<rect x="375" y="1290" width="290" height="105" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="395" y="1325" font-size="20" fill="#059669" text-anchor="start" font-weight="700">⑤ Replica Execute</text>
+<text x="395" y="1359" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">先等更早序号执行</text>
+<rect x="725" y="1290" width="290" height="105" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="745" y="1325" font-size="20" fill="#059669" text-anchor="start" font-weight="700">⑤ Replica Execute</text>
+<text x="745" y="1359" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">先等更早序号执行</text>
+<rect x="1075" y="1290" width="290" height="105" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="1095" y="1325" font-size="20" fill="#059669" text-anchor="start" font-weight="700">⑤ Replica Execute</text>
+<text x="1095" y="1359" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">先等更早序号执行</text>
+<path d="M870 1460 L170 1460" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="520.0" y="1447" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">⑥ Reply · B1（请求 t，结果 r）</text>
+<path d="M1220 1540 L170 1540" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="695.0" y="1527" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">Reply · B2（相同请求 t、相同 r）</text>
+<rect x="40" y="1610" width="540" height="125" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="60" y="1645" font-size="22" fill="#7C3AED" text-anchor="start" font-weight="700">Prepare：2f = 2</text>
+<text x="60" y="1679" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">B1 自身 + B2；P 不发 Prepare。</text>
+<rect x="620" y="1610" width="540" height="125" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="640" y="1645" font-size="22" fill="#059669" text-anchor="start" font-weight="700">Commit：2f+1 = 3</text>
+<text x="640" y="1679" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">B1 已 prepared，再计 P、B1、B2。</text>
+<rect x="1200" y="1610" width="540" height="125" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1220" y="1645" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Client Reply：f+1 = 2</text>
+<text x="1220" y="1679" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">不同副本、同请求、同结果。</text>
+<text x="40" y="1795" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">为突出计数，省略发往沉默 B3 的 Prepare / Commit；完整协议仍向其他副本组播。</text>
+<text x="40" y="1835" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">箭头只代表消息；经认证且满足视图、序号、水位和匹配检查后，才能计入证据。重发不重复计票。</text>
+<text x="40" y="1875" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">B3 沉默无需计票；无效或不匹配消息不计入。View Change 与 Checkpoint 另见正文。</text>
+</g></svg>

@@ -46,21 +46,21 @@ T4 的回调不能当成“恰好执行一次 v1→v2 的业务动作”。它�
 
 ### 三个读取 API 的触发范围
 
-| 注册方式 | NodeCreated | NodeDeleted | NodeDataChanged | NodeChildrenChanged |
-| --- | --- | --- | --- | --- |
-| `exists(path, watch)` | 原先不存在的节点被创建 | 已存在节点被删除 | 本节点数据改变 | 不触发 |
-| `getData(path, watch)` | 不触发 | 本节点被删除 | 本节点数据改变 | 不触发 |
-| `getChildren(path, watch)` | 不触发 | 本节点被删除 | 不触发 | 直接子节点列表改变 |
+| 注册方式                   | NodeCreated            | NodeDeleted      | NodeDataChanged | NodeChildrenChanged |
+| -------------------------- | ---------------------- | ---------------- | --------------- | ------------------- |
+| `exists(path, watch)`      | 原先不存在的节点被创建 | 已存在节点被删除 | 本节点数据改变  | 不触发              |
+| `getData(path, watch)`     | 不触发                 | 本节点被删除     | 本节点数据改变  | 不触发              |
+| `getChildren(path, watch)` | 不触发                 | 本节点被删除     | 不触发          | 直接子节点列表改变  |
 
 `exists` 可以在目标不存在时留下存在性 Watch；`getData`、`getChildren` 在目标不存在时返回 `NoNode`，不能按成功读取已注册来处理。`getChildren` 观察的是子列表，不会自动收集每个子节点的数据变更，更不保存全部后代的更新历史。[3.9.3 Semantics of Watches](https://zookeeper.apache.org/doc/r3.9.3/zookeeperProgrammers.html#ch_zkWatches)
 
 ### 一次性、持久与递归 Watch
 
-| 类型 | 注册与持续性 | 范围与处理 |
-| --- | --- | --- |
-| 标准 Watch（Standard Watch） | 通过适用读 API 注册，触发后移除 | 通知后用读取并注册重新观察 |
-| 持久 Watch（Persistent Watch） | `addWatch` 注册，触发后仍保留 | 观察指定路径的适用事件，仍须读取当前状态 |
-| 持久递归 Watch（Persistent Recursive Watch） | `addWatch` 选择递归模式 | 覆盖注册路径及适用后代的创建、删除、数据变化事件；不触发 `NodeChildrenChanged`，避免与后代事件重复 |
+| 类型                                         | 注册与持续性                    | 范围与处理                                                                                         |
+| -------------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 标准 Watch（Standard Watch）                 | 通过适用读 API 注册，触发后移除 | 通知后用读取并注册重新观察                                                                         |
+| 持久 Watch（Persistent Watch）               | `addWatch` 注册，触发后仍保留   | 观察指定路径的适用事件，仍须读取当前状态                                                           |
+| 持久递归 Watch（Persistent Recursive Watch） | `addWatch` 选择递归模式         | 覆盖注册路径及适用后代的创建、删除、数据变化事件；不触发 `NodeChildrenChanged`，避免与后代事件重复 |
 
 后两种模式在 3.6 引入，这里按 **3.9.3** 语义讨论。持久 Watch 的“持久”表示注册不会因触发自动移除，不表示断连期间存在供应用任意回放的可靠事件日志。其余顺序与通知保证仍按文档解释；应用重建新会话时也须恢复所需注册。[3.9.3 Persistent, Recursive Watches](https://zookeeper.apache.org/doc/r3.9.3/zookeeperProgrammers.html#ch_zkWatches)
 
@@ -96,12 +96,12 @@ Expired：丢弃旧会话、旧资格及相关任务；新会话中重新注册�
 
 同路径删除重建会带来 ABA（A→B→A，表面条件恢复而对象身份已改变）问题。教学时间线如下，czxid 使用简化数字：
 
-| 时点 | 操作 | 对象身份与状态 |
-| --- | --- | --- |
-| T1 | A 读取 `/counter` | 世代 G1：data=10，version=0，czxid=100 |
-| T2 | B 删除 `/counter` | G1 结束 |
-| T3 | B 在同路径重新创建 | 世代 G2：data=20，version=0，czxid=200 |
-| T4 | A 以旧读值计算后执行 `setData("/counter", 11, version=0)` | 新 G2 的版本也匹配 0，迟到操作可能成功覆盖 20 |
+| 时点 | 操作                                                      | 对象身份与状态                                |
+| ---- | --------------------------------------------------------- | --------------------------------------------- |
+| T1   | A 读取 `/counter`                                         | 世代 G1：data=10，version=0，czxid=100        |
+| T2   | B 删除 `/counter`                                         | G1 结束                                       |
+| T3   | B 在同路径重新创建                                        | 世代 G2：data=20，version=0，czxid=200        |
+| T4   | A 以旧读值计算后执行 `setData("/counter", 11, version=0)` | 新 G2 的版本也匹配 0，迟到操作可能成功覆盖 20 |
 
 version=0 无法区分 G1、G2。原生比较并交换（Compare-And-Set，CAS）在这里比较的是路径当前节点的数据版本，路径相同、版本相同不代表仍是原对象。
 
@@ -157,14 +157,14 @@ version=0 无法区分 G1、G2。原生比较并交换（Compare-And-Set，CAS�
 
 错误处理应按含义分类，以下名称采用 ZooKeeper 3.9.3 API 的错误概念：
 
-| 错误 | 含义与处理方向 |
-| --- | --- |
-| `NodeExists` | 创建目标已存在；核对其身份、内容和当前协议阶段 |
-| `NoNode` | 目标或父节点不存在；区分尚未发布、已删除、回收或 Watch 观察对象消失 |
-| `BadVersion` | 条件版本不匹配；重读后重新计算，按限额处理冲突 |
-| `ConnectionLoss` | 连接丢失，操作结果可能未知；恢复连接后查询、核对身份与操作记录 |
-| `SessionExpired` | 旧会话终止；丢弃旧临时身份，重新建立所需状态 |
-| `NoAuth` | 权限不足；修复授权或调用方式，无条件重试无益 |
+| 错误             | 含义与处理方向                                                      |
+| ---------------- | ------------------------------------------------------------------- |
+| `NodeExists`     | 创建目标已存在；核对其身份、内容和当前协议阶段                      |
+| `NoNode`         | 目标或父节点不存在；区分尚未发布、已删除、回收或 Watch 观察对象消失 |
+| `BadVersion`     | 条件版本不匹配；重读后重新计算，按限额处理冲突                      |
+| `ConnectionLoss` | 连接丢失，操作结果可能未知；恢复连接后查询、核对身份与操作记录      |
+| `SessionExpired` | 旧会话终止；丢弃旧临时身份，重新建立所需状态                        |
+| `NoAuth`         | 权限不足；修复授权或调用方式，无条件重试无益                        |
 
 上述发布目录、完整性清单、恢复记录与回收步骤是应用协议，不是 ZooKeeper 自动附带的功能；`multi` 也只覆盖支持的 ZooKeeper 操作。[3.9.3 API 与错误契约](https://zookeeper.apache.org/doc/r3.9.3/apidocs/zookeeper-server/org/apache/zookeeper/ZooKeeper.html)
 
