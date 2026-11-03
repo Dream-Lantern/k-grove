@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1020" viewBox="0 0 1200 1020" role="img" aria-labelledby="title desc">
+<title id="title">fork → execve → waitpid：父子两条执行路径</title><desc id="desc">各泳道自上而下；不同泳道同一高度不代表同时发生，父子运行先后由实际调度决定。 教学抽象，不代表实际运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1020" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">fork → execve → waitpid：父子两条执行路径</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">各泳道自上而下；不同泳道同一高度不代表同时发生，父子运行先后由实际调度决定。</text>
+<text x="110" y="144" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">父进程 · 例如 PID 100</text>
+<text x="740" y="144" font-size="23" fill="#297b66" font-weight="600" text-anchor="start">子进程 · 例如 PID 101</text>
+<rect x="60" y="180" width="455" height="95" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="78" y="212" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">fork()</text>
+<text x="78" y="243" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">成功返回 101；失败 -1，终止本流程</text>
+<path d="M515 225 L705 225" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="545" y="203" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">成功创建</text>
+<rect x="705" y="180" width="435" height="95" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="723" y="212" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">从 fork 返回点继续</text>
+<text x="723" y="243" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">子侧返回 0，不从 main 重新开始</text>
+<path d="M285 275 L285 335" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="305" y="314" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">成功</text>
+<path d="M920 275 L920 335" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="335" width="455" height="95" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="78" y="367" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">父进程继续自己的代码</text>
+<text x="78" y="398" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可以先处理其他工作</text>
+<rect x="705" y="335" width="435" height="123" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="723" y="367" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">execve() 替换当前映像</text>
+<text x="723" y="398" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">成功：保持 PID，进入新程序</text>
+<text x="723" y="426" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">失败：报告错误，沿右侧路径退出</text>
+<path d="M285 430 L285 505" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M920 458 L920 505" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="940" y="489" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">成功</text>
+<path d="M1140 397 L1170 397 L1170 745 L1140 745" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="505" width="455" height="123" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="78" y="537" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">waitpid(child, &amp;status, 0)</text>
+<text x="78" y="568" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">尚无退出状态：可等待</text>
+<text x="78" y="596" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">已经退出：可立即领取</text>
+<rect x="705" y="505" width="435" height="123" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="723" y="537" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">统计程序运行</text>
+<text x="723" y="568" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">读取文件并统计</text>
+<text x="723" y="596" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">按统计结果结束新程序</text>
+<path d="M920 628 L920 697" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="705" y="697" width="435" height="95" rx="12" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="723" y="729" font-size="22" fill="#956526" font-weight="600" text-anchor="start">退出，状态可供领取</text>
+<text x="723" y="760" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">通常留下退出记录，等待回收</text>
+<path d="M285 628 L285 843" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="62" y="738" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">等待期间不执行用户代码</text>
+<path d="M705 745 L580 745 L580 890 L515 890" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="540" y="817" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">退出状态</text>
+<rect x="60" y="843" width="455" height="100" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="78" y="875" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">waitpid 返回子 PID</text>
+<text x="78" y="906" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">解析退出 / 信号状态，回收退出记录</text>
+<text x="60" y="990" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">实线：本泳道执行或创建依赖；虚线：退出信息可领取。不保证 waitpid 必定阻塞。</text>
+</g></svg>

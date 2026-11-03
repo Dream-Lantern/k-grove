@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1040" viewBox="0 0 1200 1040" role="img" aria-labelledby="title desc">
+<title id="title">完整发布：数据准备 → 名字替换 → 目录同步</title><desc id="desc">假设同一可信目录、单发布者，旧版本已同步；所有调用均检查错误；不是断电实测日志。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1040" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">完整发布：数据准备 → 名字替换 → 目录同步</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">假设同一可信目录、单发布者，旧版本已同步；所有调用均检查错误；不是断电实测日志。</text>
+<rect x="50" y="135" width="1100" height="155" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="167" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">1. 创建唯一临时文件，完整写入</text>
+<text x="68" y="198" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">准备数据；目标名字仍指向旧对象</text>
+<text x="68" y="226" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">此时崩溃：临时内容不能视为持久</text>
+<path d="M600 290 L600 340" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="340" width="1100" height="155" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="372" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">2. fsync 临时文件，再检查 close</text>
+<text x="68" y="403" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">同步新文件数据及相关元数据</text>
+<text x="68" y="431" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">尚未发布；临时名字的持久化不能仅由文件 fsync 推出</text>
+<path d="M600 495 L600 545" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="545" width="1100" height="155" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="577" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">3. rename 替换 config.json</text>
+<text x="68" y="608" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">命名空间发布：新打开可见新版本；旧 FD 仍可读旧对象</text>
+<text x="68" y="636" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">此时崩溃：不能承诺名字替换已经持久</text>
+<path d="M600 700 L600 750" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="750" width="1100" height="155" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="68" y="782" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">4. fsync 父目录</text>
+<text x="68" y="813" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">同步目录项变更；成功后完成本例同步协议</text>
+<text x="68" y="841" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">保证仍以文件系统、设备实现相关承诺为条件</text>
+<text x="50" y="970" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">原子可见性 ≠ 崩溃持久性；rename 后目录同步失败，不可假装旧版完全未改变。</text>
+<text x="50" y="1006" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">跨文件系统 rename 通常失败；这不是多文件业务事务，也不保证所有故障模型。</text>
+</g></svg>

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820" role="img" aria-labelledby="title desc">
+<title id="title">sleep_on：等待入口与各任务栈上的 tmp</title><desc id="desc">仅跟踪 A、B 依次登记且无新等待插入的场景；唤醒只是使任务可运行。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="820" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">sleep_on：等待入口与各任务栈上的 tmp</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">仅跟踪 A、B 依次登记且无新等待插入的场景；唤醒只是使任务可运行。</text>
+<text x="55" y="150" font-size="21" fill="#356da8" font-weight="600" text-anchor="start">阶段</text>
+<text x="285" y="150" font-size="21" fill="#356da8" font-weight="600" text-anchor="start">b_wait 入口</text>
+<text x="480" y="150" font-size="21" fill="#356da8" font-weight="600" text-anchor="start">A 栈 tmp</text>
+<text x="665" y="150" font-size="21" fill="#356da8" font-weight="600" text-anchor="start">B 栈 tmp</text>
+<text x="850" y="150" font-size="21" fill="#356da8" font-weight="600" text-anchor="start">变化</text>
+<rect x="40" y="190" width="1120" height="65" rx="10" fill="#eef5fc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="55" y="230" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">初始</text>
+<text x="285" y="230" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="480" y="230" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">—</text>
+<text x="665" y="230" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">—</text>
+<text x="850" y="230" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">尚未登记</text>
+<rect x="40" y="270" width="1120" height="65" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="55" y="310" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A 睡眠</text>
+<text x="285" y="310" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A</text>
+<text x="480" y="310" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="665" y="310" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">—</text>
+<text x="850" y="310" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A：不可中断等待</text>
+<rect x="40" y="350" width="1120" height="65" rx="10" fill="#eef5fc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="55" y="390" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">B 睡眠</text>
+<text x="285" y="390" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">B</text>
+<text x="480" y="390" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="665" y="390" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A</text>
+<text x="850" y="390" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">B：不可中断等待</text>
+<rect x="40" y="430" width="1120" height="65" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="55" y="470" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">wake_up</text>
+<text x="285" y="470" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="480" y="470" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="665" y="470" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A</text>
+<text x="850" y="470" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">B：变为可运行</text>
+<rect x="40" y="510" width="1120" height="65" rx="10" fill="#eef5fc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="55" y="550" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">B 获得 CPU</text>
+<text x="285" y="550" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="480" y="550" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="665" y="550" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A</text>
+<text x="850" y="550" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">B 恢复后使 A 可运行</text>
+<rect x="40" y="590" width="1120" height="65" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="55" y="630" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A 获得 CPU</text>
+<text x="285" y="630" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="480" y="630" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">NULL</text>
+<text x="665" y="630" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">已返回</text>
+<text x="850" y="630" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A 恢复；tmp 为空，无后继</text>
+<text x="40" y="730" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">B 的 tmp 指向 A；这个值保留在 B 自己的内核栈上，不是全局链表节点。</text>
+<text x="40" y="773" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">wake_up 清入口；B、A 分别得到调度后，仍要返回外层 while 检查 b_lock。</text>
+</g></svg>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+<title id="title">两次加一，为什么可能丢掉一次更新</title><desc id="desc">抽象的读—计算—写回交错；不是未同步 C11 数据竞争程序的完整合法结果集合。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="800" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">两次加一，为什么可能丢掉一次更新</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">抽象的读—计算—写回交错；不是未同步 C11 数据竞争程序的完整合法结果集合。</text>
+<text x="40" y="145" font-size="21" fill="#356da8" font-weight="600" text-anchor="start">时间 ↓</text>
+<text x="210" y="145" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">线程 A</text>
+<text x="610" y="145" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">线程 B</text>
+<text x="1040" y="145" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">共享值</text>
+<text x="60" y="213" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">1</text>
+<rect x="170" y="180" width="360" height="58" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="188" y="216" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">读到 0</text>
+<rect x="1040" y="180" width="90" height="58" rx="10" fill="#fff" stroke="#956526" stroke-width="1.4"/>
+<text x="1085" y="217" font-size="24" fill="#956526" font-weight="600" text-anchor="middle">0</text>
+<text x="60" y="291" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">2</text>
+<rect x="570" y="258" width="360" height="58" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="588" y="294" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">读到 0</text>
+<rect x="1040" y="258" width="90" height="58" rx="10" fill="#fff" stroke="#956526" stroke-width="1.4"/>
+<text x="1085" y="295" font-size="24" fill="#956526" font-weight="600" text-anchor="middle">0</text>
+<text x="60" y="369" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">3</text>
+<rect x="170" y="336" width="360" height="58" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="188" y="372" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">计算 0 + 1 = 1</text>
+<rect x="1040" y="336" width="90" height="58" rx="10" fill="#fff" stroke="#956526" stroke-width="1.4"/>
+<text x="1085" y="373" font-size="24" fill="#956526" font-weight="600" text-anchor="middle">0</text>
+<text x="60" y="447" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">4</text>
+<rect x="570" y="414" width="360" height="58" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="588" y="450" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">计算 0 + 1 = 1</text>
+<rect x="1040" y="414" width="90" height="58" rx="10" fill="#fff" stroke="#956526" stroke-width="1.4"/>
+<text x="1085" y="451" font-size="24" fill="#956526" font-weight="600" text-anchor="middle">0</text>
+<text x="60" y="525" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">5</text>
+<rect x="170" y="492" width="360" height="58" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="188" y="528" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">写回 1</text>
+<rect x="1040" y="492" width="90" height="58" rx="10" fill="#fff3df" stroke="#956526" stroke-width="1.4"/>
+<text x="1085" y="529" font-size="24" fill="#956526" font-weight="600" text-anchor="middle">1</text>
+<text x="60" y="603" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">6</text>
+<rect x="570" y="570" width="360" height="58" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="588" y="606" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">写回 1，覆盖增量</text>
+<rect x="1040" y="570" width="90" height="58" rx="10" fill="#fff3df" stroke="#956526" stroke-width="1.4"/>
+<text x="1085" y="607" font-size="24" fill="#956526" font-weight="600" text-anchor="middle">1</text>
+<text x="40" y="724" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">最终是 1，不是期望的 2；需要约束整个读改写。实际 C11 非原子数据竞争导致未定义行为。</text>
+</g></svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="690" viewBox="0 0 1200 690" role="img" aria-labelledby="title desc">
+<title id="title">buffer_head：对象、数据与四种不同状态</title><desc id="desc">Linux 0.11 include/linux/fs.h；缓冲键包含设备号和块号，不能仅按块号查找。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="690" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">buffer_head：对象、数据与四种不同状态</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">Linux 0.11 include/linux/fs.h；缓冲键包含设备号和块号，不能仅按块号查找。</text>
+<rect x="40" y="150" width="260" height="140" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="182" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">设备块键</text>
+<text x="58" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">b_dev：设备</text>
+<text x="58" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">b_blocknr：块号</text>
+<rect x="380" y="130" width="380" height="190" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="398" y="162" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">buffer_head 描述结构</text>
+<text x="398" y="193" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">b_count：引用计数</text>
+<text x="398" y="221" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">b_lock：操作锁定</text>
+<text x="398" y="249" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">b_wait：历史等待入口</text>
+<rect x="850" y="150" width="310" height="140" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="868" y="182" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">b_data → 数据区</text>
+<text x="868" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">BLOCK_SIZE = 1024</text>
+<text x="868" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">数据区不是描述结构本身</text>
+<path d="M300 220 L380 220" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M760 220 L850 220" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="390" width="530" height="155" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="58" y="422" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">b_uptodate：数据有效</text>
+<text x="58" y="453" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">有效不表示持久化完成</text>
+<text x="58" y="481" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">有引用不表示操作一定已经解锁</text>
+<rect x="630" y="390" width="530" height="155" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="648" y="422" font-size="22" fill="#956526" font-weight="600" text-anchor="start">b_dirt：需要提交写回</text>
+<text x="648" y="453" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">add_request 入队即可清除该标记</text>
+<text x="648" y="481" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">清零不表示设备已经完成写入</text>
+<text x="40" y="616" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">这些是不同维度：引用、锁定、有效与脏状态不能合并为一个“命中”标志。</text>
+</g></svg>

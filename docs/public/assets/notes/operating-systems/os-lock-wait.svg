@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860" role="img" aria-labelledby="title desc">
+<title id="title">同样是 A 持锁，B 自旋或睡眠有什么区别</title><desc id="desc">两种教学等待路径；实际 mutex 可能采用混合策略，Linux 内核锁还需区分类型与抢占配置。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="860" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">同样是 A 持锁，B 自旋或睡眠有什么区别</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">两种教学等待路径；实际 mutex 可能采用混合策略，Linux 内核锁还需区分类型与抢占配置。</text>
+<rect x="270" y="140" width="660" height="95" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="288" y="172" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">初始：A 持有锁，B 尝试获取失败</text>
+<text x="288" y="203" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">B 尚无权进入保护区</text>
+<path d="M600 235 L600 275 L290 275 L290 325" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 235 L600 275 L910 275 L910 325" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="325" width="480" height="110" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="68" y="357" font-size="22" fill="#956526" font-weight="600" text-anchor="start">B 自旋等待</text>
+<text x="68" y="388" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">持续尝试；可能继续消耗 CPU</text>
+<rect x="670" y="325" width="480" height="110" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="688" y="357" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">B 进入睡眠等待</text>
+<text x="688" y="388" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">交出运行机会；需要可睡眠上下文</text>
+<path d="M530 380 L560 380 L560 300 L420 300 L420 325" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="65" y="508" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">锁仍忙：继续尝试</text>
+<path d="M910 435 L910 575" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="670" y="575" width="480" height="110" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="688" y="607" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">A 释放；B 获得推进机会</text>
+<text x="688" y="638" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">唤醒后仍需获调度、按协议取得锁</text>
+<path d="M290 435 L290 575" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="575" width="480" height="110" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="68" y="607" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">A 释放；B 某次成功获取</text>
+<text x="68" y="638" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">若 A 长时间不运行，自旋可能浪费 CPU</text>
+<text x="50" y="750" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">单核、多核、超额订阅与临界区长度共同影响成本；“很短”不保证自旋总是更好。</text>
+<text x="50" y="798" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不能在禁止睡眠的上下文中执行可能阻塞的操作；PREEMPT_RT 不把所有锁变成同一种语义。</text>
+</g></svg>

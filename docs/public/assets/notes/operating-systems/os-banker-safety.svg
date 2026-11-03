@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+<title id="title">银行家安全性：逐分量比较，再模拟归还</title><desc id="desc">R1、R2 总量各 3；初始 Available=(1,1)；Work 只用于试算，不改变真实分配。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="650" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">银行家安全性：逐分量比较，再模拟归还</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">R1、R2 总量各 3；初始 Available=(1,1)；Work 只用于试算，不改变真实分配。</text>
+<rect x="40" y="130" width="1120" height="130" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="162" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">所有进程初始 Need = (1,1)</text>
+<text x="58" y="193" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">P1: Allocation (1,0), Max (2,1)    P2: Allocation (1,1), Max (2,2)</text>
+<text x="58" y="221" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">P3: Allocation (0,1), Max (1,2)    总量检查：(1,1) + (2,2) = (3,3)</text>
+<rect x="40" y="330" width="340" height="160" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="362" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">Work = (1,1)</text>
+<text x="58" y="393" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">P1 Need ≤ Work</text>
+<text x="58" y="421" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">模拟 P1 完成</text>
+<text x="58" y="449" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">加原 Allocation (1,0)</text>
+<rect x="430" y="330" width="340" height="160" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="448" y="362" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">Work = (2,1)</text>
+<text x="448" y="393" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">P2 Need ≤ Work</text>
+<text x="448" y="421" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">模拟 P2 完成</text>
+<text x="448" y="449" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">加原 Allocation (1,1)</text>
+<rect x="820" y="330" width="340" height="160" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="838" y="362" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">Work = (3,2)</text>
+<text x="838" y="393" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">P3 Need ≤ Work</text>
+<text x="838" y="421" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">模拟 P3 完成</text>
+<text x="838" y="449" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">加原 Allocation (0,1)</text>
+<path d="M380 410 L430 410" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M770 410 L820 410" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="40" y="550" font-size="21" fill="#297b66" font-weight="600" text-anchor="start">最终 Work=(3,3)，安全序列 P1 → P2 → P3；不是 CPU 必须执行的顺序。</text>
+<text x="40" y="598" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">试分配若无法找到完整序列就暂缓；不安全不等于当前已经死锁。</text>
+</g></svg>
