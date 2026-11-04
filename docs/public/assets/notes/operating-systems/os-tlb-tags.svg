@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+<title id="title">相同虚拟页号，必须匹配正确地址空间身份</title><desc id="desc">图用抽象身份键；PCID 与 ASID 的格式、有效范围和失效规则按架构区分。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="720" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">相同虚拟页号，必须匹配正确地址空间身份</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">图用抽象身份键；PCID 与 ASID 的格式、有效范围和失效规则按架构区分。</text>
+<rect x="50" y="150" width="500" height="140" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="182" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">地址空间 A</text>
+<text x="68" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">虚拟页号 5 → 物理页框 20</text>
+<text x="68" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">查询键示意：(身份 A, VPN 5)</text>
+<rect x="650" y="150" width="500" height="140" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="668" y="182" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">地址空间 B</text>
+<text x="668" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">虚拟页号 5 → 物理页框 80</text>
+<text x="668" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">查询键示意：(身份 B, VPN 5)</text>
+<path d="M300 290 L300 375" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M900 290 L900 375" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="375" width="500" height="140" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="68" y="407" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">适用 TLB 条目 A</text>
+<text x="68" y="438" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">身份 A + 页号 5 → PFN20</text>
+<text x="68" y="466" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">权限等属性也参与访问</text>
+<rect x="650" y="375" width="500" height="140" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="668" y="407" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">适用 TLB 条目 B</text>
+<text x="668" y="438" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">身份 B + 页号 5 → PFN80</text>
+<text x="668" y="466" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不能误用 A 的旧翻译</text>
+<text x="50" y="590" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">只用“页号 5”匹配有错误复用风险；同地址空间线程切换不天然要求全清空。</text>
+<text x="50" y="645" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">标签减少某些切换刷新，不免除页表变化或标签回收复用时所需的失效。</text>
+</g></svg>

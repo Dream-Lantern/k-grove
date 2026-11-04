@@ -1,0 +1,722 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1810" viewBox="0 0 1200 1810" role="img" aria-labelledby="title desc">
+<title id="title">同一访问序列：六组完整页面置换推演</title><desc id="desc">初始为空，槽位固定；先填低空槽；OPT 同样远时选低槽；不计脏写回、预读与共享。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1810" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">同一访问序列：六组完整页面置换推演</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">初始为空，槽位固定；先填低空槽；OPT 同样远时选低槽；不计脏写回、预读与共享。</text>
+<text x="228" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">1</text>
+<text x="228" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">1</text>
+<text x="304" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">2</text>
+<text x="304" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">2</text>
+<text x="380" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">3</text>
+<text x="380" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">3</text>
+<text x="456" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">4</text>
+<text x="456" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">4</text>
+<text x="532" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">5</text>
+<text x="532" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">1</text>
+<text x="608" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">6</text>
+<text x="608" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">2</text>
+<text x="684" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">7</text>
+<text x="684" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">5</text>
+<text x="760" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">8</text>
+<text x="760" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">1</text>
+<text x="836" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">9</text>
+<text x="836" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">2</text>
+<text x="912" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">10</text>
+<text x="912" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">3</text>
+<text x="988" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">11</text>
+<text x="988" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">4</text>
+<text x="1064" y="145" font-size="18" fill="#526579" font-weight="400" text-anchor="middle">12</text>
+<text x="1064" y="180" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">5</text>
+<text x="40" y="145" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">步骤</text>
+<text x="40" y="180" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">访问页</text>
+<text x="40" y="225" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">FIFO · 3 页框 · 总缺页 9</text>
+<text x="85" y="271" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽1</text>
+<rect x="190" y="250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="266" y="250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="342" y="250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="418" y="250" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="494" y="250" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="570" y="250" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="646" y="250" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="722" y="250" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="798" y="250" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="874" y="250" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="950" y="250" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="1026" y="250" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="85" y="300" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽2</text>
+<rect x="190" y="279" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="342" y="279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="418" y="279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="494" y="279" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="570" y="279" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="646" y="279" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="722" y="279" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="798" y="279" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="874" y="279" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="950" y="279" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="1026" y="279" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="85" y="329" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽3</text>
+<rect x="190" y="308" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="308" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="308" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="418" y="308" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="494" y="308" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="570" y="308" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="646" y="308" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="722" y="308" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="798" y="308" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="874" y="308" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="950" y="308" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="1026" y="308" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="40" y="395" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">结果/淘汰</text>
+<text x="40" y="430" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">累计缺页</text>
+<text x="228" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="228" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<text x="304" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="304" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="380" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="380" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="456" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="456" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="532" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/2</text>
+<text x="532" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="608" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/3</text>
+<text x="608" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<text x="684" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/4</text>
+<text x="684" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="760" y="395" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="760" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="836" y="395" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="836" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="912" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="912" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">8</text>
+<text x="988" y="395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/2</text>
+<text x="988" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">9</text>
+<text x="1064" y="395" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="1064" y="430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">9</text>
+<text x="40" y="475" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">FIFO · 4 页框 · 总缺页 10</text>
+<text x="85" y="521" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽1</text>
+<rect x="190" y="500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="266" y="500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="342" y="500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="418" y="500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="494" y="500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="570" y="500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="646" y="500" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="722" y="500" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="798" y="500" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="874" y="500" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="950" y="500" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="1026" y="500" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="85" y="550" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽2</text>
+<rect x="190" y="529" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="342" y="529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="418" y="529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="494" y="529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="570" y="529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="646" y="529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="722" y="529" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="798" y="529" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="874" y="529" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="950" y="529" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="1026" y="529" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="85" y="579" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽3</text>
+<rect x="190" y="558" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="558" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="418" y="558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="494" y="558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="570" y="558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="646" y="558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="722" y="558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="798" y="558" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="874" y="558" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="950" y="558" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="1026" y="558" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="85" y="608" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽4</text>
+<rect x="190" y="587" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="587" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="587" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="418" y="587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="494" y="587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="570" y="587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="646" y="587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="722" y="587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="798" y="587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="874" y="587" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="950" y="587" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="1026" y="587" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="40" y="645" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">结果/淘汰</text>
+<text x="40" y="680" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">累计缺页</text>
+<text x="228" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="228" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<text x="304" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="304" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="380" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="380" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="456" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="456" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="532" y="645" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="532" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="608" y="645" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="608" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="684" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="684" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="760" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/2</text>
+<text x="760" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<text x="836" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/3</text>
+<text x="836" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="912" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/4</text>
+<text x="912" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">8</text>
+<text x="988" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/5</text>
+<text x="988" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">9</text>
+<text x="1064" y="645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="1064" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">10</text>
+<text x="40" y="725" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">LRU · 3 页框 · 总缺页 10</text>
+<text x="85" y="771" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽1</text>
+<rect x="190" y="750" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="266" y="750" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="342" y="750" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="418" y="750" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="494" y="750" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="570" y="750" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="646" y="750" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="722" y="750" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="798" y="750" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="874" y="750" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="950" y="750" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="1026" y="750" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="770" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="85" y="800" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽2</text>
+<rect x="190" y="779" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="779" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="342" y="779" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="418" y="779" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="494" y="779" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="570" y="779" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="646" y="779" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="722" y="779" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="798" y="779" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="874" y="779" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="950" y="779" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="1026" y="779" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="799" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="85" y="829" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽3</text>
+<rect x="190" y="808" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="808" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="808" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="418" y="808" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="494" y="808" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="570" y="808" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="646" y="808" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="722" y="808" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="798" y="808" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="874" y="808" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="950" y="808" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="1026" y="808" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="828" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="40" y="895" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">结果/淘汰</text>
+<text x="40" y="930" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">累计缺页</text>
+<text x="228" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="228" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<text x="304" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="304" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="380" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="380" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="456" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="456" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="532" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/2</text>
+<text x="532" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="608" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/3</text>
+<text x="608" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<text x="684" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/4</text>
+<text x="684" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="760" y="895" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="760" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="836" y="895" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="836" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="912" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/5</text>
+<text x="912" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">8</text>
+<text x="988" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="988" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">9</text>
+<text x="1064" y="895" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/2</text>
+<text x="1064" y="930" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">10</text>
+<text x="40" y="975" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">LRU · 4 页框 · 总缺页 8</text>
+<text x="85" y="1021" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽1</text>
+<rect x="190" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="266" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="342" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="418" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="494" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="570" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="646" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="722" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="798" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="874" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="950" y="1000" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="1026" y="1000" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1020" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="85" y="1050" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽2</text>
+<rect x="190" y="1029" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="342" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="418" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="494" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="570" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="646" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="722" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="798" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="874" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="950" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="1026" y="1029" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1049" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="85" y="1079" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽3</text>
+<rect x="190" y="1058" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="1058" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="1058" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="418" y="1058" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="494" y="1058" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="570" y="1058" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="646" y="1058" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="722" y="1058" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="798" y="1058" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="874" y="1058" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="950" y="1058" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="1026" y="1058" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1078" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="85" y="1108" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽4</text>
+<rect x="190" y="1087" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="1087" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="1087" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="418" y="1087" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="494" y="1087" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="570" y="1087" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="646" y="1087" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="722" y="1087" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="798" y="1087" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="874" y="1087" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="950" y="1087" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="1026" y="1087" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1107" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="40" y="1145" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">结果/淘汰</text>
+<text x="40" y="1180" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">累计缺页</text>
+<text x="228" y="1145" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="228" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<text x="304" y="1145" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="304" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="380" y="1145" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="380" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="456" y="1145" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="456" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="532" y="1145" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="532" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="608" y="1145" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="608" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="684" y="1145" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/3</text>
+<text x="684" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="760" y="1145" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="760" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="836" y="1145" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="836" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="912" y="1145" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/4</text>
+<text x="912" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<text x="988" y="1145" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/5</text>
+<text x="988" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="1064" y="1145" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="1064" y="1180" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">8</text>
+<text x="40" y="1225" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">OPT · 3 页框 · 总缺页 7</text>
+<text x="85" y="1271" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽1</text>
+<rect x="190" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="266" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="342" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="418" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="494" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="570" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="646" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="722" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="798" y="1250" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="874" y="1250" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="950" y="1250" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="1026" y="1250" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1270" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="85" y="1300" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽2</text>
+<rect x="190" y="1279" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="342" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="418" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="494" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="570" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="646" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="722" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="798" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="874" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="950" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="1026" y="1279" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1299" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="85" y="1329" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽3</text>
+<rect x="190" y="1308" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="1308" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="1308" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="418" y="1308" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="494" y="1308" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="570" y="1308" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="646" y="1308" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="722" y="1308" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="798" y="1308" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="874" y="1308" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="950" y="1308" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="1026" y="1308" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1328" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="40" y="1395" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">结果/淘汰</text>
+<text x="40" y="1430" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">累计缺页</text>
+<text x="228" y="1395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="228" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<text x="304" y="1395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="304" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="380" y="1395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="380" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="456" y="1395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/3</text>
+<text x="456" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="532" y="1395" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="532" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="608" y="1395" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="608" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="684" y="1395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/4</text>
+<text x="684" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="760" y="1395" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="760" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="836" y="1395" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="836" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="912" y="1395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="912" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<text x="988" y="1395" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/3</text>
+<text x="988" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="1064" y="1395" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="1064" y="1430" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="40" y="1475" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">OPT · 4 页框 · 总缺页 6</text>
+<text x="85" y="1521" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽1</text>
+<rect x="190" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="266" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="342" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="418" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="494" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="570" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="646" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="722" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="798" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="874" y="1500" width="74" height="27" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<rect x="950" y="1500" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="1026" y="1500" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1520" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="85" y="1550" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽2</text>
+<rect x="190" y="1529" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="342" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="418" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="494" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="570" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="646" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="722" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="798" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="874" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="950" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<rect x="1026" y="1529" width="74" height="27" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1549" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="85" y="1579" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽3</text>
+<rect x="190" y="1558" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="1558" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="418" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="494" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="570" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="646" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="722" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="798" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="874" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="950" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<rect x="1026" y="1558" width="74" height="27" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1578" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="85" y="1608" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">槽4</text>
+<rect x="190" y="1587" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="227" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="266" y="1587" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="303" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="342" y="1587" width="74" height="27" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="379" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">—</text>
+<rect x="418" y="1587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="455" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="494" y="1587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="531" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="570" y="1587" width="74" height="27" rx="10" fill="#ece5f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="607" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<rect x="646" y="1587" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="683" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="722" y="1587" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="759" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="798" y="1587" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="835" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="874" y="1587" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="911" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="950" y="1587" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="987" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<rect x="1026" y="1587" width="74" height="27" rx="10" fill="#f7e3e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1063" y="1607" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="40" y="1645" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">结果/淘汰</text>
+<text x="40" y="1680" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">累计缺页</text>
+<text x="228" y="1645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="228" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<text x="304" y="1645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="304" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="380" y="1645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="380" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="456" y="1645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/—</text>
+<text x="456" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="532" y="1645" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="532" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="608" y="1645" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="608" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="684" y="1645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/4</text>
+<text x="684" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="760" y="1645" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="760" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="836" y="1645" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="836" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="912" y="1645" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="912" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="988" y="1645" font-size="17" fill="#956526" font-weight="400" text-anchor="middle">F/1</text>
+<text x="988" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<text x="1064" y="1645" font-size="17" fill="#297b66" font-weight="400" text-anchor="middle">H/—</text>
+<text x="1064" y="1680" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<text x="40" y="1770" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">H：命中；F：缺页。FIFO 4 页框的 10 次多于 3 页框的 9 次，是本输入下的 Belady 异常。</text>
+</g></svg>

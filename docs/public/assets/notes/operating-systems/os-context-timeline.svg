@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+<title id="title">A 等待数据时，B 怎样继续运行</title><desc id="desc">只观察一个 CPU 核；这是指定条件下的一条可能路径，不是固定日志或强制调度顺序。 教学抽象，不代表实际运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="800" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">A 等待数据时，B 怎样继续运行</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">只观察一个 CPU 核；这是指定条件下的一条可能路径，不是固定日志或强制调度顺序。</text>
+<text x="40" y="185" font-size="21" fill="#356da8" font-weight="600" text-anchor="start">时间 →</text>
+<text x="40" y="294" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">线程 A</text>
+<text x="40" y="463" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">线程 B</text>
+<text x="260" y="185" font-size="22" fill="#24364b" font-weight="600" text-anchor="middle">T1</text>
+<rect x="190" y="235" width="140" height="105" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="260" y="274" font-size="20" fill="#297b66" font-weight="600" text-anchor="middle">A 用户态</text>
+<text x="260" y="310" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">保留执行进度</text>
+<rect x="190" y="405" width="140" height="105" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="260" y="446" font-size="20" fill="#356da8" font-weight="600" text-anchor="middle">B 就绪</text>
+<text x="260" y="483" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">可运行不等于运行</text>
+<text x="260" y="574" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">A 读数据</text>
+<text x="420" y="185" font-size="22" fill="#24364b" font-weight="600" text-anchor="middle">T2</text>
+<rect x="350" y="235" width="140" height="105" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="420" y="274" font-size="20" fill="#297b66" font-weight="600" text-anchor="middle">A 内核态</text>
+<text x="420" y="310" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">保留执行进度</text>
+<rect x="350" y="405" width="140" height="105" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="420" y="446" font-size="20" fill="#356da8" font-weight="600" text-anchor="middle">B 就绪</text>
+<text x="420" y="483" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">可运行不等于运行</text>
+<text x="420" y="574" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">read 条件未满足</text>
+<text x="580" y="185" font-size="22" fill="#24364b" font-weight="600" text-anchor="middle">T3</text>
+<rect x="510" y="235" width="140" height="105" rx="12" fill="#fff8ed" stroke="#297b66" stroke-width="1.4"/>
+<text x="580" y="274" font-size="20" fill="#297b66" font-weight="600" text-anchor="middle">A 等待</text>
+<text x="580" y="310" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">保留自身续接</text>
+<rect x="510" y="405" width="140" height="105" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="580" y="446" font-size="20" fill="#356da8" font-weight="600" text-anchor="middle">B 执行</text>
+<text x="580" y="483" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">使用 B 的现场</text>
+<text x="580" y="574" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">选 B，切换 A → B</text>
+<text x="740" y="185" font-size="22" fill="#24364b" font-weight="600" text-anchor="middle">T4</text>
+<rect x="670" y="235" width="140" height="105" rx="12" fill="#fff8ed" stroke="#297b66" stroke-width="1.4"/>
+<text x="740" y="274" font-size="20" fill="#297b66" font-weight="600" text-anchor="middle">A 等待</text>
+<text x="740" y="310" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">保留自身续接</text>
+<rect x="670" y="405" width="140" height="105" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="740" y="446" font-size="20" fill="#356da8" font-weight="600" text-anchor="middle">B 执行</text>
+<text x="740" y="483" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">使用 B 的现场</text>
+<text x="740" y="574" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">B 从自己的现场恢复</text>
+<text x="900" y="185" font-size="22" fill="#24364b" font-weight="600" text-anchor="middle">T5</text>
+<rect x="830" y="235" width="140" height="105" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="900" y="274" font-size="20" fill="#297b66" font-weight="600" text-anchor="middle">A 可运行</text>
+<text x="900" y="310" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">等待再次调度</text>
+<rect x="830" y="405" width="140" height="105" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="900" y="446" font-size="20" fill="#356da8" font-weight="600" text-anchor="middle">B 执行</text>
+<text x="900" y="483" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">使用 B 的现场</text>
+<text x="900" y="574" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">事件满足并唤醒 A</text>
+<text x="1060" y="185" font-size="22" fill="#24364b" font-weight="600" text-anchor="middle">T6</text>
+<rect x="990" y="235" width="140" height="105" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="1060" y="274" font-size="20" fill="#297b66" font-weight="600" text-anchor="middle">A 再运行</text>
+<text x="1060" y="310" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">保留执行进度</text>
+<rect x="990" y="405" width="140" height="105" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="1060" y="446" font-size="20" fill="#356da8" font-weight="600" text-anchor="middle">B 就绪</text>
+<text x="1060" y="483" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">可运行不等于运行</text>
+<text x="1060" y="574" font-size="15" fill="#24364b" font-weight="400" text-anchor="middle">选 A，切换 B → A</text>
+<path d="M580 340 L580 405" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="600" y="379" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">切换到 B</text>
+<path d="M1060 405 L1060 340" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="1080" y="379" font-size="16" fill="#24364b" font-weight="400" text-anchor="start">选回 A</text>
+<rect x="40" y="635" width="1120" height="110" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="667" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">T6 的 A 先恢复内核续接，再返回自己的用户调用链</text>
+<text x="58" y="698" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">T5 唤醒只改变 A 的可运行条件，CPU 此时仍可继续执行 B。</text>
+<text x="58" y="726" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">若 read 本次无需等待且没有其他调度条件，则 A 可以直接返回，省略本图的切换分支。</text>
+</g></svg>

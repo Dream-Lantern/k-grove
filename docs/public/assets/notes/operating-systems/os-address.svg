@@ -1,44 +1,35 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
-  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
-  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">x86 保护模式：分段与分页示例</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">具体地址翻译路径受架构和运行模式影响</text>
-  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
-  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
-  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">逻辑地址（示例）</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">Segment Selector + Offset</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
-  <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
-  <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
-  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">分段变换</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">由描述符等条件形成线性地址</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
-  <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
-  <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
-  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">分页地址翻译</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">线性地址 → 页表 → 物理页</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
-  <rect fill="#C88323" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
-  <rect fill="#FFF5E7" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">CPU 执行访存</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">权限与异常处理由相关机制控制</text>
-  <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
-  <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
-  <polygon fill="#8996A8" points="430,453 435.0,442.0 425.0,442.0"/>
-  <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
-  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">本图限定 x86 保护模式，不可泛化所有架构。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">x86-64 Long Mode 多采用平坦分段语义，不按传统 32 位分段流程直接套用。</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1030" viewBox="0 0 1200 1030" role="img" aria-labelledby="title desc">
+<title id="title">32 位保护模式：先检查分段，再转换线性地址</title><desc id="desc">限定普通向上扩展数据段、G=0、单字节读取；选择子和描述符配置均为教学假设。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1030" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">32 位保护模式：先检查分段，再转换线性地址</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">限定普通向上扩展数据段、G=0、单字节读取；选择子和描述符配置均为教学假设。</text>
+<rect x="50" y="140" width="1100" height="115" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="172" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">逻辑地址：选择子 0x23 + 偏移 0x1234</text>
+<text x="68" y="203" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">索引=4，表指示位=0 → GDT[4]；另一表指示位取值可选择系统配置的 LDT</text>
+<path d="M600 255 L600 315" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="315" width="1100" height="145" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="347" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">装载选择子：检查描述符并缓存适用信息</text>
+<text x="68" y="378" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">基址=0x00400000；原始界限=0xFFFF；G=0 → 有效界限=0xFFFF</text>
+<text x="68" y="406" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">普通可读写数据段，存在且权限满足；后续访问还要满足类型和界限</text>
+<path d="M600 460 L600 495 L300 495 L300 545" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 495 L900 495 L900 545" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="545" width="500" height="145" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="68" y="577" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">偏移 0x1234：在界限内</text>
+<text x="68" y="608" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">0x00400000 + 0x00001234</text>
+<text x="68" y="636" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">形成线性地址 0x00401234</text>
+<rect x="650" y="545" width="500" height="145" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="668" y="577" font-size="22" fill="#956526" font-weight="600" text-anchor="start">改用偏移 0x10000：越界</text>
+<text x="668" y="608" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">超出本例 0～0xFFFF</text>
+<text x="668" y="636" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">进入保护异常，不继续作为合法访问</text>
+<path d="M300 690 L300 755" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="755" width="500" height="145" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="787" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">若分页启用：继续页表翻译</text>
+<text x="68" y="818" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">线性地址 → 适用存在性 / 权限检查</text>
+<text x="68" y="846" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">成功才联系物理地址；仍可能页故障</text>
+<text x="650" y="790" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">不是每次访存都重新查 GDT。</text>
+<text x="650" y="835" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">多字节访问须检查末字节。</text>
+<text x="650" y="880" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">此图不套用于 x86-64 的 64 位子模式。</text>
+<text x="50" y="972" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">G=1 时有效界限=(原始界限 &lt;&lt; 12) | 0xFFF；向下扩展段等类型另有规则。</text>
+</g></svg>

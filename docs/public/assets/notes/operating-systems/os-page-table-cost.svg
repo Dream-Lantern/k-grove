@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="930" viewBox="0 0 1200 930" role="img" aria-labelledby="title desc">
+<title id="title">为什么稀疏映射可以少建页表</title><desc id="desc">仅统计表结构；方框表示结构关系，不按字节容量比例绘制；不含数据页或其他内核管理开销。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="930" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">为什么稀疏映射可以少建页表</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">仅统计表结构；方框表示结构关系，不按字节容量比例绘制；不含数据页或其他内核管理开销。</text>
+<rect x="50" y="150" width="360" height="620" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="182" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">完整平坦单级表</text>
+<text x="68" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">2^20 个虚拟页条目</text>
+<text x="68" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">每项 4 字节</text>
+<text x="68" y="269" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">共 4 MiB</text>
+<text x="68" y="297" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="68" y="325" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">即使只映射很少几页，</text>
+<text x="68" y="353" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">完整表仍覆盖整个空间。</text>
+<rect x="480" y="150" width="670" height="250" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="498" y="182" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">案例 A：只用一个 4 KiB 虚拟页</text>
+<text x="498" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">页目录 4 KiB → 1 张二级表 4 KiB</text>
+<text x="498" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">例如仅映射 0x2000</text>
+<text x="498" y="269" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">未使用目录范围不建立下级表</text>
+<text x="498" y="297" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">表结构合计 8 KiB</text>
+<rect x="480" y="455" width="670" height="290" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="498" y="487" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">案例 B：两页落入不同目录范围</text>
+<text x="498" y="518" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">页目录 4 KiB → 2 张二级表，各 4 KiB</text>
+<text x="498" y="546" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">例如 0x2000 与 0x400000</text>
+<text x="498" y="574" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">目录项分别是 0 与 1</text>
+<text x="498" y="602" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">其余范围仍可不建表</text>
+<text x="498" y="630" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">表结构合计 12 KiB</text>
+<text x="50" y="835" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">每张已建立的二级表仍占整页；若 1024 张都建立，总量为 4 MiB + 4 KiB。</text>
+<text x="50" y="880" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">节省来自跳过未使用范围；不是层数越多一定越省，也不是少映射就免去目录。</text>
+</g></svg>

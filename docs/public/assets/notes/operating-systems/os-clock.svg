@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1040" viewBox="0 0 1200 1040" role="img" aria-labelledby="title desc">
+<title id="title">Clock：给 R=1 的页第二次机会</title><desc id="desc">命中置 R=1 不移动指针；缺页扫描清位，遇 R=0 淘汰；装入置 R=1，指针移至下一槽。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1040" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">Clock：给 R=1 的页第二次机会</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">命中置 R=1 不移动指针；缺页扫描清位，遇 R=0 淘汰；装入置 R=1，指针移至下一槽。</text>
+<rect x="50" y="160" width="500" height="430" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="75" y="200" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">装入 D 前</text>
+<rect x="90" y="250" width="150" height="80" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="108" y="282" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">A：R=1</text>
+<rect x="360" y="250" width="150" height="80" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="378" y="282" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">B：R=1</text>
+<rect x="225" y="455" width="150" height="80" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="243" y="487" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">C：R=0</text>
+<text x="90" y="235" font-size="19" fill="#956526" font-weight="600" text-anchor="start">指针 → A</text>
+<path d="M240 290 L360 290" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M435 330 L435 495 L375 495" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M225 495 L75 495 L75 290 L90 290" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="650" y="160" width="500" height="430" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="675" y="200" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">装入 D 后</text>
+<rect x="690" y="250" width="150" height="80" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="708" y="282" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">A：R=0</text>
+<rect x="960" y="250" width="150" height="80" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="978" y="282" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">B：R=0</text>
+<rect x="825" y="455" width="150" height="80" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="843" y="487" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">D：R=1</text>
+<text x="690" y="235" font-size="19" fill="#956526" font-weight="600" text-anchor="start">指针 → A</text>
+<path d="M840 290 L960 290" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1035 330 L1035 495 L975 495" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M825 495 L675 495 L675 290 L690 290" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M550 385 L650 385" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="600" y="360" font-size="18" fill="#356da8" font-weight="400" text-anchor="middle">D 缺页</text>
+<rect x="50" y="650" width="1100" height="55" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="70" y="685" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">1. 指针 A：R=1 → 清为 0，继续 B</text>
+<rect x="50" y="720" width="1100" height="55" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="70" y="755" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">2. 指针 B：R=1 → 清为 0，继续 C</text>
+<rect x="50" y="790" width="1100" height="55" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="70" y="825" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">3. 指针 C：R=0 → 淘汰 C，装入 D，D 的 R=1</text>
+<rect x="50" y="860" width="1100" height="55" rx="10" fill="#f0f8f5" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="70" y="895" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">4. 指针移到下一槽 A；最终 A0、B0、D1</text>
+<text x="50" y="996" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">环内箭头表示扫描顺序；状态转换按下方步骤，真实回收还须检查脏、锁定与引用。</text>
+</g></svg>

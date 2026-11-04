@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="960" viewBox="0 0 1200 960" role="img" aria-labelledby="title desc">
+<title id="title">映射不存在和权限不足，都可能进入页故障路径</title><desc id="desc">限定本章 x86 分页下的合法线性地址、普通用户数据访问；分段违规等其他异常不画在这里。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="960" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">映射不存在和权限不足，都可能进入页故障路径</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">限定本章 x86 分页下的合法线性地址、普通用户数据访问；分段违规等其他异常不画在这里。</text>
+<rect x="50" y="140" width="1100" height="105" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="172" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">访问虚拟地址：检查适用 PDE / PTE 的存在性与权限</text>
+<text x="68" y="203" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">TLB 或页表遍历参与转换；TLB 未命中本身不等于页故障</text>
+<path d="M600 245 L600 295 L220 295 L220 360" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 245 L600 295 L600 295 L600 360" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 245 L600 295 L980 295 L980 360" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="360" width="340" height="160" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="68" y="392" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">存在且权限满足</text>
+<text x="68" y="423" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">取得物理页框</text>
+<text x="68" y="451" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">保留页内偏移</text>
+<text x="68" y="479" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">正常完成本次访问</text>
+<rect x="430" y="360" width="340" height="160" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="448" y="392" font-size="22" fill="#956526" font-weight="600" text-anchor="start">映射不存在</text>
+<text x="448" y="423" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">当前不能直接翻译</text>
+<text x="448" y="451" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">进入页故障异常</text>
+<text x="448" y="479" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不是必然读磁盘</text>
+<rect x="810" y="360" width="340" height="160" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="828" y="392" font-size="22" fill="#956526" font-weight="600" text-anchor="start">映射在，但权限不足</text>
+<text x="828" y="423" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">例如只读页上的用户写</text>
+<text x="828" y="451" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">也进入页故障异常</text>
+<text x="828" y="479" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可能是合法 COW</text>
+<path d="M600 520 L600 570 L790 570 L790 630" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M980 520 L980 570 L790 570" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="430" y="630" width="720" height="185" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="448" y="662" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">内核结合合法区域、后备对象和访问意图判断</text>
+<text x="448" y="693" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">合法：可能分配零页、复用缓存、处理写时复制</text>
+<text x="448" y="721" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">文件后备等场景才可能需要存储读取</text>
+<text x="448" y="749" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">非法 / 不可恢复：拒绝访问，报告适用错误或信号</text>
+<text x="50" y="884" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">MMU 不认识 VMA 的业务含义；保护失败不是都能修复，缺页也不是都需要 I/O。</text>
+<text x="50" y="926" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">三种分支是教学分类，不是完整硬件异常优先级或错误码模拟。</text>
+</g></svg>

@@ -1,5 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">调度：先定指标再比较策略</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">调度：先定指标再比较策略</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学抽象；历史版本、架构与异常分支以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">区分 Ready、Running 与等待</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">等待 I/O 的任务通常不是直接可选的就绪任务</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">选择目标：响应、周转或公平</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">吞吐、截止期与优先级另有约束</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">按适用策略挑选执行实体</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">FCFS / SJF / RR 为教学算法，不能代指全部 Linux</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">考虑抢占、唤醒与多核负载</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">上下文成本与饥饿风险都需要预算</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">0.11 counter 更新是历史机制；现代公平调度另见 CFS / EEVDF。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1060" viewBox="0 0 1200 1060" role="img" aria-labelledby="title desc">
+<title id="title">Linux 0.11：扫描候选、重算预算或进入空闲</title><desc id="desc">对应原版 kernel/sched.c 的 schedule()；c 是扫描所得最大值，不是当前任务 counter 的别名。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1060" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">Linux 0.11：扫描候选、重算预算或进入空闲</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">对应原版 kernel/sched.c 的 schedule()；c 是扫描所得最大值，不是当前任务 counter 的别名。</text>
+<rect x="130" y="140" width="940" height="100" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="148" y="172" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">检查普通任务的 alarm / 信号等唤醒条件</text>
+<text x="148" y="203" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">适用的等待任务可变为 TASK_RUNNING；任务 0 另按特殊空闲规则处理</text>
+<path d="M600 240 L600 300" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="130" y="300" width="940" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="148" y="332" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">每轮设 c=-1、next=0；从 task[63] 扫到 task[1]</text>
+<text x="148" y="363" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">空槽跳过；只比较 TASK_RUNNING，counter 严格更大时更新候选</text>
+<text x="148" y="391" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">本轮无普通候选：c 保持 -1；预算耗尽的候选：最大值可能为 0</text>
+<path d="M600 425 L600 475 L205 475 L205 525" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 425 L600 475 L600 475 L600 525" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 425 L600 475 L995 475 L995 525" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="525" width="330" height="125" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="58" y="557" font-size="22" fill="#956526" font-weight="600" text-anchor="start">c = -1</text>
+<text x="58" y="588" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">无普通可运行任务</text>
+<text x="58" y="616" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">保持 next=0，选择任务 0</text>
+<rect x="435" y="525" width="330" height="125" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="453" y="557" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">c &gt; 0</text>
+<text x="453" y="588" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">已有可用预算</text>
+<text x="453" y="616" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">next 为最大 counter 候选</text>
+<rect x="830" y="525" width="330" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="848" y="557" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">c = 0</text>
+<text x="848" y="588" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">普通可运行预算均耗尽</text>
+<text x="848" y="616" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">进入重算，不直接挑等待任务</text>
+<path d="M995 650 L995 715" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="830" y="715" width="330" height="145" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="848" y="747" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">更新存在的普通任务</text>
+<text x="848" y="778" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">counter =</text>
+<text x="848" y="806" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">(counter &gt;&gt; 1) + priority</text>
+<text x="848" y="834" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">包含等待任务，不包含任务 0</text>
+<path d="M1160 790 L1180 790 L1180 350 L1070 350" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="838" y="906" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">重算后再次扫描</text>
+<path d="M205 650 L205 790 L450 790 L450 860" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 650 L600 790 L450 790" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="130" y="860" width="640" height="100" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="148" y="892" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">switch_to(next)</text>
+<text x="148" y="923" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">若目标已是当前任务，可跳过实际不同任务间切换</text>
+<text x="40" y="1018" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">if (c) break 同时接纳 c=-1 和 c&gt;0；预算重算本身不会唤醒 C 等等待任务。</text>
+</g></svg>

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1110" viewBox="0 0 1200 1110" role="img" aria-labelledby="title desc">
+<title id="title">getblk：找到对象后仍需等待与复查</title><desc id="desc">Linux 0.11 fs/buffer.c；实线表示该分支的控制顺序，重试重新从查找开始。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1110" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">getblk：找到对象后仍需等待与复查</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">Linux 0.11 fs/buffer.c；实线表示该分支的控制顺序，重试重新从查找开始。</text>
+<rect x="50" y="140" width="1100" height="100" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="172" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">repeat：get_hash_table(dev, block)</text>
+<text x="68" y="203" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">查哈希；命中后增加 b_count，等锁，再复查设备号与块号</text>
+<path d="M300 240 L300 315" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M850 240 L850 315" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="315" width="490" height="130" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="68" y="347" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">命中，且等待后键仍匹配</text>
+<text x="68" y="378" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">返回已有缓冲引用</text>
+<text x="68" y="406" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">数据是否有效由 bread 继续检查</text>
+<rect x="620" y="315" width="530" height="130" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="638" y="347" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">未命中：扫描 free_list</text>
+<text x="638" y="378" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">只选 b_count=0 的候选</text>
+<text x="638" y="406" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">优先较低 BADNESS；没有候选则睡眠并重试</text>
+<path d="M885 445 L885 510" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="620" y="510" width="530" height="150" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="638" y="542" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">候选等待、脏写回与引用复查</text>
+<text x="638" y="573" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">wait_on_buffer；b_count 变化则重试</text>
+<text x="638" y="601" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">脏：sync_dev，等待后再查 b_dirt / b_count</text>
+<text x="638" y="629" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">sync_dev 可能处理设备的多个缓冲</text>
+<path d="M885 660 L885 725" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="620" y="725" width="530" height="130" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="638" y="757" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">再次查重目标设备块</text>
+<text x="638" y="788" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">其他任务若已建立目标映射，则重试</text>
+<text x="638" y="816" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不是只在函数入口查一次哈希</text>
+<path d="M885 855 L885 920" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="620" y="920" width="530" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="638" y="952" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">确认复用后建立新映射</text>
+<text x="638" y="983" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">设 count=1，dirt=0，uptodate=0</text>
+<text x="638" y="1011" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">移除旧队列 → 设置键 → 插入队列 → 返回</text>
+<rect x="50" y="530" width="490" height="350" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="70" y="575" font-size="20" fill="#956526" font-weight="600" text-anchor="start">为什么必须复查？</text>
+<text x="70" y="623" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">睡眠或等待后，其他任务可能：</text>
+<text x="70" y="671" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">• 取得候选缓冲的引用</text>
+<text x="70" y="719" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">• 抢先缓存同一个目标块</text>
+<text x="70" y="767" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">• 改变相关缓冲状态</text>
+<text x="70" y="815" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">缓冲不足：睡眠重试，不是 malloc 失败。</text>
+<text x="50" y="1080" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">图归纳正常路径；原 bread 对 getblk 空指针另有 panic 防御分支。</text>
+</g></svg>

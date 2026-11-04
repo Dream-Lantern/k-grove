@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="660" viewBox="0 0 1200 660" role="img" aria-labelledby="title desc">
+<title id="title">同一输入下的 FCFS、SJF 与 RR</title><desc id="desc">A=8、B=4、C=2，均在 0 到达；单 CPU、无 I/O、忽略切换成本；RR 时间片为 2。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="660" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">同一输入下的 FCFS、SJF 与 RR</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">A=8、B=4、C=2，均在 0 到达；单 CPU、无 I/O、忽略切换成本；RR 时间片为 2。</text>
+<path d="M180 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="180" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">0</text>
+<text x="180" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">0</text>
+<path d="M245 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="245" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<text x="245" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">1</text>
+<path d="M310 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="310" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<text x="310" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">2</text>
+<path d="M375 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="375" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<text x="375" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">3</text>
+<path d="M440 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="440" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<text x="440" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">4</text>
+<path d="M505 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="505" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<text x="505" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">5</text>
+<path d="M570 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="570" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<text x="570" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">6</text>
+<path d="M635 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="635" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<text x="635" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">7</text>
+<path d="M700 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="700" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">8</text>
+<text x="700" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">8</text>
+<path d="M765 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="765" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">9</text>
+<text x="765" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">9</text>
+<path d="M830 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="830" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">10</text>
+<text x="830" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">10</text>
+<path d="M895 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="895" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">11</text>
+<text x="895" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">11</text>
+<path d="M960 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="960" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">12</text>
+<text x="960" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">12</text>
+<path d="M1025 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="1025" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">13</text>
+<text x="1025" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">13</text>
+<path d="M1090 155 V540" stroke="#d9e2ed" stroke-dasharray="4 5"/>
+<text x="1090" y="140" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">14</text>
+<text x="1090" y="570" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">14</text>
+<text x="40" y="222" font-size="24" fill="#356da8" font-weight="600" text-anchor="start">FCFS</text>
+<rect x="180" y="180" width="520" height="70" rx="10" fill="#e6f0fb" stroke="#356da8" stroke-width="1.4"/>
+<text x="440.0" y="225" font-size="25" fill="#356da8" font-weight="600" text-anchor="middle">A</text>
+<rect x="700" y="180" width="260" height="70" rx="10" fill="#e7f5ef" stroke="#297b66" stroke-width="1.4"/>
+<text x="830.0" y="225" font-size="25" fill="#297b66" font-weight="600" text-anchor="middle">B</text>
+<rect x="960" y="180" width="130" height="70" rx="10" fill="#fff3df" stroke="#956526" stroke-width="1.4"/>
+<text x="1025.0" y="225" font-size="25" fill="#956526" font-weight="600" text-anchor="middle">C</text>
+<text x="40" y="357" font-size="24" fill="#356da8" font-weight="600" text-anchor="start">SJF</text>
+<rect x="180" y="315" width="130" height="70" rx="10" fill="#fff3df" stroke="#956526" stroke-width="1.4"/>
+<text x="245.0" y="360" font-size="25" fill="#956526" font-weight="600" text-anchor="middle">C</text>
+<rect x="310" y="315" width="260" height="70" rx="10" fill="#e7f5ef" stroke="#297b66" stroke-width="1.4"/>
+<text x="440.0" y="360" font-size="25" fill="#297b66" font-weight="600" text-anchor="middle">B</text>
+<rect x="570" y="315" width="520" height="70" rx="10" fill="#e6f0fb" stroke="#356da8" stroke-width="1.4"/>
+<text x="830.0" y="360" font-size="25" fill="#356da8" font-weight="600" text-anchor="middle">A</text>
+<text x="40" y="492" font-size="24" fill="#356da8" font-weight="600" text-anchor="start">RR</text>
+<rect x="180" y="450" width="130" height="70" rx="10" fill="#e6f0fb" stroke="#356da8" stroke-width="1.4"/>
+<text x="245.0" y="495" font-size="25" fill="#356da8" font-weight="600" text-anchor="middle">A</text>
+<rect x="310" y="450" width="130" height="70" rx="10" fill="#e7f5ef" stroke="#297b66" stroke-width="1.4"/>
+<text x="375.0" y="495" font-size="25" fill="#297b66" font-weight="600" text-anchor="middle">B</text>
+<rect x="440" y="450" width="130" height="70" rx="10" fill="#fff3df" stroke="#956526" stroke-width="1.4"/>
+<text x="505.0" y="495" font-size="25" fill="#956526" font-weight="600" text-anchor="middle">C</text>
+<rect x="570" y="450" width="130" height="70" rx="10" fill="#e6f0fb" stroke="#356da8" stroke-width="1.4"/>
+<text x="635.0" y="495" font-size="25" fill="#356da8" font-weight="600" text-anchor="middle">A</text>
+<rect x="700" y="450" width="130" height="70" rx="10" fill="#e7f5ef" stroke="#297b66" stroke-width="1.4"/>
+<text x="765.0" y="495" font-size="25" fill="#297b66" font-weight="600" text-anchor="middle">B</text>
+<rect x="830" y="450" width="130" height="70" rx="10" fill="#e6f0fb" stroke="#356da8" stroke-width="1.4"/>
+<text x="895.0" y="495" font-size="25" fill="#356da8" font-weight="600" text-anchor="middle">A</text>
+<rect x="960" y="450" width="130" height="70" rx="10" fill="#e6f0fb" stroke="#356da8" stroke-width="1.4"/>
+<text x="1025.0" y="495" font-size="25" fill="#356da8" font-weight="600" text-anchor="middle">A</text>
+<text x="180" y="615" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">时间 → ；RR 的 12 时刻仍运行 A，时间片边界不必意味着更换任务。</text>
+</g></svg>
