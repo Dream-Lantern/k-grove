@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="830" viewBox="0 0 1200 830" role="img" aria-labelledby="title desc">
+<title id="title">三类合法缺页：准备物理页不只一种方式</title><desc id="desc">现代 Linux 通用教学模型；每类都须核验合法范围、权限、访问意图和适用状态。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="830" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">三类合法缺页：准备物理页不只一种方式</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">现代 Linux 通用教学模型；每类都须核验合法范围、权限、访问意图和适用状态。</text>
+<rect x="40" y="155" width="340" height="530" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="58" y="187" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">A：匿名首次写</text>
+<text x="58" y="218" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">已有合法可写匿名区域</text>
+<text x="58" y="246" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">当前无适用物理映射</text>
+<text x="58" y="274" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="58" y="302" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">写入触发异常</text>
+<text x="58" y="330" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">分配并准备清零页</text>
+<text x="58" y="358" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">建立适用映射</text>
+<text x="58" y="386" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">返回并重试写入</text>
+<text x="58" y="414" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="58" y="442" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">首次读可用共享零页</text>
+<text x="58" y="470" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不保证立即独占分配</text>
+<rect x="430" y="155" width="340" height="530" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="448" y="187" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">B：文件映射访问</text>
+<text x="448" y="218" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">映射合法，当前页未映射</text>
+<text x="448" y="246" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="448" y="274" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">页缓存已存在：复用</text>
+<text x="448" y="302" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">否则可能等待后备 I/O</text>
+<text x="448" y="330" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">成功后建立映射</text>
+<text x="448" y="358" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">失败走适用错误处理</text>
+<text x="448" y="386" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">返回后重试访问</text>
+<text x="448" y="414" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="448" y="442" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不是每次文件缺页都读盘</text>
+<rect x="820" y="155" width="340" height="530" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="838" y="187" font-size="22" fill="#956526" font-weight="600" text-anchor="start">C：私有共享页写</text>
+<text x="838" y="218" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">合法 COW，PTE 临时只读</text>
+<text x="838" y="246" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="838" y="274" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">写保护触发异常</text>
+<text x="838" y="302" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">核验私有可写等条件</text>
+<text x="838" y="330" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">必要时分配复制</text>
+<text x="838" y="358" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">独占时也可能直接复用</text>
+<text x="838" y="386" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">改映射及适用失效</text>
+<text x="838" y="414" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">重试后保留私有视图</text>
+<text x="838" y="442" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="838" y="470" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不合法的只读写入须拒绝</text>
+<text x="40" y="750" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">Minor / Major 是另一层统计；不读存储也有成本，计数不等于分配或复制页数。</text>
+<text x="40" y="796" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">具体缺页处理与优化依内核配置；本图不是所有版本的固定函数调用链。</text>
+</g></svg>

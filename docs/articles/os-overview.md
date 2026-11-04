@@ -113,6 +113,6 @@ UNIX、Linux、DOS、Windows 等有不同的历史和实现路线，不能从相
 
 ## 下一章衔接
 
-这些服务也需要先被建立起来。[第二章](/articles/os-boot-process)沿 Linux 0.11 启动源码，追踪固件如何把控制权交给内核，以及内核如何建立最初的任务。
+这些服务也需要先被建立起来。[第二章](/articles/os-boot-process.html)沿 Linux 0.11 启动源码，追踪固件如何把控制权交给内核，以及内核如何建立最初的任务。
 
 [返回本册目录](/collections/operating-systems/)

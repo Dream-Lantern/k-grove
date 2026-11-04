@@ -177,7 +177,7 @@ gcc -std=c11 -Wall -Wextra -O0 -pthread threads-demo.c -o threads-demo
 
 ## 联读
 
-上一章[进程生命周期](/articles/os-process-lifecycle)介绍独立进程；本章解释同一进程内的执行流。下一章[入口、内核续接与切换](/articles/os-context-switching.html)将继续追踪两个线程的状态怎样保存和恢复。
+上一章[进程生命周期](/articles/os-process-lifecycle.html)介绍独立进程；本章解释同一进程内的执行流。下一章[入口、内核续接与切换](/articles/os-context-switching.html)将继续追踪两个线程的状态怎样保存和恢复。
 
 ## 本章小结
 

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="940" viewBox="0 0 1200 940" role="img" aria-labelledby="title desc">
+<title id="title">共享页怎样分别计入 RSS 与 PSS</title><desc id="desc">仅两进程共享：A 私有 40 MiB、B 私有 40 MiB、共享同一组 20 MiB；条带按各行单位比例。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="940" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">共享页怎样分别计入 RSS 与 PSS</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">仅两进程共享：A 私有 40 MiB、B 私有 40 MiB、共享同一组 20 MiB；条带按各行单位比例。</text>
+<text x="50" y="150" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">实际物理页合计：40 + 20 + 40 = 100 MiB</text>
+<rect x="50" y="195" width="400" height="80" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="250.0" y="244" font-size="22" fill="#24364b" font-weight="400" text-anchor="middle">A 私有 40</text>
+<rect x="450" y="195" width="200" height="80" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="550.0" y="244" font-size="22" fill="#24364b" font-weight="400" text-anchor="middle">共同共享 20</text>
+<rect x="650" y="195" width="400" height="80" rx="10" fill="#e4f3ec" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="850.0" y="244" font-size="22" fill="#24364b" font-weight="400" text-anchor="middle">B 私有 40</text>
+<text x="50" y="365" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">每个进程的 RSS：自己的私有 40 + 共享 20 = 60 MiB</text>
+<rect x="150" y="410" width="600" height="80" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="450.0" y="459" font-size="22" fill="#24364b" font-weight="400" text-anchor="middle">私有 40</text>
+<rect x="750" y="410" width="300" height="80" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="900.0" y="459" font-size="22" fill="#24364b" font-weight="400" text-anchor="middle">共享计入 20</text>
+<text x="50" y="580" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">每个进程的 PSS：自己的私有 40 + 共享 20÷2 = 50 MiB</text>
+<rect x="150" y="625" width="600" height="80" rx="10" fill="#e2effc" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="450.0" y="674" font-size="21" fill="#24364b" font-weight="400" text-anchor="middle">私有 40</text>
+<rect x="750" y="625" width="150" height="80" rx="10" fill="#fff0d7" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="825.0" y="674" font-size="21" fill="#24364b" font-weight="400" text-anchor="middle">分摊 10</text>
+<text x="50" y="800" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">RSS 求和 120 MiB 会重复计共享页；本例 PSS 求和 100 MiB 避免这次重复。</text>
+<text x="50" y="858" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">VMS 不是物理占用；真实统计还受其他共享者、页类型、精度和内核接口影响。</text>
+<text x="50" y="908" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">RSS、页缓存、cgroup 计费不能不分口径直接相加。</text>
+</g></svg>

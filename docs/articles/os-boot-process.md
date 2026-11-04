@@ -154,6 +154,6 @@ for (;;) pause();
 
 ## 下一章衔接
 
-任务进入用户态以后，读文件、写终端仍要请求内核服务。[第三章](/articles/os-system-calls)以 `write()` 为例，区分运行库、CPU 入口和内核处理各自完成的工作。
+任务进入用户态以后，读文件、写终端仍要请求内核服务。[第三章](/articles/os-system-calls.html)以 `write()` 为例，区分运行库、CPU 入口和内核处理各自完成的工作。
 
 [返回本册目录](/collections/operating-systems/)

@@ -158,6 +158,6 @@ write(1, "\n", 1)         = 1
 
 ## 下一章衔接
 
-阻塞为什么能让出 CPU，恢复时又怎样继续执行，需要进一步认识任务状态和保存的现场。[第四章](/articles/os-process-lifecycle)将沿进程创建、运行、等待和退出展开。
+阻塞为什么能让出 CPU，恢复时又怎样继续执行，需要进一步认识任务状态和保存的现场。[第四章](/articles/os-process-lifecycle.html)将沿进程创建、运行、等待和退出展开。
 
 [返回本册目录](/collections/operating-systems/)

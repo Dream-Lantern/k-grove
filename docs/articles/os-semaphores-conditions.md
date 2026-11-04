@@ -272,6 +272,6 @@ signal 不是给某个线程预留数据；while 也不是必须忙等。只加�
 
 ## 下一章衔接
 
-等待与加锁顺序设计错误时，参与者可能互相等待。[第十章](/articles/os-deadlocks)继续分析死锁条件与处理方法，本章不提前展开完整算法。
+等待与加锁顺序设计错误时，参与者可能互相等待。[第十章](/articles/os-deadlocks.html)继续分析死锁条件与处理方法，本章不提前展开完整算法。
 
 [返回本册目录](/collections/operating-systems/)

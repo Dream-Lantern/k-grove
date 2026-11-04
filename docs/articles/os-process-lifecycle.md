@@ -59,7 +59,7 @@ PID（Process ID，进程标识符）用来标识进程。假设父进程 PID �
 
 父子进程拥有相互独立的常规私有内存逻辑视图。现代 Linux 用 COW（Copy-on-Write，写时复制）优化 fork：暂时共享可适用的底层物理页，在一方写入时按需分离，避免立即复制全部内容。两边即使打印出相同的变量虚拟地址，也不能据此认定它们在修改同一个私有变量。显式共享内存则另按共享语义处理。[fork(2)](https://man7.org/linux/man-pages/man2/fork.2.html)
 
-写时复制的页表细节留到[第十七章](/articles/os-linux011-copy-on-write)；本节只需要分清“私有变量的语义”和“物理页暂时共享”的不同层次。
+写时复制的页表细节留到[第十七章](/articles/os-linux011-copy-on-write.html)；本节只需要分清“私有变量的语义”和“物理页暂时共享”的不同层次。
 
 ## 3. 文件状态可能仍共享
 
@@ -183,7 +183,7 @@ fork 会复制用户态 I/O 缓冲区的逻辑内容；如果 fork 前留有尚�
 
 `pthread_atfork()` 可以登记准备、父侧和子侧处理函数，以协调已知状态，但无法自动修复所有第三方库的锁关系。因此启动带后台线程的客户端库后，不应假定 fork 出的子进程可直接复用原客户端实例。这是现代多线程情景，与 Linux 0.11 的历史 fork 分开讨论。[fork(2)](https://man7.org/linux/man-pages/man2/fork.2.html)、[pthread_atfork(3)](https://man7.org/linux/man-pages/man3/pthread_atfork.3.html)
 
-线程和锁的细节分别见[第五章](/articles/os-threads-stacks)与[第八章](/articles/os-atomic-locks)，此处先记住风险来自“线程没有全部复制，但共享内存中的锁状态被继承”。
+线程和锁的细节分别见[第五章](/articles/os-threads-stacks.html)与[第八章](/articles/os-atomic-locks.html)，此处先记住风险来自“线程没有全部复制，但共享内存中的锁状态被继承”。
 
 ## 本章小结
 
@@ -194,6 +194,6 @@ fork 会复制用户态 I/O 缓冲区的逻辑内容；如果 fork 前留有尚�
 
 ## 下一章衔接
 
-本章把文件统计交给另一个进程；[第五章](/articles/os-threads-stacks)改用同一进程中的多个线程，看看哪些资源可以共享、哪些执行状态必须各自保留。
+本章把文件统计交给另一个进程；[第五章](/articles/os-threads-stacks.html)改用同一进程中的多个线程，看看哪些资源可以共享、哪些执行状态必须各自保留。
 
 [返回本册目录](/collections/operating-systems/)

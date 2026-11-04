@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1090" viewBox="0 0 1200 1090" role="img" aria-labelledby="title desc">
+<title id="title">Linux 0.11：公共页目录不等于同一张二级页表</title><desc id="desc">32 位非 PAE、4 KiB；槽号不是 PID；图示共享受管理数据页，不是低内存启动特例。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1090" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">Linux 0.11：公共页目录不等于同一张二级页表</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">32 位非 PAE、4 KiB；槽号不是 PID；图示共享受管理数据页，不是低内存启动特例。</text>
+<rect x="40" y="145" width="530" height="150" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="177" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">任务槽 1：LDT 段基址 0x04000000</text>
+<text x="58" y="208" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">偏移 0x2240 → 线性 0x04002240</text>
+<text x="58" y="236" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">目录索引 16；页表索引 2；偏移 0x240</text>
+<rect x="630" y="145" width="530" height="150" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="648" y="177" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">任务槽 2：LDT 段基址 0x08000000</text>
+<text x="648" y="208" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">偏移 0x2240 → 线性 0x08002240</text>
+<text x="648" y="236" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">目录索引 32；页表索引 2；偏移 0x240</text>
+<path d="M305 295 L305 340 L460 340 L460 395" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M895 295 L895 340 L740 340 L740 395" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="300" y="395" width="600" height="115" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="318" y="427" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">公共页目录：_pg_dir = 0</text>
+<text x="318" y="458" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">PDE[16] 和 PDE[32] 指向不同的二级表</text>
+<path d="M450 510 L450 550 L290 550 L290 610" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M750 510 L750 550 L910 550 L910 610" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="610" width="500" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="642" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">源范围的二级表 / PTE[2]</text>
+<text x="58" y="673" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">Present=1，RW=0</text>
+<text x="58" y="701" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">指向 PFN1066</text>
+<rect x="660" y="610" width="500" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="678" y="642" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">目标范围的二级表 / PTE[2]</text>
+<text x="678" y="673" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">Present=1，RW=0</text>
+<text x="678" y="701" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">指向 PFN1066</text>
+<path d="M290 735 L290 790 L480 790 L480 850" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M910 735 L910 790 L720 790 L720 850" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="350" y="850" width="500" height="115" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="368" y="882" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">共享物理数据页 PFN1066</text>
+<text x="368" y="913" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">页基址 0x42A000；mem_map 适用计数为 2</text>
+<text x="40" y="1020" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">两条翻译的页内偏移均为 0x240；本例最终物理位置均为 0x42A240。</text>
+<text x="40" y="1060" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">64 MiB 是线性范围间隔，不是每个任务占用 64 MiB 物理内存。</text>
+</g></svg>

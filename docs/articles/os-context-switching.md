@@ -199,7 +199,7 @@ CPU 任务的累计主动切换数不必从 0 开始，启动和运行时活动�
 
 ## 联读
 
-先读[第五章的共享资源与独立线程上下文](/articles/os-threads-stacks.html)，再用本章的保存与恢复理解执行流如何交替。接下来[第七章 CPU 调度](/articles/os-cpu-scheduling)讨论“应该选谁、何时再选”，与本章“选中之后怎样恢复”分工不同。
+先读[第五章的共享资源与独立线程上下文](/articles/os-threads-stacks.html)，再用本章的保存与恢复理解执行流如何交替。接下来[第七章 CPU 调度](/articles/os-cpu-scheduling.html)讨论“应该选谁、何时再选”，与本章“选中之后怎样恢复”分工不同。
 
 ## 本章小结
 

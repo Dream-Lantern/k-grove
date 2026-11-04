@@ -99,7 +99,7 @@ SJF 在这组同时到达、运行时间已知的任务中让短任务尽早结�
 4. **只有扫描得到的最大值为 0 时**，才对 `task[1]`～`task[63]` 中所有存在的任务重算 `counter = (counter >> 1) + priority`，然后再次扫描。这个更新不要求任务正处于 `TASK_RUNNING`，因此也会覆盖等待任务。
 5. 调用 `switch_to(next)`。若目标就是当前任务，该宏可跳过实际任务切换；任务 0 没有参与上述普通任务的选择与预算重算。
 
-这里 `if (c) break` 同时覆盖正数和 `-1`，不能误写成“只要没有可运行任务就立即重算”。任务 0 的特殊空闲行为与 TSS 切换详见[第六章](/articles/os-context-switching)。
+这里 `if (c) break` 同时覆盖正数和 `-1`，不能误写成“只要没有可运行任务就立即重算”。任务 0 的特殊空闲行为与 TSS 切换详见[第六章](/articles/os-context-switching.html)。
 
 [![Linux 0.11 普通任务扫描、预算重算与任务 0 分支](/assets/notes/operating-systems/os-schedule.svg)](/assets/notes/operating-systems/os-schedule.svg)
 
@@ -223,6 +223,6 @@ for algorithm, intervals in algorithms.items():
 
 ## 下一章衔接
 
-任务可以交替运行后，共享统计值就可能被交错修改。[第八章](/articles/os-atomic-locks)继续解释怎样保护这些共享状态。
+任务可以交替运行后，共享统计值就可能被交错修改。[第八章](/articles/os-atomic-locks.html)继续解释怎样保护这些共享状态。
 
 [返回本册目录](/collections/operating-systems/)

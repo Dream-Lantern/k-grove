@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1340" viewBox="0 0 1200 1340" role="img" aria-labelledby="title desc">
+<title id="title">Linux 0.11：do_no_page 的实际分支</title><desc id="desc">仅历史 mm/memory.c；不把现代 VMA 查找、当代页缓存调用或不存在的 I/O 返回码加进来。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1340" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">Linux 0.11：do_no_page 的实际分支</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">仅历史 mm/memory.c；不把现代 VMA 查找、当代页缓存调用或不存在的 I/O 返回码加进来。</text>
+<rect x="50" y="140" width="1100" height="105" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="172" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">故障线性地址向下按页对齐</text>
+<text x="68" y="203" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">tmp = address − current-&gt;start_code</text>
+<path d="M600 245 L600 300" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="300" width="1100" height="110" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="332" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">!current-&gt;executable 或 tmp &gt;= current-&gt;end_data ？</text>
+<text x="68" y="363" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">是：空页路径；否：先尝试共享可执行文件页</text>
+<path d="M300 410 L300 480" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M900 410 L900 480" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="480" width="500" height="150" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="512" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">是：get_empty_page(address)</text>
+<text x="68" y="543" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">get_free_page 清零页 → put_page</text>
+<text x="68" y="571" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">成功直接返回；申请 / 映射失败则清理</text>
+<text x="68" y="599" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">随后 oom；本函数没有现代 VMA 判定</text>
+<rect x="650" y="480" width="500" height="150" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="668" y="512" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">否：share_page(tmp)</text>
+<text x="668" y="543" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">同 executable、适用干净且存在的受管理页</text>
+<text x="668" y="571" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">共享成功则返回；目标表申请失败则 oom</text>
+<text x="668" y="599" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不能共享才继续加载路径</text>
+<path d="M900 630 L900 700" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="920" y="670" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">未共享</text>
+<rect x="650" y="700" width="500" height="180" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="668" y="732" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">get_free_page → 文件后备数据</text>
+<text x="668" y="763" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">分配失败：oom</text>
+<text x="668" y="791" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">bmap 查询 4 个 1 KiB 逻辑块</text>
+<text x="668" y="819" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">bread_page；尾部超 end_data 的部分清零</text>
+<text x="668" y="847" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">bread_page 返回 void，无整页错误状态码</text>
+<rect x="50" y="800" width="450" height="120" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="68" y="832" font-size="22" fill="#956526" font-weight="600" text-anchor="start">失败：释放适用新页 → oom</text>
+<text x="68" y="863" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">打印错误，do_exit(SIGSEGV)</text>
+<text x="68" y="891" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不是现代 OOM killer 的完整实现</text>
+<path d="M300 630 L300 800" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="65" y="720" font-size="18" fill="#956526" font-weight="400" text-anchor="start">仅申请 / 映射失败</text>
+<path d="M650 775 L575 775 L575 845 L500 845" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M900 880 L900 950" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="650" y="950" width="500" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="668" y="982" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">put_page(page, address)</text>
+<text x="668" y="1013" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">必要时建立下级表；成功安装映射</text>
+<text x="668" y="1041" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">失败：free_page(page)，再 oom</text>
+<path d="M650 1015 L550 1015 L550 890 L500 890" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M900 1075 L900 1150" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="650" y="1150" width="500" height="95" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="668" y="1182" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">成功返回异常入口</text>
+<text x="668" y="1213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">恢复状态、iret，再重试相关指令</text>
+<text x="50" y="1295" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">例：tmp=0x2000、end_data=0x2900 → 文件逻辑块 9～12，尾部清零 0x700 字节。</text>
+</g></svg>

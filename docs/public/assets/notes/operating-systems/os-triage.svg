@@ -1,5 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">性能排查：CPU、缺页、I/O 与锁分开看</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">性能排查：CPU、缺页、I/O 与锁分开看</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学抽象；历史版本、架构与异常分支以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">固定进程、版本、时间窗与症状</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">记录 CPU 核数、内存限制、负载和变化</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">区分忙执行、可运行排队与阻塞</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">高 CPU、低 CPU 和高延迟可能有不同原因</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">关联缺页、回收、I/O 与锁等待</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">RSS、虚拟大小、page cache 与 swap 不混加</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">验证最小变更和恢复能力</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">文档只提供观察路径，不执行清缓存、杀进程或改 swap</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">累计计数和单个比率不是根因；本书没有运行系统诊断命令。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1040" viewBox="0 0 1200 1040" role="img" aria-labelledby="title desc">
+<title id="title">高延迟：按同一时间窗分层取证，再检验假设</title><desc id="desc">现代 Linux 只读诊断入口；以下分支可同时存在，不由一个指标直接认定根因。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1040" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">高延迟：按同一时间窗分层取证，再检验假设</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">现代 Linux 只读诊断入口；以下分支可同时存在，不由一个指标直接认定根因。</text>
+<rect x="50" y="140" width="1100" height="115" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="172" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">固定症状、PID/TID、实例、版本、负载与资源限制</text>
+<text x="68" y="203" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">保留基线与异常窗；对齐吞吐、错误率、P95/P99 和采样时间</text>
+<path d="M600 255 L600 330 L144 330 L144 425" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 255 L600 330 L368 330 L368 425" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 255 L600 330 L592 330 L592 425" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 255 L600 330 L816 330 L816 425" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 255 L600 330 L1040 330 L1040 425" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="425" width="208" height="210" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="144" y="465" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">CPU 执行</text>
+<text x="144" y="510" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">线程级占用</text>
+<text x="144" y="546" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">业务阶段 / 热点</text>
+<text x="144" y="582" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">有限采样需评估</text>
+<rect x="264" y="425" width="208" height="210" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="368" y="465" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">调度等待</text>
+<text x="368" y="510" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">亲和性 / 配额</text>
+<text x="368" y="546" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">schedstat 差值</text>
+<text x="368" y="582" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">cpu.stat 节流</text>
+<rect x="488" y="425" width="208" height="210" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="592" y="465" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">内存压力</text>
+<text x="592" y="510" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">匿名 / 文件 / PSS</text>
+<text x="592" y="546" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">缺页 / 回收增量</text>
+<text x="592" y="582" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">PSI / 组内限制</text>
+<rect x="712" y="425" width="208" height="210" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="816" y="465" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">I/O 依赖</text>
+<text x="816" y="510" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">文件 / 网络延迟</text>
+<text x="816" y="546" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">设备与请求窗口</text>
+<text x="816" y="582" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">线程状态辅助</text>
+<rect x="936" y="425" width="208" height="210" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="1040" y="465" font-size="22" fill="#356da8" font-weight="600" text-anchor="middle">同步等待</text>
+<text x="1040" y="510" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">队列与等待对象</text>
+<text x="1040" y="546" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">持有者及其进度</text>
+<text x="1040" y="582" font-size="17" fill="#24364b" font-weight="400" text-anchor="middle">栈不单独证明死锁</text>
+<path d="M144 635 L144 700 L144 775" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M368 635 L368 700 L368 775" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M592 635 L592 700 L592 775" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M816 635 L816 700 L816 775" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1040 635 L1040 700 L1040 775" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="775" width="1120" height="125" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="58" y="807" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">组合证据 → 保留替代解释 → 设计最小验证 → 同口径对照</text>
+<text x="58" y="838" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">热点不一定死循环，Major 不一定颠簸，futex 不一定死锁</text>
+<text x="58" y="866" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">记录支持和反驳证据；工具缺失 / 权限受限不等于“没有问题”</text>
+<text x="50" y="977" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">不清缓存、不关 swap、不杀任务、不改参数；只读采集也要限制范围、频率和成本。</text>
+</g></svg>
