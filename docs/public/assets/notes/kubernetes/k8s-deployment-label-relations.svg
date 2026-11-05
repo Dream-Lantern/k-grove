@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="850" viewBox="0 0 1500 850" role="img" aria-labelledby="title desc">
+  <title id="title">Deployment 自身标签、选择器与 Pod 模板的关系</title>
+  <desc id="desc">apps/v1 Deployment catalog 自身的 metadata.labels 为 team=platform，不必等于 Pod 模板标签。spec.selector 的 app=catalog 必须由 spec.template.metadata.labels 满足。Pod 模板还包含 spec.containers，描述未来 Pod 的业务容器。这是字段结构与匹配约束，不是同步调用关系。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#2563eb"/></marker>
+    <style>
+      text { font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #183153; }
+      .heading { font-size: 25px; font-weight: 700; }
+      .body { font-size: 21px; fill: #526780; }
+      .label { font-size: 18px; }
+    </style>
+  </defs>
+  <rect width="1500" height="850" fill="#f8fafe"/>
+  <rect x="20" y="24" width="1460" height="802" rx="24" fill="white" stroke="#d8e4f2" stroke-width="2"/>
+  <text x="60" y="85" font-size="34" font-weight="700">Deployment 标签与 Pod 标签：三处字段各有职责</text>
+  <text class="body" x="60" y="130">选择器必须匹配 Pod 模板标签；Deployment 自身标签与模板标签无需相等</text>
+  <rect x="60" y="180" width="1380" height="565" rx="20" fill="#fafcff" stroke="#d8e4f2" stroke-width="2"/>
+  <text class="heading" x="90" y="224">Deployment catalog · Namespace study · apps/v1</text>
+
+  <rect x="90" y="265" width="410" height="130" rx="16" fill="#edf4ff" stroke="#b7d3fa" stroke-width="2"/>
+  <text class="heading" x="116" y="310">metadata.labels</text>
+  <text class="body" x="116" y="353">team: platform</text>
+  <text class="label" x="116" y="430">标记 Deployment 自身，不自动复制给 Pod</text>
+  <rect x="90" y="480" width="410" height="150" rx="16" fill="#edf4ff" stroke="#b7d3fa" stroke-width="2"/>
+  <text class="heading" x="116" y="524">spec.selector.matchLabels</text>
+  <text class="body" x="116" y="564">app: catalog</text>
+  <text class="body" x="116" y="602">创建后 spec.selector 不可变</text>
+
+  <rect x="640" y="250" width="760" height="455" rx="18" fill="#f7f4ff" stroke="#d4c7f4" stroke-width="2"/>
+  <text class="heading" x="670" y="294">spec.template：新 Pod 的模板</text>
+  <rect x="680" y="330" width="680" height="130" rx="16" fill="white" stroke="#d4c7f4" stroke-width="2"/>
+  <text class="heading" x="706" y="373">template.metadata.labels</text>
+  <text class="body" x="706" y="416">app: catalog　（还可以包含其他标签）</text>
+  <rect x="680" y="515" width="680" height="140" rx="16" fill="white" stroke="#d4c7f4" stroke-width="2"/>
+  <text class="heading" x="706" y="558">template.spec.containers</text>
+  <text class="body" x="706" y="600">name: app　image: busybox:1.36.1</text>
+  <text class="body" x="706" y="633">HTTP 服务监听 TCP 8080</text>
+  <path d="M500 555 H600 V395 H680" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow)"/>
+  <text class="label" x="516" y="472">必须匹配</text>
+  <text class="label" x="90" y="698">箭头表示字段约束，不是对象间的同步调用。</text>
+  <text class="body" x="60" y="791">Service selector 选择同命名空间的 Pod 标签；对象的 ownerReferences 则表达另一类所有权关系。</text>
+</svg>

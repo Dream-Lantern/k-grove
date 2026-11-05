@@ -1,36 +1,36 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
+  <title>Device Plugin：注册、上报、节点选择与设备访问</title><desc>先启动插件服务，再注册；流式上报后更新 Node，Scheduler 选节点，kubelet 选设备并调用 Allocate，最后交付容器运行时。</desc><defs/>
   <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
   <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
   <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Device Plugin：调度与分配边界</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">设备健康发现、节点选择、具体 Device ID 分配不是同一个动作</text>
+  <text fill="#162B50" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="40" font-weight="bold" x="72" y="93">Device Plugin：调度与分配边界</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="20" font-weight="normal" x="76" y="137">设备健康发现、节点选择、具体 Device ID 分配不是同一个动作</text>
   <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
   <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
   <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
   <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">插件注册到 kubelet</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">提供服务端点；进入节点设备管理</text>
+  <text fill="#2F6FDB" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
+  <text fill="#162B50" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="26" font-weight="bold" x="162" y="269">先启动服务，再向 kubelet 注册</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" font-weight="normal" x="162" y="306">先监听插件 Socket，再调用 kubelet.sock</text>
   <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
   <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
   <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
-  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">ListAndWatch（完整 API 名）</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">持续推送设备列表及健康变化</text>
+  <text fill="#7554CE" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
+  <text fill="#162B50" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="26" font-weight="bold" x="902" y="269">ListAndWatch：流式 RPC</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" font-weight="normal" x="902" y="306">设备列表与健康状态 → kubelet</text>
   <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
   <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
   <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">Node 资源 → Scheduler</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">根据扩展资源数量等条件选择节点</text>
+  <text fill="#2F6FDB" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
+  <text fill="#162B50" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="26" font-weight="bold" x="162" y="502">Node 状态 → Scheduler 选节点</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" font-weight="normal" x="162" y="539">按扩展资源请求与其他约束选择 Node</text>
   <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
   <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
   <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
-  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">kubelet 选择并 Allocate</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">节点设备管理器选 Device ID，调用插件</text>
+  <text fill="#118E6B" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
+  <text fill="#162B50" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="26" font-weight="bold" x="902" y="502">kubelet 选择并 Allocate</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" font-weight="normal" x="902" y="539">设备管理器选 Device ID，再调用插件 Allocate</text>
   <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
   <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
   <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
@@ -38,7 +38,15 @@
   <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
   <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
   <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">Allocate 提供设备访问配置，不等于全局节点调度。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">经典 Device Plugin API 没有通用 Deallocate RPC；PodResources 不等于 GPU 利用率。</text>
+  <text fill="#C88323" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
+  <text fill="#162B50" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" font-weight="normal" x="99" y="801">Allocate 提供设备访问配置，不等于全局节点调度。</text>
+  <text fill="#162B50" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" font-weight="normal" x="99" y="831">经典 Device Plugin API 没有通用 Deallocate RPC；PodResources 不等于 GPU 利用率。</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" x="162" y="344">注册内容：端点名、API 版本、资源名称</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" x="902" y="344">kubelet 更新 Node Capacity / Allocatable</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" x="162" y="577">Scheduler 不决定具体物理 Device ID</text>
+  <text fill="#61758F" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="19" x="902" y="577">插件返回设备文件、环境变量、挂载等配置</text>
+  <polyline fill="none" points="1169,622 1169,646" stroke="#118E6B" stroke-width="2.7"/>
+  <polygon fill="#118E6B" points="1169,647 1164,637 1174,637"/>
+  <rect fill="#E9F8F0" x="74" y="650" width="1452" height="55" rx="14"/>
+  <text fill="#162B50" font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" font-size="23" font-weight="bold" x="99" y="686">5　kubelet 交付配置 → 容器运行时配置设备访问 → 容器启动；实际设备使用另行验证</text>
 </svg>

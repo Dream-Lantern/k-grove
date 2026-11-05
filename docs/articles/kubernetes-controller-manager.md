@@ -54,6 +54,20 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 因此，“收到一次事件，就恰好执行一次完整业务流程”的理解并不适用。
 
+### 2.1 Informer、WorkQueue 与 Reconcile 怎样配合？
+
+典型的 Kubernetes 控制器会把“观察变化”与“执行协调”分开：
+
+- **Informer / Cache**：Informer 通过 List/Watch 获取对象并更新本地缓存；Lister 等读取方式可以复用缓存，减少反复向 API Server 查询。缓存可能短暂落后于 API Server，控制器必须考虑观察延迟和更新冲突。
+- **WorkQueue（工作队列）**：事件处理逻辑通常把待处理对象的 Key（标识，例如 `namespace/name`）放入队列，而不是把每次事件的完整对象当作必须依次重放的业务消息。队列组织工作项、合并重复线索，并可配合限速与失败重试；它不是保存所有历史事件的消息账本。
+- **Reconcile（协调）**：工作线程取出 Key，读取相关资源的当前视图，比较期望与已观察状态，决定是否创建、更新或删除对象。一次处理可能无事可做，也可能部分成功后失败；实现者需要检查已有结果、处理重复执行和重试，不能靠函数名自动获得幂等性。
+
+[![典型控制器：观察、排队、协调与写回](/assets/notes/kubernetes/k8s-controller-informer-workqueue.svg)](/assets/notes/kubernetes/k8s-controller-informer-workqueue.svg)
+
+读图时把两个方向分开：API Server 的变化流更新缓存，Reconcile 的 API 请求修改对象。API 操作又会产生后续观察；处理失败可以限速重新入队，但不要求一个事件对应一次完整事务。
+
+这是常见实现模式，不代表所有内置控制器都采用完全一致的缓存、接口或重试策略。具体源码可读 [Kubernetes v1.28.0 的 sample-controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/sample-controller/controller.go)：其中事件入队、工作项处理和状态同步展示了职责分离；不要把主分支后来更新的实现当作全部版本的行为。
+
 ## 3. 根据当前状态实现重复协调 {#_3-为什么重复协调不应该反复创造相同资源}
 
 假设某次请求已经创建了目标对象，但客户端在收到成功响应前断线。如果下一次协调不检查现有状态，而是无条件再创建一份，就可能不断制造多余资源或冲突。
@@ -87,6 +101,36 @@ RC 是另一类历史工作负载资源及对应控制逻辑，不是“创建 R
 
 Deployment 负责发布，ReplicaSet 协调副本，RC 则是另一类历史资源；阅读时需按各自职责区分。[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)、[ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)、[ReplicationController](https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller/)
 
+### 4.4 沿用 web-demo，区分副本数量与就绪状态
+
+以下是推演与观察命令，未在本次修订中执行。可复用[第一章实验](/articles/kubernetes-architecture.html#web-demo-lab)的 `web-demo`，只完成创建三个副本的场景，暂不扩容和清理；需要相同上下文、命名空间及读取这些资源的权限：
+
+```bash
+kubectl get deployment,rs,pods -n k8s-arch-demo
+kubectl describe deployment web-demo -n k8s-arch-demo
+kubectl get deployment web-demo -n k8s-arch-demo -o yaml
+kubectl get rs -n k8s-arch-demo -l app=web-demo -o yaml
+kubectl get pods -n k8s-arch-demo -l app=web-demo -o yaml
+```
+
+| 字段                       | 所属对象与含义                                                                                                              |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `spec.replicas`            | Deployment 的发布副本目标；ReplicaSet 也有自己的副本目标，滚动更新时可能存在多个 ReplicaSet                                 |
+| `status.replicas`          | Deployment 统计其目标 Pod 的总副本数；ReplicaSet 统计符合其计数条件的受管理 Pod。两者作用范围不同，也可能暂时落后于实际变化 |
+| `status.readyReplicas`     | Deployment、ReplicaSet 分别报告其范围内 Ready 的副本数，不能把字段缺失当作已就绪                                            |
+| `status.availableReplicas` | 对应范围内达到可用条件的副本数；与 `minReadySeconds` 等设置有关，不等同于“业务所有路径已通过测试”                           |
+| `spec.selector`            | Deployment 或 ReplicaSet 的标签选择条件；定位匹配对象，不能单独证明控制器归属                                               |
+| `metadata.ownerReferences` | Pod 或 ReplicaSet 等对象的所有者引用；控制器归属要看 `controller: true` 的引用及其 UID，不能只比较名称                      |
+
+在稳定版本、目标为三个副本的假设下，可以这样推演：
+
+1. **只有两个计入副本数的 Pod**：ReplicaSet Controller 观察到差额后尝试通过 API 补足；成功创建仍需调度和启动。缓存延迟、创建失败等可能使下一轮继续处理，不能每次重复通知就无条件再建一个。
+2. **已有三个符合计数条件的 Pod，其中一个未 Ready**：副本目标已满足，不能仅因 `readyReplicas` 为 2 就断言会创建第四个。未就绪要结合探针、应用和节点状态定位；更新策略等其他机制可能影响实际对象数量。
+3. **删除其中一个 Pod**：控制器通过后续观察重新评估数量，推进替代 Pod 的创建；它不会把删除通知当作“把原 Pod 原样复活”的指令。观察时可能仍看到终止中的旧对象与新对象并存。
+4. **另一个匹配标签的 Pod 已由其他控制器管理**：它不能仅因标签匹配就被本 ReplicaSet 随意接管或计为自己的受管理副本，仍需检查控制器所有权。
+
+例如设置了正数 `minReadySeconds` 时，新 Pod 刚 Ready 不一定立刻被计为 available。这里的数量均是教学条件，不是实际命令输出。[Deployment 状态](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#deployment-status)、[ReplicaSet 的工作原理](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/#how-a-replicaset-works)
+
 ## 5. 标签、选择器和归属关系为什么需要一起看？
 
 标签不是纯展示字段。控制器可以基于选择器定位相关对象，其他组件也可能使用标签选择后端。
@@ -97,9 +141,19 @@ Deployment 负责发布，ReplicaSet 协调副本，RC 则是另一类历史资�
 
 排查重复 Pod 时，应一起查看对象的管理链、选择范围、事件和新旧 ReplicaSet，不要先删除看似“多出来”的实例。
 
+以目标 ReplicaSet 的选择器匹配 `app=web-demo` 为例，先比较以下三种情况：
+
+| Pod 标签与控制器引用                                     | 对目标 ReplicaSet 的意义                                                                                             |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 标签匹配，`controller: true` 引用指向目标 ReplicaSet UID | 属于该控制器管理范围，还需结合删除状态、阶段等判断是否计入副本数                                                     |
+| 标签匹配，但控制器引用指向另一个控制器 UID               | 不因标签匹配就接管；修改标签也不能绕开现有控制器归属                                                                 |
+| 标签匹配，没有 Controller OwnerReference                 | 满足收养条件时可能被目标 ReplicaSet 收养，例如对象和 ReplicaSet 均未进入删除等状态；不能绝对地说只管理自己创建的 Pod |
+
+“没有 Controller OwnerReference”不等于 `ownerReferences` 数组一定为空。标签选择器决定哪些对象匹配，控制器引用识别谁管理对象，所有者引用还为垃圾回收提供依赖关系；删除所有者后是否级联清理，还与删除传播策略和 Finalizer 等有关。不要为了验证收养而在共享集群里删除或伪造控制器引用。[ReplicaSet 的收养行为](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/#non-template-pod-acquisitions)、[所有者与依赖对象](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/)
+
 ## 6. 节点状态观察与故障协调 {#_6-节点控制-不是运行-get-nodes-才开始工作}
 
-`kubectl get nodes` 读取节点对象，不会临时启动一次 Node Controller，再等待 kubelet现场汇报。
+`kubectl get nodes` 读取节点对象，不会临时启动一次 Node Controller，再等待 kubelet 现场汇报。
 
 节点相关机制持续关注节点健康等状态，故障处理还会涉及超时、污点、Pod 生命周期和其他协调逻辑。不能写成“Node Controller 一收到网络断开，就把所有进程立即迁移到另一台机器”。
 
@@ -112,6 +166,24 @@ ResourceQuota 表达某个命名空间的资源配额约束。相关状态统计
 也不能把它当作主机资源硬隔离的完整替代：对象配额、Pod 的 requests/limits、节点容量和实际资源使用属于不同层次。
 
 新手排查创建失败时，应区分：配额拒绝、字段校验失败和调度资源不足，并查看 API 返回的具体信息。[ResourceQuota](https://kubernetes.io/docs/concepts/policy/resource-quotas/)
+
+例如，某命名空间有生效的 `pods: "2"` 配额，已经有两个计入配额的 Pod，再请求创建第三个。在对应 ResourceQuota 准入插件和配额规则生效时，请求会在 API 写入路径被拒绝；第三个 Pod 可能根本没有创建出来，因而不会进入 Scheduler 排队。ResourceQuota Controller 的使用量协调不能替代这次同步准入检查。
+
+如果第三个 Pod 本来应由 ReplicaSet 创建，应查 ReplicaSet 的创建失败事件及命名空间配额，而不是只盯着 Pod Pending：
+
+```bash
+kubectl get resourcequota -n k8s-arch-demo
+kubectl describe resourcequota -n k8s-arch-demo
+kubectl describe rs -n k8s-arch-demo -l app=web-demo
+```
+
+这些只读命令沿用上节实验空间，不会为它新增配额。以下三类约束各有分工：
+
+| 机制                  | 主要负责什么                                       | 常见观察边界                                               |
+| --------------------- | -------------------------------------------------- | ---------------------------------------------------------- |
+| ResourceQuota         | 限制命名空间内的对象数量或资源请求总额等           | API 创建或更新可能被拒绝，查看配额与返回错误               |
+| Pod `requests/limits` | 声明容器的资源需求与限制；运行时按相应机制执行限制 | requests 参与配额与调度核算，limits 不等于预先获得节点资源 |
+| Scheduler             | 按资源请求及其他约束为已存在的待调度 Pod 选择节点  | 无可行节点时，Pod 可以存在但尚未绑定                       |
 
 ## 8. Namespace 删除：为什么会停在 Terminating？
 
@@ -147,8 +219,22 @@ Pod 是否已绑定节点？如果没有，再看调度条件
 
 这个顺序能避免两个常见错误：把运行时拉镜像失败归因于 Deployment Controller，或在 Pod 尚未创建时直接排查应用进程。
 
+沿用 `k8s-arch-demo/web-demo`，可按下面的证据逐层缩小范围。`POD_NAME` 要替换为实际 Pod 名称；前提是有读取目标对象、事件和相应日志的权限，命令均为未执行的观察示例：
+
+| 阶段与现象                         | 优先观察的证据                                                                                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deployment 不存在                  | `kubectl config current-context` 与 `kubectl get deployment web-demo -n k8s-arch-demo`；核对集群、命名空间、提交结果，以及认证、授权、校验或准入错误 |
+| Deployment 存在，ReplicaSet 未生成 | Deployment 的 Conditions、Events、暂停设置和模板；再查控制器的 API 权限、领导者与日志，不把暂停或请求失败直接认定为进程故障                          |
+| ReplicaSet 存在，Pod 数量不足      | `kubectl describe rs -n k8s-arch-demo -l app=web-demo`；查实际目标数量、所有权和 `FailedCreate` 等事件，区分配额、准入与其他创建错误                 |
+| Pod 存在但未绑定                   | `kubectl describe pod POD_NAME -n k8s-arch-demo`；查 `PodScheduled`、`spec.nodeName`、`FailedScheduling` 和资源、标签、污点、卷约束                  |
+| Pod 已绑定但未正常运行             | `kubectl get pod POD_NAME -n k8s-arch-demo -o yaml`；查容器状态和事件，再关联节点 kubelet、运行时、镜像、CNI、挂载和应用日志                         |
+
+需要日志时，根据实际部署方式定位 kube-controller-manager 或节点服务；不要在没有证据时通过重启整个控制平面代替排查。
+
 控制器本身还依赖正确的 API 访问、相应的领导者工作状态，以及可用的依赖组件。进程存在或日志未立即报错，都不足以证明所有控制循环能够完成业务目标。
 
 这套定位顺序适合组织排查过程，实际根因需由目标集群的事件、日志与状态共同确认。
+
+控制器创建出 Pod 对象后，还需要决定放在哪个节点；接着阅读[第六章 Scheduler](/articles/kubernetes-scheduler.html)。
 
 [返回本册目录](/collections/kubernetes/)

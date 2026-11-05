@@ -25,6 +25,8 @@ Scheduler 主要解决前一个问题：为需要调度的 Pod 选择合适节�
 
 本章按调度周期、扩展点和重试队列三个层次说明调度器。框架概念以官方说明为依据，源码接口、字段与默认值需固定版本；文中伪代码用于解释流程，尚未作为 Kubernetes 1.28 插件编译运行。
 
+初次阅读可先完成第 1～3 节和[Pending 实验](#pending-lab)，再读[第 10 节排障](#pending-observation)；先掌握“约束 → 选择 → 绑定 → 节点执行”。第 4～9 节的框架扩展点、预留许可、队列与插件属于进阶选读。内部实现以 Kubernetes `v1.28.0` 为历史示例，不把当前文档新增的接口或行为反推为当年的默认配置。
+
 ## 1. 先分清四件事：创建、调度、绑定、运行
 
 | 阶段          | 解决的问题                   | 主要观察对象                      |
@@ -65,6 +67,95 @@ node-b 通过这一项检查，也不代表必然最终被选中：它还可能�
 所以，把“绑定阶段负责挑更合适的节点”作为两阶段定义并不准确。**主要的筛选、评分与选择发生在调度周期；绑定周期负责后续准备及绑定相关工作。**
 
 候选节点的评估比例需要结合调度器版本与配置解释。候选评估策略和配置随版本、集群规模及实现而变化；缺少版本与配置时，不写死“总是检查 50%”或“只检查 5%”。
+
+### 3.1 两个可行节点怎样比较？
+
+假设 Node A、Node B 均通过 Filter。人为设定两个评分项及权重，帮助理解加权汇总：
+
+| 评分项   | Node A | Node B | 权重 |
+| -------- | -----: | -----: | ---: |
+| 资源分布 |     80 |     60 |    1 |
+| 节点偏好 |     30 |     70 |    2 |
+| 合计     |    140 |    200 |    — |
+
+Node A 的合计为 `80 × 1 + 30 × 2 = 140`，Node B 为 `60 × 1 + 70 × 2 = 200`。仅按这两个假设评分项，B 更优；如果 A 没有通过 Filter，它根本不会参与这张评分表。
+
+分数、名称和权重都是教学假设，不是默认插件的实际输出。真实结果由启用的插件、归一化规则、权重、配置和版本决定；资源请求核算也不能直接替换成实时利用率。[调度框架评分机制](https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/#scoring)
+
+### 3.2 用 nodeSelector 制造并解除 Pending {#pending-lab}
+
+本实验仅供**隔离测试集群**使用，本次文档修订没有执行。前提是 `kubectl` 上下文已核对，有创建专用命名空间、管理实验 Pod、读取事件和修改指定测试节点标签的权限。测试节点应允许该 Pod 调度、资源充足、网络正常且能获取镜像。不要对生产节点执行这些操作。
+
+先清点标签，要求实验开始时所有节点都没有 `demo.example.com/eligible` 这个键。这样既保证没有节点匹配 `true`，也让清理时能够明确恢复为“键不存在”，无需覆盖已有值：
+
+```bash
+kubectl config current-context
+kubectl get nodes -L demo.example.com/eligible
+kubectl get nodes -l demo.example.com/eligible -o name
+```
+
+最后一条应无节点返回；若返回节点，或命令因权限等原因失败，停止实验，不覆盖、移除已有标签。选择经过授权的测试节点，将下面变量的值替换为真实名称，并记录原对象以便核对；后续标签命令在同一 Bash 终端执行。`k8s-scheduler-demo` 也必须是本次新建的专用空间：
+
+```bash
+DEMO_NODE='REPLACE_WITH_TEST_NODE'
+kubectl get node "$DEMO_NODE" -o yaml > scheduler-node-before.yaml
+kubectl create namespace k8s-scheduler-demo
+```
+
+保存以下完整清单为 `pending-demo.yaml`：
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-demo
+  namespace: k8s-scheduler-demo
+spec:
+  nodeSelector:
+    demo.example.com/eligible: "true"
+  containers:
+    - name: web
+      image: nginx:1.28.0
+      resources:
+        requests:
+          cpu: 100m
+          memory: 64Mi
+```
+
+这里标签值是字符串 `"true"`。`nodeSelector` 是硬约束；即使有资源空闲的节点，没有标签匹配也不能选它。镜像标签仅用于固定示例版本，实际环境需维护镜像安全。
+
+```bash
+kubectl apply -f pending-demo.yaml
+kubectl get pod pending-demo -n k8s-scheduler-demo -o wide
+kubectl describe pod pending-demo -n k8s-scheduler-demo
+kubectl get pod pending-demo -n k8s-scheduler-demo -o jsonpath='{.spec.nodeName}{"\n"}'
+kubectl get events -n k8s-scheduler-demo --field-selector involvedObject.kind=Pod,involvedObject.name=pending-demo --sort-by=.metadata.creationTimestamp
+```
+
+在调度器正常处理后，预期 Pod 保持 Pending、`spec.nodeName` 为空，并出现与标签约束有关的 `FailedScheduling` 线索。事件可能稍后才出现，文字及列出的其他约束随版本与环境变化，不能要求它逐字等于某条示例错误。
+
+在未被其他操作修改的测试节点上增加标签；**不使用 `--overwrite`**，若提示键已存在，应停止并核对环境变化：
+
+```bash
+kubectl label node "$DEMO_NODE" demo.example.com/eligible=true
+kubectl wait --for=condition=PodScheduled pod/pending-demo -n k8s-scheduler-demo --timeout=120s
+kubectl get pod pending-demo -n k8s-scheduler-demo -o wide
+kubectl describe pod pending-demo -n k8s-scheduler-demo
+```
+
+节点标签变化会为重新评估提供线索。其他约束满足时，预期调度器再次尝试并完成绑定，`spec.nodeName` 变为选中的节点；不保证立即发生。若等待超时，继续看 Events，确认是否仍有污点、资源或其他约束。绑定成功后仍需 kubelet 拉镜像、配置网络并启动容器，所以不等于 Pod 已 Running 或 Ready。[将 Pod 指派给节点](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
+
+清理前核对节点标签仍是本实验添加的 `true`，没有他人后续修改。先删除实验 Pod，再移除本次新增的键，最后删除专用空间：
+
+```bash
+kubectl delete pod pending-demo -n k8s-scheduler-demo --wait=true
+kubectl get node "$DEMO_NODE" -L demo.example.com/eligible
+kubectl label node "$DEMO_NODE" demo.example.com/eligible-
+kubectl get node "$DEMO_NODE" -L demo.example.com/eligible
+kubectl delete namespace k8s-scheduler-demo
+```
+
+对照 `scheduler-node-before.yaml` 确认该键恢复为不存在。若加标签步骤没有成功，跳过移除标签命令；不要把整个旧 Node YAML 重新 apply 回去，以免覆盖其他字段。本实验验证标签硬约束与重新调度的可观察结果，不能仅凭这些输出确定内部队列位置。
 
 ## 4. 调度周期与绑定周期的边界
 
@@ -107,11 +198,21 @@ Reserve 和 Permit 仍属于调度周期的框架处理；Permit 返回等待时
 
 因此，Reserve 插件的清理逻辑需要正确处理重复执行、部分完成等情况。Unreserve 的幂等实现负责清理预留状态，外部资源还需独立核对是否完整释放。
 
+例如某插件已为这个 Pod 记录一份调度侧预留，随后另一插件失败，回退必须能清理这份记录；即使自己的 Reserve 尚未完整完成，Unreserve 也要安全处理。否则重试会把残留状态当作真实占用。它不是“节点上的设备已实际交付容器”，框架也不能自动撤销插件发出的任意外部系统操作。
+
 按框架约定，Unreserve 应具备幂等性，并且不能失败；相关 Reserve 失败或后续回退时，还要遵循框架规定的清理顺序。接口约定要求实现者正确处理，而不是框架替插件修复任意外部资源错误。[v1.28.0 Reserve/Unreserve 接口](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/scheduler/framework/interface.go)
 
 ### 6.2 Permit 可以等待，但不能无限等
 
 某些调度扩展希望满足额外协同条件后才继续绑定。等待需要超时与拒绝处理，并配合前面预留状态的回退。
+
+| Permit 结果 | 后续处理                                                                                     |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| 批准        | 全部 Permit 插件批准后，继续绑定周期的后续阶段                                               |
+| 拒绝        | 本次尝试不能继续绑定，触发相应 Unreserve 清理并按规则返回队列                                |
+| 等待        | 调度周期返回等待状态；绑定周期等待批准，批准后再进入 PreBind，超时或拒绝则回退预留并重新排队 |
+
+因此，“等待 Permit”不表示容器已经在节点上启动，也不表示绑定周期已成功完成。精确调用位置可对照 [Kubernetes v1.28.0 的调度与绑定实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/scheduler/schedule_one.go)；并非每个扩展点失败都能用同一条回退箭头概括。
 
 这里不直接给出一个未经运行的协同调度插件。先把批准、拒绝、等待三种结果画清楚，再学习具体接口，比照抄某个 main 注册片段更稳妥。
 
@@ -126,6 +227,8 @@ Reserve 和 Permit 仍属于调度周期的框架处理；Permit 返回等待时
 [![Scheduler：失败之后如何再次尝试](/assets/notes/kubernetes/k8s-scheduler-retry-queues.svg)](/assets/notes/kubernetes/k8s-scheduler-retry-queues.svg)
 
 图示保留常见概念，不表示每次失败都只能沿同一条固定路线进入队列；具体事件处理和队列实现随版本变化。
+
+Pending 是 Kubernetes API 中的 Pod 阶段；Active、Unschedulable、Backoff 是调度器内部组织待处理工作的概念。`kubectl get pods` 的 Pending 一列不能告诉我们它具体在哪个内部队列；已绑定、等待节点准备的 Pod 也可能仍处于 Pending。
 
 ### 7.1 Active：可以进入尝试的对象
 
@@ -142,6 +245,8 @@ Reserve 和 Permit 仍属于调度周期的框架处理；Permit 返回等待时
 退避会将部分重试推迟到合适的时间，但这并不表示系统保证“再过几秒一定调度成功”。它只限制尝试节奏；如果资源条件始终不满足，重试仍可能失败。
 
 事件到达、是否仍处于退避期、当前调度尝试和队列移动的时序会影响实际转移。move request 相关竞态可作为队列源码阅读线索，其字段与时序属于内部实现。
+
+例如，标签更新后可能先触发重新入队，若 Pod 仍在退避期，也不一定立即被取出尝试。理解 v1.28 的历史处理方式时，应对照 [v1.28.0 调度队列实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/scheduler/internal/queue/scheduling_queue.go)，不能从当前文档中的新机制推导所有历史版本默认行为。
 
 ## 8. 带上限的退避算例 {#_8-修正原笔记中的退避算例}
 
@@ -170,17 +275,27 @@ Scheduler Extender 则是独立接口扩展路径。标准 Extender 使用相应
 
 两种机制在扩展能力、版本耦合、故障影响和部署成本上都有差异。决定自定义之前，应先检查已有的调度配置、亲和性和插件能否满足需求。[调度扩展与配置](https://kubernetes.io/docs/reference/scheduling/config/)
 
+<a id="pending-observation"></a>
+
 ## 10. Pending 的观察顺序
 
 下面是笔记中的观察命令整理，未在实际集群执行：
 
 ```bash
-kubectl get pods -n default -o wide
-kubectl describe pod <POD_NAME> -n default
-kubectl get events -n default --sort-by=.metadata.creationTimestamp
+kubectl get pod POD_NAME -n NAMESPACE -o wide
+kubectl describe pod POD_NAME -n NAMESPACE
+kubectl get pod POD_NAME -n NAMESPACE -o jsonpath='{.spec.nodeName}{"\n"}'
+kubectl get events -n NAMESPACE --sort-by=.metadata.creationTimestamp
 ```
 
-`<POD_NAME>` 是需替换的占位符，不应原样交给 shell。
+`POD_NAME`、`NAMESPACE` 是需替换的占位符，分别改成实际 Pod 名称和命名空间。`nodeName` 为空通常说明尚未完成节点绑定；非空说明已指定节点，但不能证明容器运行完成。手动在 Pod 中指定 `nodeName` 会绕过 Scheduler 的正常节点选择，不能把这种路径当成一次普通调度成功。
+
+| 信息                 | 能提供的证据                                                 |
+| -------------------- | ------------------------------------------------------------ |
+| Pod Phase            | 当前生命周期阶段，不能直接映射为某个调度队列                 |
+| Pod Events           | 调度或其他阶段的状态变化与失败线索，可能聚合或过期           |
+| `spec.nodeName`      | 当前是否指定节点，结合 PodScheduled 条件判断绑定边界         |
+| Scheduler 日志与指标 | 对内部调度尝试、失败与队列行为的进一步证据，需结合版本和配置 |
 
 阅读结果时：
 
@@ -193,5 +308,7 @@ kubectl get events -n default --sort-by=.metadata.creationTimestamp
 本章没有给出“调度失败就解除全部污点、删除所有 Pending Pod”的修复办法，因为这会改变隔离、业务与故障证据，而未必解决真正约束。
 
 读完后，应能用一句话说明分工：**控制器决定需要哪些 Pod，Scheduler 为相应 Pod 选择节点，kubelet 再推进本节点上的运行。**
+
+完成节点绑定后，接下来由[第七章 kubelet](/articles/kubernetes-kubelet.html)解释本节点如何准备 Pod、调用运行时并持续上报状态。
 
 [返回本册目录](/collections/kubernetes/)

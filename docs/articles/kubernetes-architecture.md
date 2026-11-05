@@ -3,7 +3,7 @@ id: kubernetes-architecture
 title: 第一章：Kubernetes 整体架构——从一次部署理解各组件如何协作
 description: "Kubernetes 通过一组持续协作的组件，把 API 对象中描述的期望状态逐步变成运行中的应用。理解组件职责与对象关系，是学习部署、网络和故障排查的起点。"
 date: '2026-10-25'
-updated: '2026-10-28'
+updated: '2026-11-04'
 category: engineering
 type: explanation
 tags:
@@ -83,6 +83,8 @@ Deployment：管理 Pod 模板的发布和更新
 
 这里表达的是管理关系，不是进程调用栈。Deployment、ReplicaSet 和 Pod 都是 API 对象，不是三种依次嵌套运行的容器。更新时还可能同时存在新旧 ReplicaSet，并非一个 Deployment 永远只对应一个 ReplicaSet。[Deployment 官方说明](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 
+后面还会反复出现三个组件名：`kube-apiserver` 是读写集群对象的 API 入口，`etcd` 是保存这些对象的默认存储后端，`kubelet` 是每个节点上负责协调 Pod 运行的代理。先认识分工，再看它们如何协作。
+
 ## 3. 架构总览：控制平面负责协调，节点负责运行
 
 [![k8s-logical-architecture](/assets/notes/kubernetes/k8s-logical-architecture.svg)](/assets/notes/kubernetes/k8s-logical-architecture.svg)
@@ -94,7 +96,7 @@ Deployment：管理 Pod 模板的发布和更新
 1. 左侧是控制平面的主要组件，不表示这些组件必须只运行一份，或全部部署在同一台机器。
 2. 右侧是一台示意工作节点；两个 Pod、每个 Pod 两个容器只是帮助看清层级，并非推荐或固定数量。
 3. `cloud-controller-manager` 是与云平台集成有关的可选组件；部分网络方案也会替代 `kube-proxy` 的 Service 数据平面实现。
-4. CNI 是网络集成接口与相关实现体系，不意味着每个集群都存在一个同名的独立常驻进程。CoreDNS 和存储驱动等补充能力在后文介绍。
+4. CNI（Container Network Interface，容器网络接口）约定如何为容器配置网络；网络插件实现具体能力，不意味着每个集群都存在一个同名的独立常驻进程。CoreDNS 和存储驱动等补充能力在后文介绍。
 
 先把图当作“职责地图”，不必一次掌握所有内部接口。[官方组件概览](https://kubernetes.io/docs/concepts/overview/components/)
 
@@ -104,13 +106,13 @@ Deployment：管理 Pod 模板的发布和更新
 
 `kubectl`、客户端程序和集群组件通过 Kubernetes API 读取或修改对象，kube-apiserver 提供这一入口。
 
-例如，提交 Deployment 时，需要经过相应的身份认证、授权、准入与对象处理，成功的状态变更才会进入持久存储流程。普通用户通过`kubectl`命令无法直接修改 etcd，也不是通过 `kubectl` 登录到某台工作节点执行启动容器的脚本。
+例如，提交 Deployment 时，需要经过相应的身份认证、授权、准入、字段校验与对象处理，成功的状态变更才会通过存储后端持久化。保存的 API 对象既可以包含期望状态，也可以包含组件上报的已观察状态；API Server 并非只保存期望。普通用户通过 `kubectl` 命令无法直接修改 etcd，也不是通过 `kubectl` 登录到某台工作节点执行启动容器的脚本。
 
 API Server 并不会在收到每个请求后，同步调用某个控制器，并等到所有容器启动完成才回复。请求处理与后续状态协调是两件事，具体权限流程会在安全章节展开。[Kubernetes API](https://kubernetes.io/docs/concepts/overview/kubernetes-api/)
 
 ### 4.2 etcd：保存 API 状态 {#_4-2-etcd-保存集群状态-不是应用文件仓库}
 
-etcd 是持久的分布式键值存储，用于保存 Kubernetes 的 API 数据。Deployment、Pod 等对象的状态需要有可靠的保存位置，这样控制平面才能在重启或故障恢复后继续协调。
+etcd 是持久的分布式键值存储，是 Kubernetes 默认的集群状态存储后端。Deployment、Pod 等对象的状态需要有可靠的保存位置，这样控制平面才能在重启或故障恢复后继续协调。
 
 把“集群状态”与“业务数据”分开，是理解架构的重要一步。应用镜像和数据库的数据文件，不会因为应用部署到了 Kubernetes，就自动存进 etcd。
 
@@ -174,7 +176,7 @@ kube-proxy 观察 Service、EndpointSlice 等对象，维护节点上的相关�
 
 CoreDNS 常用于集群内的 DNS 服务发现。例如，应用通过 Service 的域名寻找服务，而不必手工记录每个 Pod 的 IP。DNS 查询和后续业务流量转发是两个过程，不应都归到 kube-proxy。[CoreDNS 使用说明](https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/)
 
-存储方面，卷及存储驱动帮助 Pod 使用文件系统与后端存储。卷不一定持久；临时卷、持久卷及回收策略需要分别理解，更不能把“挂载了卷”直接等同于“已经备份”。[卷的用途与生命周期](https://kubernetes.io/docs/concepts/storage/volumes/)
+存储方面，卷及存储驱动帮助 Pod 使用文件系统与后端存储。CSI（Container Storage Interface，容器存储接口）约定 Kubernetes 与存储驱动之间的操作接口，让不同存储系统可以提供创建卷、挂载等能力。卷不一定持久；临时卷、持久卷及回收策略需要分别理解，更不能把“挂载了卷”直接等同于“已经备份”。[卷的用途与生命周期](https://kubernetes.io/docs/concepts/storage/volumes/)
 
 ## 6. Kubernetes 怎样理解“我要三个副本”？
 
@@ -207,7 +209,7 @@ spec:
 
 ## 7. 一次 Deployment 部署，实际上经历了什么？
 
-继续使用新增教学例子：创建一个名为 `web-demo` 的 Deployment，希望运行三个 Web Pod。
+继续使用 Web 应用例子：创建一个名为 `web-demo` 的 Deployment，希望运行三个 Web Pod。
 
 [![从 Deployment 到 Pod 运行](/assets/notes/kubernetes/k8s-deployment-journey.svg)](/assets/notes/kubernetes/k8s-deployment-journey.svg)
 
@@ -244,6 +246,82 @@ kubelet 观察到分配给本节点的 Pod，配合运行时、网络与存储�
 kubelet 持续报告运行状态。容器处于运行状态，不自动表示应用已经能提供服务；应用可能尚未完成初始化，就绪检查也可能尚未通过。
 
 如果另外配置了匹配的 Service，控制器与数据平面还会根据相关端点状态协调访问路径。**创建 Deployment 不会自动创建一个对应的 Service。** [Service 与后端](https://kubernetes.io/docs/concepts/services-networking/service/)
+
+### 7.1 动手观察：创建、补副本和扩容 {#web-demo-lab}
+
+前提：已有可用的学习集群，`kubectl` 上下文正确，具备创建命名空间及管理其中 Deployment、ReplicaSet、Pod 的权限；节点可调度、CNI 正常，能获取示例镜像且资源足够。以下使用 Bash，在新建的专用命名空间 `k8s-arch-demo` 操作；若同名空间已存在，请先换名并同步修改所有命令和 YAML。本节是可执行教学示例，**本次修订未在真实集群运行，以下描述均为预期行为**。
+
+**场景 A：创建三个副本。** 将以下内容保存为 `deployment.yaml`：
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-demo
+  namespace: k8s-arch-demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-demo
+  template:
+    metadata:
+      labels:
+        app: web-demo
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.28.0
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 5
+```
+
+`replicas` 设置期望数量；`selector.matchLabels` 必须匹配 Pod 模板中的标签，控制器才能识别管理对象。`template` 描述每个新 Pod 的规格；HTTP 就绪探针用于检查容器内 Web 服务是否能响应。`containerPort` 是端口声明，不会自动创建 Service 或暴露外部入口。示例镜像标签用于固定教程版本，实际部署仍需按安全策略维护镜像。
+
+```bash
+kubectl create namespace k8s-arch-demo
+kubectl apply -f deployment.yaml
+kubectl rollout status deployment/web-demo -n k8s-arch-demo --timeout=120s
+kubectl get deployments -n k8s-arch-demo
+kubectl get replicasets -n k8s-arch-demo -l app=web-demo
+kubectl get pods -n k8s-arch-demo -l app=web-demo -o wide
+kubectl get replicasets -n k8s-arch-demo -l app=web-demo -o yaml
+kubectl get pods -n k8s-arch-demo -l app=web-demo -o yaml
+```
+
+条件满足时，预期最终看到三个就绪副本。在 YAML 的 `metadata.ownerReferences` 中可观察 ReplicaSet 指向 Deployment、Pod 指向 ReplicaSet 的所属关系。Pod 列表中出现三个对象，并不能证明三个副本已经 Ready；还要结合 Deployment 的 `READY`、`AVAILABLE` 和 Pod 的 `READY`、Conditions 判断。`rollout status` 超时表示等待期限内未完成，应查看事件和状态，不代表创建请求一定失败。
+
+**场景 B：删除一个受管理的 Pod。** 从上述列表选一个 Pod，将下面的 `POD_NAME` 替换为实际名称：
+
+```bash
+kubectl delete pod POD_NAME -n k8s-arch-demo
+kubectl get pods -n k8s-arch-demo -l app=web-demo --watch
+```
+
+ReplicaSet 的期望仍是三个副本。控制器观察到需要补足时，会通过 API 请求创建新 Pod；新 Pod 的名称和 UID 与被删除者不同。它仍需经历调度、拉镜像、启动和就绪检查，不能保证立即可用；观察期间旧 Pod 可能仍在终止，列表数量也可能暂时超过三个。按 `Ctrl+C` 停止观察。
+
+**场景 C：从三个副本扩到五个。**
+
+```bash
+kubectl scale deployment/web-demo -n k8s-arch-demo --replicas=5
+kubectl rollout status deployment/web-demo -n k8s-arch-demo --timeout=120s
+kubectl get deployment web-demo -n k8s-arch-demo
+kubectl get pods -n k8s-arch-demo -l app=web-demo -o wide
+```
+
+`scale` 修改的是 Deployment 中的期望数量；后续仍由控制器独立协调。这体现了以目标状态驱动的 API。若 YAML 是后续管理依据，还应将本地 `replicas` 改为 `5`，否则再次 `apply` 可能把目标改回 `3`。[Deployment 的创建、扩缩与状态](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+
+实验结束后清理专用空间及其所有资源：
+
+```bash
+kubectl delete namespace k8s-arch-demo
+```
 
 ## 8. 管理请求与业务流量，是两条不同的路径
 
@@ -308,7 +386,7 @@ kubectl / API 客户端 → kube-apiserver → 相应 API 状态处理
 
 ## 11. 本章要点 {#_11-读完后-试着回答这五个问题}
 
-1. API Server 保存期望状态，后续控制器、调度器和节点组件继续推进运行。
+1. API Server 处理请求并通过存储后端保存 API 对象，其中可包含期望与已观察状态；控制器、调度器和节点组件独立观察并推进运行。
 2. Scheduler 选择节点，kubelet 在目标节点协调容器运行。
 3. 同一 Pod 的容器共同调度并协作；多个 Pod 通常表达可分别管理的应用副本。
 4. Pod 替换后地址可能变化，应用应通过合适的服务发现与访问机制定位后端。

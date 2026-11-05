@@ -34,7 +34,7 @@ Service 是 API 对象，并不是一台独立的代理机器。以普通 Cluste
 可以按信息流拆成三层：
 
 - Service 描述入口、端口以及适用的后端选择条件。
-- 相关控制器根据对象状态维护端点信息；1.28 学习时应同时认识 EndpointSlice，而不是只停留在旧 Endpoints 对象。
+- EndpointSlice 保存适用后端的地址、端口与相关条件，由控制器根据对象状态维护；1.28 学习时应认识它，而不只停留在旧 Endpoints 对象。
 - kube-proxy 观察 Service 与端点相关变化，在本节点协调所需的转发机制。
 
 kube-proxy 不负责创建应用副本，也不是由它判断应用所有业务接口是否健康。它消费的后端信息来自集群对象状态，readiness 等状态会影响通常的后端资格。
@@ -66,7 +66,7 @@ Kubernetes v1.28.0 的 kube-proxy 参数说明列出了 Linux 的 `iptables` 和
 
 ## 5. 用一次连接理解端口转换
 
-新增教学示例：一个 Service 对外提供 TCP 80，后端应用监听 TCP 8080。客户端连接的是 Service 的 80 端口，最终到达某个后端的 8080 端口。
+以 `catalog` 为例，Service 提供 TCP 80，后端应用监听 TCP 8080。客户端连接 Service 的 80 端口，最终到达某个后端的 8080 端口。这里“提供入口”不表示一定能从集群外访问。
 
 ```text
 客户端 → Service 地址:80 → 服务数据平面 → 后端 Pod 地址:8080
@@ -74,7 +74,30 @@ Kubernetes v1.28.0 的 kube-proxy 参数说明列出了 Linux 的 `iptables` 和
 
 这里的 Service 地址不是节点地址，也不表示应用必须监听 80。`port` 和 `targetPort` 分别描述两个位置，名字相似不代表含义相同。
 
-图中以角色名称区分 Service 与后端地址；实际地址应从目标环境获取。IPv4 的各段范围为 0–255，例如 `10.96.123.456` 超出范围，不能作为可用配置。
+### 5.1 一条 TCP 连接怎样到达 Pod？
+
+以下地址均为合法的**人为教学地址**，不是实际集群值，实验也不要求分配这些固定 IP：
+
+| 对象            | 示例地址           |
+| --------------- | ------------------ |
+| Service catalog | `10.96.10.20:80`   |
+| Pod A           | `10.244.1.10:8080` |
+| Pod B           | `10.244.2.10:8080` |
+| 客户端 Pod      | `10.244.3.10`      |
+
+VIP（Virtual IP，虚拟 IP）表示这个逻辑 Service 入口。NAT（Network Address Translation，网络地址转换）改变数据包的地址或端口；其中 DNAT（Destination Network Address Translation，目的网络地址转换）改变目的位置。Conntrack（Connection Tracking，连接跟踪）维护连接状态及适用的转换关联。
+
+以 Kubernetes 1.28 Linux iptables 模式、普通 TCP ClusterIP 流量为例，假设这次选择 Pod A，省略额外的源地址转换：
+
+1. 客户端从临时端口（例如 `49152`）向 `10.96.10.20:80` 建立 TCP 连接。
+2. 数据包进入适用的节点内核处理路径，匹配 kube-proxy **预先配置**的 Service 规则；不是临时调用 kube-proxy 处理 HTTP。
+3. 规则依据可用端点、会话保持及流量策略等选择后端。本例选 A，通过 DNAT 把目标从 `10.96.10.20:80` 改为 `10.244.1.10:8080`。
+4. 包沿 Pod 网络到达 A。此后这条连接的流量使用相应 Conntrack/NAT 状态，不是每个 HTTP 请求重新轮询后端。
+5. A 返回数据，回程经过相应路由与连接跟踪处理；反向转换让客户端仍看到来自 Service `10.96.10.20:80` 的响应，维持连接两端预期的地址关系。
+
+[![Service TCP 连接的 DNAT 与返回路径](/assets/notes/kubernetes/k8s-service-connection-nat.svg)](/assets/notes/kubernetes/k8s-service-connection-nat.svg)
+
+这是一次连接的简化关系，不是所有 CNI 和节点布局的完整内核路径。实际还可能涉及 SNAT（Source Network Address Translation，源网络地址转换）、不同的路由和连接跟踪条件。B 是另一候选后端，不表示该连接的下一个 HTTP 请求就会转到 B。[v1.28.0 iptables 转发规则实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/proxy/iptables/proxier.go)
 
 连接转发还要考虑回程、连接跟踪、会话保持与流量策略。负载均衡不意味着一个 HTTP 长连接里的每个请求都会平均分配到不同 Pod，也不保证多个后端获得完全相同的请求数。
 
@@ -92,6 +115,23 @@ Pod 创建、就绪或终止后，相关端点状态与节点规则需要经过�
 
 readiness、`publishNotReadyAddresses`、终止端点及相应流量策略，会影响“哪些端点被认为适合使用”。在普通控制器维护的 EndpointSlice 中，先读 `conditions.ready`、`serving`、`terminating`：一个 `ready: false, serving: true, terminating: true` 的端点正在退出，但应用仍可能就绪。是否接收具体流量，还由数据平面、连接状态与策略决定。字段规则和缺省值在第十九章展开，不能只数 Pod 就判断后端可用。
 
+例如最初 A、B 都 Ready，`catalog` 有两个适用后端；随后 B 开始终止：
+
+1. Pod B 出现删除时间等终止信息。Pod 的 Ready 条件与“是否正在终止”分别表达不同状态，不能简单认为删除请求使所有流量立刻消失。
+2. EndpointSlice 控制器更新 B 的条件。常见未设置 `publishNotReadyAddresses` 的场景，终止端点的 `ready` 为 false；`terminating` 表达退出中，`serving` 则可表达终止期间的就绪能力。
+3. 节点端点观察与规则同步随后推进。API 中的 EndpointSlice 已更新，只能证明对象层有了变化，不能证明所有节点都已完成规则更新。
+4. 节点反映变化后，常规新连接的后端选择会随之调整；已有 TCP 连接仍可能保留到 B 的连接跟踪关系，只要应用和网络仍允许，就可能继续处理请求，也可能因终止、超时或其他原因中断。
+
+| 观察项                    | 回答的问题                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------ |
+| Pod Ready                 | kubelet 报告的 Pod 就绪条件如何？                                              |
+| EndpointSlice `ready`     | 对常规端点消费者，这个端点是否可作为就绪后端？终止与发布未就绪地址存在额外语义 |
+| `serving` / `terminating` | 端点是否仍具备服务能力、是否进入终止过程？                                     |
+| 节点数据平面              | 对象变化是否已经落实到该节点的转发机制？                                       |
+| 客户端连接                | 客户端新建连接，还是继续复用已有连接？                                         |
+
+所以“不再 Ready”不是立即拆除所有旧连接的命令，端点更新也不是节点同步完成的证明。本地流量策略、终止端点处理等还可能改变后端使用方式，本章不承诺无损切换；更完整的条件规则见[第十九章 Service 与 EndpointSlice](/articles/kubernetes-service-endpointslice.html)。[v1.28 EndpointSlice 条件](https://github.com/kubernetes/website/blob/release-1.28/content/en/docs/concepts/services-networking/endpoint-slices.md#conditions)
+
 ## 7. 按失败层级检查
 
 以下命令是未执行的查询模板；查看输出不等于获准修改网络。
@@ -107,6 +147,31 @@ kubectl get endpointslice -n NAMESPACE -l kubernetes.io/service-name=SERVICE_NAM
 如果端点看似正确，再比较同一客户端访问 Pod 地址、Service 地址和服务名的区别。三种路径失败的位置不一样：只有服务名失败时更需要看 DNS；Pod 地址也失败时还要看应用和 Pod 网络；只有 Service 地址失败时才更集中检查服务数据平面及策略。对比结果是线索，不是没有例外的判定公式。
 
 NodePort 是否可达还受节点地址选择、流量策略、防火墙和底层网络影响。“任意节点加端口一定通”和“生产环境不能使用 NodePort，因为一定低效”都过于绝对。对外访问设计将在 Service 与 Ingress 资源章中按条件展开。
+
+### 7.1 对照 Pod IP、Service IP 与服务名 {#catalog-access-test}
+
+先按[第十二章共用实验清单](/articles/kubernetes-api-yaml-labels.html#catalog-lab)准备 `study/catalog` Deployment、Service 和 `dns-debug` Pod。前提是两个应用副本已 Ready、Service selector 匹配 `app=catalog`，客户端到后端 TCP 8080、Service TCP 80 及 DNS 路径未被策略阻断。使用 IPv4 测试地址，命令在同一个 Bash 终端执行；本次未访问真实集群。
+
+```bash
+kubectl get svc catalog -n study
+kubectl get pods -n study -l app=catalog -o wide
+kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
+POD_IP=$(kubectl get pods -n study -l app=catalog -o jsonpath='{.items[0].status.podIP}')
+SERVICE_IP=$(kubectl get svc catalog -n study -o jsonpath='{.spec.clusterIP}')
+kubectl exec dns-debug -n study -- wget -qO- -T 5 "http://$POD_IP:8080"
+kubectl exec dns-debug -n study -- wget -qO- -T 5 "http://$SERVICE_IP:80"
+kubectl exec dns-debug -n study -- wget -qO- -T 5 http://catalog.study.svc.cluster.local:80
+```
+
+先确认列表非空、所选 Pod 已就绪且两个变量均为实际地址；不要将第 5.1 节的教学 IP 代入。条件满足时三次都预期返回 `catalog`，但证明范围不同：
+
+| 路径            | 额外依赖与边界                                            |
+| --------------- | --------------------------------------------------------- |
+| Pod IP:8080     | 应用监听、Pod 网络及适用策略；不经过本例 Service VIP 选择 |
+| ClusterIP:80    | 再增加 Service 端口、端点与服务数据平面的处理             |
+| Service 名称:80 | 再增加源 Pod 的 DNS 配置、解析器与实际 DNS 查询路径       |
+
+这是对照实验，不是“哪一行失败就能唯一确定根因”的公式；直接测试一个 Pod 也不代表所有后端均正常。若需隔离 DNS 问题，继续[第十一章实验](/articles/kubernetes-coredns.html#catalog-dns-test)。只做本章时，结束后用 `kubectl delete namespace study` 清理专用空间；继续后续实验则暂不清理。整个实验不修改任何 iptables、IPVS 或 nftables 规则。
 
 ## 8. 本章小结
 
