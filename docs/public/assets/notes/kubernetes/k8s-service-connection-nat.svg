@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="850" viewBox="0 0 1500 850" role="img" aria-labelledby="title desc">
+  <title id="title">Service TCP 连接的 DNAT、连接跟踪与回包</title>
+  <desc id="desc">客户端 10.244.3.10 的临时端口连接 Service 10.96.10.20:80。节点内核预配置规则选择 Pod A，并将目的改为 10.244.1.10:8080。返回流量通过相应连接跟踪与反向 NAT，客户端看到源为 Service VIP:80。Pod B 只是其他新连接的候选，本连接未选择。图省略额外 SNAT 和具体跨节点路径，kube-proxy 不位于业务包逐跳路径中。</desc>
+  <defs>
+    <marker id="forward" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#2563eb"/></marker>
+    <marker id="return" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#128365"/></marker>
+    <style>
+      text { font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #183153; }
+      .heading { font-size: 25px; font-weight: 700; }
+      .body { font-size: 20px; fill: #526780; }
+      .label { font-size: 18px; }
+      .request { fill: none; stroke: #2563eb; stroke-width: 3; marker-end: url(#forward); }
+      .response { fill: none; stroke: #128365; stroke-width: 3; marker-end: url(#return); }
+    </style>
+  </defs>
+  <rect width="1500" height="850" fill="#f8fafe"/>
+  <rect x="20" y="24" width="1460" height="802" rx="24" fill="white" stroke="#d8e4f2" stroke-width="2"/>
+  <text x="60" y="85" font-size="34" font-weight="700">一次 TCP 连接：Service 入口、目标转换与返回路径</text>
+  <text class="body" x="60" y="130">Kubernetes v1.28 / Linux iptables 示例；IP 均为人为教学值，不是实际集群地址</text>
+
+  <rect x="60" y="235" width="370" height="150" rx="16" fill="#edf4ff" stroke="#b7d3fa" stroke-width="2"/>
+  <text class="heading" x="86" y="280">客户端 Pod</text>
+  <text class="body" x="86" y="322">源：10.244.3.10:49152</text>
+  <text class="body" x="86" y="357">目标：10.96.10.20:80</text>
+  <rect x="565" y="205" width="420" height="210" rx="16" fill="#f3efff" stroke="#d4c7f4" stroke-width="2"/>
+  <text class="heading" x="591" y="249">节点内核：规则 / Conntrack</text>
+  <text class="body" x="591" y="290">匹配 Service VIP 10.96.10.20:80</text>
+  <text class="body" x="591" y="328">DNAT 目标到 Pod A:8080</text>
+  <text class="body" x="591" y="366">记录连接及适用的转换关系</text>
+  <rect x="1120" y="235" width="320" height="150" rx="16" fill="#edf4ff" stroke="#b7d3fa" stroke-width="2"/>
+  <text class="heading" x="1146" y="280">Pod A：本连接后端</text>
+  <text class="body" x="1146" y="322">10.244.1.10:8080</text>
+  <text class="body" x="1146" y="357">经 Pod 网络接收业务包</text>
+  <path class="request" d="M430 310 H565"/>
+  <path class="request" d="M985 310 H1120"/>
+  <text class="label" x="458" y="288">连接请求</text>
+  <text class="label" x="1004" y="288">目的已转换</text>
+
+  <path class="response" d="M1280 385 V515 H800 V415"/>
+  <text class="body" x="1050" y="465">回包源：Pod A:8080</text>
+  <path class="response" d="M650 415 V590 H245 V385"/>
+  <text class="body" x="280" y="625">反向 NAT 后，客户端看到源：10.96.10.20:80</text>
+  <text class="label" x="280" y="656">连接中的多个 HTTP 请求不因此逐个重新选择后端</text>
+
+  <rect x="1120" y="620" width="320" height="105" rx="16" fill="#f3f6fb" stroke="#c5d1df" stroke-dasharray="7 5" stroke-width="2"/>
+  <text class="heading" x="1146" y="660">Pod B：其他候选</text>
+  <text class="body" x="1146" y="701">10.244.2.10:8080（本次未选）</text>
+  <rect x="60" y="750" width="1380" height="44" rx="12" fill="#f3f6fb"/>
+  <text class="label" x="82" y="779">省略额外 SNAT、节点布局和具体内核路径；kube-proxy 预先维护规则，不在每个业务包逐跳经过的路径上。</text>
+</svg>

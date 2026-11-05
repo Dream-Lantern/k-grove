@@ -41,6 +41,8 @@ Kubernetes 的 API 对象包含名称、标签、期望配置和已观察状态�
 
 因此，etcd 快照不是应用数据目录的全量备份。恢复了 Deployment 对象，不代表恢复了应用数据库的业务内容。
 
+Secret 也属于 API 状态，Base64 编码不提供保密性。Kubernetes 默认不会自动加密 etcd 中的 Secret 静态数据；是否加密取决于 API Server 的加密配置和提供程序。快照可能包含敏感数据，应限制读取权限，采用加密存储和安全传输，并保管好恢复所需的加密配置与密钥。[Kubernetes 静态数据加密](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/)
+
 **etcd 是有状态服务，StatefulSet 则是一种 Kubernetes 工作负载资源。** 二者分别描述服务性质与部署管理方式。 kubeadm 常见叠放拓扑通常以静态 Pod 等方式组织本地 etcd；外置 etcd 则有不同部署安排。[kubeadm 拓扑](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)
 
 ## 2. 为什么其他组件不直接修改 etcd？
@@ -57,7 +59,9 @@ Kubernetes 的 API 对象包含名称、标签、期望配置和已观察状态�
 
 ## 3. 多数派究竟在解决什么问题？
 
-设三个投票成员为 A、B、C，其中一个成员承担 Leader 职责。写入需要按协议复制、提交并应用，客户端才能得到相应成功结果；不能让每个失联分区都自行宣布写入成功。
+etcd 使用 Raft（分布式共识算法）让成员就日志顺序达成一致。Leader（领导者）推进日志复制和提交，Follower（跟随者）接收复制并按协议更新状态。Quorum（法定多数）是协议作出决定所需的多数投票成员；三个成员至少需要两个，避免少数分区自行确认新写入。
+
+设三个投票成员为 A、B、C。写入需要按协议复制、提交并应用，客户端才能得到相应成功结果；不能让每个失联分区都自行宣布写入成功。
 
 如果 A 与 B 仍可正常通信，而 C 暂时失联，A、B 可以构成多数。反过来，只有 C 的孤立部分不能单独凑出三个成员中的多数。
 
@@ -90,17 +94,36 @@ Kubernetes 的 API 对象包含名称、标签、期望配置和已观察状态�
 
 本章不展开 Raft 的任期和日志安全证明，也不把一个简化箭头图当作完整存储实现。etcd 的 API 保证、集群配置与硬件故障条件都应一起阅读。[etcd API 保证](https://etcd.io/docs/v3.5/learning/api_guarantees/)
 
+### 4.1 三节点写入推演：A 是 Leader
+
+假设 A、B、C 均为投票成员，A 是当前任期的 Leader，B、C 是 Follower，成员配置没有变化。客户端向 A 提交一次修改键值的请求。下面描述协议上的主要关系，省略请求批处理、磁盘写入调度及响应传输等实现细节：
+
+1. **接收请求**：A 将请求对应的操作组织为日志条目。仅在 A 本地接收或记录，不代表整个集群已经提交。
+2. **复制日志**：A 向 B、C 复制日志；Follower 按日志一致性检查等规则接收并持久记录后确认。WAL（Write-Ahead Log，预写日志）记录恢复所需的日志等信息，帮助成员在崩溃后恢复；它不是客户端成功响应的替代证明。
+3. **判断提交**：假设 A 的当前任期条目已在 A、B 上满足持久复制要求，即达到 2/3 的多数，Leader 可按 Raft 规则推进提交索引。多数条件必须结合任期、日志顺序和成员配置；不能把“任意旧任期条目被两个成员保存”当作可独立提交的充分条件。旧条目可随当前任期条目的提交被间接提交。
+4. **应用状态机**：已提交的日志按顺序应用为键值状态。提交意味着协议已作出决定，不表示所有 Follower 此刻都已完成应用；落后的 C 可以随后追赶。
+5. **返回操作结果**：请求在服务端完成相应提交与应用等处理后，客户端收到符合 etcd API 保证的成功结果。Follower 只收到日志，不能绕开 Leader 的协调独立宣布该写入成功。若客户端超时或连接断开，结果可能不确定，也不能直接认定写入从未发生。
+
+把过程压缩成“Leader 写完 → 成功”，就丢掉了复制、提交与应用的边界。持久化还依赖实现、文件系统及硬件正确履行写入要求；WAL 与数据库文件的作用参见 [etcd 3.5 持久存储文件](https://etcd.io/docs/v3.5/learning/persistent-storage-files/)，提交的当前任期规则参见 [Raft 论文第 5.4.2 节](https://raft.github.io/raft.pdf)。
+
+### 4.2 两种失联情况
+
+- **C 失联，A、B 正常通信**：仍有两个投票成员。在 Leader 有效、磁盘与复制等条件正常时，A、B 可以继续推进写入；不需要等待 C 也返回成功。C 恢复后再按协议追赶。
+- **只剩一个成员可通信**：无论它此前是 Leader 还是 Follower，都不能独立满足三个投票成员所需的多数，无法提交新的写入。成员可能仍保存旧数据，但“有数据”与“能确认新写入”不同。
+
+这里假定仍是原来的三成员配置，不能靠临时忽略失联成员就把多数门槛改成一票。[etcd 故障模式](https://etcd.io/docs/v3.5/op-guide/failures/)
+
 ## 5. Watch、revision 与 Kubernetes resourceVersion
 
 etcd 可以提供键空间变化的观察能力，API Server 也基于其存储机制组织 Kubernetes API 状态访问。两者有关联，但不意味着用户应直接订阅内部 etcd 键，绕开 Kubernetes API。
 
 还应分清：
 
-- etcd 的 revision 描述其相应键空间修改版本。
+- etcd 的 Revision（修订版本）为键空间的修改提供逻辑顺序；一次修改事务可以影响多个键，并共享一个修订版本。它不是墙上时钟，也不是 Raft 日志索引。
 - Kubernetes 的 `resourceVersion` 是 API 暴露的版本协调字段，应按 Kubernetes 的约定使用。
 - 业务更新时间、镜像版本与上面两者不是一回事。
 
-不要在业务程序中用内部数值公式推导对象“几秒前更新”，也不要认为 Watch 连接永远不会断开。历史压缩、连接恢复和重新建立当前视图，都可能影响观察方式。[Kubernetes 1.28 API 概念](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/using-api/api-concepts.md)
+不要在业务程序中用内部数值公式推导对象“几秒前更新”，也不要认为 Watch 连接永远不会断开。历史压缩、连接恢复和重新建立当前视图，都可能影响观察方式。[etcd 3.5 API 版本模型](https://etcd.io/docs/v3.5/learning/api/#revisions)、[Kubernetes 1.28 API 概念](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/using-api/api-concepts.md)
 
 ## 6. etcd 异常的影响范围 {#_6-etcd-异常时-应用真的-完全不受影响-吗}
 
@@ -121,6 +144,8 @@ etcd 中断后，已有容器可能暂时继续运行；API 状态变更、控�
 
 因此，高可用副本主要帮助应对某些成员故障；备份则提供另一个可恢复的数据时间点。两者不能互相替代。
 
+Snapshot（快照）保存某个时间点的键值数据库状态，提供恢复起点。它不是持续复制，也不能自动补回快照之后的全部写入。
+
 快照还要配合这些材料理解：
 
 - 生成时间、来源集群及相应版本信息。
@@ -130,6 +155,23 @@ etcd 中断后，已有容器可能暂时继续运行；API 状态变更、控�
 - 不包含其中的业务数据及外部系统恢复。
 
 “目录里有一个 snapshot.db”只能证明文件存在，不能证明它完整、来自正确集群，或者恢复流程已演练成功。[etcd 3.5 恢复文档](https://etcd.io/docs/v3.5/op-guide/recovery/)
+
+### 7.1 离线、只读检查快照
+
+前提：已有合法取得的 `snapshot.db` 文件，当前用户有读取权限；已安装与快照及目标 etcd 版本兼容的 `etcdutl`，并核对对应 3.5 补丁版本的帮助。以下只读取本地快照，不连接在线集群，不启动或恢复 etcd。命令是教学示例，**本次未实际运行，也没有生成检查结果**。
+
+```bash
+etcdutl snapshot status snapshot.db -w table
+```
+
+| 字段         | 应怎样理解                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------------- |
+| `REVISION`   | 快照内数据库的修订版本，用于识别恢复起点；不是生成时间                                         |
+| `TOTAL KEYS` | 工具统计的数据库键条目数量；不能直接当作 Kubernetes 对象数                                     |
+| `TOTAL SIZE` | 快照数据库的体积；不能据此推算完整业务数据量                                                   |
+| `HASH`       | 工具计算的数据库内容哈希，提供内容检查线索；不是来源认证，也不等于外部记录的 SHA256 文件校验值 |
+
+应另行记录来源集群、生成时间、工具版本、文件校验值及受控存放位置。该命令能读出状态不等于证明快照来源可信、所有内容正确或恢复演练成功；恢复时的完整性校验也不能由它替代。[etcd 3.5 快照状态检查](https://etcd.io/docs/v3.5/op-guide/recovery/#status-of-a-snapshot)
 
 ## 8. 备份与恢复记录应怎样写，才便于以后使用？
 
@@ -146,6 +188,21 @@ etcd 中断后，已有容器可能暂时继续运行；API 状态变更、控�
 
 恢复并不意味着直接将快照覆盖到正在运行的集群目录。具体方法应结合选定版本、拓扑和隔离条件单独审核，避免修复操作造成二次数据损失。
 
+### 8.1 为什么恢复 etcd 后，还需要关注 Kubernetes 控制器缓存？
+
+假设快照保存时 Revision 为 `1000`，之后集群运行到了 `1800`。从旧快照恢复数据库后，内容回到较早时间点；若版本号也回退，某些客户端仍可能持有接近 `1800` 的本地缓存或 Watch 进度。它们不能仅凭连接恢复就认定缓存与数据库一致。
+
+Kubernetes 的 Informer 是通过 List/Watch 维护本地对象视图的常见机制，Controller 和 Operator 可能依赖它。恢复后的版本回退会影响后续变化观察，导致旧视图没有按预期刷新。这里的 Revision 是 etcd 层的教学数字，不应当作所有 Kubernetes `resourceVersion` 的通用换算规则。
+
+etcd 3.5 官方恢复文档针对 Kubernetes 等有 Watch/缓存消费者的场景，建议结合两种机制：
+
+- **Revision Bump**：恢复时提高修订版本，使新起点超过恢复前客户端可能已观察到的版本。提高编号不会找回 `1000` 之后丢失的业务变更。
+- **Mark Compacted**：将包括提高后范围在内的历史标记为已压缩，使旧 Watch 不能继续依赖失效历史，促使客户端按错误恢复逻辑重新获取状态；它不替客户端实现正确的重连和缓存刷新。
+
+对应文档将 `--bump-revision`、`--mark-compacted` 用于 **`etcdutl snapshot restore`**；例如 [etcd v3.5.16 的工具源码](https://github.com/etcd-io/etcd/blob/v3.5.16/etcdutl/etcdutl/snapshot_command.go)提供这两个参数，这不是原 Kubernetes 1.28 安装环境已验证过的恢复记录。实际操作必须核对该 3.5 文档、所选工具的具体版本及 `snapshot restore --help`，不能推断所有 etcd 3.5 补丁版本、其他主次版本或 `etcdctl` 都支持相同参数，也不能照抄一个固定的 bump 数值。本节不提供恢复执行脚本。[etcd 3.5 修订版本回退与恢复](https://etcd.io/docs/v3.5/op-guide/recovery/#restoring-with-revision-bump)
+
+恢复后还需验证 API Server 能否访问存储、关键对象是否符合快照时间点、控制器是否重新建立视图并继续协调，以及应用卷、数据库和外部依赖是否匹配。etcd 恢复成功只是其中一层，不是业务恢复完成。
+
 ## 9. 排查时先建立证据，不先修改成员
 
 看到 API 延迟时，不一定已经证明 etcd 有故障。需要关联 API 侧错误、etcd 日志与指标、磁盘和网络情况，再检查成员通信、Leader 状态与所需多数是否可用。
@@ -153,5 +210,7 @@ etcd 中断后，已有容器可能暂时继续运行；API 状态变更、控�
 同样，增删成员不是无风险的“扩容按钮”。成员变更会改变协议中的集群配置，在多数不足或成员状态不清时盲目添加节点，可能无法解决问题。
 
 这一章先建立三个边界：**API 状态不同于业务数据，多数复制不同于无条件可用，集群副本不同于可用备份。**
+
+etcd 保存了状态，下一步要理解谁持续观察并推进这些状态：见[第五章 Controller Manager](/articles/kubernetes-controller-manager.html)。
 
 [返回本册目录](/collections/kubernetes/)

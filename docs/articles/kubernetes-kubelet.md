@@ -45,13 +45,25 @@ kubelet 是节点上的代理，持续处理分配给本节点的 Pod。它读�
 
 1. 观察本节点需要管理的 Pod，读取镜像、资源、卷、探针等配置。
 2. 检查相关条件，准备卷和所需配置；条件不满足时记录事件或等待重试。
-3. 通过容器运行时接口 CRI 处理 Pod sandbox、镜像及容器生命周期。
-4. 在运行过程中执行适用的健康检查，观察退出情况和资源状态。
-5. 根据配置处理容器重启、Pod 终止等工作，并回报状态。
+3. 通过 CRI（Container Runtime Interface，容器运行时接口）请求运行时准备 Pod Sandbox，即 Pod 级运行环境。
+4. 对适用的普通 Linux Pod，运行时的 CNI（Container Network Interface，容器网络接口）集成配置网络；卷与配置准备仍由相应机制负责。
+5. 按镜像拉取策略等条件准备业务镜像，创建并启动应用容器。
+6. 在运行过程中执行适用的健康探针，观察容器退出、重启和运行状态。
+7. 根据配置处理终止等工作，并向 API Server 更新 Pod 状态；上报可以与准备、重试交错进行。
 
 Pod sandbox 是运行时管理 Pod 级运行环境的抽象，不能直接等同于业务容器。普通 Linux Pod 的网络准备往往涉及运行时的 CNI 集成；存储插件的接入又是另一条机制，不能把所有准备工作都归给 CRI。
 
-这里还有一个边界：静态 Pod 可由 kubelet 根据节点本地配置管理，不走普通 Pod 的调度流程。kubeadm 管理的控制平面经常会涉及静态 Pod。不要因此推导成“所有 Kubernetes Pod 都必须先由调度器分配”。
+例如，`web-demo` 中一个 Pod 已绑定到 Node A，kubelet 仍可能因卷未就绪、Sandbox 网络配置失败或业务镜像拉取失败而无法启动应用。这些阶段有各自的前提和重试，不能将上述编号当作跨实现一致的精确时序，更不能因 Pod 已有节点位置就跳过准备阶段的证据。
+
+[![Pod 绑定后的节点侧协调](/assets/notes/kubernetes/k8s-node-pod-workflow.svg)](/assets/notes/kubernetes/k8s-node-pod-workflow.svg)
+
+图中分开表示配置准备、运行时操作与持续反馈。Sandbox 不等于业务容器，网络准备也不等于启动后的逐包转发。[v1.28 kubelet 的 Pod 同步实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/kubelet/kubelet.go)、[containerd v1.7.0 CRI 架构](https://github.com/containerd/containerd/blob/v1.7.0/docs/cri/architecture.md)
+
+### 2.1 普通 Pod 与静态 Pod
+
+普通 Pod 通常通过 Kubernetes API 创建，再由相应调度路径确定节点。静态 Pod（Static Pod）则由 kubelet 根据节点本地配置直接管理，不经过普通 Scheduler 选择节点的流程；kubeadm 管理的控制平面常采用静态 Pod。
+
+kubelet 可以为静态 Pod 在 API 中创建 Mirror Pod（镜像 Pod），方便通过 `kubectl` 观察。它是节点本地工作负载的 API 表示，不意味着原静态 Pod 已被 Deployment 接管；删除 Mirror Pod 也不等于删除本地静态 Pod。[Kubernetes 静态 Pod](https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/)
 
 ## 3. 看状态时，先分清三个层级
 
@@ -65,6 +77,18 @@ Pod sandbox 是运行时管理 Pod 级运行环境的抽象，不能直接等同
 | Pod 条件 | `Ready`、`ContainersReady` 等    | 就绪判断及其他条件；不是 Pod phase 的取值        |
 
 `kubectl get` 展示的 `STATUS` 是面向人的摘要，不能把里面出现的所有文字都当成 API 的 `phase`。例如 `CrashLoopBackOff` 不是 Pod phase，`Terminating` 也不是。
+
+Pod Phase（阶段）是粗粒度生命周期概况；Pod Conditions（条件）是 `Ready`、`PodScheduled` 等分别报告的条件。Container State（容器状态）描述单个容器，`restartCount` 则记录对应容器的重启次数，是累计线索而非重启原因。Pod 的 `Running` 阶段和容器的 `Running` 状态属于不同字段，`Ready` 始终不是 Phase。
+
+| 观察组合                                | 能说明什么                                                 | 不能说明什么                                |
+| --------------------------------------- | ---------------------------------------------------------- | ------------------------------------------- |
+| Pod Pending，`spec.nodeName` 为空       | 通常尚未完成节点绑定，应查看 PodScheduled 和调度事件       | 不能直接断言 Scheduler 进程故障             |
+| Pod Pending，已有 `nodeName`            | 已指定节点，可能仍在准备镜像、卷或 Sandbox                 | 容器已启动或网络已经验收                    |
+| Pod Running，Ready=False                | Pod 已进入运行阶段，但尚未满足整体就绪条件                 | 不能保证业务可承接流量                      |
+| 某容器 Waiting，Reason=CrashLoopBackOff | 该容器在反复失败后的重启退避中；Pod Phase 可能仍是 Running | 不能把它当成独立 Phase 或只凭它判断根因     |
+| Pod Ready=True                          | 满足容器就绪及所配置的就绪门控等条件                       | 所有下游依赖、Service、DNS 和业务链路均正常 |
+
+`Terminating` 通常与删除过程有关，要看 `metadata.deletionTimestamp` 等信息；`kubectl` 的 STATUS 摘要不会替代上述 API 字段。
 
 一个容器进程可以已经启动，但应用仍在加载数据，readiness 尚未通过；一个 Node 可以是 Ready，但某个 Pod 因镜像获取失败无法运行。把这些状态混为一谈，就容易在错误层级寻找原因。
 
@@ -93,9 +117,11 @@ HTTP、TCP、exec 和 gRPC 是检查手段；startup、liveness、readiness 是�
 - HTTP 检查指定路径的响应，不能证明所有业务接口都正确。
 - TCP 连接成功主要说明端口可连接，不代表应用完成了业务初始化。
 - exec 根据命令退出情况判断，但频繁创建检查进程也有代价。
-- Kubernetes 1.28 已有 gRPC 探针处理字段，服务需要实现相应的健康检查协议，不是随便指定一个 gRPC 端口就能工作。
+- Kubernetes 1.28 支持内置 gRPC 探针（1.27 起稳定），服务需要实现 gRPC Health Checking Protocol（gRPC 健康检查协议）；端口必须是数字，不支持命名端口，也不能把需要 TLS/认证的普通 gRPC 接口直接当成这类探针端点。
 
 上述字段与 liveness/startup 的 `successThreshold` 必须为 1 的约束，可在 [v1.28.0 API 校验源码](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/apis/core/validation/validation.go)中核对。
+
+HTTP、TCP、exec 以及内置 gRPC 都可用于相应探针目的，但各自有参数和协议要求。readiness 可配置连续成功次数，liveness/startup 的 `successThreshold` 必须为 1；检查方式不能替代对“启动、存活、就绪”语义的设计。[1.28 探针配置说明](https://github.com/kubernetes/website/blob/release-1.28/content/en/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes.md)
 
 ### 4.2 新增教学示例：慢启动应用
 
@@ -129,6 +155,21 @@ livenessProbe:
 
 不要把 `24 × 5` 写成严格的墙钟时间承诺：调度、请求耗时和运行环境都会影响观察到的时刻。也不要直接把所有依赖服务放入 liveness：如果下游短暂故障让所有副本同时被重启，可能反而扩大故障。哪些依赖应该影响 readiness，要结合降级能力和服务契约决定。
 
+### 4.3 慢启动服务的时间线
+
+假设一个 Web 服务启动时需要加载模型，下列时间和检查结果全部是人为设定的教学条件，不是实际运行记录或 kubelet 的精确执行保证：
+
+| 假设时刻 | 应用情况与探针行为                                                                                                        |
+| -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 0 秒     | 容器启动，Startup Probe 进入检查阶段；Liveness、Readiness 尚未执行                                                        |
+| 20 秒    | 仍在加载模型，Startup 尚未成功；只要未达到启动失败阈值，就继续等待                                                        |
+| 40 秒    | Startup 首次成功，启动门控解除，后续按配置执行 Liveness 与 Readiness；不要求它们恰在第 40 秒同时检查                      |
+| 50 秒    | 业务暂时无法接单，Readiness 连续失败达到阈值后使就绪条件转为失败；假设存活接口仍正常，不直接触发重启                      |
+| 70 秒    | 业务恢复，Readiness 按成功阈值重新通过后恢复就绪；相应端点传播还需要时间                                                  |
+| 更晚时刻 | 应用发生无法自行恢复的死锁，Liveness 持续失败达到阈值后，kubelet 终止该容器，再按适用重启策略处理；新实例重新经历启动检查 |
+
+`failureThreshold × periodSeconds` 可帮助估算检查窗口，不能当作精确的终止或恢复倒计时。就绪变化还要考虑探针超时、阈值、检查时机及状态传播；即使所有探针成功，也不能证明业务全链路正确。
+
 ## 5. 容器重启与 Pod 替换 {#_5-容器重启-不是-pod-被重新调度}
 
 在同一 Pod 内重启应用容器，和工作负载控制器创建一个新 Pod，是两件事。
@@ -154,6 +195,31 @@ kubectl logs POD_NAME -n NAMESPACE -c CONTAINER_NAME --previous
 `--previous` 用于查看同一 Pod 中该容器上一个实例的可用日志，不保证节点丢失或日志轮转之后仍可读取。没有历史实例时，报错也不是新的应用故障。
 
 推荐的阅读顺序是：是否绑定节点 → 卡在哪个准备阶段 → 容器是否退出 → 退出原因和探针事件 → 是否存在节点或运行时异常。不要看到 `Pending` 就一律归因于调度器，或看到重启就一律加大内存。
+
+### 6.1 案例：Pod Running，但重启次数持续增加
+
+以下是排查推演，未在本次修订中执行。假设第一章 `web-demo` 的某个 Pod 出现此现象，具备读取 Pod、Events 和容器日志的权限。先从列表选择实际 Pod，将 `POD_NAME` 替换为名称；容器名 `web` 与第一章一致：
+
+```bash
+kubectl get pods -n k8s-arch-demo -l app=web-demo
+kubectl get pod POD_NAME -n k8s-arch-demo -o wide
+kubectl describe pod POD_NAME -n k8s-arch-demo
+kubectl get events -n k8s-arch-demo --field-selector involvedObject.kind=Pod,involvedObject.name=POD_NAME --sort-by=.metadata.creationTimestamp
+kubectl get pod POD_NAME -n k8s-arch-demo -o jsonpath='{.metadata.uid}{"\n"}{range .status.containerStatuses[*]}{.name}{" restart="}{.restartCount}{" id="}{.containerID}{"\nstate="}{.state}{"\nlastState="}{.lastState}{"\n"}{end}'
+kubectl logs POD_NAME -n k8s-arch-demo -c web --previous
+```
+
+先读当前 State，再看 Last State 中的 `terminated.reason`、`exitCode` 与时间，并和探针事件、上一个实例的日志对应。事件会聚合或过期，当前实例可能恰好在两次查询之间变化，不能把一次输出当作完整历史。
+
+| 线索                     | 优先观察方向，不是已确认根因                                                      |
+| ------------------------ | --------------------------------------------------------------------------------- |
+| `OOMKilled`              | 容器内存限制、实际内存使用和节点压力、退出证据；不能只凭退出码 137 就认定同一原因 |
+| `Liveness probe failed`  | 应用响应、探针路径、超时与连续失败阈值，以及是否达到终止条件                      |
+| 非零退出码               | 上个实例日志、启动命令、应用配置和依赖；退出码需要结合程序解释                    |
+| `ImagePullBackOff`       | 镜像引用、仓库连通、凭据和拉取策略；这是拉取退避，不等于应用启动后崩溃            |
+| `FailedCreatePodSandBox` | CRI、网络插件及节点条件；可能尚未启动业务容器，不仅是应用错误                     |
+
+比较不同观察时刻的 Pod UID、Container ID 和 `restartCount`：UID 不变而容器实例 ID 变化、计数增加，支持“同一 Pod 内重启”的判断；控制器新建的替代 Pod 有新的 UID，计数不能跨 Pod 直接累计。重启计数是节点报告的状态，kubelet 状态丢失等情况也会影响记录，必要时还需节点日志佐证。
 
 ## 7. 本章小结
 
