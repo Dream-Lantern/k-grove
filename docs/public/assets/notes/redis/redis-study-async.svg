@@ -1,44 +1,44 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
-  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
-  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">hiredis 异步回复：对象所有权</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">默认异步回调中 reply 在回调后由库释放，不可再次 free</text>
-  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
-  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
-  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">事件循环持续运行</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">异步客户端接收事件并处理回调</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
-  <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
-  <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
-  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">投递异步命令</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">命令排队与网络发送分离</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
-  <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
-  <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
-  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">执行 Reply 回调</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">只在回调有效期内读取 reply</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
-  <rect fill="#C88323" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
-  <rect fill="#FFF5E7" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">跨回调只复制必要字段</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">不要保存裸 reply；默认不手工 freeReplyObject</text>
-  <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
-  <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
-  <polygon fill="#8996A8" points="430,453 435.0,442.0 425.0,442.0"/>
-  <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
-  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">只有明确配置并核实目标版本的非默认所有权方式，才改用相应释放契约。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">事件循环常驻运行，不是命令入队前仅执行一次。</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">hiredis 异步回复：对象所有权</title>
+<desc id="desc">事件循环是贯穿建连、命令提交、命令回复和断开收尾的外层机制。连接回调与命令回调不同；默认回复在回调后由库释放，上下文在连接断开流程中收尾，两者生命周期不同。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2F6FDB"/></marker></defs>
+<rect fill="#F9FBFE" width="1600" height="900"/>
+<rect fill="#FFFFFF" stroke="#CFDEEF" stroke-width="1.5" width="1540" height="856" x="30" y="22" rx="24"/>
+<rect fill="#2F6FDB" width="1540" height="7" x="30" y="22" rx="2"/>
+<g font-family="Noto Sans CJK SC,Microsoft YaHei,Segoe UI,sans-serif">
+<text fill="#162B50" font-size="40" font-weight="bold" x="72" y="93">hiredis 异步回复：对象所有权</text>
+<text fill="#61758F" font-size="20" x="76" y="137">连接回调与命令回调分开；本地提交成功不等于 Redis 已执行</text>
+<path d="M72 165H1528" fill="none" stroke="#CFDEEF" stroke-width="2"/>
+<rect fill="#F9FBFE" stroke="#2F6FDB" stroke-width="2" width="1452" height="510" x="74" y="190" rx="19"/>
+<text fill="#2F6FDB" font-size="26" font-weight="bold" x="105" y="235">Event Loop 持续运行：监听事件，推进连接、读写与回调</text>
+<g fill="#FFFFFF" stroke="#CFDEEF" stroke-width="1.5">
+<rect x="105" y="270" width="670" height="150" rx="19"/><rect x="825" y="270" width="670" height="150" rx="19"/>
+<rect x="105" y="480" width="670" height="150" rx="19"/><rect x="825" y="480" width="670" height="150" rx="19"/>
+</g>
+<rect x="105" y="270" width="8" height="150" rx="4" fill="#2F6FDB"/><rect x="825" y="270" width="8" height="150" rx="4" fill="#7554CE"/>
+<rect x="105" y="480" width="8" height="150" rx="4" fill="#118E6B"/><rect x="825" y="480" width="8" height="150" rx="4" fill="#C88323"/>
+<rect x="127" y="290" width="52" height="45" rx="12" fill="#EEF5FF"/><rect x="847" y="290" width="52" height="45" rx="12" fill="#F3EFFF"/>
+<rect x="127" y="500" width="52" height="45" rx="12" fill="#E9F8F0"/><rect x="847" y="500" width="52" height="45" rx="12" fill="#FFF5E7"/>
+<g font-size="24" font-weight="bold" text-anchor="middle">
+<text x="153" y="321" fill="#2F6FDB">1</text><text x="873" y="321" fill="#7554CE">2</text><text x="153" y="531" fill="#118E6B">3</text><text x="873" y="531" fill="#C88323">4</text>
+</g>
+<g fill="#162B50" font-size="26" font-weight="bold">
+<text x="193" y="314">建连与连接回调</text><text x="913" y="314">命令提交与网络发送</text>
+<text x="193" y="524">命令回调：检查 Reply</text><text x="913" y="524">请求断开与 Context 收尾</text>
+</g>
+<g fill="#61758F" font-size="19">
+<text x="193" y="354">创建 Context → 绑定适配器、注册回调</text><text x="193" y="386">连接回调报告网络连接结果</text>
+<text x="913" y="354">redisAsyncCommand 返回 OK：本地接受</text><text x="913" y="386">事件循环推进发送、接收和协议解析</text>
+<text x="193" y="564">先判 NULL，再检查 NIL、ERROR 和正常类型</text><text x="193" y="596">默认回调后库释放 Reply；跨回调需复制数据</text>
+<text x="913" y="564">示例完成后 Disconnect，库按流程释放 Context</text><text x="913" y="596">解绑事件、完成回调后，再销毁应用事件循环</text>
+</g>
+<g fill="none" stroke="#2F6FDB" stroke-width="3" marker-end="url(#arrow)">
+<path d="M775 345H825"/><path d="M1160 420V450H440V480"/><path d="M775 555H825"/>
+</g>
+<text fill="#2F6FDB" font-size="20" x="105" y="674">Context 跨越整个连接期；Reply 通常只在命令回调内有效，两者由不同所有权选项控制。</text>
+<rect fill="#FFF5E7" width="1452" height="121" x="74" y="730" rx="18"/>
+<text fill="#C88323" font-size="24" font-weight="bold" x="99" y="765">关键边界：hiredis v1.2.0 默认模式</text>
+<text fill="#162B50" font-size="19" x="99" y="801">不要手工重复释放 Reply；立即创建失败、后续连接失败和正常断开的收尾路径需分别处理。</text>
+<text fill="#162B50" font-size="19" x="99" y="831">privdata 必须活到全部回调结束；同一异步 Context 不可跨线程并发操作。</text>
+</g></svg>

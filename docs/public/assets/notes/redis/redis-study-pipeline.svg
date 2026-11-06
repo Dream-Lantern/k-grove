@@ -1,5 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="900" viewBox="0 0 1120 900" role="img" aria-labelledby="title desc">
-<title id="title">Pipeline：减少逐命令等待，不提供事务隔离</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
+<title id="title">Pipeline：减少逐命令等待，不提供事务隔离</title>
+<desc id="desc">左侧逐条发送 GET 并等待回复后才发送下一条；右侧连续发送三个 GET，再接收按命令顺序对应的回复。示意忽略实际执行和传输细节，不表示整个批次只用一个网络包，也不提供事务隔离。</desc>
 <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
 <rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">Pipeline：减少逐命令等待，不提供事务隔离</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">示意单连接提交多个命令；不保证恰好一个网络包或一轮所有等待。</tspan></text><rect x="80" y="140" width="360" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="260.0" y="177" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="260.0" dy="0">客户端</tspan></text><text x="260.0" y="214" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="260.0" dy="0">批量准备 / 逐条检查回复</tspan></text><rect x="680" y="140" width="360" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="860.0" y="177" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="860.0" dy="0">Redis</tspan></text><text x="860.0" y="214" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="860.0" dy="0">按适用执行机制处理命令</tspan></text><path d="M260 250V730 M860 250V730" stroke="#0369A1" stroke-width="2" fill="none"/><text x="560" y="305" text-anchor="middle" fill="#0F172A" font-size="20" font-weight="400"><tspan x="560" dy="0">命令 1、2、3 …  连续提交</tspan></text><path d="M260 330 L860 330" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560" y="475" text-anchor="middle" fill="#0F172A" font-size="20" font-weight="400"><tspan x="560" dy="0">回复 1、2、3 …  持续读取</tspan></text><path d="M860 500 L260 500" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560" y="650" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560" dy="0">批次大小、返回字节、在途数量和慢消费者共同决定背压。</tspan></text><text x="560.0" y="862" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">异步客户端可边发边收；批量不等于所有命令同时完成或其他客户端不能插入。</tspan></text></g></svg>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif" text-anchor="middle" fill="#0F172A">
+<text x="560" y="48" fill="#0369A1" font-size="30" font-weight="600">Pipeline：减少逐命令等待，不提供事务隔离</text>
+<text x="560" y="84" font-size="18">两种独立连接的通信示意：时间向下，不是实测时序或按比例绘制。</text>
+<g fill="#E0F2FE" stroke="#0369A1" stroke-width="2">
+<rect x="60" y="120" width="480" height="620" rx="7"/><rect x="580" y="120" width="480" height="620" rx="7"/>
+</g>
+<g fill="#0369A1" font-size="23" font-weight="600">
+<text x="300" y="157">逐条等待</text><text x="820" y="157">Pipeline 批量发送</text>
+</g>
+<g font-size="19"><text x="145" y="196">客户端</text><text x="445" y="196">Redis</text><text x="665" y="196">客户端</text><text x="965" y="196">Redis</text></g>
+<path d="M145 210V690 M445 210V690 M665 210V690 M965 210V690" fill="none" stroke="#0369A1" stroke-width="2" stroke-dasharray="6 5"/>
+<g fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)">
+<path d="M145 260H445"/><path d="M445 330H145"/><path d="M145 400H445"/><path d="M445 470H145"/><path d="M145 540H445"/><path d="M445 610H145"/>
+<path d="M665 260H965"/><path d="M665 300H965"/><path d="M665 340H965"/><path d="M965 420H665"/><path d="M965 470H665"/><path d="M965 520H665"/>
+</g>
+<g font-size="19">
+<text x="295" y="248">GET A</text><text x="295" y="318">Reply A</text><text x="295" y="388">GET B</text><text x="295" y="458">Reply B</text><text x="295" y="528">GET C</text><text x="295" y="598">Reply C</text>
+<text x="815" y="248">GET A</text><text x="815" y="288">GET B</text><text x="815" y="328">GET C</text><text x="815" y="408">Reply A</text><text x="815" y="458">Reply B</text><text x="815" y="508">Reply C</text>
+<text x="300" y="715">每条命令等待一次往返</text><text x="820" y="715">不逐条等待，仍逐条检查回复</text>
+</g>
+<g font-size="18">
+<text x="560" y="778">同一连接的普通命令回复按提交顺序对应；异步客户端也可以边发边收。</text>
+<text x="560" y="814">不保证整批只占一个 TCP 包，也不保证其他客户端不能在批次命令之间插入。</text>
+<text x="560" y="850">批次过大可能增加缓冲和尾延迟；限制命令数、字节数与等待时间。</text>
+<text x="560" y="886">断线后的未确认写入结果可能未知，不可无条件重发整个批次。</text>
+</g></g></svg>
