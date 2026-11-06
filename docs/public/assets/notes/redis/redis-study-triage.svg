@@ -1,5 +1,70 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">INFO 排障：用同一时间窗串联证据</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">INFO 排障：用同一时间窗串联证据</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学示意，箭头表示逻辑推进；版本与异常条件以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">版本、模式和角色</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">Server / replication / cluster；只读发现不改变状态</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">流量、连接和错误</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">stats、clients、commandstats 及实际客户端数据</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">内存与持久化</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">memory、persistence、系统 RSS 和磁盘指标</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">形成可检验假设</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">改动前后对照、恢复路径与业务验收</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">单个累计计数或一个碎片比率不构成根因；采样可能暴露敏感信息。</tspan></text></g></svg>
+<title id="title">分层排障：并行证据 → 假设 → 验证</title>
+<desc id="desc">故障症状同时分流到客户端层、Redis层和操作系统层并行取证，统一时间窗汇总后形成假设，寻找反证，在隔离环境验证，再最小化变更并回滚和验收。相关性不等于因果关系，取证不是固定先后顺序。</desc>
+<defs>
+<linearGradient id="bg" x2="1" y2="1">
+<stop stop-color="#07182c"/>
+<stop offset="1" stop-color="#102f50"/>
+</linearGradient>
+<marker id="tip" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+<path d="M0 0 L8 4 L0 8" fill="#57caff"/>
+</marker>
+<marker id="redtip" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+<path d="M0 0 L8 4 L0 8" fill="#ffbc87"/>
+</marker>
+</defs>
+<style>text{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif}.title{font-size:29px;font-weight:700;fill:#f0f8ff}.sub{font-size:16px;fill:#9dc5e8}.head{font-size:20px;font-weight:700;fill:#79dcff}.body{font-size:17px;fill:#deedfa}.small{font-size:15px;fill:#b5d4ed}.warn{font-size:17px;fill:#ffd0a5}.num{font-size:24px;font-weight:700;fill:#72e6d0}.panel{fill:#123653;stroke:#377599;stroke-width:1.4}.highlight{fill:#174967;stroke:#61d6ff;stroke-width:1.6}.caution{fill:#3b3440;stroke:#d6a175;stroke-width:1.5}.arrow{fill:none;stroke:#57caff;stroke-width:2;marker-end:url(#tip)}.old{fill:none;stroke:#ffbc87;stroke-width:2;stroke-dasharray:7 5;marker-end:url(#redtip)}.assoc{fill:none;stroke:#62a9cb;stroke-width:2;stroke-dasharray:6 5;marker-end:url(#tip)}.lane{stroke:#345b78;stroke-width:1.3;stroke-dasharray:4 6}</style>
+<rect width="1120" height="805" rx="20" fill="url(#bg)"/>
+<text x="40" y="53" class="title" text-anchor="start">分层排障：并行证据 → 假设 → 验证</text>
+<text x="40" y="85" class="sub" text-anchor="start">客户端、Redis、操作系统并行取证；先对齐时间与实例，再验证假设</text>
+<rect x="220" y="116" width="680" height="70" rx="14" class="highlight"/>
+<text x="560" y="145" class="head" text-anchor="middle">故障症状</text>
+<text x="560" y="174" class="body" text-anchor="middle">延迟升高 / 请求超时 / 内存异常 / 连接失败</text>
+<path d="M560 186 V220 H206" fill="none" stroke="#57caff" stroke-width="2"/>
+<path d="M206 220 V250" class="arrow"/>
+<path d="M560 220 V250" class="arrow"/>
+<path d="M560 220 H914 V250" class="arrow"/>
+<rect x="40" y="260" width="332" height="187" rx="14" class="panel"/>
+<text x="206" y="295" class="head" text-anchor="middle">客户端层</text>
+<text x="64" y="329" class="body" text-anchor="start">连接池与应用线程等待</text>
+<text x="64" y="358" class="body" text-anchor="start">请求超时 / 重试次数</text>
+<text x="64" y="387" class="body" text-anchor="start">响应大小 / 解码耗时</text>
+<text x="64" y="416" class="body" text-anchor="start">请求范围与客户端版本</text>
+<rect x="394" y="260" width="332" height="187" rx="14" class="panel"/>
+<text x="560" y="295" class="head" text-anchor="middle">Redis 层</text>
+<text x="418" y="329" class="body" text-anchor="start">INFO / Slowlog</text>
+<text x="418" y="358" class="body" text-anchor="start">CLIENT LIST 缓冲</text>
+<text x="418" y="387" class="body" text-anchor="start">复制链路 / 偏移推进</text>
+<text x="418" y="416" class="body" text-anchor="start">持久化 / 命令延迟分布</text>
+<rect x="748" y="260" width="332" height="187" rx="14" class="panel"/>
+<text x="914" y="295" class="head" text-anchor="middle">操作系统层</text>
+<text x="772" y="329" class="body" text-anchor="start">CPU / 调度 / 负载</text>
+<text x="772" y="358" class="body" text-anchor="start">内存 / 容器限制</text>
+<text x="772" y="387" class="body" text-anchor="start">磁盘延迟 / 吞吐</text>
+<text x="772" y="416" class="body" text-anchor="start">网络丢包 / 带宽</text>
+<path d="M206 447 L206 485" class="arrow"/>
+<path d="M560 447 L560 485" class="arrow"/>
+<path d="M914 447 L914 485" class="arrow"/>
+<path d="M206 485 H914 M560 485 V513" class="arrow"/>
+<rect x="170" y="522" width="780" height="79" rx="14" class="highlight"/>
+<text x="560" y="552" class="head" text-anchor="middle">统一时间窗关联三层证据</text>
+<text x="560" y="582" class="body" text-anchor="middle">核对时区 / 采样间隔 / 实例身份 / 重启与计数重置；相关性 ≠ 因果</text>
+<path d="M560 601 L560 623" class="arrow"/>
+<path d="M560 623 H155 V648" class="arrow"/>
+<rect x="40" y="657" width="230" height="78" rx="14" class="panel"/>
+<text x="155" y="688" class="head" text-anchor="middle">形成假设</text>
+<text x="155" y="718" class="small" text-anchor="middle">写清支持证据和反证</text>
+<path d="M270 697 L304 697" class="arrow"/>
+<rect x="310" y="657" width="230" height="78" rx="14" class="panel"/>
+<text x="425" y="688" class="head" text-anchor="middle">验证与反证</text>
+<text x="425" y="718" class="small" text-anchor="middle">隔离环境控制变量</text>
+<path d="M540 697 L574 697" class="arrow"/>
+<rect x="580" y="657" width="230" height="78" rx="14" class="panel"/>
+<text x="695" y="688" class="head" text-anchor="middle">最小化变更</text>
+<text x="695" y="718" class="small" text-anchor="middle">评估业务影响后处置</text>
+<path d="M810 697 L844 697" class="arrow"/>
+<rect x="850" y="657" width="230" height="78" rx="14" class="panel"/>
+<text x="965" y="688" class="head" text-anchor="middle">回滚与验收</text>
+<text x="965" y="718" class="small" text-anchor="middle">按原时间窗复核指标</text>
+<text x="40" y="776" class="small" text-anchor="start">保留诊断记录并脱敏：观察命令也有成本；CLIENT KILL、CONFIG SET 等会改变系统状态。</text>
+</svg>

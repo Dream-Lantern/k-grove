@@ -1,5 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">事务与脚本：隔离不等于失败回滚</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
+<title id="title">事务与脚本：隔离不等于失败回滚</title>
+<desc id="desc">按业务需求选择机制：能用单命令则直接使用；需要客户端读后判断时使用同连接 WATCH 与 MULTI/EXEC；其余固定命令组合用事务，服务端条件逻辑用 Lua 或 Functions。这些是选择分支，不是必须顺序执行的阶段。</desc>
 <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
 <rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">事务与脚本：隔离不等于失败回滚</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学示意，箭头表示逻辑推进；版本与异常条件以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">需要单命令还是组合操作</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">能用单命令表达时，先减少并发竞态</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">WATCH 或服务端逻辑</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">读取条件与写入必须属于正确的协调机制</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">执行并逐项检查结果</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">事务运行期错误不自动回滚先前写入</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">处理冲突与未知结果</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">重试要有上限，跨系统副作用需要幂等</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">Lua/Functions 的不被插入执行语义，不提供数据库式自动撤销。</tspan></text></g></svg>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif" text-anchor="middle" fill="#0F172A">
+<text x="560" y="48" fill="#0369A1" font-size="30" font-weight="600">事务与脚本：隔离不等于失败回滚</text>
+<text x="560" y="84" font-size="18">按需求选择一种机制，不是所有业务都依次经过这些步骤。</text>
+<g fill="#E0F2FE" stroke="#0369A1" stroke-width="2">
+<rect x="90" y="120" width="940" height="70" rx="7"/>
+<rect x="90" y="240" width="550" height="80" rx="7"/><rect x="750" y="240" width="280" height="80" rx="7"/>
+<rect x="90" y="365" width="550" height="80" rx="7"/><rect x="750" y="365" width="280" height="80" rx="7"/>
+<rect x="90" y="490" width="940" height="65" rx="7"/>
+<rect x="90" y="610" width="440" height="100" rx="7"/><rect x="590" y="610" width="440" height="100" rx="7"/>
+</g>
+<g fill="#0369A1" font-size="23" font-weight="600">
+<text x="560" y="163">业务操作需求</text><text x="365" y="287">单条命令足够？</text><text x="890" y="287">使用单命令</text>
+<text x="365" y="412">需要客户端读取后判断？</text><text x="560" y="532">其余组合逻辑：按执行位置选择</text>
+<text x="310" y="647">MULTI / EXEC</text><text x="810" y="647">Lua / Functions</text>
+</g>
+<text x="890" y="397" fill="#0369A1" font-size="21" font-weight="600">WATCH + MULTI/EXEC</text>
+<g font-size="18"><text x="890" y="429">同连接读取并检查提交冲突</text><text x="310" y="685">客户端预先准备固定命令组合</text><text x="810" y="685">服务端执行条件判断与操作</text></g>
+<g fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)">
+<path d="M560 190V215H365V240"/><path d="M640 280H750"/><path d="M365 320V365"/>
+<path d="M640 405H750"/><path d="M365 445V490"/>
+<path d="M560 555V580H310V610"/><path d="M560 580H810V610"/>
+</g>
+<g font-size="18"><text x="695" y="266">是</text><text x="395" y="350">否</text><text x="695" y="391">是</text><text x="395" y="475">否</text></g>
+<text x="560" y="767" font-size="18">连续执行不代表自动回滚；跨系统操作仍需处理失败、未知结果与幂等。</text>
+</g></svg>

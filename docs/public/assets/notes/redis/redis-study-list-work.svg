@@ -1,5 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">List 任务转移：取出不等于业务完成</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">List 任务转移：取出不等于业务完成</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学示意，箭头表示逻辑推进；版本与异常条件以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">待处理列表</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">生产者写入任务；例子要明确左右方向</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">原子移动到处理中列表</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">LMOVE / BLMOVE 需 Redis 6.2+</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">执行任务并记录结果</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">崩溃、超时与副作用需要业务幂等</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">确认并清理处理中记录</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">失败重试由应用设计，不能只依赖弹出</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">这是应用层可靠队列思路，不是 Redis 自动提供完整的消息确认系统。</tspan></text></g></svg>
+  <title id="title">List 任务转移：业务确认与失败恢复由应用负责</title>
+  <desc id="desc">待处理列表经 LMOVE 或 BLMOVE 原子移动至处理中列表，再由应用执行任务。成功时校验当前尝试并清理；失败或超时由应用校验资格、登记新尝试并原子重投，再次领取后幂等重试。List 不自动提供确认、租约和恢复。</desc>
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker>
+    <style>
+      text { font-family: "Microsoft YaHei", "Segoe UI", sans-serif; fill: #0F172A; text-anchor: middle; }
+      .heading { fill: #0369A1; font-size: 23px; font-weight: 600; }
+      .body { font-size: 19px; }
+      .note { font-size: 18px; }
+      .box { fill: #E0F2FE; stroke: #0369A1; stroke-width: 2; rx: 7; }
+      .flow { fill: none; stroke: #0369A1; stroke-width: 2; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="#FFFFFF"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+  <text x="560" y="48" fill="#0369A1" font-size="30" font-weight="600">List 任务转移：取出不等于业务完成</text>
+  <text x="560" y="84" class="note">教学逻辑流程；正常路径与恢复分支都不构成 Redis 和外部业务的跨系统事务。</text>
+  <rect x="90" y="115" width="940" height="77" class="box"/>
+  <text x="560" y="147" class="heading">待处理列表 ready</text>
+  <text x="560" y="175" class="body">生产者从右端写入带唯一标识的任务</text>
+  <path d="M560 192 V227" class="flow"/>
+  <rect x="90" y="227" width="940" height="88" class="box"/>
+  <text x="560" y="261" class="heading">LMOVE / BLMOVE：原子移动到 processing</text>
+  <text x="560" y="294" class="body">Redis Open Source 6.2.0+；从 ready 左端取出，放到 processing 右端</text>
+  <path d="M560 315 V350" class="flow"/>
+  <rect x="90" y="350" width="940" height="85" class="box"/>
+  <text x="560" y="383" class="heading">应用执行任务 / 幂等重试</text>
+  <text x="560" y="414" class="body">扣款等副作用由业务系统做幂等或版本校验</text>
+  <path d="M390 435 V480 H280 V505" class="flow"/>
+  <text x="294" y="469" class="body">成功</text>
+  <path d="M730 435 V480 H820 V505" class="flow"/>
+  <text x="854" y="469" class="body">失败 / 超时</text>
+  <rect x="90" y="505" width="400" height="108" class="box"/>
+  <text x="290" y="542" class="heading">业务确认：应用负责</text>
+  <text x="290" y="574" class="body">原子校验当前尝试并清理记录</text>
+  <text x="290" y="599" class="note">无竞争简例用 LREM，不能直接外推</text>
+  <rect x="630" y="505" width="400" height="108" class="box"/>
+  <text x="830" y="542" class="heading">恢复检测：应用负责</text>
+  <text x="830" y="574" class="body">超时不代表旧消费者已死亡</text>
+  <text x="830" y="599" class="note">校验租约 / 当前尝试，防止误接管</text>
+  <path d="M830 613 V647" class="flow"/>
+  <rect x="630" y="647" width="400" height="75" class="box"/>
+  <text x="830" y="677" class="heading">登记重试并原子重投</text>
+  <text x="830" y="706" class="note">转回 ready，再次领取后幂等处理</text>
+  <path d="M1030 685 H1080 V153 H1030" class="flow"/>
+  <text x="290" y="668" class="body">重复执行：需要幂等控制</text>
+  <text x="290" y="701" class="note">List 不内置 owner、租约或尝试标识</text>
+  <text x="560" y="767" class="note">这是应用层可靠队列思路；List 不会自动提供完整的消息确认和故障恢复系统。</text>
+</svg>
