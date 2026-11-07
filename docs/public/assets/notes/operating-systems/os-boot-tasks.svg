@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="840" viewBox="0 0 1200 840" role="img" aria-labelledby="title desc">
+<title id="title">Linux 0.11：任务 0、任务 1 与 shell</title><desc id="desc">任务 1 依次创建两类 shell 子任务；阶段间连线不表示 shell 之间的父子关系。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="840" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="44" y="54" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">Linux 0.11：任务 0、任务 1 与 shell</text>
+<text x="44" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">任务 1 依次创建两类 shell 子任务；阶段间连线不表示 shell 之间的父子关系。</text>
+<rect x="60" y="132" width="1080" height="100" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="80" y="165" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">任务 0 · 静态 init_task 提供</text>
+<text x="80" y="196" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">main 初始化 → move_to_user_mode() → fork()；不是由普通 fork 创建任务 0</text>
+<path d="M360 232 L360 290" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 232 L600 262 L910 262 L910 290" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="60" y="270" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">父任务：fork 返回子 PID</text>
+<text x="698" y="286" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">子任务：返回 0</text>
+<rect x="60" y="290" width="475" height="100" rx="12" fill="#fff8ed" stroke="#a27430" stroke-width="1.4"/>
+<text x="80" y="323" font-size="22" fill="#a27430" font-weight="600" text-anchor="start">任务 0 继续执行</text>
+<text x="80" y="354" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">pause() 循环；承担特殊空闲行为</text>
+<rect x="625" y="300" width="515" height="125" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="645" y="333" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">任务 1 执行 init()</text>
+<text x="645" y="364" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">setup() 设置磁盘 / 根文件系统</text>
+<text x="645" y="392" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">打开 /dev/tty0，dup 建立标准描述符</text>
+<path d="M882 425 L882 475" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="625" y="475" width="515" height="105" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="645" y="508" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">脚本子任务 · fork + execve</text>
+<text x="645" y="539" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">打开 /etc/rc 为标准输入</text>
+<text x="645" y="567" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">执行 /bin/sh，由 shell 读取脚本</text>
+<text x="60" y="500" font-size="21" fill="#24364b" font-weight="600" text-anchor="start">任务 1 等待脚本子任务结束</text>
+<text x="60" y="534" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">文件打开 / 执行失败 → 子任务退出</text>
+<path d="M625 540 L560 540 L560 650 L625 650" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="65" y="640" font-size="21" fill="#24364b" font-weight="600" text-anchor="start">然后进入创建、等待、重建的循环</text>
+<rect x="625" y="620" width="515" height="112" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="645" y="653" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">终端 shell 子任务 · fork + execve</text>
+<text x="645" y="684" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">setsid、重开终端、执行 /bin/sh</text>
+<text x="645" y="712" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">退出后任务 1 wait / sync，再创建 shell</text>
+<path d="M1140 688 L1168 688 L1168 602 L882 602 L882 620" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="60" y="792" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">execve 替换子任务的程序映像；此处的 init() 不等于现代用户空间的 systemd。</text>
+</g></svg>

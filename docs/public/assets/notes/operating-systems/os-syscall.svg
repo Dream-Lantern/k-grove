@@ -1,5 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">系统调用：切换特权不等于切换任务</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">系统调用：切换特权不等于切换任务</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学抽象；历史版本、架构与异常分支以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">用户代码调用运行库</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">printf 可能先缓冲，不必每次立即触发 write</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">按架构 ABI 准备系统调用</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">编号、参数和入口依 x86-32 / x86-64 等区分</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">内核校验并处理请求</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">检查用户指针、权限、错误和适用阻塞</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">返回原任务或先发生调度</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">返回值按 API 解释；不是修改一个 CPL 变量即可进入</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">int 0x80 是历史 x86 路线，不是 POSIX 要求的通用 CPU 指令。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1050" viewBox="0 0 1200 1050" role="img" aria-labelledby="title desc">
+<title id="title">系统调用：受控入口与条件等待</title><desc id="desc">通用流程；入口细节按架构区分。进入内核态不等于更换正在执行的任务。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1050" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="44" y="54" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">系统调用：受控入口与条件等待</text>
+<text x="44" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">通用流程；入口细节按架构区分。进入内核态不等于更换正在执行的任务。</text>
+<rect x="210" y="126" width="780" height="100" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="230" y="159" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">用户程序 → 运行库 · 用户态</text>
+<text x="230" y="190" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">printf 格式化 / 可能缓冲；write 包装层按 ABI 准备调用号和参数</text>
+<path d="M600 226 L600 292" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="625" y="266" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">请求：int 0x80 或 syscall 等</text>
+<path d="M70 282 L1130 282" fill="none" stroke="#9aaabc" stroke-dasharray="6 5"/>
+<rect x="210" y="302" width="780" height="100" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="230" y="335" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">硬件入口 → 内核入口汇编</text>
+<text x="230" y="366" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">受控改变特权状态；汇编补充现场、建立栈与适用执行环境</text>
+<text x="210" y="433" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">x86-64 SYSCALL 不自动切换 RSP；由内核入口代码处理栈。</text>
+<path d="M600 447 L600 480" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="210" y="480" width="780" height="92" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="230" y="513" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">内核检查并处理请求</text>
+<text x="230" y="544" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">检查调用号、描述符、权限、长度和用户缓冲区访问条件</text>
+<path d="M600 572 L600 603 L305 603 L305 648" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 603 L895 603 L895 648" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="82" y="630" font-size="18" fill="#297b66" font-weight="600" text-anchor="start">本次无需等待</text>
+<text x="770" y="630" font-size="18" fill="#356da8" font-weight="600" text-anchor="start">本次需要等待资源</text>
+<rect x="60" y="648" width="490" height="110" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="80" y="681" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">可以继续处理</text>
+<text x="80" y="712" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">原任务在内核中完成请求</text>
+<text x="80" y="740" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不必发生任务切换</text>
+<rect x="650" y="648" width="490" height="110" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="670" y="681" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">任务等待 → 调度其他可运行任务</text>
+<text x="670" y="712" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">条件满足 → 唤醒 → 后续获调度</text>
+<text x="670" y="740" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">原任务在内核中继续处理</text>
+<text x="650" y="794" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">非阻塞请求可能直接返回 EAGAIN，不进入等待。</text>
+<path d="M305 758 L305 834 L600 834 L600 862" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M895 806 L895 834 L600 834" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M70 850 L1130 850" fill="none" stroke="#9aaabc" stroke-dasharray="6 5"/>
+<rect x="210" y="862" width="780" height="100" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="230" y="895" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">原任务返回 · 用户态</text>
+<text x="230" y="926" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">恢复现场 → 运行库解释字节数或错误 → 用户代码继续执行</text>
+<path d="M210 912 L32 912 L32 176 L210 176" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="60" y="1010" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">虚线回路表示返回原用户执行流；设备完成、被唤醒与实际重新运行不是同一时刻。</text>
+</g></svg>

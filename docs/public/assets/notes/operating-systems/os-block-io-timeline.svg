@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="960" viewBox="0 0 1200 960" role="img" aria-labelledby="title desc">
+<title id="title">设备完成、可运行与实际恢复是不同事件</title><desc id="desc">Linux 0.11 硬盘 READ 的教学时序；不固定其他任务、调度延迟或设备重试次数。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="960" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">设备完成、可运行与实际恢复是不同事件</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">Linux 0.11 硬盘 READ 的教学时序；不固定其他任务、调度延迟或设备重试次数。</text>
+<rect x="50" y="135" width="1100" height="105" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="167" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">提交阶段：ll_rw_block → make_request → add_request</text>
+<text x="68" y="198" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">锁缓冲并建立请求；锁等待或请求槽不足本身也可能引发睡眠</text>
+<path d="M600 240 L600 270 L300 270 L300 305" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 270 L900 270 L900 305" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="305" width="500" height="160" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="337" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">检查时仍锁定</text>
+<text x="68" y="368" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">wait_on_buffer → sleep_on</text>
+<text x="68" y="396" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">任务置等待状态，schedule()</text>
+<text x="68" y="424" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">自己的内核栈保留恢复位置</text>
+<rect x="650" y="305" width="500" height="160" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="668" y="337" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">检查时已经解锁</text>
+<text x="668" y="368" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可能无需睡眠或切换任务</text>
+<text x="668" y="396" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">直接检查 b_uptodate</text>
+<text x="668" y="424" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">成功返回 bh；无效则释放引用、返回 NULL</text>
+<path d="M300 465 L300 525" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="525" width="1100" height="130" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="557" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">设备 / 中断路径：hd.c read_intr 与 blk.h end_request</text>
+<text x="68" y="588" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">每次硬盘读中断可能只处理一个扇区；其余扇区继续，错误可能重试</text>
+<text x="68" y="616" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">请求最终结束：设置有效位 → 清锁 → wake_up；失败也会唤醒</text>
+<path d="M600 655 L600 720" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="720" width="1100" height="140" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="68" y="752" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">以后获得 CPU：恢复原内核栈 → 复查锁 → bread 复查有效位</text>
+<text x="68" y="783" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可运行不等于已经运行；成功才返回有效缓冲，失败释放引用返回 NULL</text>
+<text x="68" y="811" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">上层仍需使用 / 复制数据并处理错误；这还不是应用业务完成</text>
+<text x="50" y="918" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">设备中断 ≠ 整块请求完成 ≠ 任务运行 ≠ 系统调用返回 ≠ 业务完成。</text>
+</g></svg>

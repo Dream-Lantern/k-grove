@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1480" height="1450" viewBox="0 0 1480 1450" role="img" aria-labelledby="title desc">
+<title id="title">Write Skew：相同快照，不同写入行，共同不变量失效</title><desc id="desc">两笔事务在相同初始快照看到 A B 均值班，各修改一行。在 SI 下可同时提交造成无人值班；独立的 Serializable 分支检测交叉读写依赖，中止一笔并整体重试。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">Write Skew：相同快照，不同写入行，共同不变量失效</text>
+<text x="40" y="100" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">初始：A=true，B=true；业务规则：至少一人值班。以下为教学调度，不是实测。</text>
+<rect x="70" y="145" width="600" height="100" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="90" y="180" font-size="24" fill="#2563EB" text-anchor="start" font-weight="700">Transaction T1</text>
+<text x="90" y="214" font-size="24" fill="#0F172A" text-anchor="start" font-weight="400">计划让医生 A 下班</text>
+<path d="M370 250 L370 710" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="810" y="145" width="600" height="100" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="830" y="180" font-size="24" fill="#2563EB" text-anchor="start" font-weight="700">Transaction T2</text>
+<text x="830" y="214" font-size="24" fill="#0F172A" text-anchor="start" font-weight="400">计划让医生 B 下班</text>
+<path d="M1110 250 L1110 710" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="40" y="290" width="1400" height="80" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="740" y="340" font-size="25" fill="#7C3AED" text-anchor="middle" font-weight="400">同一初始快照：两笔 SELECT count(*) 都读到 2，应用各自判断可以下班。</text>
+<rect x="70" y="420" width="600" height="130" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="90" y="455" font-size="23" fill="#2563EB" text-anchor="start" font-weight="700">T1 读取 A、B 的值班状态</text>
+<text x="90" y="489" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">随后只写 A=false</text>
+<text x="90" y="523" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">依赖：T1 读 B，T2 将写 B</text>
+<rect x="810" y="420" width="600" height="130" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="830" y="455" font-size="23" fill="#2563EB" text-anchor="start" font-weight="700">T2 读取 A、B 的值班状态</text>
+<text x="830" y="489" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">随后只写 B=false</text>
+<text x="830" y="523" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">依赖：T2 读 A，T1 将写 A</text>
+<text x="740" y="610" font-size="24" fill="#7C3AED" text-anchor="middle" font-weight="400">不同写入行没有直接写写冲突；两笔检查却依赖对方即将修改的行。</text>
+<path d="M370 650 L1110 650" fill="none" stroke="#64748B" stroke-width="2.5"/>
+<path d="M370 650 L370 720" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M1110 650 L1110 720" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="40" y="740" width="660" height="220" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="60" y="775" font-size="23" fill="#D97706" text-anchor="start" font-weight="700">独立结果 A · Snapshot Isolation</text>
+<text x="60" y="809" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">T1 COMMIT 成功，T2 COMMIT 也可成功。</text>
+<text x="60" y="843" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">最终：A=false，B=false。</text>
+<text x="60" y="877" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">至少一人值班的业务不变量被破坏。</text>
+<text x="60" y="911" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">任意串行顺序中，后执行者本应拒绝下班。</text>
+<rect x="780" y="740" width="660" height="220" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="800" y="775" font-size="23" fill="#7C3AED" text-anchor="start" font-weight="700">独立结果 B · PostgreSQL 17 Serializable</text>
+<text x="800" y="809" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">SSI 跟踪 T1 读 B / T2 写 B，</text>
+<text x="800" y="843" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">以及 T2 读 A / T1 写 A 的交叉依赖。</text>
+<text x="800" y="877" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">不安全结构不能让两笔都成功提交。</text>
+<text x="800" y="911" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">示例选择中止 T2；实际中止者与时点不固定。</text>
+<path d="M1110 970 L1110 1025" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="780" y="1040" width="660" height="160" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="800" y="1075" font-size="23" fill="#059669" text-anchor="start" font-weight="700">T2 整个事务重新执行</text>
+<text x="800" y="1109" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">重读看到 T1 已让 A 下班，值班人数为 1。</text>
+<text x="800" y="1143" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">保留 B=true，避免不变量失效。</text>
+<rect x="40" y="1260" width="1400" height="130" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="60" y="1295" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">图例：蓝 = 读取 / 写入；橙 = SI 允许的结果；紫 = 依赖检测与中止；绿 = 重新读取后的处理。</text>
+<text x="60" y="1329" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">两个结果是替代历史，不是先让两笔提交，再事后撤销一笔。</text>
+<text x="60" y="1363" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">SIREAD 用于依赖检测，不是把所有读取行都加普通排他锁。</text>
+</g></svg>

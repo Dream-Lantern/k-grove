@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="850" viewBox="0 0 1200 850" role="img" aria-labelledby="title desc">
+<title id="title">malloc(20)：对象、虚拟范围与物理页框分层管理</title><desc id="desc">箭头是管理关系，虚线表示按需要发生的扩展或建立映射；不是每次 malloc 的固定调用链。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="850" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">malloc(20)：对象、虚拟范围与物理页框分层管理</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">箭头是管理关系，虚线表示按需要发生的扩展或建立映射；不是每次 malloc 的固定调用链。</text>
+<rect x="50" y="145" width="1100" height="100" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="177" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">应用请求：malloc(20) / free(pointer)</text>
+<text x="68" y="208" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">请求和释放对象；20 字节不意味着独占一个物理页</text>
+<path d="M600 245 L600 305" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="305" width="1100" height="110" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="337" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">用户态分配器：对象、空闲块、元数据</text>
+<text x="68" y="368" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可从已有空闲空间切分；free 后可缓存复用，不一定调用内核</text>
+<path d="M600 415 L600 475" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="50" y="475" width="1100" height="110" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="507" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">操作系统虚拟内存管理：范围、权限与后备关系</text>
+<text x="68" y="538" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">分配器需要时可扩展 / 新建虚拟映射；建立范围不等于所有数据页立即驻留</text>
+<path d="M600 585 L600 645" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="50" y="645" width="1100" height="110" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="68" y="677" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">内核物理内存管理：页框等资源</text>
+<text x="68" y="708" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">按适用策略分配、复用和回收；多个小对象可共享同一数据页框</text>
+<text x="50" y="810" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">VMS：虚拟空间规模；RSS：常驻集大小；二者都不是有效对象字节数。</text>
+</g></svg>

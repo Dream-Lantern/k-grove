@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="910" viewBox="0 0 1200 910" role="img" aria-labelledby="title desc">
+<title id="title">文件映射的私有修改与共享修改</title><desc id="desc">文件前缀 ABCDEFGH；两例分别建立；图只讨论可读视图，不把它当作断电持久化结果。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="910" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">文件映射的私有修改与共享修改</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">文件前缀 ABCDEFGH；两例分别建立；图只讨论可读视图，不把它当作断电持久化结果。</text>
+<rect x="50" y="150" width="500" height="140" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="182" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">MAP_PRIVATE：当前虚拟映射</text>
+<text x="68" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">初始读 ABCDEFGH</text>
+<text x="68" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">允许写后将 A 改成 X</text>
+<rect x="650" y="150" width="240" height="140" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="668" y="182" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">MAP_SHARED A</text>
+<text x="668" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">原文件内容</text>
+<text x="668" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">把 A 改 Y</text>
+<rect x="910" y="150" width="240" height="140" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="928" y="182" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">MAP_SHARED B</text>
+<text x="928" y="213" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">同文件共享映射</text>
+<text x="928" y="241" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可观察适用更新</text>
+<path d="M300 290 L300 390" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<path d="M770 290 L770 340 L830 340 L830 390" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<path d="M1030 290 L1030 340 L970 340 L970 390" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="50" y="390" width="500" height="140" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="68" y="422" font-size="22" fill="#956526" font-weight="600" text-anchor="start">私有写后的物理页 / 视图</text>
+<text x="68" y="453" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">XBCDEFGH</text>
+<text x="68" y="481" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">私有修改不写回原文件</text>
+<rect x="650" y="390" width="500" height="140" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="668" y="422" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">适用文件页缓存 / 共享视图</text>
+<text x="668" y="453" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">YBCDEFGH</text>
+<text x="668" y="481" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可见性不等于已经完成持久化</text>
+<rect x="50" y="645" width="500" height="110" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="677" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">普通文件读取仍是 ABCDEFGH</text>
+<text x="68" y="708" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">私有映射不是多进程共享写机制</text>
+<rect x="650" y="645" width="500" height="110" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="668" y="677" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">普通文件读取可见 YBCDEFGH</text>
+<text x="668" y="708" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">写回 / msync 与存储保证另行处理</text>
+<path d="M900 530 L900 645" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="50" y="825" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">虚线为映射引用；不是所有文件后续变化对 MAP_PRIVATE 都有快照式可见性保证。</text>
+<text x="50" y="870" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">共享不自动提供复合更新原子性；并发修改、截断和生命周期仍需协议。</text>
+</g></svg>

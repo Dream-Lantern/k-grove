@@ -1,38 +1,46 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
-  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
-  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">mmap：文件映射与匿名映射分开理解</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">文件 page cache 路径不能自动套到匿名映射</text>
-  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-  <rect fill="#EEF5FF" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="74.0" y="205"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="104.0" y="253">文件映射</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="104.0" y="294">由文件与页缓存相关路径支持</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="317"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="356">MAP_SHARED</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="386">适用的共享修改可回写文件</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="436"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="475">MAP_PRIVATE</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="505">私有写入不回写底层文件</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="555"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="594">缺页</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="624">按需读取或建立映射</text>
-  <rect fill="#F3EFFF" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="810.0" y="205"/>
-  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="840.0" y="253">匿名映射</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="840.0" y="294">没有初始文件内容来源</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="317"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="356">首次访问</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="386">可能按需零页、分配或 COW</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="436"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="475">交换路径</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="505">有压力时可涉及 swap</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="555"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="594">共享语义</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="624">需结合 fork 等实际映射关系</text>
-  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">MAP_PRIVATE 不写回文件，不等于修改永远对所有其他进程不可见。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">匿名页不能统一画成“文件 page cache → 读盘”固定路径。</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1260" viewBox="0 0 1200 1260" role="img" aria-labelledby="title desc">
+<title id="title">read 与 mmap：复制数据和建立映射是不同关系</title><desc id="desc">8 KiB 普通缓冲文件、4 KiB 页；蓝实线：控制；绿实线：数据；蓝虚线：页表映射引用。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1260" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">read 与 mmap：复制数据和建立映射是不同关系</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">8 KiB 普通缓冲文件、4 KiB 页；蓝实线：控制；绿实线：数据；蓝虚线：页表映射引用。</text>
+<defs><marker id="data-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#297b66"/></marker></defs>
+<rect x="50" y="155" width="450" height="130" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="187" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">用户进程：read 用户缓冲</text>
+<text x="68" y="218" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">read(fd,buf,4096)</text>
+<text x="68" y="246" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">接收本次实际字节数，处理短读/错误</text>
+<rect x="700" y="155" width="450" height="130" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="718" y="187" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">用户进程：文件虚拟映射</text>
+<text x="718" y="218" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">mmap 建范围；后续用地址访问</text>
+<text x="718" y="246" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">成功不表示 8 KiB 已全部驻留</text>
+<path d="M275 285 L275 380" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="380" width="450" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="412" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">内核普通文件读取控制</text>
+<text x="68" y="443" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">定位偏移并查适用页缓存</text>
+<text x="68" y="471" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">必要时等待数据，然后提供给用户缓冲</text>
+<path d="M275 505 L275 570 L450 570 L450 650" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="700" y="380" width="450" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="718" y="412" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">页表：虚拟页 → 物理缓存页</text>
+<text x="718" y="443" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">必要时缺页处理建立适用映射</text>
+<text x="718" y="471" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不是每次普通加载都显式调用 read</text>
+<path d="M925 285 L925 380" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<path d="M925 505 L925 600 L800 600 L800 650" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="300" y="650" width="600" height="120" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="318" y="682" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">同一文件的适用页缓存数据</text>
+<text x="318" y="713" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">本章普通读写 / 文件映射可以联系缓存页</text>
+<text x="318" y="741" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">私有写入分离另见对照图</text>
+<path d="M300 710 L20 710 L20 225 L50 225" fill="none" stroke="#297b66" stroke-width="3" marker-end="url(#data-arrow)"/>
+<text x="50" y="610" font-size="19" fill="#297b66" font-weight="400" text-anchor="start">缓存 → 独立用户缓冲复制</text>
+<rect x="300" y="870" width="600" height="100" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="318" y="902" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">文件系统 / 适用后备路径</text>
+<text x="318" y="933" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">仅在需要取得数据或写回时联系后备存储</text>
+<rect x="300" y="1040" width="600" height="100" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="318" y="1072" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">后备存储</text>
+<text x="318" y="1103" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">设备传输不因 mmap 而自动消失</text>
+<path d="M450 770 L450 870" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M450 970 L450 1040" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M750 1040 L750 970" fill="none" stroke="#297b66" stroke-width="3" marker-end="url(#data-arrow)"/>
+<path d="M750 870 L750 770" fill="none" stroke="#297b66" stroke-width="3" marker-end="url(#data-arrow)"/>
+<text x="50" y="1200" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">不外推 Direct I/O、DAX 或任意设备；匿名映射没有这里的初始文件内容来源。</text>
+</g></svg>

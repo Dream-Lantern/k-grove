@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1020" viewBox="0 0 1280 1020" role="img" aria-labelledby="title desc">
+<title id="title">Raft：先匹配前缀，再修复未提交的冲突后缀</title><desc id="desc">Leader 当前任期为 5，日志末尾任期为 3；Follower 的任期 4 条目未提交。nextIndex 逐次回退，直到 index 2、term 1 匹配后修复。</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#64748B"/></marker></defs>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="53" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">Raft：先匹配前缀，再修复未提交的冲突后缀</text>
+<text x="40" y="100" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">Leader 当前任期 = 5；两端已提交前缀只到 index 2。</text>
+<text x="40" y="177" font-size="23" fill="#0F172A" text-anchor="start" font-weight="700">Leader</text>
+<rect x="260" y="140" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="335" y="171" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 1</text>
+<text x="335" y="201" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 1</text>
+<rect x="435" y="140" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="510" y="171" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 2</text>
+<text x="510" y="201" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 1</text>
+<rect x="610" y="140" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="685" y="171" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 3</text>
+<text x="685" y="201" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 2</text>
+<rect x="785" y="140" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="860" y="171" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 4</text>
+<text x="860" y="201" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 3</text>
+<rect x="960" y="140" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1035" y="171" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 5</text>
+<text x="1035" y="201" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 3</text>
+<text x="40" y="297" font-size="23" fill="#0F172A" text-anchor="start" font-weight="700">Follower</text>
+<rect x="260" y="260" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="335" y="291" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 1</text>
+<text x="335" y="321" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 1</text>
+<rect x="435" y="260" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="510" y="291" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 2</text>
+<text x="510" y="321" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 1</text>
+<rect x="610" y="260" width="150" height="78" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="685" y="291" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 3</text>
+<text x="685" y="321" font-size="22" fill="#DC2626" text-anchor="middle" font-weight="700">term 4</text>
+<text x="800" y="310" font-size="22" fill="#DC2626" text-anchor="start" font-weight="400">index 3 / term 4 未提交</text>
+<rect x="40" y="390" width="1200" height="55" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+<text x="60" y="426" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">nextIndex = 6</text>
+<text x="330" y="426" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">prev = (5, 3)</text>
+<text x="620" y="426" font-size="22" fill="#DC2626" text-anchor="start" font-weight="400">Follower 缺少 index 5 → 拒绝</text>
+<rect x="40" y="457" width="1200" height="55" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+<text x="60" y="493" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">nextIndex = 5</text>
+<text x="330" y="493" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">prev = (4, 3)</text>
+<text x="620" y="493" font-size="22" fill="#DC2626" text-anchor="start" font-weight="400">Follower 缺少 index 4 → 拒绝</text>
+<rect x="40" y="524" width="1200" height="55" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+<text x="60" y="560" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">nextIndex = 4</text>
+<text x="330" y="560" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">prev = (3, 2)</text>
+<text x="620" y="560" font-size="22" fill="#DC2626" text-anchor="start" font-weight="400">本地 term = 4，不匹配 → 拒绝</text>
+<rect x="40" y="591" width="1200" height="55" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="60" y="627" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">nextIndex = 3</text>
+<text x="330" y="627" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">prev = (2, 1)</text>
+<text x="620" y="627" font-size="22" fill="#059669" text-anchor="start" font-weight="400">匹配 → 合并后续 entries</text>
+<text x="40" y="757" font-size="23" fill="#0F172A" text-anchor="start" font-weight="700">修复后 Follower</text>
+<rect x="260" y="720" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="335" y="751" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 1</text>
+<text x="335" y="781" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 1</text>
+<rect x="435" y="720" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="510" y="751" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 2</text>
+<text x="510" y="781" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 1</text>
+<rect x="610" y="720" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="685" y="751" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 3</text>
+<text x="685" y="781" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 2</text>
+<rect x="785" y="720" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="860" y="751" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 4</text>
+<text x="860" y="781" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 3</text>
+<rect x="960" y="720" width="150" height="78" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1035" y="751" font-size="18" fill="#0F172A" text-anchor="middle" font-weight="400">index 5</text>
+<text x="1035" y="781" font-size="22" fill="#2563EB" text-anchor="middle" font-weight="700">term 3</text>
+<rect x="40" y="850" width="1200" height="125" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="60" y="885" font-size="21" fill="#D97706" text-anchor="start" font-weight="700">拒绝请求本身不删除日志。匹配后才替换 index 3 起的冲突后缀。</text>
+<text x="60" y="919" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">只截断未提交部分；重复的同 index、同 term 条目保留。</text>
+<text x="60" y="953" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">复制完成不代表旧任期条目已获新的直接提交资格。</text>
+</g></svg>

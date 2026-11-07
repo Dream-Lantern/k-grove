@@ -1,38 +1,58 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
-  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
-  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Aurora：计算与持久化存储分离</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">计算节点仍然存在运行时事务、缓存和会话状态</text>
-  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-  <rect fill="#EEF5FF" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="74.0" y="205"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="104.0" y="253">计算侧</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="104.0" y="294">SQL、事务与运行时管理</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="317"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="356">SQL 引擎</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="386">处理用户请求与事务</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="436"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="475">Runtime 状态</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="505">连接、缓存、事务上下文不为零</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="555"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="594">持久数据</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="624">持久化责任从计算实例分离</text>
-  <rect fill="#E9F8F0" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="810.0" y="205"/>
-  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="840.0" y="253">分布式存储侧</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="840.0" y="294">适用的持久化与冗余策略</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="317"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="356">写入与日志</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="386">存储层完成相应复制与持久化</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="436"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="475">读取恢复</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="505">节点间的失效与恢复机制</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="555"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="594">版本前提</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="624">六副本 / quorum 属论文特定架构</text>
-  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">“计算存储分离”不等于计算节点完全无状态。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">历史论文的 6 副本和 quorum 数不能泛化至 Aurora 所有引擎与版本。</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="1240" viewBox="0 0 1560 1240" role="img" aria-labelledby="title desc">
+<title id="title">Aurora 2017：计算、日志复制与页面构建</title><desc id="desc">2017论文历史架构：计算端SQL事务锁缓存Undo，存储PG六副本三AZ，4份日志持久确认，合格单副本读，后台物化与S3。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">Aurora 2017：计算、日志复制与页面构建</text>
+<text x="40" y="100" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">历史设计 · 图中为一个保护组 PG；六份存储 segment 不是六个 SQL 写主库。</text>
+<rect x="40" y="145" width="1480" height="180" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="60" y="180" font-size="23" fill="#2563EB" text-anchor="start" font-weight="700">计算实例</text>
+<text x="60" y="214" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">SQL Engine  ·  Transaction / Lock Manager  ·  Buffer Cache  ·  Undo / Runtime State</text>
+<text x="60" y="248" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">跟踪各 segment 的 SCL、卷 VCL / VDL；VDL ≥ Commit LSN 才允许回复提交成功。</text>
+<text x="60" y="282" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">缓存命中直接读；缺页时固定 Read Point，选择日志完整进度满足条件的一份副本。</text>
+<path d="M290 330 L290 440" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="65" y="380" font-size="22" fill="#2563EB" text-anchor="start" font-weight="400">① 按 PG 发送 Redo / LSN</text>
+<path d="M780 440 L780 330" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="800" y="380" font-size="22" fill="#059669" text-anchor="start" font-weight="400">② 日志持久 ACK：写 quorum 4 / 6</text>
+<path d="M1370 330 L1370 440" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1210" y="420" font-size="21" fill="#7C3AED" text-anchor="start" font-weight="400">③ 合格单副本页面读</text>
+<rect x="40" y="460" width="470" height="285" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="65" y="500" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">AZ 1</text>
+<rect x="60" y="530" width="205" height="175" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="80" y="565" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Segment 1</text>
+<text x="80" y="599" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">持久 Redo</text>
+<text x="80" y="633" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">SCL / 页面</text>
+<rect x="285" y="530" width="205" height="175" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="305" y="565" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Segment 2</text>
+<text x="305" y="599" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">持久 Redo</text>
+<text x="305" y="633" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">SCL / 页面</text>
+<rect x="545" y="460" width="470" height="285" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="570" y="500" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">AZ 2</text>
+<rect x="565" y="530" width="205" height="175" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="585" y="565" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Segment 3</text>
+<text x="585" y="599" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">持久 Redo</text>
+<text x="585" y="633" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">SCL / 页面</text>
+<rect x="790" y="530" width="205" height="175" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="810" y="565" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Segment 4</text>
+<text x="810" y="599" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">持久 Redo</text>
+<text x="810" y="633" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">SCL / 页面</text>
+<rect x="1050" y="460" width="470" height="285" rx="12" fill="#F8FAFC" stroke="#2563EB" stroke-width="2"/>
+<text x="1075" y="500" font-size="25" fill="#2563EB" text-anchor="start" font-weight="700">AZ 3</text>
+<rect x="1070" y="530" width="205" height="175" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1090" y="565" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Segment 5</text>
+<text x="1090" y="599" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">持久 Redo</text>
+<text x="1090" y="633" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">SCL / 页面</text>
+<rect x="1295" y="530" width="205" height="175" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1315" y="565" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">Segment 6</text>
+<text x="1315" y="599" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">持久 Redo</text>
+<text x="1315" y="633" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">SCL / 页面</text>
+<rect x="40" y="800" width="1480" height="145" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="60" y="835" font-size="23" fill="#7C3AED" text-anchor="start" font-weight="700">存储节点后台 · 与日志持久 ACK 分开</text>
+<text x="60" y="869" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">识别缺口 → 同 PG Gossip 补齐 → Coalesce 应用日志 → Page Materialization（页面物化）</text>
+<text x="60" y="903" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">按在途读的最低读取点保留必要历史；定期 GC 旧版本、CRC 校验。</text>
+<path d="M780 750 L780 795" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<path d="M780 950 L780 1000" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<rect x="410" y="1010" width="740" height="110" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="430" y="1045" font-size="22" fill="#059669" text-anchor="start" font-weight="700">S3 Backup</text>
+<text x="430" y="1079" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">定期归档日志与新页面；不要求每次提交都等待上传。</text>
+<text x="40" y="1190" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">依据：SIGMOD 2017 §2—4；正常读无需每次 3 / 6，重启后用读 quorum 重建边界。</text>
+</g></svg>

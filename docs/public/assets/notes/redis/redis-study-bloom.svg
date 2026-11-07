@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600" role="img" aria-labelledby="bloom-title bloom-desc">
+  <title id="bloom-title">Bloom Filter：只检查本次命中的位</title>
+  <desc id="bloom-desc">两种独立的查询状态：哈希位置为1、4、7，左侧三位全为1只能判定可能存在，右侧位置4为0因此判定未加入。其他位置的0不影响本次判断。理论无假阴性依赖正确插入与维护；容量和目标假阳性率影响空间与查询成本。</desc>
   <defs/>
   <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
   <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
   <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
   <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Bloom Filter：只检查本次命中的位</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">查询哈希命中索引 1 / 4 / 7；任一命中位为 0 就可判不存在</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">两种独立状态示意：查询命中索引 1 / 4 / 7；只检查本次命中的位</text>
   <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
   <rect fill="#FFFFFF" height="122" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="1120" x="240" y="211"/>
   <rect fill="#2F6FDB" height="122" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="240" y="211"/>
   <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="262" y="231"/>
   <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="288" y="262">1</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" x="328" y="255">查询 key → 哈希索引 [1, 4, 7]</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" x="328" y="255">查询元素 → 哈希索引 [1, 4, 7]</text>
   <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="328" y="292">只看这些位置，不检查位数组的任意 0</text>
   <polyline fill="none" points="800,333 800,390" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
   <polyline fill="none" points="440.0,390 1154.0,390" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4"/>
@@ -28,9 +30,70 @@
   <rect fill="#CB4656" height="252" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="804" y="418"/>
   <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="25" font-weight="bold" x="828" y="462">一定不存在</text>
   <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="828" y="499">例如 bit[4]=0</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="828" y="530">即使 bit[0]=0 也不能代替命中位</text>
+  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="828" y="530">其他位置的 0 不参与本次判定</text>
+
+  <rect x="142" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="166" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">0</text>
+  <text x="166" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">0</text>
+  <rect x="199" y="558" width="48" height="51" rx="8" fill="#EEF5FF" stroke="#2F6FDB" stroke-width="2.5"/>
+  <text x="223" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" fill="#2F6FDB">1</text>
+  <text x="223" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#2F6FDB">1</text>
+  <rect x="256" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="280" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">0</text>
+  <text x="280" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">2</text>
+  <rect x="313" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="337" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">1</text>
+  <text x="337" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">3</text>
+  <rect x="370" y="558" width="48" height="51" rx="8" fill="#EEF5FF" stroke="#2F6FDB" stroke-width="2.5"/>
+  <text x="394" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" fill="#2F6FDB">1</text>
+  <text x="394" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#2F6FDB">4</text>
+  <rect x="427" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="451" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">0</text>
+  <text x="451" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">5</text>
+  <rect x="484" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="508" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">1</text>
+  <text x="508" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">6</text>
+  <rect x="541" y="558" width="48" height="51" rx="8" fill="#EEF5FF" stroke="#2F6FDB" stroke-width="2.5"/>
+  <text x="565" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" fill="#2F6FDB">1</text>
+  <text x="565" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#2F6FDB">7</text>
+  <rect x="598" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="622" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">0</text>
+  <text x="622" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">8</text>
+  <rect x="655" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="679" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">1</text>
+  <text x="679" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">9</text>
+  <rect x="856" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="880" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">0</text>
+  <text x="880" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">0</text>
+  <rect x="913" y="558" width="48" height="51" rx="8" fill="#EEF5FF" stroke="#2F6FDB" stroke-width="2.5"/>
+  <text x="937" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" fill="#2F6FDB">1</text>
+  <text x="937" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#2F6FDB">1</text>
+  <rect x="970" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="994" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">1</text>
+  <text x="994" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">2</text>
+  <rect x="1027" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="1051" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">0</text>
+  <text x="1051" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">3</text>
+  <rect x="1084" y="558" width="48" height="51" rx="8" fill="#FFF0F2" stroke="#CB4656" stroke-width="2.5"/>
+  <text x="1108" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" fill="#CB4656">0</text>
+  <text x="1108" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#CB4656">4</text>
+  <rect x="1141" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="1165" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">1</text>
+  <text x="1165" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">5</text>
+  <rect x="1198" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="1222" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">0</text>
+  <text x="1222" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">6</text>
+  <rect x="1255" y="558" width="48" height="51" rx="8" fill="#EEF5FF" stroke="#2F6FDB" stroke-width="2.5"/>
+  <text x="1279" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="bold" fill="#2F6FDB">1</text>
+  <text x="1279" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#2F6FDB">7</text>
+  <rect x="1312" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="1336" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">1</text>
+  <text x="1336" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">8</text>
+  <rect x="1369" y="558" width="48" height="51" rx="8" fill="#F9FBFE" stroke="#CFDEEF" stroke-width="1.5"/>
+  <text x="1393" y="593" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="28" font-weight="normal" fill="#61758F">0</text>
+  <text x="1393" y="636" text-anchor="middle" font-family="Noto Sans CJK SC" font-size="18" fill="#61758F">9</text>
   <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
   <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
   <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">Bloom Filter 假阳性可能存在；标准实现下无假阴性需满足正确插入与维护条件。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">图中的“不存在”分支必须将索引 1、4 或 7 至少一位画成 0。</text>
+  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">预期容量要覆盖数据增长；目标假阳性率越低，通常需要更多位与哈希计算。</text>
 </svg>

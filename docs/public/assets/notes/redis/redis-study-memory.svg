@@ -1,5 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="840" viewBox="0 0 1120 840" role="img" aria-labelledby="title desc">
-<title id="title">内存核算：数据、缓冲、分配器与进程分开</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">内存核算：数据、缓冲、分配器与进程分开</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">同一时点的比率只能提示方向，需要绝对字节数和主机证据。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">数据与对象</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">键、值、内部索引及元数据</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">运行相关缓冲</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">客户端、复制、AOF 等</tspan></text><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">分配器与保留页</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">活跃、驻留与可归还部分</tspan></text><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">进程与主机</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">RSS、COW、系统及其他进程</tspan></text><text x="560.0" y="802" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">各行是核算视角而非可直接相加的互斥指标；maxmemory 不等于 RSS 上限。</tspan></text></g></svg>
+<title id="title">内存核算：用途、分配器与进程是不同视角</title>
+<desc id="desc">Redis Open Source 7.2.0：指标有交叠，不能把各框直接相加。 教学示意，版本与边界见正文。</desc>
+<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/><rect width="100%" height="100%" fill="url(#grid)"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="560" y="48" text-anchor="middle" fill="#0369A1" font-size="29" font-weight="600" data-max-width="1040">内存核算：用途、分配器与进程是不同视角</text>
+<text x="560" y="84" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="1040">Redis Open Source 7.2.0：指标有交叠，不能把各框直接相加。</text>
+<rect x="50" y="130" width="480" height="120" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="290" y="165" text-anchor="middle" fill="#0369A1" font-size="22" font-weight="600" data-max-width="456">数据与对象</text>
+<text x="290" y="199" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="456">键、值、过期索引、对象元数据</text>
+<rect x="590" y="130" width="480" height="120" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="830" y="165" text-anchor="middle" fill="#0369A1" font-size="22" font-weight="600" data-max-width="456">运行缓冲与其他分配</text>
+<text x="830" y="199" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="456">客户端、复制、AOF、实例管理结构</text>
+<path d="M290 250 V285 H560 V315" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M830 250 V285 H560" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="260" y="315" width="600" height="95" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="560" y="350" text-anchor="middle" fill="#0369A1" font-size="22" font-weight="600" data-max-width="576">used_memory：Redis 统计的分配量</text>
+<text x="560" y="384" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="576">不是纯 value 字节，也不是 RSS</text>
+<rect x="40" y="465" width="240" height="125" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="160" y="500" text-anchor="middle" fill="#0369A1" font-size="19" font-weight="600" data-max-width="216">allocator_allocated</text>
+<text x="160" y="534" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="216">分配器已分配量</text>
+<rect x="305" y="465" width="240" height="125" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="425" y="500" text-anchor="middle" fill="#0369A1" font-size="19" font-weight="600" data-max-width="216">allocator_active</text>
+<text x="425" y="534" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="216">活跃页面，含外部碎片</text>
+<rect x="570" y="465" width="240" height="125" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="690" y="500" text-anchor="middle" fill="#0369A1" font-size="19" font-weight="600" data-max-width="216">allocator_resident</text>
+<text x="690" y="534" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="216">分配器驻留及保留页</text>
+<rect x="835" y="465" width="245" height="125" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="957.5" y="500" text-anchor="middle" fill="#0369A1" font-size="19" font-weight="600" data-max-width="221">used_memory_rss</text>
+<text x="957.5" y="534" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="221">整个主进程的驻留量</text>
+<text x="560" y="640" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="1040">active / allocated：外部碎片；resident / active：分配器驻留膨胀</text>
+<text x="560" y="680" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="1040">RSS / resident：进程额外驻留；RSS / used_memory：总体口径差异</text>
+<text x="560" y="720" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="1040">比率使用定时采样；同时看绝对字节、历史峰值及主机证据。</text>
+<text x="560" y="795" text-anchor="middle" fill="#0F172A" font-size="19" data-max-width="1040">maxmemory 不是 RSS 上限；另为子进程、COW、系统和其他进程预留空间。</text>
+</g></svg>

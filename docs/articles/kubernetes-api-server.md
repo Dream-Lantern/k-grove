@@ -3,7 +3,7 @@ id: kubernetes-api-server
 title: 第三章：kube-apiserver——请求如何变成集群状态？
 description: "运行一次 kubectl get pods 和提交一份 Deployment，看起来都只是访问 API Server，后续工作却不一样：前者读取对象，后者改变期望状态，随后还可能触发多个控制循环。"
 date: '2026-10-25'
-updated: '2026-10-28'
+updated: '2026-11-04'
 category: engineering
 type: explanation
 tags:
@@ -72,6 +72,20 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 普通读取请求并不会每次都经过完整的写入准入流程。架构图中的阶段用于说明边界，并不是所有 HTTP 请求共用的固定调用栈。[访问控制与准入](https://kubernetes.io/docs/concepts/security/controlling-access/)
 
+### 2.5 把边界放进一次 Deployment 创建请求
+
+假设 `kubectl` 首次创建第一章的 `web-demo`。可以按以下问题理解这次普通内置资源写请求：
+
+1. **连接谁？** 客户端建立 TLS 连接并校验 API Server 的证书和身份，随后使用配置的认证材料访问 API。
+2. **调用者是谁？** 认证机制识别用户或 ServiceAccount。认证成功不意味着拥有管理员权限。
+3. **允许这个动作吗？** 授权机制判断该身份能否在目标命名空间创建 `deployments`。能读取 Pod 并不能替代这项权限。
+4. **这次操作符合策略吗？** 对适用的写请求，准入插件或 Webhook 可以补充策略字段、检查配额或拒绝不符合规则的对象；有创建权限仍可能被准入拒绝。
+5. **对象能否合法保存？** API Server 还会进行解码、版本转换、默认化、字段校验及存储处理。这些工作不能全部归入准入；默认化、修改准入和验证等处理在实现中有各自位置，并非先完整准入再一次性校验。通过检查后，对象才进入持久化路径。
+6. **客户端得到什么？** 创建成功响应包含对象信息，表示 API 操作成功；不会等待 Web 容器启动。`kubectl apply` 对已存在对象还可能发起 PATCH，不能一概称为创建请求。
+7. **后续谁工作？** 控制器独立观察保存的对象并继续协调。它们可能在客户端收到响应前就已开始观察变化；响应与后续协调没有固定的先后等待关系。
+
+这是帮助理解边界的教学模型，不能当作每种 API 请求的精确源码时序。读取请求不走全部写入阶段，失败请求也不会继续保存。具体实现需固定资源、动词和版本核对。[Kubernetes API 访问控制](https://kubernetes.io/docs/concepts/security/controlling-access/)、[准入控制器](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/)
+
 ## 3. API 对象怎样保存，又怎样被观察？
 
 在常见内置资源路径中，API Server 处理通过检查的状态变更，并使用配置好的存储后端保存对象。etcd 是标准控制平面的关键状态存储，但不是所有用户、控制器和节点都直接操作它。
@@ -86,7 +100,9 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 假设用户创建了 Deployment。相关控制器需要知道新的期望，Scheduler 之后也需要知道是否出现未绑定 Pod。
 
-常见客户端使用 list/watch 等机制建立和持续更新对象视图。Watch 关注的是对象变化，不是 API Server 为每个控制器安排一串可靠的远程函数回调。
+List 用于获取某类对象的集合及其列表版本；Watch 则从相应版本继续接收对象变化，减少反复全量查询的开销。常见控制器客户端先 List 建立本地缓存，再通过 Watch 更新缓存、将相关对象加入工作队列。控制循环随后读取当前视图并协调；通知与实际协调并非一对一同步执行。
+
+Watch 关注的是对象变化，不是 API Server 为每个控制器安排一串可靠的远程函数回调，也不是 etcd 直接回调控制器。缓存可能暂时落后，协调逻辑需要允许重试并在重复执行时保持正确。
 
 [![API 状态：观察与写回走向](/assets/notes/kubernetes/k8s-api-observe-state.svg)](/assets/notes/kubernetes/k8s-api-observe-state.svg)
 
@@ -94,25 +110,55 @@ kube-apiserver 提供 Kubernetes HTTP API。用户、控制器、调度器和 ku
 
 ### 4.1 resourceVersion 用来协调观察，不是业务时间戳
 
-对象或集合的 `resourceVersion` 帮助客户端处理相应版本与变化观察。客户端应按 API 约定使用，不把它转换成墙上时钟，也不把内部存储实现当作可随意做加减的永久业务契约。
+对象的 `metadata.resourceVersion` 表示该对象的资源版本；List 返回的列表也有自己的 `metadata.resourceVersion`，可用作随后观察该集合变化的起点。客户端应把它当作不透明字符串，按 API 约定原样传回；它不是业务时间戳，不应用来算时间差、推断两个业务操作之间的间隔，或当作可随意加减的计数器。具体读取一致性和 Watch 起点取决于请求参数与 API 版本。
 
 ### 4.2 Watch 断开后还需要恢复观察
 
-连接可能断开，服务器保存的历史也可能不足。客户端必须能处理重新建立观察、必要的重新列举及重复触发等情况。
+连接可能因超时、代理重置、网络故障或服务端重启而断开；服务器保留的变更历史也有边界。恢复观察需要区分两种情况：
+
+- **普通断线，版本仍可用**：客户端可携带最后处理的 `resourceVersion` 重建 Watch，继续接收后续变化。不是每次断线都必须先全量 List；实际策略由 API 语义和客户端实现决定。
+- **版本过旧，历史不可用**：API Server 会以 HTTP `410 Gone` 或 Watch 流中的相应错误事件告知版本过期。客户端应丢弃失效的缓存视图，重新 List 获取集合与新版本，再从新版本恢复 Watch；不能继续依赖旧状态假装观察未中断。
 
 因此，“注册了 Watch”并不意味着“永远不会漏掉状态更新、恰好处理一次每个事件”。对控制器而言，恢复后能根据当前状态重新协调，往往比依赖某一次通知更重要。[1.28 API 的观察与版本约定](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/using-api/api-concepts.md)
 
+例如，断线期间某个 Pod 被删除，随后控制器重新 List 得到的只是当前集合，不一定能重放此前所有中间事件。它仍应根据“当前副本不足”推进创建替代 Pod，而不是永远等待那一次删除通知。List/Watch 帮助恢复状态视图，控制循环负责让当前状态接近期望。
+
+### 4.3 动手观察 ConfigMap 的变化
+
+前提：已安装与集群版本兼容的 `kubectl`，上下文正确，具备创建命名空间及其中 ConfigMap 的增删改查、List/Watch 权限。使用两个 Bash 终端，均连接同一集群。`k8s-api-demo` 必须是本实验新建的专用空间；若同名空间已存在，请换名并同步修改命令。**以下为文档实验与预期观察，本次未在真实集群执行，也不展示模拟日志。**
+
+终端 A 创建对象，读取其数据和版本，再开启 Watch：
+
+```bash
+kubectl create namespace k8s-api-demo
+kubectl create configmap watch-demo -n k8s-api-demo --from-literal=message=hello
+kubectl get configmap watch-demo -n k8s-api-demo -o yaml
+kubectl get configmap watch-demo -n k8s-api-demo --watch --output-watch-events -o yaml
+```
+
+普通 `get` 返回当前可读到的对象；最后一条命令先输出当前对象再持续观察。因使用了 `--output-watch-events`，输出包装为事件对象，`type` 表示事件类型，ConfigMap 位于 `object` 字段。初始输出并不意味着刚刚又创建了一次对象。
+
+保持终端 A 运行，在终端 B 修改数据并重新读取：
+
+```bash
+kubectl patch configmap watch-demo -n k8s-api-demo --type=merge -p '{"data":{"message":"updated"}}'
+kubectl get configmap watch-demo -n k8s-api-demo -o yaml
+```
+
+预期终端 A 观察到 `MODIFIED`，其中 `object.data.message` 变为 `updated`，`object.metadata.resourceVersion` 与修改前不同；终端 B 的普通读取也能看到新值和版本。版本的具体数字不固定，不能要求它恰好增加 1。本实验说明 API 对象的变化可被观察，不证明任何应用已重新读取配置，也不验证 410 恢复逻辑。
+
+最后在终端 B 删除 ConfigMap，预期终端 A 可看到 `DELETED`；按 `Ctrl+C` 停止观察，再删除专用空间：
+
+```bash
+kubectl delete configmap watch-demo -n k8s-api-demo
+kubectl delete namespace k8s-api-demo
+```
+
+若观察已中断，不应把“没有看到通知”直接当作更新失败；重新读取对象确认当前状态，再检查客户端连接与错误。客户端库的完整重连与缓存恢复逻辑不由这个交互式命令实验代替。[kubectl get 的观察选项](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_get/)
+
 ## 5. Deployment 创建后的协调流程 {#_5-创建-deployment-的请求-为什么不能直接等同于创建容器}
 
-沿用第一章的三副本教学例子：
-
-1. 客户端提交 Deployment，API Server 处理并保存对象。
-2. Deployment Controller 观察到需要协调的状态，创建或调整 ReplicaSet。
-3. ReplicaSet Controller 经 API 协调 Pod 数量。
-4. Scheduler 发现需要调度的 Pod，选择节点并推进绑定。
-5. 目标节点上的 kubelet 配合运行时等机制推进运行，继续上报状态。
-
-这不是每次 API 请求都必须完整走完的调用链，也不是 ReplicationController 创建 ReplicaSet 的流程。RC 与 ReplicaSet Controller 是不同控制器，后文单独介绍。
+第一章已经解释了[Deployment → ReplicaSet → Pod 的协调过程](/articles/kubernetes-architecture.html#_7-一次-deployment-部署-实际上经历了什么)。本章只需把它接回观察机制：Deployment Controller、ReplicaSet Controller、Scheduler 和 kubelet 分别通过 API 观察各自关心的对象，再按职责写入对象、绑定或状态。它们依赖持续更新的状态视图协作，不需要 API Server 同步串行调用。
 
 成功保存 Deployment 的响应，不能证明镜像已经拉取、Pod 已经就绪或 Service 已经可访问。将“API 操作成功”与“业务目标达成”分开，能避免很多排障误判。[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 

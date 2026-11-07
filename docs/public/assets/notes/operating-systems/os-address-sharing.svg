@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750" role="img" aria-labelledby="title desc">
+<title id="title">两个地址空间：隔离与受控共享</title><desc id="desc">4 KiB 页，页框编号均为教学假设；箭头表示映射，不表示搬移或运行先后。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="750" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">两个地址空间：隔离与受控共享</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">4 KiB 页，页框编号均为教学假设；箭头表示映射，不表示搬移或运行先后。</text>
+<rect x="40" y="145" width="350" height="170" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="177" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">进程 A 的虚拟空间</text>
+<text x="58" y="208" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">0x400000 → 页框 10</text>
+<text x="58" y="236" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">0x500000 → 页框 30</text>
+<rect x="810" y="145" width="350" height="170" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="828" y="177" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">进程 B 的虚拟空间</text>
+<text x="828" y="208" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">0x400000 → 页框 25</text>
+<text x="828" y="236" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">0x700000 → 页框 30</text>
+<rect x="40" y="440" width="310" height="110" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="58" y="472" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">物理页框 10</text>
+<text x="58" y="503" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">A 的独立映射</text>
+<rect x="445" y="510" width="310" height="110" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="463" y="542" font-size="22" fill="#956526" font-weight="600" text-anchor="start">物理页框 30</text>
+<text x="463" y="573" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">受控共享，两者权限分别规定</text>
+<rect x="850" y="440" width="310" height="110" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="868" y="472" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">物理页框 25</text>
+<text x="868" y="503" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">B 的独立映射</text>
+<path d="M140 315 L140 440" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1060 315 L1060 440" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M285 315 L285 380 L530 380 L530 510" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M915 315 L915 400 L670 400 L670 510" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="40" y="680" font-size="21" fill="#24364b" font-weight="400" text-anchor="start">相同虚拟地址可以对应不同物理页；不同虚拟地址也可以共享同一物理页。</text>
+<text x="40" y="718" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">跨进程传递指针的数值，不会自动建立映射或授予访问权限。</text>
+</g></svg>

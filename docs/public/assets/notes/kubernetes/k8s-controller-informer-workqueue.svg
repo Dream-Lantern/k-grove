@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+  <title id="title">典型 Kubernetes 控制器：观察、排队、协调与写回</title>
+  <desc id="desc">API Server 的 List 和 Watch 返回更新 Informer 缓存，事件处理逻辑将对象 Key 放入 WorkQueue。工作线程取 Key 后读取缓存并协调，通过 API 写回对象，后续变化再次被观察。失败可以限速重新入队。这是常见实现模式，不是所有控制器的固定调用栈。</desc>
+  <defs>
+    <marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#2563eb"/></marker>
+    <marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#128365"/></marker>
+    <marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#b56b12"/></marker>
+    <style>
+      text { font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #183153; }
+      .heading { font-size: 26px; font-weight: 700; }
+      .body { font-size: 20px; fill: #526780; }
+      .label { font-size: 18px; }
+      .observe { fill: none; stroke: #2563eb; stroke-width: 3; marker-end: url(#blue); }
+      .write { fill: none; stroke: #128365; stroke-width: 3; marker-end: url(#green); }
+      .retry { fill: none; stroke: #b56b12; stroke-width: 3; stroke-dasharray: 8 6; marker-end: url(#orange); }
+    </style>
+  </defs>
+  <rect width="1400" height="760" fill="#f8fafe"/>
+  <rect x="24" y="24" width="1352" height="712" rx="24" fill="white" stroke="#d8e4f2" stroke-width="2"/>
+  <text x="60" y="85" font-size="34" font-weight="700">典型控制器：观察、排队、协调与写回</text>
+  <text class="body" x="60" y="126">变化提供线索；协调读取当前视图，允许重复执行、部分成功和重试</text>
+  <path d="M60 154 H1340" stroke="#d8e4f2" stroke-width="2"/>
+
+  <rect x="60" y="200" width="270" height="130" rx="16" fill="#edf4ff" stroke="#b7d3fa" stroke-width="2"/>
+  <text class="heading" x="88" y="246">API Server</text>
+  <text class="body" x="88" y="285">统一对象读写边界</text>
+
+  <rect x="440" y="200" width="360" height="130" rx="16" fill="#edf4ff" stroke="#b7d3fa" stroke-width="2"/>
+  <text class="heading" x="464" y="246">Informer / Cache</text>
+  <text class="body" x="464" y="285">本地对象视图，可能短暂落后</text>
+
+  <rect x="900" y="200" width="340" height="130" rx="16" fill="#f3efff" stroke="#d4c7f4" stroke-width="2"/>
+  <text class="heading" x="924" y="246">WorkQueue</text>
+  <text class="body" x="924" y="285">对象 Key：namespace/name</text>
+
+  <rect x="900" y="435" width="340" height="150" rx="16" fill="#ebf8f2" stroke="#b9dfce" stroke-width="2"/>
+  <text class="heading" x="924" y="480">Reconcile / 工作线程</text>
+  <text class="body" x="924" y="520">比较状态，决定必要操作</text>
+  <text class="body" x="924" y="554">不保证一次处理就达到目标</text>
+
+  <path class="observe" d="M330 265 H440"/>
+  <text class="label" x="335" y="182">List / Watch 返回</text>
+  <path class="observe" d="M800 265 H900"/>
+  <text class="label" x="808" y="182">事件入队</text>
+  <path class="observe" d="M1000 330 V435"/>
+  <text class="label" x="916" y="384">取出 Key</text>
+  <path class="retry" d="M1170 435 V330"/>
+  <text class="label" x="1068" y="376" fill="#b56b12">失败限速</text>
+  <text class="label" x="1068" y="402" fill="#b56b12">重新入队</text>
+  <path class="observe" d="M620 330 V510 H900" stroke-dasharray="5 5"/>
+  <text class="label" x="650" y="490">读取当前缓存视图</text>
+  <path class="write" d="M1070 585 V635 H195 V330"/>
+  <text class="label" x="350" y="620" fill="#128365">API 创建 / 更新 / 删除 → 后续变化再次被观察</text>
+
+  <rect x="60" y="670" width="1280" height="44" rx="12" fill="#f3f6fb"/>
+  <text class="label" x="82" y="699">常见实现模式；队列不保存全部事件历史。List/Watch 由客户端发起，图中蓝线表示返回数据与线索流向。</text>
+</svg>

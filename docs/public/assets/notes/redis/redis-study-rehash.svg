@@ -1,5 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="850" viewBox="0 0 1120 850" role="img" aria-labelledby="title desc">
-<title id="title">渐进 rehash：两张表共同过渡</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/><rect width="100%" height="100%" fill="url(#grid)"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">渐进 rehash：两张表共同过渡</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">结构示意而非内存地址；条目分批迁移，查找与更新要处理过渡状态。</tspan></text><rect x="60" y="160" width="440" height="140" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="280.0" y="197" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="280.0" dy="0">旧哈希表 ht[0]</tspan></text><text x="280.0" y="234" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="280.0" dy="0">尚未迁移的桶与条目</tspan><tspan x="280.0" dy="30">迁移游标按实现推进</tspan></text><rect x="620" y="160" width="440" height="140" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="840.0" y="197" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="840.0" dy="0">目标哈希表 ht[1]</tspan></text><text x="840.0" y="234" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="840.0" dy="0">已迁移条目与适用新写入</tspan><tspan x="840.0" dy="30">按新容量计算桶位置</tspan></text><path d="M500 230 L620 230" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="350" y="465" width="420" height="120" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="502" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">迁移期间的访问</tspan></text><text x="560.0" y="539" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">查找按实现检查适用表，操作可推进迁移</tspan></text><path d="M430 465 L430 385 L280 385 L280 300" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><path d="M690 465 L690 385 L840 385 L840 300" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560" y="700" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560" dy="0">迁移结束：释放旧表，目标表成为稳定表；渐进不等于没有资源开销。</tspan></text><text x="560.0" y="812" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">具体步数、暂停条件和分配策略按版本源码核对，不作为业务协议。</tspan></text></g></svg>
+<title id="title">渐进 rehash：双表、游标与分步迁移</title>
+<desc id="desc">Redis Open Source 7.2.0；ht[0] / ht[1] 是教学简称，源码用 ht_table 等数组。 教学示意，版本与边界见正文。</desc>
+<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/><rect width="100%" height="100%" fill="url(#grid)"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="560" y="48" text-anchor="middle" fill="#0369A1" font-size="29" font-weight="600" data-max-width="1040">渐进 rehash：双表、游标与分步迁移</text>
+<text x="560" y="84" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="1040">Redis Open Source 7.2.0；ht[0] / ht[1] 是教学简称，源码用 ht_table 等数组。</text>
+<rect x="50" y="145" width="440" height="150" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="270" y="180" text-anchor="middle" fill="#0369A1" font-size="22" font-weight="600" data-max-width="416">旧表 ht[0]</text>
+<text x="270" y="214" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="416">尚未搬迁的桶与条目</text>
+<text x="270" y="243" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="416">rehashidx：下一个待迁移位置</text>
+<rect x="630" y="145" width="440" height="150" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="850" y="180" text-anchor="middle" fill="#0369A1" font-size="22" font-weight="600" data-max-width="416">新表 ht[1]</text>
+<text x="850" y="214" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="416">已迁移条目 + 新增条目</text>
+<text x="850" y="243" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="416">按新容量计算桶位置</text>
+<path d="M490 220 H630" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="560" y="200" text-anchor="middle" fill="#0369A1" font-size="17" data-max-width="120">搬迁桶</text>
+<rect x="260" y="400" width="600" height="110" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="560" y="435" text-anchor="middle" fill="#0369A1" font-size="22" font-weight="600" data-max-width="576">访问两张表</text>
+<text x="560" y="469" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="576">查找先旧表、必要时新表；已有键更新不等于新增</text>
+<path d="M380 400 V345 H270 V295" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M740 400 V345 H850 V295" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="100" y="570" width="920" height="105" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="560" y="605" text-anchor="middle" fill="#0369A1" font-size="22" font-weight="600" data-max-width="896">推进来源：部分普通操作 + serverCron 周期维护</text>
+<text x="560" y="639" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="896">主线程相关路径分摊迁移；不是独立后台线程；迭代器等路径可暂停</text>
+<text x="560" y="725" text-anchor="middle" fill="#0F172A" font-size="19" data-max-width="1040">旧表搬空 → 释放旧桶数组 → 新表成为稳定表 → rehashidx = -1</text>
+<text x="560" y="790" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="1040">活动 fork 子进程会影响扩容与 rehash 策略，以减少 COW；不是全部无条件禁止。</text>
+</g></svg>

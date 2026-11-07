@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1050" viewBox="0 0 1400 1050" role="img" aria-labelledby="title desc">
+<title id="title">不可变配置：先完整准备，再切换 current 指针</title><desc id="desc">v7 和 v8 发布后保持不可变。发布者完整准备 v8 后条件切换 current。读者固定一次获得的版本，校验完整后原子替换本地配置；回滚及回收受读者边界约束。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">不可变配置：先完整准备，再切换 current 指针</text>
+<text x="40" y="100" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">应用发布协议；ZooKeeper 提供单节点原子更新与条件版本检查。</text>
+<rect x="40" y="145" width="600" height="170" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="60" y="180" font-size="22" fill="#2563EB" text-anchor="start" font-weight="700">versions/v7 · 已发布、不可变</text>
+<text x="60" y="214" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">db = v7 的数据库配置</text>
+<text x="60" y="248" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">cache = v7 的缓存配置</text>
+<text x="60" y="282" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">读者可以继续固定使用 v7。</text>
+<rect x="760" y="145" width="600" height="170" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="780" y="180" font-size="22" fill="#059669" text-anchor="start" font-weight="700">versions/v8 · 完整准备后才可发布</text>
+<text x="780" y="214" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">先写 db、cache 与完整性清单。</text>
+<text x="780" y="248" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">校验全部内容与引用。</text>
+<text x="780" y="282" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">发布后内容不可变。</text>
+<rect x="360" y="390" width="680" height="140" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="380" y="425" font-size="21" fill="#7C3AED" text-anchor="start" font-weight="700">/app/config/current</text>
+<text x="380" y="459" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">旧值 v7 → 条件 setData → 新值 v8</text>
+<text x="380" y="493" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">并发 BadVersion：重新决策；结果未知：核对权威状态。</text>
+<path d="M340 320 L500 380" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M1060 320 L900 380" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M700 535 L700 595" fill="none" stroke="#64748B" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="40" y="610" width="1320" height="150" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="60" y="645" font-size="23" fill="#2563EB" text-anchor="start" font-weight="700">读取者：读取 current，一次加载中固定这个版本 ID</text>
+<text x="60" y="679" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">读到 v7 → 只读 v7/db、v7/cache；读到 v8 → 只读 v8 的完整内容。</text>
+<text x="60" y="713" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">验证完整性后原子替换本地生效配置；不能逐项重新追 current 而混合版本。</text>
+<rect x="40" y="815" width="640" height="160" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="60" y="850" font-size="22" fill="#D97706" text-anchor="start" font-weight="700">回滚：条件切回仍完整保留的 v7</text>
+<text x="60" y="884" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">不原地修改公开的 v8。</text>
+<text x="60" y="918" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">Watch 调度完整重读；通知不是配置快照。</text>
+<rect x="720" y="815" width="640" height="160" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="740" y="850" font-size="22" fill="#DC2626" text-anchor="start" font-weight="700">回收：先证明旧版本不再被使用</text>
+<text x="740" y="884" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">依靠读者协议或有界使用期等条件。</text>
+<text x="740" y="918" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">不能删除仍被固定读取的 v7。</text>
+</g></svg>

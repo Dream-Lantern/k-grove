@@ -1,44 +1,44 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
-  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
-  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Linux 0.11：从 bootsect 到 main</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">各阶段职责必须与 Linux 0.11 源码对应</text>
-  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
-  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
-  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">bootsect</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">装载 setup 与 system 到适用内存位置</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
-  <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
-  <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
-  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">setup</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">收集参数、搬移 system、进入保护模式</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
-  <rect fill="#C88323" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
-  <rect fill="#FFF5E7" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">head</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">32 位早期初始化，包括 IDT / 分页准备</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
-  <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
-  <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
-  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">main / 进程 0</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">进入初始化；首次 fork 产生 init 进程</text>
-  <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
-  <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
-  <polygon fill="#8996A8" points="430,453 435.0,442.0 425.0,442.0"/>
-  <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
-  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">不能把保护模式切换挪到 head，或把普通分页初始化一概归给 C main。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">进程 0 不是由 main 新 fork 出的普通任务；区分 fork 出的 init。</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1100" viewBox="0 0 1200 1100" role="img" aria-labelledby="title desc">
+<title id="title">Linux 0.11：从 BIOS 到任务 0 / 任务 1</title><desc id="desc">实线表示成功路径的控制转移；地址、文件名和模式均限定于本章历史版本。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1100" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="44" y="54" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">Linux 0.11：从 BIOS 到任务 0 / 任务 1</text>
+<text x="44" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">实线表示成功路径的控制转移；地址、文件名和模式均限定于本章历史版本。</text>
+<rect x="60" y="130" width="1080" height="82" rx="12" fill="#fff8ed" stroke="#a27430" stroke-width="1.4"/>
+<text x="80" y="163" font-size="22" fill="#a27430" font-weight="600" text-anchor="start">BIOS · 实模式</text>
+<text x="80" y="194" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">将引导扇区装入 0x7c00，交出控制权</text>
+<path d="M600 212 L600 246" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="246" width="1080" height="110" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="80" y="279" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">bootsect.s · 实模式 / 无分页</text>
+<text x="80" y="310" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">自身搬至 0x90000，设置栈；setup → 0x90200，system → 0x10000</text>
+<text x="80" y="338" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">读盘失败可重试；装载成功后 jmpi 0,SETUPSEG</text>
+<path d="M600 356 L600 390" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="390" width="1080" height="138" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="80" y="423" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">setup.s · 实模式 → 32 位保护模式 / 无分页</text>
+<text x="80" y="454" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">保存 BIOS 参数；system 搬至低地址；加载早期 GDT / IDT</text>
+<text x="80" y="482" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">开启 A20；重编程并屏蔽中断控制器</text>
+<text x="80" y="510" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">lmsw 设置 PE；jmpi 0,8 → 地址 0 的 startup_32</text>
+<path d="M600 528 L600 562" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="562" width="1080" height="138" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="80" y="595" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">head.s · 已在保护模式 → 开启分页</text>
+<text x="80" y="626" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">startup_32 设置段与栈；setup_idt 建默认入口；setup_gdt 装内核 GDT</text>
+<text x="80" y="654" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">after_page_tables 压入 _main；setup_paging 建低 16 MiB 恒等映射</text>
+<text x="80" y="682" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">写 CR3、设置 CR0.PG；ret 弹出 _main 地址，进入 C 代码</text>
+<path d="M600 700 L600 734" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="734" width="1080" height="110" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="80" y="767" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">main() · 内核态，分页已启用</text>
+<text x="80" y="798" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">内存、异常、设备、终端、调度与缓冲区初始化；任务 0 由静态结构提供</text>
+<text x="80" y="826" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">sti → move_to_user_mode：任务 0 转用户态 → 首次 fork</text>
+<path d="M600 844 L600 870 L307 870 L307 906" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 870 L893 870 L893 906" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="78" y="888" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">父任务分支</text>
+<text x="900" y="888" font-size="17" fill="#24364b" font-weight="400" text-anchor="start">成功时子任务分支</text>
+<rect x="60" y="906" width="495" height="100" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="80" y="939" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">任务 0 · 特殊空闲任务</text>
+<text x="80" y="970" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">pause() 循环；没有其他就绪任务时运行</text>
+<rect x="645" y="906" width="495" height="100" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="665" y="939" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">任务 1 · 用户态执行 init()</text>
+<text x="665" y="970" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">设置根文件系统 / 终端，安排脚本和 shell</text>
+<text x="60" y="1052" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">PE 与 PG 在不同阶段启用；默认 IDT 不等于所有异常和设备入口已安装完成。</text>
+</g></svg>

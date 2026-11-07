@@ -1,44 +1,42 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
-  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
-  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">上下文切换：异常入口、唤醒与调度</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">保存执行现场不等于立即调度；唤醒任务不保证立即运行</text>
-  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="225"/>
-  <rect fill="#2F6FDB" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="225"/>
-  <rect fill="#EEF5FF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="245"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="276">1</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="269">异常 / 中断入口</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="306">按体系结构保存必要现场</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="225"/>
-  <rect fill="#7554CE" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="225"/>
-  <rect fill="#F3EFFF" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="245"/>
-  <text fill="#7554CE" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="276">2</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="269">处理与可运行状态变化</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="306">执行内核处理、可能唤醒任务</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="74" y="458"/>
-  <rect fill="#C88323" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="74" y="458"/>
-  <rect fill="#FFF5E7" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="96" y="478"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="122" y="509">3</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="162" y="502">调度器决定是否切换</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="162" y="539">选择运行任务并安排上下文切换</text>
-  <rect fill="#FFFFFF" height="164" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="710" x="814" y="458"/>
-  <rect fill="#118E6B" height="164" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="814" y="458"/>
-  <rect fill="#E9F8F0" height="45" rx="12" ry="12" stroke="none" stroke-width="1.5" width="52" x="836" y="478"/>
-  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" text-anchor="middle" x="862" y="509">4</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="902" y="502">恢复任务上下文</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="902" y="539">依据选定架构和内核版本恢复运行</text>
-  <polyline fill="none" points="784,307 806,307" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#2F6FDB" points="806,307 795.0,302.0 795.0,312.0"/>
-  <polyline fill="none" points="1169,389 1169,423 430,423 430,453" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
-  <polygon fill="#8996A8" points="430,453 435.0,442.0 425.0,442.0"/>
-  <polyline fill="none" points="784,540 806,540" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#2F6FDB" points="806,540 795.0,535.0 795.0,545.0"/>
-  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">异常专用栈、IRQ 栈与寄存器保存细节需按具体架构 / 版本说明。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">这里是简化教学模型，不代表所有入口路径都会调用 Scheduler。</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1080" viewBox="0 0 1200 1080" role="img" aria-labelledby="title desc">
+<title id="title">内核入口：先处理请求，再判断是否需要调度</title><desc id="desc">以任务 A 请求服务为例；左侧是无需调度的可能路径，右侧说明等待与后续恢复的分工。 教学抽象，不代表实际运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1080" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">内核入口：先处理请求，再判断是否需要调度</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">以任务 A 请求服务为例；左侧是无需调度的可能路径，右侧说明等待与后续恢复的分工。</text>
+<rect x="250" y="130" width="700" height="96" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="268" y="162" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">A 的用户态执行</text>
+<text x="268" y="193" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">保留用户函数调用链</text>
+<path d="M600 226 L600 290" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="180" y="290" width="840" height="123" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="198" y="322" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">受控入口 · 硬件与内核软件分工</text>
+<text x="198" y="353" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">硬件按架构转移并保存部分状态；汇编补充寄存器与适用栈</text>
+<text x="198" y="381" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">建立入口现场不代表已经更换任务</text>
+<path d="M600 413 L600 463" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="250" y="463" width="700" height="95" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="268" y="495" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">内核处理请求</text>
+<text x="268" y="526" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">检查参数与资源；按条件完成、等待或返回错误</text>
+<path d="M600 558 L600 590 L295 590 L295 654" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 590 L905 590 L905 654" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="66" y="632" font-size="18" fill="#297b66" font-weight="600" text-anchor="start">本次无需等待，也无其他调度条件</text>
+<text x="754" y="632" font-size="18" fill="#356da8" font-weight="600" text-anchor="start">本次需要等待资源</text>
+<rect x="65" y="654" width="460" height="123" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="83" y="686" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">仍由 A 完成请求</text>
+<text x="83" y="717" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">保留原任务身份与调用链</text>
+<text x="83" y="745" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不必保存 / 恢复另一个任务</text>
+<rect x="675" y="654" width="460" height="123" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="693" y="686" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">A 等待，调度选择其他任务</text>
+<text x="693" y="717" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">保留 A 的内核续接状态</text>
+<text x="693" y="745" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">恢复选定任务，例如 B</text>
+<path d="M295 777 L295 855" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M905 777 L905 855" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="65" y="855" width="460" height="100" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="83" y="887" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">恢复入口现场，返回 A 用户态</text>
+<text x="83" y="918" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">任务没换，特权环境发生了转换</text>
+<rect x="675" y="855" width="460" height="100" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="693" y="887" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">B 从自己的执行位置继续</text>
+<text x="693" y="918" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不是拿 A 的返回地址执行 B</text>
+<text x="65" y="1008" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">后续：A 等待条件满足 → 可运行 → 以后获调度 → 恢复 A 的内核路径 → 返回 A 用户态。</text>
+<text x="65" y="1042" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">上述“以后”没有固定时刻；唤醒与实际运行不同，中断和异常也不必每次调度。</text>
+</g></svg>

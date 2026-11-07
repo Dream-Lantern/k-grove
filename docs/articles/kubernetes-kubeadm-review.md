@@ -3,7 +3,7 @@ id: kubernetes-kubeadm-review
 title: 第二章：kubeadm 单节点安装实践复盘（Kubernetes 1.28）
 description: "第一章解释了各组件的作用，本章则按依赖关系重新组织安装记录：先准备主机和运行时，再建立控制平面，最后配置 Pod 网络和日常管理入口。"
 date: '2026-10-25'
-updated: '2026-10-28'
+updated: '2026-11-04'
 category: engineering
 type: explanation
 tags:
@@ -22,6 +22,8 @@ order: 2
 第一章解释了各组件的作用，本章则按依赖关系重新组织安装记录：先准备主机和运行时，再建立控制平面，最后配置 Pod 网络和日常管理入口。
 
 本章整理 Kubernetes 1.28 的历史安装记录，重点解释各配置的用途与依赖。记录尚未重新实验验收，环境缺项在下文单列；命令需结合对应版本和目标主机核对后使用。
+
+**版本边界：Kubernetes 1.28 已于 2024-10-22 结束官方维护。本文是历史实践复盘，旧命令不能直接用作当前生产环境部署指南。** 重新安装应选择仍受支持的 Kubernetes 版本，并使用该版本的官方安装文档及兼容运行时、网络插件。[官方维护历史](https://kubernetes.io/releases/patch-releases/#non-active-branch-history)
 
 ## 1. 历史环境与复盘范围 {#_1-先固定复盘范围-而不是先复制命令}
 
@@ -79,15 +81,17 @@ kubectl version --client
 
 原记录采用关闭 swap 的路径。`swapoff -a` 影响当前运行环境；要在重启后继续保持相应状态，还涉及系统的持久配置。不能把一次命令成功理解成重启后仍然满足条件。
 
+swap 会将部分内存页换出到磁盘，改变工作负载的内存行为与延迟。kubelet 需要按明确的策略管理节点和容器内存；1.28 中默认的 `failSwapOn: true` 会使 kubelet 在检测到启用 swap 时拒绝启动。可用 `swapon --show` 检查当前状态，并结合 `journalctl -u kubelet --no-pager -n 100` 确认失败原因。
+
 关闭 swap 的持久配置涉及 `/etc/fstab`。这属于会影响主机启动和挂载行为的修改，应先保留文件原件并确认目标 swap 条目，不适合写成面向所有系统的通用替换指令。本章保留这一操作目的，不提供自动改写未知主机配置的脚本。
 
-这也不应扩写成“所有 Kubernetes 版本都永远不能使用 swap”。这里复盘的是 1.28 记录采用的配置路线；其他行为需要独立核对版本、特性和 kubelet 设置。[1.28 安装前置条件](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/setup/production-environment/tools/kubeadm/install-kubeadm.md)
+这也不应扩写成“所有 Kubernetes 版本都永远不能使用 swap”。1.28 已有需要显式配置的 NodeSwap 测试能力，后续版本的支持范围与默认值仍在变化；仅设置 `failSwapOn: false` 也不能直接推导出容器如何使用 swap。这里复盘的是关闭 swap 的路线，不改成另一套实验配置。[1.28 安装前置条件](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/setup/production-environment/tools/kubeadm/install-kubeadm.md)、[1.28 swap 管理说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/architecture/nodes.md)
 
 ### 3.3 内核模块和转发参数
 
 原记录提到 `overlay`、`br_netfilter` 以及 IP 转发和桥接过滤参数。它们分别关联文件系统/运行时及网络数据路径，不应把它们统称为“让 Kubernetes 可以联网的一条万能配置”。
 
-模块列表使用分行的 heredoc 表达文件内容：
+模块加载配置的内容示意如下：
 
 ```text
 # /etc/modules-load.d/k8s.conf 的内容示意
@@ -105,6 +109,14 @@ net.ipv4.ip_forward = 1
 
 文件存在、模块已加载、参数已生效，是三件不同的事。实际需要哪些参数还与所选网络实现有关；上面是历史材料的整理，不是对任意 CNI 的强制要求。[1.28 容器运行时与网络准备](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/setup/production-environment/container-runtimes.md)
 
+| 配置                  | 解决什么问题，为什么需要                                                                                                    | 配置不符时可能看到什么                                                         | 如何检查                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `overlay`             | OverlayFS 将多个只读镜像层与容器可写层组合为文件系统视图；containerd 常用的 overlayfs snapshotter 依赖此能力                | 使用该 snapshotter 时，准备容器根文件系统失败；其他 snapshotter 的要求可能不同 | `lsmod`、`cat /proc/filesystems`，再结合 containerd 插件状态与日志                         |
+| `br_netfilter`        | 使 Linux Bridge 上的桥接流量进入 Netfilter 的相应过滤路径；两个 `bridge-nf-call-*` 参数控制是否交给 iptables/ip6tables 处理 | 依赖桥接过滤的网络方案可能出现规则不生效或通信异常                             | `lsmod` 及 `sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables` |
+| `net.ipv4.ip_forward` | 允许主机在网络接口之间转发 IPv4 数据包；经过主机路由转发的 Pod 流量通常需要它                                               | 依赖该转发路径的跨网段通信失败                                                 | `sysctl net.ipv4.ip_forward`，结合路由和实际连通性测试                                     |
+
+`lsmod` 不显示内建进内核的功能，不能单凭列表缺失就判定不可用。启用 IP 转发只提供主机转发能力，不会自动分配 Pod 地址、生成路由或实现 Service；这些还依赖网络插件与数据平面。OverlayFS 的分层原理参见 [Linux 内核文档](https://docs.kernel.org/filesystems/overlayfs.html)。
+
 ## 4. containerd：服务、CRI、cgroup 和镜像要分别检查
 
 ### 4.1 为什么“containerd active”还不够？
@@ -116,6 +128,8 @@ net.ipv4.ip_forward = 1
 ### 4.2 cgroup 驱动要与 kubelet 配合
 
 原记录在 runc 相关配置中设置 `SystemdCgroup = true`。它不是一个随意放在 TOML 文件顶层就能生效的全局开关。
+
+cgroup 是 Linux 对进程分组并统计、限制 CPU、内存等资源的机制。kubelet 与运行时都要管理容器资源层级，驱动不一致可能导致不同的资源视图、Pod 创建失败或节点不稳定。systemd 主机通常让两者都采用 systemd 驱动；kubeadm 自 1.22 起在未指定时默认配置 kubelet 使用该驱动。应检查 `/var/lib/kubelet/config.yaml` 的 `cgroupDriver` 和实际运行时配置，不能只改一侧。
 
 下面只对比配置位置，不能混合粘贴为同一个文件：
 
@@ -134,13 +148,31 @@ net.ipv4.ip_forward = 1
 
 配置格式版本、插件 ID 和运行时处理器都需要与实际二进制对应。不能仅用一次字符串替换，就断言 kubelet 和运行时已经正确配合。[1.28 对应说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/setup/production-environment/container-runtimes.md)、[containerd 2.2 配置说明](https://github.com/containerd/containerd/blob/v2.2.0/docs/cri/config.md)
 
-### 4.3 sandbox 镜像与业务镜像是两类检查
+### 4.3 诊断时区分配置文件、启动参数和 CRI 响应
+
+kubelet 通过 CRI（Container Runtime Interface，容器运行时接口）请求运行时管理镜像、Pod sandbox 和容器。containerd 进程存活时，CRI 插件仍可能被禁用或初始化失败。Kubernetes 1.28 要求运行时支持 CRI v1；选择版本还应核对 [containerd 官方 Kubernetes 兼容性矩阵](https://github.com/containerd/containerd/blob/main/RELEASES.md#kubernetes-support)，不能从“配置语法合法”推断历史组合已被验证。
+
+下面是 Linux/systemd 主机上的诊断模板，需有查看服务和日志的权限；`crictl` 需单独安装兼容版本。端点示例适用于常见的本机 containerd socket，实际路径以 kubelet 配置为准：
+
+```bash
+containerd --version
+systemctl status containerd --no-pager
+systemctl cat containerd
+sudo containerd --config /etc/containerd/config.toml config dump
+sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock --image-endpoint unix:///run/containerd/containerd.sock info
+sudo journalctl -u containerd --no-pager -n 100
+sudo journalctl -u kubelet --no-pager -n 100
+```
+
+先用 `systemctl cat` 核对服务的配置路径和启动参数，再按实际路径执行 `config dump`。它显示当前命令解析配置的结果，不是向已运行守护进程查询所有生效设置；磁盘文件改过但服务未重载、服务使用其他路径、插件初始化失败等情况仍需结合日志和 CRI 响应确认。`crictl info` 能帮助检查 CRI 及其条件，但不能代替拉取镜像或创建 Pod 的验收。[crictl 端点配置](https://kubernetes.io/docs/tasks/debug/debug-cluster/crictl/)
+
+### 4.4 sandbox 镜像与业务镜像是两类检查
 
 原记录出现了创建 Pod sandbox 时拉取镜像失败的排查过程。sandbox 镜像不是应用自己的镜像；能够获取一个 Web 镜像，不能证明 sandbox 镜像也能成功获取。
 
 同样，原记录里的某个 `pause` 标签不能被写成所有 Kubernetes/运行时组合的固定答案。要核对实际运行时配置、镜像仓库地址和相关版本要求。
 
-### 4.4 镜像源与 containerd namespace
+### 4.5 镜像源与 containerd namespace
 
 原文后来补记了 `certs.d/<registry>/hosts.toml` 的配置方式。仓库域名、镜像标签与摘要都具有具体含义，不能简单把 `quay.io` 全文替换成另一个域名，就认为获得了等价可信的镜像。
 
@@ -190,15 +222,85 @@ kubeadm init
 
 移除污点或设置容忍前，需确认目标节点与允许调度的工作负载范围。
 
+### 6.1 案例 A：init 完成，但 Node NotReady
+
+以下为排查推演，没有本次实测日志。假设已配置可访问 API 的 `kubectl`，先替换 `NODE_NAME`，在相应节点检查主机日志：
+
+```bash
+kubectl get node NODE_NAME -o yaml
+kubectl describe node NODE_NAME
+kubectl get events -A --field-selector involvedObject.kind=Node,involvedObject.name=NODE_NAME --sort-by=.metadata.creationTimestamp
+sudo journalctl -u kubelet --no-pager -n 100
+sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock info
+kubectl get pods -n kube-system -o wide
+sudo ls /etc/cni/net.d /opt/cni/bin
+```
+
+1. 从 Node 的 `status.conditions` 中读取 Ready 的 `status`、`reason`、`message`；`False` 与长时间收不到心跳导致的 `Unknown` 要分别定位。
+2. 结合 Node Events 和 kubelet 日志确定异常发生时间。事件可能过期，列表为空不证明此前没有故障。
+3. 若日志指向运行时，按第 4 节检查 containerd 服务、CRI 端点、插件及响应；socket 连不上与 CRI 返回网络未就绪是不同线索。
+4. 若出现 `NetworkPluginNotReady` 或 CNI 未初始化线索，再检查所选插件的 Pod、配置、二进制及插件日志。Calico 的部署命名空间和工作负载名称应以实际清单为准；用 `kubectl logs -n NAMESPACE POD_NAME --all-containers --tail=100` 查看对应 Pod 日志。
+5. 修正已经确认的根因后，重新观察 Node Conditions 和系统 Pod。配置文件存在或插件 Pod Running，都不能单独证明跨节点网络已通。
+
+预期可能是 CNI 尚未安装或配置错误，也可能是 CRI 不可用、kubelet 无法正常上报等；只有条件、事件与日志相互印证，才能决定下一步。`kubeadm init` 成功主要说明引导阶段达到其检查目标，不是业务网络验收结果。[Node 状态与条件](https://kubernetes.io/docs/reference/node/node-status/)
+
+### 6.2 案例 B：Node Ready，但业务 Pod Pending
+
+先替换 `NAMESPACE`、`POD_NAME`、`NODE_NAME`。这些命令观察现有故障对象，不创建额外工作负载：
+
+```bash
+kubectl describe pod POD_NAME -n NAMESPACE
+kubectl get pod POD_NAME -n NAMESPACE -o yaml
+kubectl get events -n NAMESPACE --field-selector involvedObject.kind=Pod,involvedObject.name=POD_NAME --sort-by=.metadata.creationTimestamp
+kubectl describe node NODE_NAME
+kubectl get nodes --show-labels
+kubectl get pods -n kube-system -l component=kube-scheduler -o wide
+```
+
+先看 Pod 的 `spec.nodeName`、`PodScheduled` 条件与 Events。若尚未分配节点且有 `FailedScheduling`，按照事件内容逐项核对：
+
+- 资源：Pod 的 `requests` 是否能放进节点可分配资源减去已请求的额度；Scheduler 主要依据请求量，CPU 当前利用率低不代表能调度。
+- 污点与容忍：单节点 kubeadm 控制平面常带有 `node-role.kubernetes.io/control-plane:NoSchedule`。仅在明确允许该实验工作负载共用控制平面时，为该 Pod 模板设置匹配的 toleration；容忍只是允许考虑该节点，不保证调度，也不应无条件删除所有污点。
+- 选择条件：`nodeSelector` 和必要的 Node Affinity 是否匹配节点标签；还要关注事件提示的未绑定 PVC、端口冲突等约束。
+- Scheduler：若长期没有调度进展，核对 Pod 的 `schedulerName`、调度器健康和日志。常见 kubeadm 静态 Pod 可用 `kubectl logs -n kube-system SCHEDULER_POD_NAME --tail=100` 检查，名称从上一步列表获取。
+
+若已经绑定节点，则 Pending 也可能是在等待镜像、sandbox 或卷准备；应沿 kubelet、运行时及相关组件排查，不能继续把它当作“找不到节点”。修复后重新观察事件及状态变化，而不是直接重建整个集群。[调度、资源请求与限制](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)、[污点与容忍](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+
+| 状态              | 表示什么                                             | 仍不能说明什么                     |
+| ----------------- | ---------------------------------------------------- | ---------------------------------- |
+| Node Ready        | kubelet 报告节点具备接收 Pod 的健康条件              | 该 Pod 的资源与调度约束一定满足    |
+| PodScheduled=True | Pod 已被调度到一个节点                               | 镜像、网络、卷或容器已经准备好     |
+| Pod phase=Running | Pod 已绑定，容器已创建，至少一个正在运行、启动或重启 | 应用已经就绪                       |
+| Pod Ready=True    | Pod 满足容器就绪与所配置就绪门控等条件               | 所有业务、DNS 和外部访问路径都正常 |
+
 ## 7. 分层验收与证据记录 {#_7-验收应分层-不要只截一张-ready}
 
-| 层次           | 要确认什么                             | 不能据此证明什么         |
-| -------------- | -------------------------------------- | ------------------------ |
-| 主机与运行时   | 服务、CRI、cgroup 与基础网络准备       | 业务应用已经正常         |
-| API 与控制平面 | 能完成相应 API 访问；组件无关键错误    | 任意用户都有正确权限     |
-| 节点           | Node 条件与实际资源状态                | 所有 Pod 都能调度        |
-| 系统 Pod       | 网络、DNS 等相应组件的状态             | 所有域名和外部访问均正常 |
-| 业务路径       | 应用就绪、DNS、Service、存储等实际测试 | 生产高可用与数据恢复能力 |
+本节是验收计划，不是本次运行结果。前文注明“原记录”的内容属于历史材料；命令为文档示例，表中结果为预期行为。本次仅做文档静态检查，没有部署集群、执行这些命令或宣称环境 PASS。
+
+| 层次           | 验证目标与观察命令                                                                | 预期结果                                  | 不能据此证明什么                                         |
+| -------------- | --------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------- |
+| 主机准备       | `swapon --show`、`sysctl net.ipv4.ip_forward`，以及第 3 节模块和桥接参数检查      | 符合已选历史安装路线与网络插件要求        | 运行时、CNI 或业务正常                                   |
+| 容器运行时     | 第 4.3 节服务、配置与 `crictl info` 检查                                          | CRI 可达，运行时条件正常，cgroup 驱动协调 | 所有镜像可获取、所有 sandbox 可创建                      |
+| API Server     | 管理员执行 `kubectl get --raw='/readyz?verbose'`                                  | readiness 检查成功，无失败项              | 所有用户权限正确或业务可用                               |
+| Node           | `kubectl get nodes -o wide`、`kubectl describe node NODE_NAME`                    | 目标节点 Ready，无待处理异常条件          | 所有 Pod 均可调度                                        |
+| CNI            | 插件 Pod、日志及 Pod 间通信测试                                                   | 组件就绪，目标网络路径按策略可达          | DNS、Service、外部入口都正常；单节点也不能验证跨节点网络 |
+| CoreDNS        | `kubectl get pods -n kube-system -l k8s-app=kube-dns`，并从测试 Pod 发起 DNS 查询 | DNS Pod Ready，目标域名解析符合预期       | 解析到的地址和业务端口一定可达                           |
+| 业务 Pod       | 第一章的 rollout、Pod Conditions 与应用检查                                       | 副本达到预期且应用就绪                    | Service、入口、备份与高可用正常                          |
+| DNS 与 Service | 下述 `nslookup` 和 `wget`                                                         | Service 名称解析正确，HTTP 请求成功       | 其他服务、外部入口或生产负载均已验证                     |
+
+最后一层可以接着[第一章 Web 实验](/articles/kubernetes-architecture.html#web-demo-lab)验证。前提是 `k8s-arch-demo` 和已就绪的 `web-demo` 尚未清理，有创建 Service 和临时 Pod 的权限，测试镜像可获取且 Pod 能调度；若单节点有污点，先按第 6.2 节明确实验调度策略。以下是 Bash 命令示例：
+
+```bash
+kubectl expose deployment web-demo -n k8s-arch-demo --name=web-demo --port=80 --target-port=80
+kubectl run net-check -n k8s-arch-demo --image=busybox:1.36.1 --restart=Never --command -- sleep 3600
+kubectl wait -n k8s-arch-demo --for=condition=Ready pod/net-check --timeout=120s
+kubectl exec -n k8s-arch-demo net-check -- nslookup web-demo.k8s-arch-demo.svc.cluster.local
+kubectl exec -n k8s-arch-demo net-check -- wget -qO- -T 5 http://web-demo
+kubectl delete pod net-check -n k8s-arch-demo
+kubectl delete service web-demo -n k8s-arch-demo
+```
+
+此处假设集群域为默认的 `cluster.local`，自定义集群域需同步调整。预期是域名解析到 Service 地址，HTTP 返回 Web 页面。DNS 失败时先查 DNS 配置和 CoreDNS；DNS 成功但 HTTP 失败时，再检查 Service 选择器、EndpointSlice、就绪状态及转发路径。上述命令只清理本节新增资源；最后仍需按第一章删除专用命名空间。
 
 以下命令模板按节点、Pod 和事件组织观察：
 

@@ -1,32 +1,32 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
-  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
-  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">Redis 数据结构编码：需要固定版本</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">区分容器编码与容器内部节点编码，避免“当前主流”泛化</text>
-  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-  <rect fill="#EEF5FF" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="74.0" y="205"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="104.0" y="253">历史与编码演进</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="104.0" y="294">需要固定具体 Redis 版本</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="317"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="356">ziplist / listpack</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="386">不是所有类型都按统一时间替换</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="96.0" y="436"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="117.0" y="475">quicklist</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="117.0" y="505">节点内部编码与 quicklist 容器层级不同</text>
-  <rect fill="#E9F8F0" height="497" rx="23" ry="23" stroke="none" stroke-width="1.5" width="716.0" x="810.0" y="205"/>
-  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="29" font-weight="bold" x="840.0" y="253">当前实例证据</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="18" font-weight="normal" x="840.0" y="294">按目标版本与配置核实</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="317"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="356">OBJECT ENCODING</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="386">观察实际对象内部编码</text>
-  <rect fill="#FFFFFF" height="101" rx="16" ry="16" stroke="#CFDEEF" stroke-width="1.5" width="672.0" x="832.0" y="436"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="22" font-weight="bold" x="853.0" y="475">类型与阈值</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="17" font-weight="normal" x="853.0" y="505">受版本、内容大小与配置影响</text>
-  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">List 的 quicklist 与节点内 listpack 不应被画成简单的互斥历史阶段。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">尚未在真实 Redis 指定版本进行编码实验时，不声称“当前版本均为某编码”。</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">数据类型、对象编码与节点结构分层理解</title>
+<desc id="desc">固定 Redis Open Source 7.2.0；历史变化和新版本能力不混用。 教学示意，版本与边界见正文。</desc>
+<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/><rect width="100%" height="100%" fill="url(#grid)"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="800" y="48" text-anchor="middle" fill="#0369A1" font-size="34" font-weight="600" data-max-width="1520">数据类型、对象编码与节点结构分层理解</text>
+<text x="800" y="84" text-anchor="middle" fill="#0F172A" font-size="21" data-max-width="1520">固定 Redis Open Source 7.2.0；历史变化和新版本能力不混用。</text>
+<rect x="50" y="140" width="820" height="500" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="460" y="175" text-anchor="middle" fill="#0369A1" font-size="26" font-weight="600" data-max-width="796">7.2.0 类型 → 内部编码</text>
+<text x="460" y="209" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="796">String → int / embstr / raw</text>
+<text x="460" y="238" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="796">List → 直接 listpack，或 quicklist 容器</text>
+<text x="460" y="267" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="796">Hash → listpack / hashtable</text>
+<text x="460" y="296" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="796">Set → intset / listpack / hashtable</text>
+<text x="460" y="325" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="796">Sorted Set → listpack / skiplist（跳表 + 字典）</text>
+<text x="460" y="354" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="796">Stream → stream（内部基数树 + listpack）</text>
+<rect x="930" y="140" width="620" height="215" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="1240" y="175" text-anchor="middle" fill="#0369A1" font-size="25" font-weight="600" data-max-width="596">quicklist 内部：普通紧凑节点</text>
+<text x="1240" y="209" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="596">Node 1 ↔ Node 2 ↔ Node 3</text>
+<text x="1240" y="238" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="596">每个 PACKED 节点 → 一段 listpack</text>
+<text x="1240" y="267" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="596">特殊大元素路径也可使用 PLAIN 单元素节点</text>
+<rect x="930" y="410" width="620" height="230" rx="9" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/>
+<text x="1240" y="445" text-anchor="middle" fill="#0369A1" font-size="25" font-weight="600" data-max-width="596">观察实际对象</text>
+<text x="1240" y="479" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="596">OBJECT ENCODING key</text>
+<text x="1240" y="508" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="596">MEMORY USAGE key</text>
+<text x="1240" y="537" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="596">结合版本、创建路径、阈值与内容判断</text>
+<text x="1240" y="566" text-anchor="middle" fill="#0F172A" font-size="18" data-max-width="596">不能把内部编码当成稳定的业务协议</text>
+<text x="800" y="710" text-anchor="middle" fill="#0F172A" font-size="23" data-max-width="1520">Hash / Sorted Set 的 listpack：7.0.0 起；Set 的 listpack：7.2.0 起，intset 仍保留。</text>
+<text x="800" y="760" text-anchor="middle" fill="#0F172A" font-size="22" data-max-width="1520">小 List 可直接使用 listpack；quicklist 的节点又可包含 listpack，两者不是同一层级。</text>
+<text x="800" y="825" text-anchor="middle" fill="#0F172A" font-size="21" data-max-width="1520">OBJECT ENCODING 对 Stream 返回 stream，而不是字符串“radix tree + listpack”。</text>
+<path d="M870 390 H900 V520 H930" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/>
+</g></svg>

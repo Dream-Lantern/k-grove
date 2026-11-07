@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+<title id="title">文件对象：共享打开状态，不等于共享所有表项标志</title><desc id="desc">以同一普通文件为例；数字 3、4、5 是教学假设；图中的线表示引用，不是固定 I/O 调用链。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="900" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">文件对象：共享打开状态，不等于共享所有表项标志</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">以同一普通文件为例；数字 3、4、5 是教学假设；图中的线表示引用，不是固定 I/O 调用链。</text>
+<rect x="40" y="145" width="300" height="120" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="177" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">路径查找 config.json</text>
+<text x="58" y="208" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">目录中的名字找到对象</text>
+<text x="58" y="236" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">rename / unlink 可改变名字</text>
+<rect x="40" y="345" width="300" height="195" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="377" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">进程 FD 表</text>
+<text x="58" y="408" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">fd3 ─ 原 open</text>
+<text x="58" y="436" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">fd4 ─ dup(fd3)</text>
+<text x="58" y="464" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">fd5 ─ 独立 open</text>
+<text x="58" y="492" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">每表项各有 FD_CLOEXEC</text>
+<rect x="460" y="310" width="330" height="130" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="478" y="342" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">打开文件描述 A</text>
+<text x="478" y="373" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">fd3、fd4 共同引用</text>
+<text x="478" y="401" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">偏移与状态标志共享</text>
+<rect x="460" y="490" width="330" height="130" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="478" y="522" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">打开文件描述 B</text>
+<text x="478" y="553" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">fd5 引用另一打开状态</text>
+<text x="478" y="581" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">具有独立偏移</text>
+<rect x="890" y="350" width="270" height="180" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="908" y="382" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">文件系统对象</text>
+<text x="908" y="413" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">同一普通文件</text>
+<text x="908" y="441" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">适用时涉及 inode</text>
+<text x="908" y="469" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">内容不因独立 open</text>
+<text x="908" y="497" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">而自动变成副本</text>
+<path d="M340 388 L400 388 L400 375 L460 375" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M340 422 L415 422 L415 400 L460 400" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M340 457 L390 457 L390 555 L460 555" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M790 375 L890 405" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M790 555 L840 555 L840 480 L890 480" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M340 205 L1025 205 L1025 350" fill="none" stroke="#356da8" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<rect x="40" y="700" width="1120" height="145" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="60" y="740" font-size="22" fill="#956526" font-weight="600" text-anchor="start">数据路径另按对象及接口决定：</text>
+<text x="60" y="778" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">普通缓存文件可能命中页缓存，也可能请求设备；直接 I/O、管道、网络文件系统另有路径。</text>
+<text x="60" y="813" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">fork 的父子表项也可引用打开描述 A；路径替换不使旧 FD 立即失效。</text>
+</g></svg>

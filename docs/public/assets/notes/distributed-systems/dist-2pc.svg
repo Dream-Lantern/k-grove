@@ -1,50 +1,77 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full" height="900" version="1.1" viewBox="0 0 1600 900" width="1600">
-  <defs/>
-  <rect fill="#F9FBFE" height="900" rx="0" ry="0" stroke="none" stroke-width="1.5" width="1600" x="0" y="0"/>
-  <rect fill="#FFFFFF" height="856" rx="24" ry="24" stroke="#CFDEEF" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <rect fill="#2F6FDB" height="7" rx="2" ry="2" stroke="none" stroke-width="1.5" width="1540" x="30" y="22"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="40" font-weight="bold" x="72" y="93">2PC：准备请求、参与者投票与全局决议</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="20" font-weight="normal" x="76" y="137">Prepare 是协调器的出边；YES / NO 是参与者返回协调器的入边。</text>
-  <polyline fill="none" points="72,165 1528,165" stroke="#CFDEEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-  <rect fill="#FFFFFF" height="126" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="410" x="85" y="215"/>
-  <rect fill="#2F6FDB" height="126" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="85" y="215"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="109" y="259">Coordinator</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="109" y="296">协调器：发送 PREPARE</text>
-  <rect fill="#FFFFFF" height="126" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="410" x="1105" y="215"/>
-  <rect fill="#7554CE" height="126" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="1105" y="215"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="1129" y="259">Participants</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="1129" y="296">参与者：记录 Prepared 或返回 NO</text>
-  <polyline fill="none" points="495,270 1100,270" stroke="#2F6FDB" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
-  <polygon fill="#2F6FDB" points="1100,270 1089.0,265.0 1089.0,275.0"/>
-  <rect fill="#EEF5FF" height="37" rx="18" ry="18" stroke="none" stroke-width="1.5" width="175" x="700" y="220"/>
-  <text fill="#2F6FDB" font-family="Noto Sans CJK SC" font-size="17" font-weight="bold" text-anchor="middle" x="787.5" y="245">PREPARE →</text>
-  <polyline fill="none" points="1105,323 505,323" stroke="#118E6B" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
-  <polygon fill="#118E6B" points="505,323 516.0,328.0 516.0,318.0"/>
-  <rect fill="#E9F8F0" height="37" rx="18" ry="18" stroke="none" stroke-width="1.5" width="190" x="685" y="338"/>
-  <text fill="#118E6B" font-family="Noto Sans CJK SC" font-size="17" font-weight="bold" text-anchor="middle" x="780.0" y="363">← YES / NO</text>
-  <rect fill="#FFFFFF" height="108" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="630" x="480" y="410"/>
-  <rect fill="#2F6FDB" height="108" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="480" y="410"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="504" y="454">Coordinator 收齐投票</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="504" y="491">按协议处理超时、失败与日志状态</text>
-  <polyline fill="none" points="775,355 775,403" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#8996A8" points="775,403 780.0,392.0 770.0,392.0"/>
-  <polyline fill="none" points="795,518 795,561" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polyline fill="none" points="480,561 1110,561" stroke="#8996A8" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polyline fill="none" points="480,561 480,592" stroke="#118E6B" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#118E6B" points="480,592 485.0,581.0 475.0,581.0"/>
-  <polyline fill="none" points="1110,561 1110,592" stroke="#CB4656" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
-  <polygon fill="#CB4656" points="1110,592 1115.0,581.0 1105.0,581.0"/>
-  <rect fill="#FFFFFF" height="102" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="610" x="170" y="597"/>
-  <rect fill="#118E6B" height="102" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="170" y="597"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="194" y="641">所有 YES：COMMIT</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="194" y="678">由 Coordinator 广播最终决定</text>
-  <rect fill="#FFFFFF" height="102" rx="19" ry="19" stroke="#CFDEEF" stroke-width="1.5" width="610" x="815" y="597"/>
-  <rect fill="#CB4656" height="102" rx="4" ry="4" stroke="none" stroke-width="1.5" width="8" x="815" y="597"/>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="26" font-weight="bold" x="839" y="641">NO / 适用失败：ABORT</text>
-  <text fill="#61758F" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="839" y="678">由 Coordinator 广播最终决定</text>
-  <rect fill="#FFF5E7" height="121" rx="18" ry="18" stroke="none" stroke-width="1.5" width="1452" x="74" y="730"/>
-  <text fill="#C88323" font-family="Noto Sans CJK SC" font-size="24" font-weight="bold" x="99" y="765">关键边界</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="801">处于 Prepared 的参与者发生超时，不能自行猜测 COMMIT 或 ABORT。</text>
-  <text fill="#162B50" font-family="Noto Sans CJK SC" font-size="19" font-weight="normal" x="99" y="831">这是核心投票方向示意；持久日志、故障协调与阻塞条件见原文章。</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="1710" viewBox="0 0 1640 1710" role="img" aria-labelledby="title desc">
+<title id="title">2PC：先持久准备，再投票；先持久决定，再通知</title><desc id="desc">四泳道显示 Coordinator 与 A B C 三个参与者。参与者先持久 Prepared 再 YES，协调者先持久最终 COMMIT 或 ABORT 再广播。另一故障场景中 Prepared 参与者等待权威恢复，不能以超时猜测中止。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">2PC：先持久准备，再投票；先持久决定，再通知</text>
+<text x="40" y="100" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">图例：蓝 = PREPARE；紫 = 持久日志 / Prepared；绿 = YES、决定完成与 ACK；红 = NO / ABORT / 故障。</text>
+<rect x="25" y="145" width="350" height="75" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="200" y="192" font-size="25" fill="#2563EB" text-anchor="middle" font-weight="700">Coordinator</text>
+<path d="M200 230 L200 1420" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="425" y="145" width="350" height="75" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="600" y="192" font-size="25" fill="#2563EB" text-anchor="middle" font-weight="700">Participant A</text>
+<path d="M600 230 L600 1420" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="825" y="145" width="350" height="75" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1000" y="192" font-size="25" fill="#2563EB" text-anchor="middle" font-weight="700">Participant B</text>
+<path d="M1000 230 L1000 1420" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="1225" y="145" width="350" height="75" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1400" y="192" font-size="25" fill="#2563EB" text-anchor="middle" font-weight="700">Participant C</text>
+<path d="M1400 230 L1400 1420" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<path d="M200 290 L600 290" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="400.0" y="277" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="400">PREPARE</text>
+<path d="M200 350 L1000 350" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="600.0" y="337" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="400">PREPARE</text>
+<path d="M200 410 L1400 410" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="800.0" y="397" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="400">PREPARE</text>
+<rect x="420" y="455" width="360" height="100" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="440" y="490" font-size="21" fill="#7C3AED" text-anchor="start" font-weight="700">本地准备信息持久化</text>
+<text x="440" y="524" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">进入 PREPARED</text>
+<rect x="820" y="455" width="360" height="100" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="840" y="490" font-size="21" fill="#7C3AED" text-anchor="start" font-weight="700">本地准备信息持久化</text>
+<text x="840" y="524" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">进入 PREPARED</text>
+<rect x="1220" y="455" width="360" height="100" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="1240" y="490" font-size="19" fill="#7C3AED" text-anchor="start" font-weight="700">可准备：先持久化 Prepared</text>
+<text x="1240" y="524" font-size="19" fill="#0F172A" text-anchor="start" font-weight="400">不可准备：中止，返回 NO</text>
+<path d="M600 610 L200 610" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="400.0" y="597" font-size="21" fill="#059669" text-anchor="middle" font-weight="400">YES（已持久 Prepared）</text>
+<path d="M1000 670 L200 670" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="600.0" y="657" font-size="21" fill="#059669" text-anchor="middle" font-weight="400">YES（已持久 Prepared）</text>
+<path d="M1400 730 L200 730" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="800.0" y="717" font-size="21" fill="#059669" text-anchor="middle" font-weight="400">YES（已持久 Prepared）</text>
+<path d="M1400 765 L200 765" fill="none" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="800.0" y="752" font-size="21" fill="#DC2626" text-anchor="middle" font-weight="400">替代投票分支：C 返回 NO</text>
+<rect x="35" y="780" width="1540" height="115" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="55" y="815" font-size="23" fill="#7C3AED" text-anchor="start" font-weight="700">收到全体 YES：Coordinator 持久化最终 COMMIT；本图从这里开始第二阶段。</text>
+<text x="55" y="849" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">若收到 NO / 满足中止条件且尚未形成 COMMIT：按所用日志协议记录 ABORT。</text>
+<text x="55" y="883" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">决定持久化之前不广播 COMMIT；已经持久化的 COMMIT 不能因 ACK 超时改成 ABORT。</text>
+<path d="M200 960 L600 960" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="400.0" y="947" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="400">广播已确定的 COMMIT / ABORT</text>
+<path d="M200 1020 L1000 1020" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="600.0" y="1007" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="400">广播已确定的 COMMIT / ABORT</text>
+<path d="M200 1080 L1400 1080" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="800.0" y="1067" font-size="21" fill="#2563EB" text-anchor="middle" font-weight="400">广播已确定的 COMMIT / ABORT</text>
+<rect x="420" y="1125" width="360" height="100" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="440" y="1160" font-size="21" fill="#059669" text-anchor="start" font-weight="700">可靠完成本地决定</text>
+<text x="440" y="1194" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">按事务 ID 防止重复效果</text>
+<rect x="820" y="1125" width="360" height="100" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="840" y="1160" font-size="21" fill="#059669" text-anchor="start" font-weight="700">可靠完成本地决定</text>
+<text x="840" y="1194" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">按事务 ID 防止重复效果</text>
+<rect x="1220" y="1125" width="360" height="100" rx="12" fill="#ECFDF5" stroke="#059669" stroke-width="2"/>
+<text x="1240" y="1160" font-size="21" fill="#059669" text-anchor="start" font-weight="700">可靠完成本地决定</text>
+<text x="1240" y="1194" font-size="21" fill="#0F172A" text-anchor="start" font-weight="400">按事务 ID 防止重复效果</text>
+<path d="M600 1280 L200 1280" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="400.0" y="1267" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">ACK</text>
+<path d="M1000 1340 L200 1340" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="600.0" y="1327" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">ACK</text>
+<path d="M1400 1400 L200 1400" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="800.0" y="1387" font-size="22" fill="#059669" text-anchor="middle" font-weight="400">ACK</text>
+<text x="40" y="1450" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">正常完成：收到所需 ACK 后进入 DONE，记录遗忘仍须遵守恢复与迟到消息规则。</text>
+<rect x="40" y="1500" width="760" height="150" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="60" y="1535" font-size="22" fill="#DC2626" text-anchor="start" font-weight="700">替代故障场景：全体 Prepared 后协调者崩溃</text>
+<text x="60" y="1569" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">可能已持久 COMMIT，也可能尚未有最终决定。</text>
+<text x="60" y="1603" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">本地 YES 与等待超时不能区分这两段历史。</text>
+<rect x="850" y="1500" width="750" height="150" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="870" y="1535" font-size="22" fill="#D97706" text-anchor="start" font-weight="700">参与者保持 Prepared，查询 / 等待权威恢复</text>
+<text x="870" y="1569" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">恢复决定后继续完成；不能擅自 ABORT。</text>
+<text x="870" y="1603" font-size="22" fill="#0F172A" text-anchor="start" font-weight="400">只占用相关锁与资源，不等于所有数据库停工。</text>
+<path d="M805 1575 L840 1575" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrow)"/>
+</g></svg>

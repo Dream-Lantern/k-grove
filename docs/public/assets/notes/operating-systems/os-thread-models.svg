@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="840" viewBox="0 0 1200 840" role="img" aria-labelledby="title desc">
+<title id="title">线程映射模型：谁承载用户级执行流</title><desc id="desc">U 表示用户级执行流，K 表示内核可独立调度的实体；箭头表示承载 / 分派关系。 教学抽象，不代表实际运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="840" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">线程映射模型：谁承载用户级执行流</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">U 表示用户级执行流，K 表示内核可独立调度的实体；箭头表示承载 / 分派关系。</text>
+<rect x="35" y="135" width="350" height="620" rx="12" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="210" y="178" font-size="27" fill="#356da8" font-weight="600" text-anchor="middle">M:1</text>
+<text x="210" y="216" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">用户级执行流</text>
+<rect x="60" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="105" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U1</text>
+<rect x="165" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="210" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U2</text>
+<rect x="270" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="315" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U3</text>
+<text x="210" y="477" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">内核调度实体</text>
+<rect x="425" y="135" width="350" height="620" rx="12" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600" y="178" font-size="27" fill="#356da8" font-weight="600" text-anchor="middle">1:1</text>
+<text x="600" y="216" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">用户级执行流</text>
+<rect x="450" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="495" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U1</text>
+<rect x="555" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="600" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U2</text>
+<rect x="660" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="705" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U3</text>
+<text x="600" y="477" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">内核调度实体</text>
+<rect x="815" y="135" width="350" height="620" rx="12" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="990" y="178" font-size="27" fill="#356da8" font-weight="600" text-anchor="middle">M:N</text>
+<text x="990" y="216" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">用户级执行流</text>
+<rect x="840" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="885" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U1</text>
+<rect x="945" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="990" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U2</text>
+<rect x="1050" y="240" width="90" height="58" rx="12" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="1095" y="278" font-size="21" fill="#297b66" font-weight="600" text-anchor="middle">U3</text>
+<text x="990" y="477" font-size="18" fill="#24364b" font-weight="400" text-anchor="middle">内核调度实体</text>
+<rect x="120" y="500" width="180" height="84" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="138" y="532" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">K1</text>
+<path d="M105 298 L105 388 L210 388 L210 500" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M210 298 L210 388 L210 388 L210 500" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M315 298 L315 388 L210 388 L210 500" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="450" y="500" width="90" height="84" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="495" y="547" font-size="21" fill="#356da8" font-weight="600" text-anchor="middle">K1</text>
+<path d="M495 298 L495 500" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="555" y="500" width="90" height="84" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="600" y="547" font-size="21" fill="#356da8" font-weight="600" text-anchor="middle">K2</text>
+<path d="M600 298 L600 500" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="660" y="500" width="90" height="84" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="705" y="547" font-size="21" fill="#356da8" font-weight="600" text-anchor="middle">K3</text>
+<path d="M705 298 L705 500" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="840" y="340" width="300" height="95" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="858" y="372" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">运行时调度器</text>
+<text x="858" y="403" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">选择可运行的 U，分派给 K</text>
+<path d="M885 298 L885 340" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M990 298 L990 340" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1095 298 L1095 340" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="850" y="500" width="90" height="84" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="895" y="547" font-size="21" fill="#356da8" font-weight="600" text-anchor="middle">K1</text>
+<path d="M990 435 L990 449 L895 449 L895 500" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1040" y="500" width="90" height="84" rx="12" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="1085" y="547" font-size="21" fill="#356da8" font-weight="600" text-anchor="middle">K2</text>
+<path d="M990 435 L990 449 L1085 449 L1085 500" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="60" y="637" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">切换可由运行时在用户态完成</text>
+<text x="60" y="673" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">唯一 K 阻塞时，其余 U 受影响</text>
+<text x="60" y="709" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">这些 U 无法同时占用多个核</text>
+<text x="450" y="637" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">每条 U 各有内核承载者</text>
+<text x="450" y="673" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">K 独立接受内核调度</text>
+<text x="450" y="709" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">多核上可能并行</text>
+<text x="840" y="637" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">运行时选择 U，内核调度 K</text>
+<text x="840" y="673" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">尚有可用 K 时，其他 U 可推进</text>
+<text x="840" y="709" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不把一个 U 同时派给多个 K</text>
+<text x="35" y="804" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">用户级执行流不必然是 M:1；具体语言协程需查运行时，K 也不等于“纯内核线程”。</text>
+</g></svg>

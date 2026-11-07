@@ -1,0 +1,244 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1370" viewBox="0 0 1200 1370" role="img" aria-labelledby="title desc">
+<title id="title">同一地址布局，连续请求产生不同余块</title><desc id="desc">完整范围 [0,30)；两处灰色固定占用区各 2 单位；从低地址切分，平局选低地址。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1370" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">同一地址布局，连续请求产生不同余块</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">完整范围 [0,30)；两处灰色固定占用区各 2 单位；从低地址切分，平局选低地址。</text>
+<text x="50" y="130" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">白：空闲    灰：固定占用    蓝 A=4    绿 B=8    紫 C=6    橙 D=6</text>
+<text x="50" y="185" font-size="24" fill="#356da8" font-weight="600" text-anchor="start">First Fit</text>
+<text x="50" y="240" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">初始</text>
+<rect x="210" y="210" width="360" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="390.0" y="238" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空12</text>
+<rect x="570" y="210" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="238" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="210" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="238" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="210" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="238" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="210" width="270" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="975.0" y="238" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空9</text>
+<text x="50" y="297" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">A=4 成功</text>
+<rect x="210" y="267" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="270.0" y="295" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="330" y="267" width="240" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="450.0" y="295" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空8</text>
+<rect x="570" y="267" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="295" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="267" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="295" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="267" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="295" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="267" width="270" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="975.0" y="295" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空9</text>
+<text x="50" y="354" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">B=8 成功</text>
+<rect x="210" y="324" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="270.0" y="352" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="330" y="324" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="450.0" y="352" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="570" y="324" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="352" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="324" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="352" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="324" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="352" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="324" width="270" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="975.0" y="352" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空9</text>
+<text x="50" y="411" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">C=6 成功</text>
+<rect x="210" y="381" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="270.0" y="409" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="330" y="381" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="450.0" y="409" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="570" y="381" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="409" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="381" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="409" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="381" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="409" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="381" width="180" height="43" rx="10" fill="#ebe1f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="930.0" y="409" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">C6</text>
+<rect x="1020" y="381" width="90" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1065.0" y="409" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空3</text>
+<text x="50" y="468" font-size="19" fill="#956526" font-weight="400" text-anchor="start">D=6 失败</text>
+<rect x="210" y="438" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="270.0" y="466" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="330" y="438" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="450.0" y="466" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="570" y="438" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="466" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="438" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="466" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="438" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="466" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="438" width="180" height="43" rx="10" fill="#ebe1f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="930.0" y="466" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">C6</text>
+<rect x="1020" y="438" width="90" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1065.0" y="466" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空3</text>
+<text x="210" y="535" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">0</text>
+<text x="570" y="535" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">12</text>
+<text x="630" y="535" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">14</text>
+<text x="780" y="535" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">19</text>
+<text x="840" y="535" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">21</text>
+<text x="1110" y="535" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">30</text>
+<text x="50" y="565" font-size="24" fill="#356da8" font-weight="600" text-anchor="start">Best Fit</text>
+<text x="50" y="620" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">初始</text>
+<rect x="210" y="590" width="360" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="390.0" y="618" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空12</text>
+<rect x="570" y="590" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="618" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="590" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="618" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="590" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="618" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="590" width="270" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="975.0" y="618" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空9</text>
+<text x="50" y="677" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">A=4 成功</text>
+<rect x="210" y="647" width="360" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="390.0" y="675" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空12</text>
+<rect x="570" y="647" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="675" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="647" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="690.0" y="675" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="750" y="647" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="765.0" y="675" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<rect x="780" y="647" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="675" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="647" width="270" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="975.0" y="675" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空9</text>
+<text x="50" y="734" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">B=8 成功</text>
+<rect x="210" y="704" width="360" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="390.0" y="732" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空12</text>
+<rect x="570" y="704" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="732" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="704" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="690.0" y="732" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="750" y="704" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="765.0" y="732" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<rect x="780" y="704" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="732" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="704" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="960.0" y="732" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="1080" y="704" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1095.0" y="732" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<text x="50" y="791" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">C=6 成功</text>
+<rect x="210" y="761" width="180" height="43" rx="10" fill="#ebe1f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="300.0" y="789" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">C6</text>
+<rect x="390" y="761" width="180" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="480.0" y="789" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空6</text>
+<rect x="570" y="761" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="789" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="761" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="690.0" y="789" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="750" y="761" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="765.0" y="789" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<rect x="780" y="761" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="789" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="761" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="960.0" y="789" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="1080" y="761" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1095.0" y="789" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<text x="50" y="848" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">D=6 成功</text>
+<rect x="210" y="818" width="180" height="43" rx="10" fill="#ebe1f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="300.0" y="846" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">C6</text>
+<rect x="390" y="818" width="180" height="43" rx="10" fill="#ffebcd" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="480.0" y="846" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">D6</text>
+<rect x="570" y="818" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="846" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="818" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="690.0" y="846" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="750" y="818" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="765.0" y="846" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<rect x="780" y="818" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="846" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="818" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="960.0" y="846" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="1080" y="818" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1095.0" y="846" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<text x="210" y="915" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">0</text>
+<text x="570" y="915" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">12</text>
+<text x="630" y="915" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">14</text>
+<text x="780" y="915" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">19</text>
+<text x="840" y="915" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">21</text>
+<text x="1110" y="915" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">30</text>
+<text x="50" y="945" font-size="24" fill="#356da8" font-weight="600" text-anchor="start">Worst Fit</text>
+<text x="50" y="1000" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">初始</text>
+<rect x="210" y="970" width="360" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="390.0" y="998" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空12</text>
+<rect x="570" y="970" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="998" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="970" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="998" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="970" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="998" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="970" width="270" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="975.0" y="998" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空9</text>
+<text x="50" y="1057" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">A=4 成功</text>
+<rect x="210" y="1027" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="270.0" y="1055" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="330" y="1027" width="240" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="450.0" y="1055" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空8</text>
+<rect x="570" y="1027" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="1055" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="1027" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="1055" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="1027" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="1055" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="1027" width="270" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="975.0" y="1055" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空9</text>
+<text x="50" y="1114" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">B=8 成功</text>
+<rect x="210" y="1084" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="270.0" y="1112" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="330" y="1084" width="240" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="450.0" y="1112" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空8</text>
+<rect x="570" y="1084" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="1112" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="1084" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="1112" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="1084" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="1112" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="1084" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="960.0" y="1112" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="1080" y="1084" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1095.0" y="1112" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<text x="50" y="1171" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">C=6 成功</text>
+<rect x="210" y="1141" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="270.0" y="1169" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="330" y="1141" width="180" height="43" rx="10" fill="#ebe1f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="420.0" y="1169" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">C6</text>
+<rect x="510" y="1141" width="60" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="540.0" y="1169" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空2</text>
+<rect x="570" y="1141" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="1169" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="1141" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="1169" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="1141" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="1169" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="1141" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="960.0" y="1169" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="1080" y="1141" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1095.0" y="1169" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<text x="50" y="1228" font-size="19" fill="#956526" font-weight="400" text-anchor="start">D=6 失败</text>
+<rect x="210" y="1198" width="120" height="43" rx="10" fill="#dceafa" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="270.0" y="1226" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">A4</text>
+<rect x="330" y="1198" width="180" height="43" rx="10" fill="#ebe1f8" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="420.0" y="1226" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">C6</text>
+<rect x="510" y="1198" width="60" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="540.0" y="1226" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空2</text>
+<rect x="570" y="1198" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="600.0" y="1226" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="630" y="1198" width="150" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="705.0" y="1226" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空5</text>
+<rect x="780" y="1198" width="60" height="43" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="810.0" y="1226" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">固</text>
+<rect x="840" y="1198" width="240" height="43" rx="10" fill="#def2e9" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="960.0" y="1226" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">B8</text>
+<rect x="1080" y="1198" width="30" height="43" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="1095.0" y="1226" font-size="16" fill="#24364b" font-weight="400" text-anchor="middle">空1</text>
+<text x="210" y="1295" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">0</text>
+<text x="570" y="1295" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">12</text>
+<text x="630" y="1295" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">14</text>
+<text x="780" y="1295" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">19</text>
+<text x="840" y="1295" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">21</text>
+<text x="1110" y="1295" font-size="17" fill="#526579" font-weight="400" text-anchor="middle">30</text>
+<text x="50" y="1320" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">前三次后三者均余 8 单位；第四次仅 Best Fit 有连续 6，不代表它在所有负载下最优。</text>
+</g></svg>

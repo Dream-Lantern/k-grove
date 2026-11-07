@@ -1,5 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="805" viewBox="0 0 1120 805" role="img" aria-labelledby="title desc">
-<title id="title">内存回收：不是每页都必须写 swap</title><desc id="desc">蓝色教学示意；不是完整源码时序，关系和限制以正文为准。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="560.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="560.0" dy="0">内存回收：不是每页都必须写 swap</tspan></text><text x="560.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">教学抽象；历史版本、架构与异常分支以正文为准。</tspan></text><rect x="90" y="130" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">内存压力触发适用回收</tspan></text><text x="560.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">结合区域、页面类型、工作集与资源限制</tspan></text><rect x="90" y="280" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="317" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">选择候选并检查可回收性</tspan></text><text x="560.0" y="354" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">访问、脏页、锁定、引用和写回状态</tspan></text><path d="M560 240 L560 280" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="430" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="467" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">干净文件页可丢弃后重读</tspan></text><text x="560.0" y="504" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">脏文件页需适用写回，匿名页视 swap 等条件处理</tspan></text><path d="M560 390 L560 430" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="90" y="580" width="940" height="110" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="560.0" y="617" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="560.0" dy="0">评估缺页与颠簸，必要时拒绝或 OOM</tspan></text><text x="560.0" y="654" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="560.0" dy="0">回收量增加不代表应用进展增加</tspan></text><path d="M560 540 L560 580" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><text x="560.0" y="767" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="560.0" dy="0">虚拟内存不依赖必须配置 swap；Clock 是教学近似，不是现代唯一实现。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1080" viewBox="0 0 1200 1080" role="img" aria-labelledby="title desc">
+<title id="title">页面回收：先看后备与条件，再决定去向</title><desc id="desc">现代 Linux 的概念分支，不是固定源码调用链；回收目标是释放或复用可用物理内存。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="1080" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">页面回收：先看后备与条件，再决定去向</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">现代 Linux 的概念分支，不是固定源码调用链；回收目标是释放或复用可用物理内存。</text>
+<rect x="50" y="145" width="1100" height="100" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="177" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">内存压力：全局需求或适用 cgroup 限制</text>
+<text x="68" y="208" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">寻找候选，结合活跃访问、引用、脏状态、写回与特殊约束</text>
+<path d="M600 245 L600 300" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="300" width="1100" height="105" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="332" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">候选页属于什么来源，当前是否可回收？</text>
+<text x="68" y="363" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不是只检查一个“是否在内存”标志，也不把所有页送进 swap</text>
+<path d="M600 405 L600 450 L210 450 L210 505" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 405 L600 450 L600 450 L600 505" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M600 405 L600 450 L990 450 L990 505" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="505" width="340" height="270" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="58" y="537" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">文件后备页</text>
+<text x="58" y="568" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">干净且符合条件：可回收</text>
+<text x="58" y="596" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">后续可从文件重新获取</text>
+<text x="58" y="624" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="58" y="652" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">脏：适用写回后再判断</text>
+<text x="58" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">正在写回或活跃使用时</text>
+<text x="58" y="708" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可能暂时不能直接回收</text>
+<rect x="430" y="505" width="340" height="270" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="448" y="537" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">匿名 / 共享 / tmpfs</text>
+<text x="448" y="568" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">内容不能任意丢弃</text>
+<text x="448" y="596" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">按具体后备和配置处理</text>
+<text x="448" y="624" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="448" y="652" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">可涉及 swap 或压缩机制</text>
+<text x="448" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不等于必写物理磁盘</text>
+<text x="448" y="708" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不能保存时可能暂留</text>
+<rect x="820" y="505" width="340" height="270" rx="10" fill="#fff8ed" stroke="#956526" stroke-width="1.4"/>
+<text x="838" y="537" font-size="22" fill="#956526" font-weight="600" text-anchor="start">锁定 / 固定 / 特殊页</text>
+<text x="838" y="568" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">先检查不允许回收的条件</text>
+<text x="838" y="596" font-size="18" fill="#24364b" font-weight="400" text-anchor="start"></text>
+<text x="838" y="624" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">设备特殊映射不能当成</text>
+<text x="838" y="652" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">普通文件缓存直接丢弃</text>
+<text x="838" y="680" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不满足条件：暂不回收</text>
+<rect x="50" y="865" width="1100" height="115" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="68" y="897" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">评估本次分配能否满足</text>
+<text x="68" y="928" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">回收有进展可继续；仍不足时可能拒绝分配或进入适用 OOM 路径</text>
+<text x="68" y="956" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">回收量、交换用量和业务进展是不同指标</text>
+<text x="50" y="1030" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">无 swap 仍有虚拟内存；已有 swap 用量不证明当前正在剧烈交换。</text>
+</g></svg>

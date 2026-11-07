@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="840" viewBox="0 0 1200 840" role="img" aria-labelledby="title desc">
+<title id="title">生产者先完成，消费者后来才等：许可与通知不同</title><desc id="desc">相同业务背景：一份工作已完成；信号量初值为 0，条件变量配合同锁保护的队列谓词。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="840" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">生产者先完成，消费者后来才等：许可与通知不同</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">相同业务背景：一份工作已完成；信号量初值为 0，条件变量配合同锁保护的队列谓词。</text>
+<text x="60" y="153" font-size="25" fill="#356da8" font-weight="600" text-anchor="start">信号量：保存许可</text>
+<text x="680" y="153" font-size="25" fill="#297b66" font-weight="600" text-anchor="start">条件变量：通知不计数</text>
+<rect x="60" y="195" width="460" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="78" y="227" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">生产者先 sem_post</text>
+<text x="78" y="258" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">留下 1 份许可</text>
+<text x="78" y="286" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">此时不要求消费者已在等待</text>
+<rect x="680" y="195" width="460" height="125" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="698" y="227" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">生产者先入队并 signal</text>
+<text x="698" y="258" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">锁内更新队列状态</text>
+<text x="698" y="286" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">无等待者：通知不会保存</text>
+<path d="M290 320 L290 420" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M910 320 L910 420" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="60" y="420" width="460" height="125" rx="10" fill="#eef5fc" stroke="#356da8" stroke-width="1.4"/>
+<text x="78" y="452" font-size="22" fill="#356da8" font-weight="600" text-anchor="start">消费者后 sem_wait</text>
+<text x="78" y="483" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">取得已有许可，无需下一次 post</text>
+<text x="78" y="511" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">正常取得后，许可不再空闲</text>
+<rect x="680" y="420" width="460" height="125" rx="10" fill="#f0f8f5" stroke="#297b66" stroke-width="1.4"/>
+<text x="698" y="452" font-size="22" fill="#297b66" font-weight="600" text-anchor="start">消费者后持锁检查谓词</text>
+<text x="698" y="483" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">看到队列非空，直接取出</text>
+<text x="698" y="511" font-size="18" fill="#24364b" font-weight="400" text-anchor="start">不无条件等待下一次 signal</text>
+<text x="60" y="635" font-size="21" fill="#356da8" font-weight="600" text-anchor="start">许可记录了可取得单位。</text>
+<text x="680" y="635" font-size="21" fill="#297b66" font-weight="600" text-anchor="start">真实状态保存在队列里。</text>
+<text x="60" y="740" font-size="19" fill="#24364b" font-weight="400" text-anchor="start">通知不是资源预留；条件变量的正确性来自持久谓词、同一把锁和等待协议。</text>
+</g></svg>

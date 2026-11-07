@@ -1,5 +1,59 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1010" viewBox="0 0 1200 1010" role="img" aria-labelledby="title desc">
-<title id="title">Outbox：本地原子边界、发布顺序与消费效果</title><desc id="desc">E2先发、E1后发时，相同Key只是保存错误发布顺序；event_id去重不修复旧版本覆盖。</desc>
-<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#E7F1F8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#0369A1"/></marker></defs>
-<rect width="100%" height="100%" fill="#FFFFFF"/>
-<g font-family="Microsoft YaHei,Segoe UI,sans-serif"><text x="600.0" y="48" text-anchor="middle" fill="#0369A1" font-size="30" font-weight="600"><tspan x="600.0" dy="0">Outbox：本地原子边界、发布顺序与消费效果</tspan></text><text x="600.0" y="84" text-anchor="middle" fill="#0F172A" font-size="18" font-weight="400"><tspan x="600.0" dy="0">同ID重复、不同ID逆序、业务版本缺口分别验收。</tspan></text><rect x="300" y="130" width="600" height="120" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="167" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">源数据库同一本地事务</tspan></text><text x="600.0" y="204" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">订单变更 + event_id/聚合版本/outbox</tspan></text><rect x="300" y="360" width="600" height="120" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="397" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">按聚合顺序发布的relay / CDC</tspan></text><text x="600.0" y="434" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">发送成功但进度未记可重发；Key不修复逆序</tspan></text><rect x="300" y="610" width="600" height="120" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="647" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">消费数据库同一本地事务</tspan></text><text x="600.0" y="684" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">唯一去重记录 + 业务更新，必须共同提交</tspan></text><rect x="300" y="820" width="600" height="100" rx="7" fill="#E0F2FE" stroke="#0369A1" stroke-width="2"/><text x="600.0" y="857" text-anchor="middle" fill="#0369A1" font-size="23" font-weight="600"><tspan x="600.0" dy="0">完成后推进安全位点</tspan></text><text x="600.0" y="894" text-anchor="middle" fill="#0F172A" font-size="19" font-weight="400"><tspan x="600.0" dy="0">外部HTTP须另有对端幂等或合作协议</tspan></text><path d="M600 250 L600 360" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="527.0" y="296" width="146.0" height="25" fill="white"/><text x="600" y="315" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600" dy="0">只发布已提交意图</tspan></text><path d="M600 480 L600 610" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="7 5"/><rect x="476.0" y="541" width="248.0" height="25" fill="white"/><text x="600" y="560" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600" dy="0">可能重复，明确顺序与缺口策略</tspan></text><path d="M600 730 L600 820" fill="none" stroke="#0369A1" stroke-width="2" marker-end="url(#arrow)"/><rect x="544.0" y="761" width="112.0" height="25" fill="white"/><text x="600" y="780" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600" dy="0">业务效果完成</tspan></text><text x="600.0" y="980" text-anchor="middle" fill="#0F172A" font-size="17" font-weight="400"><tspan x="600.0" dy="0">E2先发、E1后发时，相同Key只是保存错误发布顺序；event_id去重不修复旧版本覆盖。</tspan></text></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1860" height="1200" viewBox="0 0 1860 1200" role="img" aria-labelledby="title desc">
+<title id="title">Outbox：两个本地事务，中间可靠传递</title><desc id="desc">六参与者时序：源业务与事件同事务，Relay发布Broker，消费者去重与业务同事务，再确认消费。展示重复发布和版本缺口。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto-start-reverse"><path d="M0 0 L9 4.5 L0 9 Z" fill="#64748B"/></marker></defs><rect width="100%" height="100%" fill="#FFFFFF"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, Segoe UI, sans-serif" fill="#0F172A">
+<text x="40" y="52" font-size="30" fill="#0F172A" text-anchor="start" font-weight="700">Outbox：两个本地事务，中间可靠传递</text>
+<text x="40" y="100" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">教学流程 · order-1001：E1(v1) → E2(v2) → E3(v3)，每个聚合单独维护业务顺序。</text>
+<rect x="35" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="55" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">Producer</text>
+<text x="55" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">业务服务</text>
+<path d="M170 230 L170 955" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="335" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="355" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">Source Database</text>
+<text x="355" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">业务 + Outbox</text>
+<path d="M470 230 L470 955" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="635" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="655" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">Relay / CDC</text>
+<text x="655" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">发布与进度</text>
+<path d="M770 230 L770 955" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="935" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="955" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">Message Broker</text>
+<text x="955" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">消息传递</text>
+<path d="M1070 230 L1070 955" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="1235" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1255" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">Consumer</text>
+<text x="1255" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">消费服务</text>
+<path d="M1370 230 L1370 955" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<rect x="1535" y="135" width="270" height="90" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="1555" y="170" font-size="20" fill="#2563EB" text-anchor="start" font-weight="700">Consumer Database</text>
+<text x="1555" y="204" font-size="20" fill="#0F172A" text-anchor="start" font-weight="400">业务 + 去重表</text>
+<path d="M1670 230 L1670 955" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="7 6"/>
+<path d="M170 300 L470 300" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="320.0" y="287" font-size="20" fill="#2563EB" text-anchor="middle" font-weight="400">① 本地事务</text>
+<rect x="335" y="325" width="270" height="100" rx="12" fill="#EFF6FF" stroke="#2563EB" stroke-width="2"/>
+<text x="355" y="360" font-size="19" fill="#2563EB" text-anchor="start" font-weight="700">业务状态 + 事件意图</text>
+<text x="355" y="394" font-size="19" fill="#0F172A" text-anchor="start" font-weight="400">一起提交</text>
+<path d="M770 470 L470 470" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="620.0" y="457" font-size="19" fill="#7C3AED" text-anchor="middle" font-weight="400">读取已提交 Outbox</text>
+<path d="M770 550 L1070 550" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="920.0" y="537" font-size="20" fill="#2563EB" text-anchor="middle" font-weight="400">② 发布 E1</text>
+<path d="M1070 620 L770 620" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="920.0" y="607" font-size="19" fill="#059669" text-anchor="middle" font-weight="400">Broker 接收确认</text>
+<path d="M1070 700 L1370 700" fill="none" stroke="#2563EB" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1220.0" y="687" font-size="20" fill="#2563EB" text-anchor="middle" font-weight="400">③ 投递 E1</text>
+<path d="M1370 770 L1670 770" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1520.0" y="757" font-size="20" fill="#7C3AED" text-anchor="middle" font-weight="400">④ 本地事务</text>
+<rect x="1535" y="795" width="280" height="95" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+<text x="1555" y="830" font-size="19" fill="#7C3AED" text-anchor="start" font-weight="700">去重 + 校验版本</text>
+<text x="1555" y="864" font-size="19" fill="#0F172A" text-anchor="start" font-weight="400">业务更新一起提交</text>
+<path d="M1370 925 L1070 925" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="1220.0" y="912" font-size="20" fill="#059669" text-anchor="middle" font-weight="400">⑤ 提交后确认消费</text>
+<rect x="40" y="985" width="860" height="160" rx="12" fill="#FFFBEB" stroke="#D97706" stroke-width="2"/>
+<text x="60" y="1020" font-size="23" fill="#D97706" text-anchor="start" font-weight="700">异常 A · 发布后、记录进度前崩溃</text>
+<text x="60" y="1054" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">Relay 重启可能再次发布 E1；Broker 也可能重投。</text>
+<text x="60" y="1088" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">消费者依靠唯一 event_id 与业务同事务处理重复。</text>
+<rect x="950" y="985" width="870" height="160" rx="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+<text x="970" y="1020" font-size="23" fill="#DC2626" text-anchor="start" font-weight="700">异常 B · 上游先发 E2(v2)，后发 E1(v1)</text>
+<text x="970" y="1054" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">消费者识别缺口：等待 / 补取 / 业务允许的快照。</text>
+<text x="970" y="1088" font-size="23" fill="#0F172A" text-anchor="start" font-weight="400">Kafka Key 不修复上游乱序；去重也不等于排序。</text>
+</g></svg>

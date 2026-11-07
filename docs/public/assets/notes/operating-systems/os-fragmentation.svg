@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="990" viewBox="0 0 1200 990" role="img" aria-labelledby="title desc">
+<title id="title">碎片：浪费在单元内部，或空闲块之间隔着占用区</title><desc id="desc">条带宽度按各自标注单位成比例；字节案例与抽象单位案例不混合计算。 教学抽象，不是运行日志。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#356da8"/></marker></defs>
+<rect width="1200" height="990" fill="#fbfcfe"/>
+<g font-family="Microsoft YaHei,Segoe UI,sans-serif">
+<text x="40" y="51" font-size="29" fill="#24364b" font-weight="600" text-anchor="start">碎片：浪费在单元内部，或空闲块之间隔着占用区</text>
+<text x="40" y="88" font-size="17" fill="#526579" font-weight="400" text-anchor="start">条带宽度按各自标注单位成比例；字节案例与抽象单位案例不混合计算。</text>
+<text x="50" y="145" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">内部碎片：请求 13 字节，按 8 字节粒度向上取整至 16 字节</text>
+<rect x="80" y="185" width="780" height="75" rx="10" fill="#e7f5ef" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="470" y="230" font-size="21" fill="#24364b" font-weight="400" text-anchor="middle">实际使用 13</text>
+<rect x="860" y="185" width="180" height="75" rx="10" fill="#fff3df" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="950" y="230" font-size="21" fill="#24364b" font-weight="400" text-anchor="middle">浪费 3</text>
+<text x="80" y="305" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">已分配单元 [0,16)；内部碎片 16−13=3 字节，忽略元数据。</text>
+<text x="50" y="390" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">外部碎片：空闲 18 单位，但没有连续 10 单位</text>
+<rect x="80" y="435" width="276" height="75" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="218" y="481" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">空闲6</text>
+<rect x="356" y="435" width="92" height="75" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="402" y="481" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">占用2</text>
+<rect x="448" y="435" width="184" height="75" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="540" y="481" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">空闲4</text>
+<rect x="632" y="435" width="92" height="75" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="678" y="481" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">占用2</text>
+<rect x="724" y="435" width="368" height="75" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="908" y="481" font-size="19" fill="#24364b" font-weight="400" text-anchor="middle">空闲8</text>
+<text x="80" y="550" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">6+4+8=18；中间占用区不移走，三个空洞就不能拼成连续地址。</text>
+<text x="50" y="645" font-size="23" fill="#356da8" font-weight="600" text-anchor="start">合并是另一独立例子：释放中间 4，地址相邻才能合并</text>
+<rect x="80" y="685" width="312" height="65" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="236" y="727" font-size="20" fill="#24364b" font-weight="400" text-anchor="middle">空闲6</text>
+<rect x="392" y="685" width="208" height="65" rx="10" fill="#dce3eb" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="496" y="727" font-size="20" fill="#24364b" font-weight="400" text-anchor="middle">占用4</text>
+<rect x="600" y="685" width="416" height="65" rx="10" fill="#fff" stroke="#b6c7d9" stroke-width="1.4"/>
+<text x="808" y="727" font-size="20" fill="#24364b" font-weight="400" text-anchor="middle">空闲8</text>
+<path d="M548 750 L548 805" fill="none" stroke="#356da8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="80" y="805" width="936" height="65" rx="10" fill="#e7f5ef" stroke="#297b66" stroke-width="1.4"/>
+<text x="548" y="847" font-size="22" fill="#297b66" font-weight="600" text-anchor="middle">[0,18) 空闲 18</text>
+<text x="80" y="933" font-size="20" fill="#24364b" font-weight="400" text-anchor="start">不搬移仍在使用的对象；跨固定占用区或不同管理区域不直接合并。</text>
+</g></svg>
