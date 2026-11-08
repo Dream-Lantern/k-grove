@@ -8,7 +8,7 @@
  </defs>
 <rect x="0" y="0" width="1600" height="940" rx="0" fill="url(#bg)"/>
 <rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
-<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">28  ·  多 GPU：AllReduce 的匹配通信契约</text>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">多 GPU：AllReduce 的匹配通信契约</text>
 <text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">逻辑归约示例：各 Rank 都得到结果；不表示具体使用 ring、tree 或其他算法</text>
 <path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="85" y="216" width="403" height="178" rx="18" fill="#EEF6FF" stroke="#3B82F6" stroke-width="2.0" filter="url(#sh)"/>

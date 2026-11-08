@@ -55,3 +55,19 @@ CUDA/Python 代码可能初始化设备或执行工作；profiling 会启动应�
 原 HAMi ENML 只保存了文档链接，后续长文中的源码行号也未注明 commit。本册保留职责与设计验收说明，不声称已验证指定 tag 的源码。需要确认精确实现时，应先固定 tag/commit 与部署参数。
 
 正文范围以本册现有条目为准；已移除的条目不在本附录中补写，原始导出与处理记录不作为站点内容。
+
+## 全系列证据索引
+
+| 范围                                   | 版本或实现锚点                                               | 证据状态                     |
+| -------------------------------------- | ------------------------------------------------------------ | ---------------------------- |
+| CUDA Context、Stream/Event、Graph、VMM | CUDA 12.8.1 归档，第 4–9、25 章                              | DOCUMENTED                   |
+| NVML、DCGM、Nsight                     | NVML R535 类型链，目标字段和采集条件见第 10–12 章            | DOCUMENTED                   |
+| MIG 与 NCCL                            | NCCL 2.31.2、2.32.3 的实验性条件，第 13、22 章               | DOCUMENTED                   |
+| MPS                                    | Release 615 文档及 legacy/v3 模式，第 15 章                  | DOCUMENTED                   |
+| HAMi/HAMi-core                         | v2.10.0 资源协议，第 17 章区分历史源码与当前部署             | DOCUMENTED                   |
+| PyTorch                                | 2.14 CUDA 初始化、NVML 检测与分配器，第 24 章                | DOCUMENTED                   |
+| vLLM/SGLang                            | vLLM v0.10.2、SGLang v0.5.2，第 19、20、23 章                | DOCUMENTED / SOURCE VERIFIED |
+| MoE                                    | DeepSeek-V3 技术报告 v2 与官方配置，第 21 章                 | DOCUMENTED / SOURCE VERIFIED |
+| GCR/GPU-CR                             | FAST ’26，原 Artifact 4882e2c，后续 GPU-CR e9bbb52，第 25 章 | DOCUMENTED / SOURCE VERIFIED |
+
+DOCUMENTED 表示有文档或论文支持。SOURCE VERIFIED 表示查阅了可定位源码。STATIC CHECKED 表示检查过算例、语法、链接或制品。RUNTIME VERIFIED 需要记录可复现的目标环境及实测结果。HYPOTHESIS 表示待证工程推断。NOT TESTED 表示尚无相应运行证据。正文覆盖第 1–25 章，实验流程见[附录 B](/articles/ai-infra-practice-guide.html)。本轮 GPU、NCCL 和 Serving 运行验证为 NOT TESTED。

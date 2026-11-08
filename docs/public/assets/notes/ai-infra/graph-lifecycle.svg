@@ -8,7 +8,7 @@
  </defs>
 <rect x="0" y="0" width="1600" height="940" rx="0" fill="url(#bg)"/>
 <rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
-<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">14  ·  CUDA Graph：定义、实例化、回放与更新</text>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">CUDA Graph：定义、实例化、回放与更新</text>
 <text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">Graph 描述工作依赖；GraphExec 是可提交执行的实例，二者并非同一对象</text>
 <path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="65" y="225" width="445" height="210" rx="18" fill="#EEF6FF" stroke="#3B82F6" stroke-width="2.0" filter="url(#sh)"/>
@@ -31,10 +31,10 @@
 <text x="1188" y="279" font-family="Noto Sans CJK SC, sans-serif" font-size="25" font-weight="700" fill="#112A54" text-anchor="start">回放 Launch</text>
 <text x="1129" y="325" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">向 CUDA 提交 GraphExec</text>
 <text x="1129" y="357" font-family="Noto Sans CJK SC, sans-serif" font-size="21" font-weight="400" fill="#4B6081" text-anchor="start">设备上执行实际工作</text>
-<path d="M800 436 L800 502" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1325 436 V464 H800 V502" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <rect x="495" y="505" width="610" height="90" rx="15" fill="#FFF5E8" stroke="#F59E0B" stroke-width="1.8"/>
 <text x="517" y="543" font-family="Noto Sans CJK SC, sans-serif" font-size="26" font-weight="700" fill="#9A3412" text-anchor="start">执行需求发生变化？</text>
-<text x="517" y="577" font-family="Noto Sans CJK SC, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="start">无需变化：直接继续回放；需要变化：先判断兼容性。</text>
+<text x="517" y="577" font-family="Noto Sans CJK SC, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="start">需要更新时检查参数及拓扑兼容条件。</text>
 <path d="M800 596 L800 627" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M800 627 H410 V649" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrG)"/>
 <path d="M800 627 H1190 V649" fill="none" stroke="#EF4444" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrR)"/>
@@ -50,6 +50,12 @@
 <text x="402.0" y="642" font-family="Noto Sans CJK SC, sans-serif" font-size="19" font-weight="600" fill="#047857" text-anchor="middle">可兼容</text>
 <rect x="1104" y="618" width="174" height="35" rx="17" fill="#FFF0F1" stroke="#EF4444" stroke-width="1.2"/>
 <text x="1191.0" y="642" font-family="Noto Sans CJK SC, sans-serif" font-size="19" font-weight="600" fill="#B91C1C" text-anchor="middle">不兼容</text>
+<path d="M1105 550 H1572" fill="none" stroke="#5679BC" stroke-width="3.5"/>
+<path d="M410 780 V818 H1572 V380 H1554" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1190 780 V818" fill="none" stroke="#5679BC" stroke-width="3.5"/>
+<text x="1130" y="535" font-family="Noto Sans CJK SC, sans-serif" font-size="20" fill="#475569">否：继续回放</text>
+<text x="815" y="619" font-family="Noto Sans CJK SC, sans-serif" font-size="18" fill="#475569">是</text>
+<text x="890" y="848" font-family="Noto Sans CJK SC, sans-serif" font-size="19" fill="#475569">准备好可执行实例后再次回放</text>
 <path d="M65 867 L1535 867" fill="none" stroke="#DFE7F2" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="70" y="902" font-family="Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#6B7E99" text-anchor="start">注意：修改原始 Graph 不会自动修改已经实例化的 GraphExec。</text>
 </svg>

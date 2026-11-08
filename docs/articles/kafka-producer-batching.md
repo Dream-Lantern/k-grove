@@ -63,7 +63,7 @@ Sticky Partitioning（粘性分区）让适用的无 Key 流量在一段批次�
 | `linger.ms`          | 0ms                  | 5ms，别名 `queue.buffering.max.ms` | 都是聚合因素，但调度、回压及发送路径不同；Java 3.9 的 0 仍可能因已有积压自然形成批次                                                                                               |
 | `batch.num.messages` | 没有同名直接配置     | 10000 条                           | C 的每批记录数上限，还同时受字节及消息/请求限制                                                                                                                                    |
 
-不要把 Java 4.0 把 linger 默认改为 5ms 的信息倒用到 3.9。单条记录超过 batch.size 并不自动获得通行权，其他客户端、Broker 和 Topic 大小限制仍可能拒绝。
+Java 4.0 将 `linger.ms` 的默认值改为 5 ms，Java 3.9 的默认值仍为 0 ms。单条记录超过 batch.size 并不自动获得通行权，其他客户端、Broker 和 Topic 大小限制仍可能拒绝。
 
 ## 3. 先按分区理解批次收益
 

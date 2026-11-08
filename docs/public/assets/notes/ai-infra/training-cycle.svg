@@ -8,7 +8,7 @@
   </defs>
 <rect x="0" y="0" width="1600" height="1000" rx="0" fill="url(#bg)"/>
 <rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
-<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="43" font-weight="700" fill="#0F2350" text-anchor="start">32  ·  训练 / 验证 / 测试：谁更新权重，谁负责选择？</text>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="43" font-weight="700" fill="#0F2350" text-anchor="start">训练 / 验证 / 测试：谁更新权重，谁负责选择？</text>
 <text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">先去重、防泄漏、固定数据版本；训练数据更新参数，测试集只作独立最终评估</text>
 <path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="467" y="185" width="665" height="112" rx="18" fill="#EEF6FF" stroke="#60A5FA" stroke-width="2" filter="url(#sh)"/>

@@ -8,7 +8,7 @@
  </defs>
 <rect x="0" y="0" width="1600" height="970" rx="0" fill="url(#bg)"/>
 <rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
-<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">29  ·  GPU 性能定位：先看时间线，再深入 Kernel</text>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">GPU 性能定位：先看时间线，再深入 Kernel</text>
 <text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">先固定业务目标、正确性与无采集基线；采集工具本身也可能带来扰动</text>
 <path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="92" y="201" width="650" height="160" rx="18" fill="#EEF6FF" stroke="#3B82F6" stroke-width="2.0" filter="url(#sh)"/>
@@ -45,7 +45,7 @@
 <path d="M416 691 V741 H800 V757" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <path d="M1180 691 V741 H800 V757" fill="none" stroke="#5679BC" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <rect x="343" y="762" width="919" height="108" rx="15" fill="#EEF6FF" stroke="#3B82F6" stroke-width="1.8"/>
-<text x="365" y="800" font-family="Noto Sans CJK SC, sans-serif" font-size="28" font-weight="700" fill="#1E40AF" text-anchor="start">单因素修改 → 同条件复测</text>
+<text x="365" y="800" font-family="Noto Sans CJK SC, sans-serif" font-size="28" font-weight="700" fill="#1E40AF" text-anchor="start">单因素修改 → 关闭采集后同条件复测</text>
 <text x="365" y="834" font-family="Noto Sans CJK SC, sans-serif" font-size="20" font-weight="400" fill="#475569" text-anchor="start">同时看正确性、端到端延迟、尾延迟和对比环境一致性。</text>
 <path d="M65 897 L1535 897" fill="none" stroke="#DFE7F2" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="70" y="932" font-family="Noto Sans CJK SC, sans-serif" font-size="18" font-weight="400" fill="#6B7E99" text-anchor="start">Systems 擅长看阶段与全局时间线；Compute 适合缩小到特定 Kernel 进行微观分析。</text>

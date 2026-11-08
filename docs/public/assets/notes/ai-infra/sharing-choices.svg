@@ -8,7 +8,7 @@
  </defs>
 <rect x="0" y="0" width="1600" height="940" rx="0" fill="url(#bg)"/>
 <rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
-<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">30  ·  GPU 共享：先决定隔离目标，再谈吞吐</text>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">GPU 共享：先决定隔离目标，再谈吞吐</text>
 <text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">并发共享、资源配额、硬件隔离和租户信任不是同一个指标</text>
 <path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="422" y="183" width="755" height="116" rx="15" fill="#EEF6FF" stroke="#3B82F6" stroke-width="1.8"/>

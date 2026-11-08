@@ -25,6 +25,13 @@ order: 90
 
 本册分别说明早期 ZooKeeper、旧消息格式与现代机制，阅读时按章节标出的版本定位来源。原始私人导出文件不属于正文或配图。
 
+| 组件                        | 本册口径                                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Kafka Broker                | 3.9 为机制基线，兼顾 ZooKeeper 历史模式与 KRaft。4.0 起仅 KRaft                                                     |
+| Kafka Java Client           | 以 3.9 文档和对应源码为准。客户端依赖与 Broker 独立升级，具体能力还取决于双方支持的协议版本                         |
+| librdkafka                  | 固定 v2.8.0。Classic 是 C 实践基线，KIP-848 在该版本为 Early Access。Kafka 4.0 服务端 GA 不会改变旧客户端的支持阶段 |
+| Kafka Connect、Streams、MM2 | 参考 Kafka 3.9 的对应发行组件。第三方 Connector 与封装库另查各自版本与支持范围                                      |
+
 ## 主要核对入口
 
 | 主题             | 固定版本官方依据                                                                                                                                   | 用途                               |
@@ -45,6 +52,19 @@ order: 90
 | 安全与监控       | [ACL](https://kafka.apache.org/39/security/authorization-and-acls/) · [Monitoring](https://kafka.apache.org/39/operations/monitoring/)             | 权限与指标口径                     |
 | 生态             | [Connect](https://kafka.apache.org/39/kafka-connect/overview/) · [Streams](https://kafka.apache.org/39/streams/introduction/)                      | 框架职责和语义边界                 |
 
+### 按章节查证
+
+| 正文  | 主要内容                            | 证据入口                                                                                                                               |
+| ----- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 1–3   | 日志模型、Key 路由、Broker 与控制器 | Introduction、KRaft                                                                                                                    |
+| 4–7   | ISR、写入确认、索引、保留与压缩     | Design、Topic 配置、OffsetIndex                                                                                                        |
+| 8–9   | 批次、重试、幂等与未知结果          | Producer 配置、[Java Producer API](https://kafka.apache.org/39/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html)           |
+| 10–12 | 分配、恢复位点、重平衡              | Consumer 配置、[Java Consumer API](https://kafka.apache.org/39/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html)、协议演进 |
+| 13–14 | 投递语义、事务与外部副作用          | Design、Java Producer 与 Consumer API                                                                                                  |
+| 15–18 | C 所有权、投递、提交和关闭          | v2.8.0 头文件与使用说明                                                                                                                |
+| 19–21 | 配置对照、存储、Listener 和 ACL     | 配置表、KRaft、[Listener 配置](https://kafka.apache.org/39/security/listener-configuration/)、ACL                                      |
+| 22–24 | 积压、生态与订单事务                | Monitoring、Connect、Streams、[PostgreSQL 17 并发隔离](https://www.postgresql.org/docs/17/transaction-iso.html)                        |
+
 ## 官方页面也需要版本交叉检查
 
 3.9 的 Log 页面仍保留了早期关于字节 Offset 等内容的叙述，不能直接等同于现代机制。正文对 Offset/索引的说明采用固定源码和现代消息格式交叉核对，不会仅因页面位于 3.9 路径下，就直接沿用其中所有历史段落。
@@ -53,9 +73,21 @@ order: 90
 
 ## 验证与限制
 
-已进行原文覆盖映射、技术依据核对、链接与代码块静态检查、SVG/PNG 图示检查。C 片段未编译，命令未执行，Mermaid 未运行渲染器，HTML 未经过完整交互式浏览器验收；不冒充实测记录。图示用于解释核心关系，不代替完整协议状态机。
+2026-10-22 的历史复核覆盖了来源映射、技术依据、静态链接、代码块和配图。该次记录未覆盖 C 编译、命令运行、Mermaid 渲染或完整浏览器交互。后续检查按实际环境和检查项目分别记录，静态检查、对象编译和集成实测各有独立结论。
 
-公开维护时应继续检查内容授权、引用与敏感信息。原图保存在私有来源，正文使用重新表达机制的教学图；有配套 SVG 的图可编辑，仅提供 PNG 的版本按其实际格式使用。
+| 证据类型   | 核对口径                               |
+| ---------- | -------------------------------------- |
+| 官方文档   | 固定版本、组件和配置作用域             |
+| KIP 或标准 | 提案适用范围及落地版本                 |
+| 源码       | 固定 Tag、文件、函数与触发条件         |
+| 数学推导   | 输入、公式、假设及计算过程             |
+| 工程经验   | 适用条件、代价和失败边界               |
+| 运行实验   | 环境、版本、命令、实际结果与可追溯记录 |
+| 待验证假设 | 标记 NOT VERIFIED，保留复现条件        |
+
+链接可以打开只表明资料可访问。技术结论还需核对对应段落或实现。图示解释核心关系，完整协议分支应查相应契约。
+
+公开维护时应检查内容授权、引用与敏感信息。正文使用重新表达机制的教学图。既有 PNG 和配套 SVG 按原样保留。独立 SVG 只有确认存在技术问题时才做定点修订。
 
 ## 历史运维材料
 

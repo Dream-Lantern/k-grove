@@ -8,7 +8,7 @@
  </defs>
 <rect x="0" y="0" width="1600" height="970" rx="0" fill="url(#bg)"/>
 <rect x="0" y="0" width="1600" height="11" rx="0" fill="#4F83ED"/>
-<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">25  ·  MoE：每个 Token 只激活部分专家</text>
+<text x="65" y="78" font-family="Noto Sans CJK SC, sans-serif" font-size="44" font-weight="700" fill="#0F2350" text-anchor="start">MoE：每个 Token 只激活部分专家</text>
 <text x="68" y="123" font-family="Noto Sans CJK SC, sans-serif" font-size="23" font-weight="400" fill="#58708D" text-anchor="start">专家输出是向量；不要预设“正面 / 负面”等固定语义角色</text>
 <path d="M65 148 L1535 148" fill="none" stroke="#DDE7F3" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
 <rect x="560" y="176" width="480" height="105" rx="15" fill="#EEF6FF" stroke="#3B82F6" stroke-width="1.8"/>

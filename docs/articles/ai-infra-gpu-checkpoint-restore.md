@@ -1,6 +1,6 @@
 ---
 id: ai-infra-gpu-checkpoint-restore
-title: GPU-CR / GCR：GPU Checkpoint-Restore 论文与源码学习笔记
+title: 第 25 章 GPU Checkpoint/Restore：GCR 论文原理与工程实现
 description: "结合 VMM、CUDA 驱动 Checkpoint / Restore 与 G-CR 源码，理解状态保存、恢复流程及应用层需要补齐的依赖。"
 date: '2026-10-25'
 updated: '2026-10-28'
@@ -20,12 +20,12 @@ source:
   note: 个人学习整理；来源、适用版本与验证边界见正文。日期为本站首次发布日期。
 collection: ai-infra
 series: ai-infrastructure
-order: 26
+order: 25
 ---
 
-# GPU-CR / GCR：GPU Checkpoint/Restore 的原理与工程实现
+# 第 25 章 GPU Checkpoint/Restore：GCR 论文原理与工程实现
 
-> 阅读材料：论文 [GPU Checkpoint/Restore Made Fast and Lightweight, FAST '26](https://www.usenix.org/system/files/fast26-zeng.pdf)；项目 [gpu-os/GPU-CR](https://github.com/gpu-os/GPU-CR)。
+> 阅读材料：论文 [GPU Checkpoint/Restore Made Fast and Lightweight, FAST '26](https://www.usenix.org/system/files/fast26-zeng.pdf)；原始 [thustorage/GCR Artifact](https://github.com/thustorage/GCR/tree/4882e2c5e622dff1468ad5e5a791bd2535c4551c)；后续工程 [gpu-os/GPU-CR](https://github.com/gpu-os/GPU-CR/tree/e9bbb52e1f52986587fc631217c0f2b50b46245a)。
 >
 > **证据约定**：**[论文]** 表示论文的设计或实验结论；**[代码]** 表示 GPU-CR 公开仓库可定位的实现；**[工程分析]** 表示对机制的解释、设计建议或风险推断。不能把论文中的研究能力直接当成当前仓库已经完整实现、经过自己复现的能力。
 
@@ -279,7 +279,7 @@ Application calls ncclCommCheckpointPrepare
 
 ## 6. 论文的重要补充：增量 Checkpoint 与 Shadow Execution
 
-> **[论文设计，不等于本提交已实现]** 对本文所列公开源码入口的静态核查，未确认完整的 Dirty Template 生成与 CPU Shadow Execution 链路；不能据此宣称“编译该仓库即可开启论文全部增量能力”，也不将未发现当成对所有分支/后续版本的否定。
+> 本节分别核对论文、原始 Artifact 和后续 GPU-CR。原始 Artifact 有下文所列的模板与增量保存代码；后续工程的固定提交未确认同等链路。
 
 [![论文增量机制：计算写到哪里，而非重跑数值计算](/assets/notes/ai-infra/gcr-dirty-template.png)](/assets/notes/ai-infra/gcr-dirty-template.png)
 
@@ -325,6 +325,12 @@ DirtyTemplate(kernel_args, gridDim, blockDim)
 论文 §5 的 vLLM 实现还利用工作负载知识：初始化时标记权重和 KV Cache 的地址/长度，只对 KV 更新使用模板，其他缓冲保守包含；并非完全不感知应用的通用自动分析。按论文描述，增量结果在保存时合并到已有完整快照，而不是要求恢复时必然回放很长的增量文件链。**[工程分析]** 脏区识别不得漏记；模板、参数视图与 GPU 写入必须对应同一轮快照，不能因 CPU/GPU 并行就省略完成确认。
 
 这样就不需要在 GPU 的主计算热路径里插入大量脏地址记录指令。
+
+### 原始 Artifact 中的增量路径
+
+固定原始 `thustorage/GCR@4882e2c5e622dff1468ad5e5a791bd2535c4551c`。`GCR/ptx` 保存 PTX，`GCR/symbol_exec` 是符号执行目录。`dirty_templates.cpp` 合并脏地址区间并纳入生成的模板。模板包含 vLLM KV 写入和块拷贝的特化代码；部分模板异步拷回设备侧索引，再由 CPU 计算写入区间。[脏区合并](https://github.com/thustorage/GCR/blob/4882e2c5e622dff1468ad5e5a791bd2535c4551c/GCR/dirty_templates.cpp) · [KV 模板](https://github.com/thustorage/GCR/blob/4882e2c5e622dff1468ad5e5a791bd2535c4551c/GCR/dirty_templates_kernels.cpp)
+
+同提交的 `GCR/cuda.cpp` 根据 kernel 符号调用对应模板。启用增量且已有快照时，`ckpt_ptr_and_content()` 调用 `incremental_ckpt()`，将脏区及分类账本中的保守项合入已有快照。模板绑定具体符号和参数布局，无法保证写入覆盖时应回退完整快照。本段为源码核查。第 2–5 节的后续 GPU-CR 依据独立提交 `e9bbb52e1f52986587fc631217c0f2b50b46245a`。[拦截与增量保存](https://github.com/thustorage/GCR/blob/4882e2c5e622dff1468ad5e5a791bd2535c4551c/GCR/cuda.cpp)
 
 ### 6.3 Shadow Execution 的适用与退化情形 {#_6-3-为什么不是所有-kernel-都适合-shadow-execution}
 
@@ -477,4 +483,4 @@ Restore wall time ≈ driver CUDA-control restore
 - [仓库随附的工具说明](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/cuda-checkpoint/README.md)与 [NVIDIA 主线版本说明](https://github.com/NVIDIA/cuda-checkpoint)：历史条件和后续能力分别阅读。
 - [Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)、[signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html)：FD 传递与异步信号安全。
 
-**图源**：[架构](/assets/notes/ai-infra/gcr-architecture.drawio)、[VMM 生命周期](/assets/notes/ai-infra/gcr-vmm-lifecycle.drawio)、[单卡时序](/assets/notes/ai-infra/gcr-single-sequence.drawio)、[多 Rank 阶段](/assets/notes/ai-infra/gcr-multirank-phases.drawio)、[增量机制](/assets/notes/ai-infra/gcr-dirty-template.drawio)。同名 `.mmd` 保留原逻辑图源，正文按当前引用使用 SVG 或 PNG；图源与展示图分别核对，配图用于解释机制和主干流程。
+**图源**：[架构](/assets/notes/ai-infra/gcr-architecture.drawio)、[VMM 生命周期](/assets/notes/ai-infra/gcr-vmm-lifecycle.drawio)、[单卡时序](/assets/notes/ai-infra/gcr-single-sequence.drawio)、[多 Rank 阶段](/assets/notes/ai-infra/gcr-multirank-phases.drawio)、[增量机制](/assets/notes/ai-infra/gcr-dirty-template.drawio)。上述 `.drawio` 保留可编辑图源，正文按当前引用使用 SVG 或 PNG；图源与展示图分别核对，配图用于解释机制和主干流程。
