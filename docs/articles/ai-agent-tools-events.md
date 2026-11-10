@@ -29,11 +29,12 @@ order: 4
 | 事件（Event）             | Hook、Cron、Webhook、监控触发    | 重复投递、乱序、竞态、打断                                                                 |
 | 用户沟通（Communication） | 邮件、IM、语音、通知             | 误发、敏感内容泄露、身份混淆                                                               |
 
-**工具调用的基本流程**是：模型依据描述选择工具并生成参数，执行器校验参数与权限，工具执行后返回可供下一轮判断的结果。工具描述负责说明用途，实际校验由实现承担。
+**工具调用的基本流程**：模型依据描述选择工具并生成参数，执行器校验参数与权限，工具执行后返回可供下一轮判断的结果。
 
 ## 4.2 工具设计：粒度、保真与幂等
 
-一个良好的工具契约最好包含以下信息。这是**示意契约，不能直接作为 MCP Tool 配置执行**：其中的自然语言占位符不是真正的参数 Schema，授权和幂等也需要服务端实现。
+一个良好的工具契约最好包含以下信息。
+这是**示意契约，不能直接作为 MCP Tool 配置执行**：其中的自然语言占位符不是真正的参数 Schema，授权和幂等也需要服务端实现。
 
 ```yaml
 name: create_benchmark_task
@@ -73,7 +74,7 @@ Schema（结构定义）约束输入形状，服务端授权则判断调用者�
 }
 ```
 
-`task_id` 必填且有格式约束；`detail` 只能取两个枚举值；`log_limit` 只能是 0～50 的整数。省略可选项不代表验证器会填入默认值，默认值由处理函数决定。`{"task_id":42}` 或 `{"task_id":"task-42","log_limit":51}` 在执行前就应失败；即使输入合法，也不能因此读取其他用户的任务。
+`task_id` 必填且有格式约束；`detail` 只能取两个枚举值；`log_limit` 只能是 0～50 的整数。`{"task_id":42}` 或 `{"task_id":"task-42","log_limit":51}` 在执行前就应失败；即使输入合法，也不能因此读取其他用户的任务。
 
 本仓库的 `examples/ai-agent/ch4-tools/` 提供小型可运行示例，核心顺序如下：
 
@@ -92,7 +93,7 @@ def get_task_status(arguments, principal):
 
 ## 4.3 MCP 与 Skills 的分工 {#_4-3-mcp-与-skills-不同}
 
-这里的协议示例限定为 [MCP 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)，不推定已安装SDK的版本。MCP（Model Context Protocol）提供工具/资源等能力的标准化接入形态，但**统一接入协议不等于自动获得权限安全、可信输出或任务持久化**。外部 MCP Server 可能是低信任组件，必须有连接授权、范围限制、工具 allowlist、输出审核与超时。
+[MCP 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)。MCP（Model Context Protocol）提供工具/资源等能力的标准化接入形态，但**统一接入协议不等于自动获得权限安全、可信输出或任务持久化**。外部 MCP Server 可能是低信任组件，必须有连接授权、范围限制、工具 allowlist、输出审核与超时。
 
 Skill 提供“何时和怎样做”的说明；MCP Tool 提供“能调用什么接口”。一个 Skill 可以使用多个 MCP Tool；一个 Tool 也能被多个 Skill 复用。
 
@@ -110,7 +111,7 @@ MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内
 
 ### 一次 `get_task_status` 调用的完整次序
 
-以下为 MCP **2025-11-25** 的消息教学推演，不依赖某个 SDK，也未运行网络服务。JSON-RPC 2.0 是请求／响应的消息格式；请求带 `id`，响应使用相同 `id`，通知不带 `id`。省略传输层封装不等于省略协议初始化。
+以下为 MCP **2025-11-25** 的消息教学推演，请求／响应的消息格式是 JSON-RPC 2.0 ；请求带 `id`，响应使用相同 `id`，通知不带 `id`。
 
 | 次序 | 方向与消息                                   | 需要检查的内容                                                                                                                |
 | ---- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -144,7 +145,7 @@ MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内
 }
 ```
 
-这里返回运行中状态，不表示任务已经完成。输入校验、业务拒绝和内部故障如何映射为 JSON-RPC 协议错误或带 `isError` 的工具结果，应依据该版本的错误分类和服务实现明确约定，不能把五层业务状态直接当成 MCP 原生字段。初始化顺序依据 [2025-11-25 生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)；本文没有混入其他版本的 SDK 接口。
+初始化顺序依据 [2025-11-25 生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。
 
 ## 4.4 高风险动作的执行护栏
 
@@ -224,9 +225,7 @@ def _is_safe_path(self, path: Path) -> bool:
 
 ```
 
-对照 `chapter2/kv-cache/agent.py` 中 `LocalFileTools.read_file()` 的 `real_path.startswith(self.root_dir)`：字符串前缀可能把同级 `workspace_backup` 误认成 `workspace` 内部。它适合作为反例，不宜照搬为权限实现。本地配套实验使用虚构路径验证这一区别，不读取目录之外的文件。
-
-路径校验本身无法解决符号链接/目录联接并发变化带来的 TOCTOU 问题，也不能替代 OS 沙盒。还需限制运行账号、挂载目录和可执行命令，才能形成完整的执行边界。
+对照 `chapter2/kv-cache/agent.py` 中 `LocalFileTools.read_file()` 的 `real_path.startswith(self.root_dir)`：字符串前缀可能把同级 `workspace_backup` 误认成 `workspace` 内部。
 
 ### 推荐对照：执行失败、验证失败和重复请求
 
@@ -236,7 +235,7 @@ def _is_safe_path(self, path: Path) -> bool:
 
 图中按参数验证、授权、执行和结果检查组织工具调用；各出口分别保留失败、拒绝与验证结果。[放大查看 PNG](/assets/notes/ai-agent/04-tools.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/04-tools.dot)供对照，不是本版配图的可编辑源文件。
 
-仓库示例中有 LLM 审批和 shell 执行路径。LLM 审查用于辅助判断，不能替代服务端授权；单进程测试通过也不等于并发幂等已获保证。Windows 下应按项目说明核对 Bash/WSL 条件；只观察本地文件工具时，没有必要连接日历、创建 PR 等外部动作。
+仓库示例中有 LLM 审批和 shell 执行路径。LLM 审查用于辅助判断，不能替代服务端授权。
 
 事件系统可继续读 `chapter6/async-agent`：它在当前仓库属于交互章节，与这里的事件驱动讨论交叉关联。比较取消、排队和并行时，应同时检查子进程是否实际退出、进度是否停止更新，而非只看 `cancelled` 字样。
 
