@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant W1 as Worker W1
+  participant R as 存储 / 接收服务
+  participant W2 as Worker W2
+  Note over W1,W2: 租约控制占有期限；接收方实际检查 token 与当前代次
+  W1->>R: 代次 1，取得租约与 token=101
+  Note over W1: 暂停 / 崩溃，租约到期
+  W2->>R: 接管代次 1，取得 token=102
+  R-->>W2: 记录新的写入资格 102
+  W2->>R: generation=1，token=102，写结果
+  R-->>W2: 接受
+  W1->>R: 恢复后写入 generation=1，token=101
+  R-->>W1: 拒绝旧 token
+  Note over W1,W2: 任务重开：当前代次更新为 2
+  W2->>R: 晚到结果 generation=1，token=102
+  R-->>W2: 拒绝旧代次
+  Note over W1,W2: 同代次接管不必换代；不校验 token 的远端不受保护

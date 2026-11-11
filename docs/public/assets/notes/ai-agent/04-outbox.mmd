@@ -1,0 +1,18 @@
+sequenceDiagram
+  participant B as 业务数据库
+  participant R as Relay 转发进程
+  participant Q as 消息通道 / 队列
+  participant W as Worker 消费者
+  Note over B,W: 业务服务先在同一事务提交 task-42 与 Outbox 事件 evt-created-42
+  R->>B: 读取待发送 Outbox
+  B-->>R: evt-created-42
+  R->>Q: 发送 evt-created-42
+  Q-->>R: 发送成功
+  Note over B,R: 故障：Relay 尚未标记已发送就崩溃
+  Q->>W: 首次投递
+  W->>W: 检查消费状态与业务幂等键
+  Note over R,W: Relay 重启后读取到同一待发送事件
+  R->>Q: 重发 evt-created-42
+  Q->>W: 重复投递同一 event_id
+  W->>W: 已完成则复用；处理中则恢复或对账
+  Note over B,W: 原子事务只覆盖业务记录和 Outbox；队列与远端副作用不在其中

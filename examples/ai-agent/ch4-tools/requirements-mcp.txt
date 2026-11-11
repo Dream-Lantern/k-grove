@@ -1,0 +1,2 @@
+# Optional legacy MCP experiment; isolated from the base article examples.
+mcp==1.26.0

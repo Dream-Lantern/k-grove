@@ -5,7 +5,7 @@ import { publicArticles } from '../../lib/public-display.mjs'
 
 // VitePress 1.6.4 原生扩展名机制：图源是静态附件，不是待构建的 HTML 页面。
 // VITE_ 环境变量同时进入客户端，保证点击图源时不走文章路由。
-process.env.VITE_EXTRA_EXTENSIONS = 'dot,drawio'
+process.env.VITE_EXTRA_EXTENSIONS = 'dot,drawio,mmd'
 
 const articles = articleIndex(readArticles(), { publish: true })
 const published = publicArticles(articles)

@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant H as Host（含模型）
+  participant C as MCP Client
+  participant S as MCP Server
+  participant B as 业务服务
+  Note over H,B: 仅 MCP 2025-11-25；模型不直接连接业务服务
+  C->>S: initialize（版本、能力、身份信息）
+  S-->>C: 协商版本与能力
+  C->>S: notifications/initialized（无 id）
+  C->>S: tools/list
+  S-->>C: 工具名称、说明、inputSchema
+  C-->>H: 可用工具目录
+  H->>H: 模型提议查 task-42；Host 检查策略
+  H->>C: 调用获准工具
+  C->>S: tools/call：get_task_status
+  S->>S: 校验参数与可信调用者的对象权限
+  S->>B: 通过检查后查询 task-42
+  B-->>S: RUNNING
+  S-->>C: 工具结果（或错误）
+  C-->>H: 返回结果；Host 筛选后交给模型
+  Note over H,B: 协议完成 ≠ 业务成功；2026-07-28 不使用上述初始化握手

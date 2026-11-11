@@ -1,0 +1,14 @@
+flowchart TB
+  S["Skill：工作说明<br/>创建压测 → 查询进度 → 解释报告"]
+  H["Host / Agent 应用<br/>模型提议 · 应用决策 · 权限策略"]
+  S -->|指导步骤，不授予权限| H
+  H -->|本地调用| L["本地 Tool<br/>普通函数或 HTTP 适配器"]
+  H --> C["Host 内的 MCP Client<br/>标准化发现与调用"]
+  C -->|MCP 协议| M["MCP Server<br/>暴露 Tools / Resources / Prompts"]
+  L --> B["业务实现<br/>参数检查 · 对象授权 · 执行与结果验证"]
+  M --> B
+  B --> R["任务服务 / 数据库<br/>task-42"]
+  classDef blue fill:#eff6ff,stroke:#2563eb,color:#0f172a
+  classDef note fill:#f0fdf4,stroke:#15803d,color:#0f172a
+  class H,L,C,M,B,R blue
+  class S note

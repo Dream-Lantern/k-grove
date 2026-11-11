@@ -1,0 +1,15 @@
+flowchart TB
+  U["用户：创建压测任务"] --> T["Tool：create_benchmark_task<br/>检查参数、身份和项目权限"]
+  T --> D[("持久任务状态<br/>task-42：QUEUED → RUNNING → 完成")]
+  T -.->|立即返回 task-42 / QUEUED| U
+  D --> W["Worker 独立执行<br/>交互请求无需持续等待"]
+  W --> F["保存完成状态与结果<br/>记录 TaskCompleted 事件"]
+  F --> D
+  F --> E["事件处理器<br/>检查身份、权限、代次与消费进度"]
+  E --> N["通知模块<br/>发送获准通知"]
+  E --> A["Agent 调度器<br/>恢复上下文后决定是否调用模型"]
+  Q["用户稍后主动查进度<br/>Tool：get_task_status"] -->|授权后读取| D
+  classDef blue fill:#eff6ff,stroke:#2563eb,color:#0f172a
+  classDef green fill:#f0fdf4,stroke:#15803d,color:#0f172a
+  class U,T,D,W,F,Q blue
+  class E,N,A green

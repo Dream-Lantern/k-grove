@@ -1,9 +1,9 @@
 ---
 id: ai-agent-tools-events
 title: 第4章 工具、MCP 与异步事件系统
-description: "工具调用的基本流程是：模型依据描述选择工具并生成参数，执行器校验参数与权限，工具执行后返回可供下一轮判断的结果。工具描述负责说明用途，实际校验由实现承担。"
+description: "工具调用的基本流程是：模型依据描述选择工具并生成参数，执行器校验参数与权限，工具执行后返回可供下一轮判断的结果。工具描述负责说明用途，实际校验需验证调用结果。"
 date: '2026-10-25'
-updated: '2026-10-29'
+updated: '2026-11-10'
 category: ai-agent
 type: explanation
 tags:
@@ -19,6 +19,10 @@ order: 4
 
 # 第4章 工具、MCP 与异步事件系统
 
+用户说：“创建一个性能测试任务，稍后查进度，完成后告诉我结果。”这句话包含三种协作方式：Tool（工具）接受一次操作请求；MCP（Model Context Protocol，模型上下文协议）让应用按统一协议发现和调用能力；Event（事件）记录已经发生的事实，由消费者决定后续动作。
+
+本章用这项压测任务贯穿讲解：`create_benchmark_task` 创建 `task-42`，`get_task_status` 查询进度，Worker（后台执行进程）运行测试，完成后产生 `TaskCompleted`，通知模块或 Agent 调度器处理结果。任务状态保存在业务系统中，模型只在需要决策或解释时参与。
+
 ## 4.1 工具分类
 
 | 工具类别                  | 典型例子                         | 重点风险                                                                                   |
@@ -26,15 +30,17 @@ order: 4
 | 感知（Perception）        | 搜索、数据库查询、读日志、看截图 | 大结果污染上下文、权限越界、提示注入                                                       |
 | 执行（Action）            | 写文件、创建任务、支付、执行命令 | 有真实副作用；服务端校验授权，按风险和既有授权决定逐次确认；可重试写操作定义幂等或补偿语义 |
 | 协作（Collaboration）     | 启动子 Agent、任务移交、消息     | 状态一致性、成本失控、交接丢信息                                                           |
-| 事件（Event）             | Hook、Cron、Webhook、监控触发    | 重复投递、乱序、竞态、打断                                                                 |
+| 事件触发能力              | 注册 Hook、创建定时器、订阅通知  | 注册行为要授权；触发后还要处理重复、乱序、竞态和打断                                       |
 | 用户沟通（Communication） | 邮件、IM、语音、通知             | 误发、敏感内容泄露、身份混淆                                                               |
 
 **工具调用的基本流程**：模型依据描述选择工具并生成参数，执行器校验参数与权限，工具执行后返回可供下一轮判断的结果。
 
+“订阅任务完成通知”可以是 Tool；“任务已经完成”是 Event。Hook（钩子）、Cron（定时调度）和 Webhook（外部回调）可以产生或传递事件，事件本身不因此成为可调用工具。
+
 ## 4.2 工具设计：粒度、保真与幂等
 
 一个良好的工具契约最好包含以下信息。
-这是**示意契约，不能直接作为 MCP Tool 配置执行**：其中的自然语言占位符不是真正的参数 Schema，授权和幂等也需要服务端实现。
+这是**示意契约，不能直接作为 MCP Tool 配置执行**：其中的自然语言占位符不是真正的参数 Schema，授权和幂等则需要服务端实现。
 
 ```yaml
 name: create_benchmark_task
@@ -93,13 +99,23 @@ def get_task_status(arguments, principal):
 
 ## 4.3 MCP 与 Skills 的分工 {#_4-3-mcp-与-skills-不同}
 
-[MCP 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)。MCP（Model Context Protocol）提供工具/资源等能力的标准化接入形态，但**统一接入协议不等于自动获得权限安全、可信输出或任务持久化**。外部 MCP Server 可能是低信任组件，必须有连接授权、范围限制、工具 allowlist、输出审核与超时。
+### 为什么已经有 Tool，还需要 MCP
 
-Skill 提供“何时和怎样做”的说明；MCP Tool 提供“能调用什么接口”。一个 Skill 可以使用多个 MCP Tool；一个 Tool 也能被多个 Skill 复用。
+4.2 的函数已经可以供一个应用调用。如果应用 B 也要接入任务服务，往往还需适配名称、参数格式、工具发现和返回值。MCP 将其中的接入规则标准化：业务服务通过 Server 暴露能力，不同 Host 通过自己的 Client 按协议使用它。标准接口减少重复适配，业务实现和权限策略仍由具体系统负责。
+
+Tool 是可调用操作，MCP 是一种接入方式，Skill 是“何时和怎样做”的工作说明。例如，“创建压测、查状态、解释报告”可以写进 Skill；Host 选择执行步骤，既可调用本地 Tool，也可经 MCP 调用远端 Tool。一个 Skill 可以组合多个工具，一个工具也可被多个 Skill 使用。普通函数、HTTP API 与 MCP 可以共存，本地 Tool 不必经过 MCP。
+
+下图把步骤指导、应用决策和能力接入分开。两条调用路径最终都需要检查参数、对象授权和结果。
+
+[![Tool、MCP 与 Skill 的关系：本地调用与标准接入两条路径](/assets/notes/ai-agent/04-tool-mcp-skill.svg)](/assets/notes/ai-agent/04-tool-mcp-skill.svg)
+
+[查看 Mermaid 图源](/assets/notes/ai-agent/04-tool-mcp-skill.mmd)。
 
 ### Host、Client、Server 各自做什么
 
-MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内的 MCP Client 维护与某个 Server 的连接，处理协商和消息路由；MCP Server 暴露具体能力，并在接入业务系统前执行相应校验。一个 Host 可以管理多个 Client，每个 Client 对应一个 Server 连接，见 [2025-11-25 架构说明](https://modelcontextprotocol.io/specification/2025-11-25/architecture)。
+MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内的 MCP Client 对接 Server、处理协议消息；MCP Server 暴露具体能力，再调用业务代码或外部服务。实际是 Server 支持能力的实现，Server 不必包含模型，也不自动成为 Agent。一个 Host 可以管理多个 Client，分别对接不同 Server，见 [MCP 架构说明](https://modelcontextprotocol.io/specification/2025-11-25/architecture)。连接初始化的具体方式取决于协议版本，后文单独对照。
+
+### Tools、Resources 与 Prompts
 
 | 能力                | 作用                           | 本例可怎样使用                          |
 | ------------------- | ------------------------------ | --------------------------------------- |
@@ -112,6 +128,12 @@ MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内
 ### 一次 `get_task_status` 调用的完整次序
 
 以下为 MCP **2025-11-25** 的消息教学推演，请求／响应的消息格式是 JSON-RPC 2.0 ；请求带 `id`，响应使用相同 `id`，通知不带 `id`。
+
+先发现工具，再由模型提议查询，Host 检查调用策略，Client 才发送请求。Server 根据可信调用者检查 `task-42` 的访问权限，再查询业务服务；返回结果仍需 Host 解释和筛选。实线表示请求，虚线表示响应；模型提议只发生在 Host 内。
+
+[![MCP 2025-11-25 工具发现、授权与调用时序](/assets/notes/ai-agent/04-mcp-sequence.svg)](/assets/notes/ai-agent/04-mcp-sequence.svg)
+
+[查看 Mermaid 图源](/assets/notes/ai-agent/04-mcp-sequence.mmd)。
 
 | 次序 | 方向与消息                                   | 需要检查的内容                                                                                                                |
 | ---- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -147,6 +169,21 @@ MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内
 
 初始化顺序依据 [2025-11-25 生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。
 
+### 协议版本与安全边界
+
+上面的初始化和 JSON 示例只适用于所标注的旧版。[2026-07-28 变更说明](https://modelcontextprotocol.io/specification/2026-07-28/changelog)已经移除初始化握手
+
+| 比较项   | 2025-11-25：本节消息示例                          | 2026-07-28                                               |
+| -------- | ------------------------------------------------- | -------------------------------------------------------- |
+| 开始通信 | `initialize` → 响应 → `notifications/initialized` | 无初始化握手；请求携带版本和能力元数据                   |
+| 服务发现 | 初始化结果提供服务信息与能力                      | Server 必须实现 `server/discover`，Client 可选择预先调用 |
+| 普通结果 | 本节展示 `content`、`isError`                     | 结果还必须包含 `resultType`，普通完成结果为 `complete`   |
+| 订阅变化 | 如资源订阅和变更通知                              | 使用 `subscriptions/listen` 组织主动订阅的变化通知       |
+
+迁移时还要检查 SDK、传输和扩展是否支持目标版本。本章最小实验固定使用旧版 SDK，便于与上述消息对应；新版用法应按[官方 SDK 当前文档](https://py.sdk.modelcontextprotocol.io/)另行验证。
+
+**统一接入协议不等于自动获得权限安全、可信输出或任务持久化**。外部 Server 可能是低信任组件：Host 控制允许连接的服务、暴露给模型的工具及输出，Server 和业务服务落实调用者身份、对象权限、输入校验、超时等。Skill 指令和工具描述不能授予业务权限。
+
 ## 4.4 高风险动作的执行护栏
 
 [工具提议、审核、执行与验证流程](/assets/notes/ai-agent/04-tools.png)
@@ -155,9 +192,33 @@ MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内
 
 Sidecar/Guard Agent 可以参与风险审查，但最后一道授权边界应由确定性策略引擎和执行器完成。LLM 检查器不能替代真正的 ACL/RBAC。
 
+例如，经 MCP 调用 `create_benchmark_task` 时，Host 检查既有授权是否覆盖这次目标项目、测试方案和资源预算；Server 再按可信身份检查项目权限。若审批后参数发生变化，执行器需要重新核对批准范围。
+
 ## 4.5 事件驱动的异步 Agent
 
-事件至少应包含：`event_id`、`source`、`type`、`timestamp`、`task_id`、`correlation_id`、`payload`、`schema_version`。消费者至少考虑**重复、丢失、乱序、超时、取消和恢复**。
+### Event 是什么，和 Tool 有什么区别
+
+Command（命令）表达“请开始测试”，执行端可以接受或拒绝；Event 表达“测试已经完成”这个事实。Tool 调用可以提交命令或查询状态。完成事件由观察到结果的组件产生，供其他组件独立处理。
+
+在压测案例中，Worker 是 Producer（生产者）；通知模块和 Agent 调度器是 Consumer（消费者）。定时器、Webhook 和监控也可以产生事件。Worker 强调执行后台任务的角色，Consumer 强调接收事件的角色。
+
+### 同步返回受理结果，后台继续执行
+
+创建任务的请求可以很快返回 `task-42` 和 `QUEUED`，而测试仍运行五分钟。这只说明任务被受理。请求结束后，Worker 根据持久任务记录独立执行；用户可以用 `get_task_status` 查询，也可以等待完成通知。LLM 无需保持一次生成请求来等待整个测试。
+
+Worker 完成后保存结果并产生 `TaskCompleted`。事件处理器检查事件身份、权限和当前代次（generation），再决定直接通知，还是给 Agent 调度器提交一个新的处理步骤；调度器重新装载上下文后，模型才可能参与分析。**事件不会自动唤醒模型**。
+
+下图区分用户主动查询与完成后的事件路径。两条路径读取同一任务状态；“任务完成”也不表示报告质量已经验证通过。
+
+[![压测任务的同步受理、后台执行与完成事件消费](/assets/notes/ai-agent/04-event-flow.svg)](/assets/notes/ai-agent/04-event-flow.svg)
+
+[查看 Mermaid 图源](/assets/notes/ai-agent/04-event-flow.mmd)。
+
+业务事件表达事实；消息队列负责传递消息；MCP 通知是协议消息，服务于进度或订阅变化等交互。三者不能直接互换。新版订阅调整见[官方消息模式](https://modelcontextprotocol.io/specification/2026-07-28/basic)：协议通知不能代替业务事件的持久保存、重试和消费状态。
+
+### Agent 怎样响应事件与中断
+
+进入调度前先保存事件并检查其适用范围，再判断优先级。事件至少应包含事件身份、来源、类型、发生时间、任务、关联请求、载荷及结构版本，4.9 给出完整示例。消费者还要考虑**重复、丢失、乱序、超时、取消和恢复**。
 
 三类中断策略：
 
@@ -173,30 +234,38 @@ Sidecar/Guard Agent 可以参与风险审查，但最后一道授权边界应由
 任务状态 -> 回调/通知 -> Agent 重新获得上下文后继续
 ```
 
-**工程补充**：任务长时间执行时，状态不能只藏在 LLM 对话中。可以用 Outbox（事务内写事件）、Worker Lease/Fencing（防旧消费者乱写）、Checkpoint（恢复状态）等机制。
+### 进阶：Outbox、重复投递与幂等
+
+进程会重启，任务和消费进度不能只藏在对话或内存里。Checkpoint（检查点）保存可恢复进度；Outbox（本地事务发件箱） 将业务变更和待发送事件保存在同一数据库事务中，避免“任务已创建，启动事件却没保存”。Relay（转发进程）读取 Outbox 并发送事件。
+
+但 Relay 发送成功后、标记已发送前仍可能崩溃。重启后它会再次投递同一个 `event_id`。消费者需要区分“已完成”和“处理中”：已完成可以复用结果，处理中必须恢复或对账，不能看到 ID 就跳过。业务副作用还要有自己的幂等约束。下图的一个事务边界只包住业务记录和 Outbox，不包住队列和远端执行。
+
+[![Outbox 一个事务写入、Relay 崩溃与相同事件重复投递](/assets/notes/ai-agent/04-outbox.svg)](/assets/notes/ai-agent/04-outbox.svg)
+
+[查看 Mermaid 图源](/assets/notes/ai-agent/04-outbox.mmd)。
 
 ### 创建测试任务后，Worker 崩溃了怎么办
 
-下面是本地教学推演，任务和状态均是假设，没有部署数据库、消息队列或 Worker。Outbox 是和业务记录一起保存待发送事件的表或记录；Relay 是负责发送这些事件的转发进程；Worker 是执行任务的消费者。
+下面是持久化系统的教学推演，后文 SQLite 实验只演示其中的本地事务和恢复边界。
 
-| 时点           | 动作或故障                                                                                                       | 持久状态及下一步                                                           |
-| -------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| 创建任务       | 请求带业务幂等键 `tenant-a/create/request-7`；在同一数据库事务内写任务 `task-42` 和 Outbox 事件 `evt-created-42` | 提交后两条记录都存在；回滚则都不生效，避免“任务已建但事件没保存”           |
-| 投递事件       | Relay 发送事件后，在标记“已发送”前崩溃                                                                           | 重启后可能重发同一个 `event_id`，所以 Outbox 不保证消息只投递一次          |
-| 开始执行       | W1 获得任务租约和 fencing token `101`，开始代次 1 的测试，消费状态为处理中                                       | 租约限定占有期限；尚未确认的事件不能仅凭“见过 ID”就当成处理完成            |
-| Worker 崩溃    | 远端测试可能已启动，但 W1 没保存结果或确认消息                                                                   | 环境效果为未知，既不能宣称失败无副作用，也不能无条件重新启动               |
-| 重复投递与恢复 | 租约到期后 W2 取得更大的 token `102`，收到相同事件                                                               | 先查持久消费状态和远端效果；已完成则复用结果，未完成则恢复或对账           |
-| 安全重试或结算 | 若远端支持业务幂等，按 `tenant-a/start/task-42/g1` 查询／重试同次启动；否则在效果不明时保留未知并人工处理        | 业务结果与本地消费完成标记可在同一数据库事务提交；远端副作用仍不在该事务内 |
+| 时点           | 动作或故障                                                                                                       | 持久状态及下一步                                                                      |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 创建任务       | 请求带业务幂等键 `tenant-a/create/request-7`；在同一数据库事务内写任务 `task-42` 和 Outbox 事件 `evt-created-42` | 提交后，确保要么全成功，要么全回滚。彻底杜绝“任务建了，通知却没发”的情况。            |
+| 投递事件       | 负责发消息的 Relay 进程，把事件发给消息队列后，自己突然挂了（还没来得及标记“已发送"。                            | 重启后可能重发同一个 `event_id`，所以 Outbox 不保证消息只投递一次                     |
+| 开始执行       | W1 获得任务租约和 fencing token `101`，开始代次 1 的测试，消费状态为处理中                                       | 租约限定占有期限；尚未确认的事件不能仅凭“见过 ID”就判断为处理完成                     |
+| Worker 崩溃    | 远端测试可能已启动，但 W1 没保存结果或确认消息                                                                   | 环境效果为未知，因为远端可能已经产生副作用，不能假装无事发生、盲目重启。              |
+| 重复投递与恢复 | 租约到期后 W2 取得更大的 token `102`，收到相同事件                                                               | W2 必须先查数据库：如果已做完，直接复用结果；如果是处理中，得去远端“对账”，恢复状态。 |
+| 安全重试或结算 | 如果 W1 突然恢复，想继续写入结果。                                                                               | 底层存储会校验：W1 拿的是 101，现在是 102 时代了，直接拒绝 W1 的写入。                |
 
-**Outbox 的原子性边界是同一数据库事务中的业务记录和事件记录**，不包含消息代理已收到消息、Worker 已执行、远端测试已启动这些事实。Relay 的“发送成功但未记账”窗口和消费者崩溃都可能导致再次投递，见 [Transactional Outbox 原始模式说明](https://microservices.io/patterns/data/transactional-outbox.html)。
+**Outbox 的原子性边界是同一数据库事务中的业务记录和事件记录**，不包含消息队列已收到消息、Worker 已执行、远端测试已启动这些事实。Relay 的“发送成功但未记账”窗口和消费者崩溃都可能导致再次投递，见 [Transactional Outbox 原始模式说明](https://microservices.io/patterns/data/transactional-outbox.html)。
 
-业务幂等键识别“同一次业务意图”，`event_id` 识别“同一条事件”：创建任务和启动测试是不同操作，因此上表使用两个不同作用域的业务键。一次意图可以产生多条不同事件；不同事件也可能重复请求同一业务动作。消息去重不能代替业务幂等，处理中的事件还要能恢复。
+业务幂等键识别“同一次业务意图”，用来识别“用户的同一次意图”。防的是“用户点两次按钮”。`event_id` 识别“同一条事件”：用来识别“同一条消息”。防的是“Relay 发了两遍”。一次意图可能触发多条事件；消息去重不能代替业务去重。
 
-Fencing（隔离旧持有者）要求接收写入的存储或服务检查递增 token：W2 接管后，W1 即使恢复并继续运行，token `101` 也应被拒绝。只在 Worker 自己检查租约时间，无法阻止它暂停后携带旧资格写入；不支持 token 校验的外部系统也不会自动获得这项保护。机制依据见 [Kleppmann 对 lease 与 fencing token 的解释](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html)。
+Fencing（隔离旧持有者）要求接收写入的存储或服务检查递增 token：W2 接管后，W1 即使恢复并继续运行，token `101` 也应被拒绝。老 Worker 拿着旧编号写入，会被底层存储直接拒绝。注意：不能靠 Worker 自己看表算时间，必须让存储层校验。[Kleppmann 对 lease 与 fencing token 的解释](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html)。
 
-`target_generation` 则区分**任务执行代次**，不是租约编号。W2 接管同一次执行仍可处于代次 1；若任务重开为代次 2，服务端需同时核对当前代次与写入资格，拒绝代次 1 的晚到结果。代次 2 内仍可能发生租约交接，需要 fencing 继续约束旧 Worker。
+`target_generation` 则区分**任务执行代次**，不是租约编号。W2 接管 W1 的活，这仍然属于“代次 1”。如果任务彻底重开（变成代次 2），那么代次 1 晚到的结果全部作废。
 
-最后，取消应先记录 `CANCEL_REQUESTED`，再向可取消的执行端发送请求，等待实际停止确认并查询已有副作用。请求取消不等于远端已停止，已发送的通知或已写入的数据也不会自动撤回；必要时另做补偿并记录结果。
+最后，取消应先记录 `CANCEL_REQUESTED`，再向可取消的执行端发送请求，等待实际停止确认并查询已有副作用。请求取消不等于远端已停止，已发送的通知或已写入的数据也不会自动撤回；必要时（比如不能撤回，已产生影响）需要补偿并记录结果。
 
 ## 4.6 工具发现与按需加载 {#_4-6-工具发现-避免把全量工具塞满上下文}
 
@@ -206,11 +275,15 @@ Fencing（隔离旧持有者）要求接收写入的存储或服务检查递增 
 2. 按需检索 Tool：先发现少量候选，再注入 Schema；需要精确的工具描述和检索评价。
 3. Skill 渐进式披露：初始只有名称/描述，触发后再读取流程和相关 Tool。
 
+MCP 的 `tools/list` 解决“Server 提供哪些工具”；Host 的检索和按需注入解决“本轮让模型看到哪些工具”。发现完整目录后，Host 仍可按用户权限和问题筛选，必要时处理分页及目录变化。发现一个工具不等于有权调用它，也不要求把全部 Schema 塞入模型上下文。
+
 “只提供一个万能 Shell”虽然工具定义短，却会大幅扩大执行权限；**压缩工具目录和缩小权限边界是不同目标**。
+
+本地事务只能管住“自己的家”（业务+Outbox）；出了门（消息队列、远端服务）只能靠“至少投递一次”加“业务幂等”来兜底；为了防止旧节点复活产生多次投递的影响，必须依靠底层存储严格校验 Fencing Token。
 
 ## 4.7 执行工具源码：从路径边界到结果验证
 
-`execution-tools/file_tools.py` 把输入路径解析和目录范围判断分开：先获得实际路径，再判断它是否属于工作目录。这个片段值得直接记住，用于理解“资源边界由代码执行”的含义。
+`execution-tools/file_tools.py` 把输入路径解析和目录范围判断分开：先获得实际路径，再判断它是否属于工作目录。这个片段用于理解“资源边界由代码执行”的含义。
 
 源码节选（上下文依赖见原文件）：[chapter4/execution-tools/file_tools.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter4/execution-tools/file_tools.py#L26-L33)。
 
@@ -233,11 +306,66 @@ def _is_safe_path(self, path: Path) -> bool:
 
 [![工具调用：验证、执行与结果处理](/assets/notes/ai-agent/04-tools.png)](/assets/notes/ai-agent/04-tools.png)
 
-图中按参数验证、授权、执行和结果检查组织工具调用；各出口分别保留失败、拒绝与验证结果。[放大查看 PNG](/assets/notes/ai-agent/04-tools.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/04-tools.dot)供对照，不是本版配图的可编辑源文件。
+图中按参数验证、授权、执行和结果检查组织工具调用；各出口分别保留失败、拒绝与验证结果。[放大查看 PNG](/assets/notes/ai-agent/04-tools.png)。
 
 仓库示例中有 LLM 审批和 shell 执行路径。LLM 审查用于辅助判断，不能替代服务端授权。
 
-事件系统可继续读 `chapter6/async-agent`：它在当前仓库属于交互章节，与这里的事件驱动讨论交叉关联。比较取消、排队和并行时，应同时检查子进程是否实际退出、进度是否停止更新，而非只看 `cancelled` 字样。
+事件系统可读 `chapter6/async-agent`：它在当前仓库属于交互章节，与这里的事件驱动讨论交叉关联。比较取消、排队和并行时，应同时检查子进程是否实际退出、进度是否停止更新。
+
+### 最小 MCP 实验：发现并调用同一任务工具
+
+配套目录新增 `mcp_demo.py`，使用官方 Python SDK **`mcp==1.26.0`**，通过本地标准输入／输出（stdio）启动 Server 和 Client；初始化结果必须是 **2025-11-25**，否则断言失败。实现依据见[该版本 SDK 的 Server 与 Client 示例](https://github.com/modelcontextprotocol/python-sdk/tree/v1.26.0)。它只暴露一个查询工具，固定本地测试身份只能访问 `task-42`；真实系统需要另行接入身份认证。
+
+在项目根目录使用 Python 3.10 或更高版本建立独立环境，再安装固定依赖：
+
+```sh
+python -m venv .tmp/ch4-venv
+```
+
+Windows PowerShell：
+
+```powershell
+.\.tmp\ch4-venv\Scripts\python.exe -m pip install -r examples/ai-agent/ch4-tools/requirements-mcp.txt
+.\.tmp\ch4-venv\Scripts\python.exe examples/ai-agent/ch4-tools/mcp_demo.py
+```
+
+macOS / Linux：
+
+```sh
+.tmp/ch4-venv/bin/python -m pip install -r examples/ai-agent/ch4-tools/requirements-mcp.txt
+.tmp/ch4-venv/bin/python examples/ai-agent/ch4-tools/mcp_demo.py
+```
+
+预期标准输出如下，SDK 的服务端日志可能另写到标准错误。发现目录、成功查询及对象授权拒绝分别由断言检查。
+
+```text
+protocol: 2025-11-25
+tools: get_task_status
+task-42: RUNNING
+task-99: isError=true
+```
+
+本次在 Python 3.12 环境实际运行得到以上四行，协议版本、工具发现、获准查询和对象授权拒绝的断言均通过。这验证的是协议发现和工具调用边界，不包括真实用户登录、压测执行或新版协议兼容。stdio 的标准输出专用于协议消息，不能在 Server 工具中随意 `print` 调试信息。
+
+### 最小事件与故障实验：生产、消费、恢复
+
+`event_demo.py` 依赖 Python 标准库，使用临时 SQLite 数据库。生产者在同一事务保存任务完成状态与 `TaskCompleted`；消费者检查事件身份与当前代次，在另一事务中保存一条后续分析请求和消费结果。这里的后续请求只是本地记录，没有调用模型或发送通知。
+
+```sh
+python examples/ai-agent/ch4-tools/event_demo.py
+```
+
+程序先启动消费者子进程，在提交前强制退出，再重开数据库消费，并重复投递同一事件。输出如下：
+
+```text
+producer: task-42 COMPLETED + TaskCompleted committed
+crash: uncommitted consumption and local effect rolled back
+consumed: one durable follow-up
+duplicate: reused committed result
+verified: followups=1 after recovery and duplicate delivery
+```
+
+本次已运行该故障实验：未提交的消费标记与本地效果一起回滚，恢复后重复投递只保留一条后续记录。它证明同一 SQLite 数据库内的事务与去重行为；没有接入 Relay 或消息代理，不证明分布式投递保证。远端压测、邮件等副作用无法随本地事务回滚，仍需业务幂等、效果查询和对账。
 
 ### 源码与实验入口
 
@@ -252,9 +380,11 @@ def _is_safe_path(self, path: Path) -> bool:
 
 通用状态契约在本节维护，第5章只展开Coding场景。授权决定“能不能做”，逐次确认是按风险和既有授权采用的交互步骤；二者都不是业务完成证据。
 
+先看一个故障：启动 `task-42` 的请求超时了，但远端可能已经开始压测。此时“没收到响应”不能推断出“没有执行”。应保存原业务键并查询效果，而不是立刻再启动一次。即使后来报告文件成功写入，内容缺字段也不能算完成用户目标。下面五层状态分别记录这些事实。
+
 | 层级               | 建议值                          | 回答的问题                                           |
 | ------------------ | ------------------------------- | ---------------------------------------------------- |
-| transport/protocol | OK / ERROR                      | 请求是否被协议正确处理；错误映射依具体协议           |
+| transport/protocol | OK / ERROR                      | 请求是否被协议正确处理                               |
 | execution          | SUCCEEDED / FAILED / TIMEOUT    | 执行器是否完成；未抛异常只说明包装层走了成功分支     |
 | business           | SUCCEEDED / FAILED / UNKNOWN    | 业务动作是否获准并完成；可在执行器未抛异常时返回拒绝 |
 | effect             | APPLIED / NOT_APPLIED / UNKNOWN | 环境是否已经产生副作用；超时并不等于未发生           |
@@ -270,11 +400,11 @@ def _is_safe_path(self, path: Path) -> bool:
 }
 ```
 
-状态字段放在统一信封中，业务数据嵌在`data`，避免任意字典里的`success`与外层同名覆盖。此JSON是本地教学契约，不是MCP规定的字段。MCP区分协议错误和带`isError`的工具结果；接入时明确定义本地字段映射，见 [MCP错误处理](https://modelcontextprotocol.io/specification/2025-11-25/server/tools#error-handling)。
+状态字段放在统一信封中，业务数据嵌在`data`，避免任意字典里的`success`与外层同名覆盖。此JSON是本地教学契约，不是MCP规定的字段。MCP区分协议错误和带`isError`的工具结果，见 [MCP错误处理](https://modelcontextprotocol.io/specification/2025-11-25/server/tools#error-handling)。
 
 幂等针对同一次业务意图的重投递，不阻止用户有意执行两次相同参数动作。契约需注明键的租户/操作作用域、存活期、同键不同参数冲突、请求状态查询以及补偿方式。超时后先按原请求ID查询效果，未知时不能盲目重放不可逆动作。[AWS幂等API说明](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/)讨论了请求身份与相同参数的区别。
 
-本地`revised_contracts.tool_envelope()`仅演示状态分层，不实现网络、授权、事务或支付补偿。覆盖案例：业务拒绝不抛异常、超时效果未知、执行成功但验证失败。
+本地`revised_contracts.tool_envelope()`演示状态分层，不实现网络、授权、事务或支付补偿。覆盖案例：业务拒绝不抛异常、超时效果未知、执行成功但验证失败。
 
 ### 三组输入与状态输出
 
@@ -292,6 +422,29 @@ def _is_safe_path(self, path: Path) -> bool:
 
 ## 4.9 公共事件契约：身份、代次与取消
 
+### 先读懂一条完成事件
+
+Worker 已观察到 `task-42` 的第二轮执行完成，产生以下业务事件。类型名和字段是本章约定，不是 MCP 消息格式。
+
+```json
+{
+  "event_id": "evt-completed-42-g2",
+  "source": "benchmark-worker",
+  "type": "TaskCompleted",
+  "task_id": "task-42",
+  "target_generation": 2,
+  "correlation_id": "request-7",
+  "schema_version": 1,
+  "occurred_at": "2026-11-10T02:00:00Z",
+  "received_at": "2026-11-10T02:00:02Z",
+  "payload": {"report_id": "report-42-g2", "outcome": "SUCCEEDED"}
+}
+```
+
+`source` 和 `type` 说明谁产生了什么事实；`task_id` 定位持久任务；`correlation_id` 串起原请求和后续结果。两个时间分别记录发生与接收，不宜仅按到达顺序判断新旧；`schema_version` 让消费者选择兼容的解析规则。收到事件后仍须核对可信来源、任务范围及当前代次。
+
+### 事件身份与执行代次
+
 ```yaml
 event_id: "输入事件唯一ID；重投递保持不变"
 task_id: "持久任务身份"
@@ -305,7 +458,15 @@ payload: {}
 
 `event_id`用于同一事件去重，`target_generation`标明它针对哪一轮执行/播放，`correlation_id`关联请求与结果。输出时新生成的流水号不能替代输入去重键。重复同ID同载荷可返回先前结果；同ID不同载荷要报身份冲突；旧代次事件和晚到输出不能修改新代次状态。
 
-取消需要区分请求、接受、实际停止和效果查询/补偿。任务状态应与遥测日志分开保存，不能因日志丢失就将业务状态改为成功。持久化去重窗口、原子结算、恢复后的代次和租约由运行时负责；示例中的内存集合或锁，不保证跨进程或重启后的正确性。
+### 租约、Fencing 与取消
+
+Lease（租约）限定 Worker 的占有期限；Fencing（隔离旧持有者）用递增 token 阻止旧 Worker 写入。下图中 W1 的租约过期后，W2 在同一代次接管并持有 `102`。接收方已记录新的写入资格，就必须拒绝 W1 的 `101`；若任务重开为代次 2，还必须拒绝代次 1 的结果。代次与 token 各管一件事，远端也必须实际执行校验。
+
+[![Worker 租约接管、旧 token 拒绝与任务代次检查](/assets/notes/ai-agent/04-fencing.svg)](/assets/notes/ai-agent/04-fencing.svg)
+
+[查看 Mermaid 图源](/assets/notes/ai-agent/04-fencing.mmd)。
+
+取消需要区分请求、接受、实际停止和效果查询/补偿。任务状态应与遥测日志分开保存，不能因日志丢失就将业务状态改为成功。持久化去重窗口、原子结算、恢复后的代次和租约由运行时负责。
 
 第9章将此契约用于音频打断与播放器ACK，第10章用于协作消息和产物版本。本地`PlaybackGuard`只实现同进程的事件身份/代次检查，返回`CANCEL_REQUESTED`，不会冒充真实播放器已静音。
 
