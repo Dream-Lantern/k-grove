@@ -77,7 +77,7 @@ bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --topic review-connect-orders --from-beginning --max-messages 1 --timeout-ms 10000
 ```
 
-创建请求返回后，重复查询状态，等 Task 0 进入 `RUNNING` 再观察消费输出。若它进入 `FAILED`，先查看任务状态和 Worker 日志。预期消费者读到 `order-001`。单 Broker 环境还需满足[内部位点 Topic 的创建条件](/articles/kafka-log-model.html)。再追加一行，确认该行已进入 Kafka，并在对应源位点落盘前强制终止 Worker。重启后用原位点文件、原文件路径和相同名称重新提交 Connector 配置，观察该行是否重放。若无法确认终止发生在这个窗口，应将结果记为触发条件未确认。停止前可用 REST DELETE 删除本实验 Connector，再正常结束 Worker，清理本实验文件和位点文件。此例用于本地文本接入，实验未联机实测。
+创建请求返回后，重复查询状态，等 Task 0 进入 `RUNNING` 再观察消费输出。若它进入 `FAILED`，先查看任务状态和 Worker 日志。预期消费者读到 `order-001`。单 Broker 环境还需满足[内部位点 Topic 的创建条件](/articles/kafka-log-model.html)。再追加一行，确认该行已进入 Kafka，并在对应源位点落盘前强制终止 Worker。重启后用原位点文件、原文件路径和相同名称重新提交 Connector 配置，观察该行是否重放。若无法确认终止发生在这个窗口，应将结果记为触发条件未确认。停止前可用 REST DELETE 删除本实验 Connector，再正常结束 Worker，清理本实验文件和位点文件。此例用于本地文本接入。
 
 ## 2. Streams 的流表、窗口与状态恢复 {#_2-kafka-streams-处理的是什么}
 
@@ -153,7 +153,7 @@ bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --topic review-window-output --from-beginning --property print.key=true
 ```
 
-输入值格式为 `事件时间毫秒,SKU`。按给定顺序、单分区执行时，`sku-100@0` 预期先输出 1，再因 7000 ms 的记录输出 2。16000 ms 推进流时间越过 15000 ms 后，8000 ms 的记录不应再增加窗口计数。输出是更新流。若用单 Broker，其组位点内部 Topic 也须可创建，例如在新实验环境首次创建前设置 `offsets.topic.replication.factor=1`。停止应用后，只有明确放弃该实验的恢复状态时才清理专用状态目录和 Topic。以上 Java 示例及窗口行为未实测。
+输入值格式为 `事件时间毫秒,SKU`。按给定顺序、单分区执行时，`sku-100@0` 预期先输出 1，再因 7000 ms 的记录输出 2。16000 ms 推进流时间越过 15000 ms 后，8000 ms 的记录不应再增加窗口计数。输出是更新流。若用单 Broker，其组位点内部 Topic 也须可创建，例如在新实验环境首次创建前设置 `offsets.topic.replication.factor=1`。停止应用后，只有明确放弃该实验的恢复状态时才清理专用状态目录和 Topic。
 
 ## 3. 跨集群复制与业务灾备切换 {#_3-跨集群复制不等于同步多主事务}
 

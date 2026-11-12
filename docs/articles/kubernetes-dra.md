@@ -19,7 +19,7 @@ order: 32
 
 # 第三十二章 DRA：版本边界与设备分配
 
-> 本册主线是 Kubernetes 1.28。本章分别介绍早期 DRA 模型与后续结构化模型，使用时需匹配 API、门控与驱动版本；相关部署尚未实际验证。
+> 本册主线是 Kubernetes 1.28。本章分别介绍早期 DRA 模型与后续结构化模型，使用时需匹配 API、门控与驱动版本。
 
 ## 1. 先确定讨论的是哪一代模型
 
@@ -68,7 +68,7 @@ kubectl get resourceclaims -n study
 kubectl get podschedulingcontexts -n study
 ```
 
-命令未执行。API 存在但没有对象时，可能返回 `No resources found`；未服务该资源类型时，可能提示 `the server doesn't have a resource type`。403 则先检查查询权限，不能把所有报错都当成 API 未启用。查询成功也不能证明驱动正常。
+API 存在但没有对象时，可能返回 `No resources found`；未服务该资源类型时，可能提示 `the server doesn't have a resource type`。403 则先检查查询权限，不能把所有报错都当成 API 未启用。查询成功也不能证明驱动正常。
 
 ### Claim 与容器的引用关系
 

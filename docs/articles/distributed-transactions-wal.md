@@ -77,7 +77,7 @@ T4  对应 WAL 尚未持久
 T5  系统突然断电：最近已回复成功的事务可能丢失
 ```
 
-这与 `fsync=off` 不同。异步提交保留恢复一致性，但承担最近事务丢失的风险；关闭 fsync 会破坏数据库依赖的持久写入顺序保证，操作系统崩溃或掉电时还可能导致严重损坏。这里不是建议修改生产配置。[PostgreSQL 17 异步提交](https://www.postgresql.org/docs/17/wal-async-commit.html)
+这与 `fsync=off` 不同。异步提交保留恢复一致性，但承担最近事务丢失的风险；关闭 fsync 会破坏数据库依赖的持久写入顺序保证，操作系统崩溃或掉电时还可能导致严重损坏。[PostgreSQL 17 异步提交](https://www.postgresql.org/docs/17/wal-async-commit.html)
 
 配置同步备库后，`synchronous_commit` 还可以选择远端等待边界：例如 `on` 可等待同步备库持久化，`remote_write` 等待远端文件系统写入而不等于远端抗操作系统崩溃持久化，`remote_apply` 进一步等待重放应用；`local` 则只等待本地持久化。具体还取决于 `synchronous_standby_names` 等配置。**本地 WAL 持久化、远端收到、远端持久化与远端应用是不同条件**，这些复制配置也不能直接称为 Raft 多数派提交。[PostgreSQL 17 WAL 参数](https://www.postgresql.org/docs/17/runtime-config-wal.html#GUC-SYNCHRONOUS-COMMIT)
 
@@ -154,7 +154,7 @@ PostgreSQL 17 在启用 `full_page_writes` 时，检查点后页面第一次修�
 
 ## 6. 结合具体数据库理解恢复契约 {#_6-与原笔记的关系}
 
-学习主线是恢复日志先于相应页面持久化，再由提交记录、页面状态与并发控制共同解释恢复结果。实际数据库的同步提交参数、存储保证和恢复工具，应按确切版本核对；本章未运行数据库实验。
+学习主线是恢复日志先于相应页面持久化，再由提交记录、页面状态与并发控制共同解释恢复结果。实际数据库的同步提交参数、存储保证和恢复工具，应按确切版本核对。
 
 ## 联读
 

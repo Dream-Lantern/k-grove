@@ -151,7 +151,7 @@ MIG 下某些 NVML 利用率接口可能返回不支持，`nvidia-smi` 显示 N/
 
 以 NVML R535 的 C 签名为参照，`nvmlDeviceGetGpuInstanceById` 接受 device handle 并返回 GI handle；`nvmlGpuInstanceGetComputeInstanceById` 再接受该 GI handle 并返回 CI handle。不要用 MIG device handle 或物理 GPU handle 替代第二步的父 GI。[NVML R535 MIG API](https://docs.nvidia.com/deploy/archive/R535/nvml-api/group__nvmlMultiInstanceGPU.html)
 
-下面是 Python 绑定调用关系片段，未运行；`physical`、`gi_id`、`ci_id` 必须来自当前枚举结果，包签名也需核对，不是创建操作：
+下面是 Python 绑定调用关系片段；`physical`、`gi_id`、`ci_id` 必须来自当前枚举结果，包签名也需核对，不是创建操作：
 
 ```python
 gi = pynvml.nvmlDeviceGetGpuInstanceById(physical, gi_id)

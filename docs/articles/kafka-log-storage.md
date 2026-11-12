@@ -104,7 +104,7 @@ Segment Roll（日志段滚动）关闭当前段的追加阶段，并建立新�
 5. 按批次长度和最后 Offset 继续搜索；找到覆盖目标的候选批次后，按需解压并解析 Record，计算 `baseOffset + offsetDelta` 定位记录。
 6. 若 1006 已被 Compaction（按 Key 压缩清理）移除，应按读取范围和协议继续寻找实际可用的后续记录，而不是凭空恢复它；若没有符合可见边界的记录，则不会因为索引入口存在就返回目标。
 
-表中 320、900 全部是**教学假设字节位置，不是 Kafka 文件测量结果**。`LogSegment.append()` 会将某次追加的最大 Offset 和该次数据的物理起点用于索引；入口可能指向含更早记录的批次，解释了为什么仍要解析扫描，而不能把索引当逐条消息地址表。
+表中 320、900 全部是**教学假设字节位置**。`LogSegment.append()` 会将某次追加的最大 Offset 和该次数据的物理起点用于索引；入口可能指向含更早记录的批次，解释了为什么仍要解析扫描，而不能把索引当逐条消息地址表。
 
 `index.interval.bytes` 默认 4096，控制大约累计多少追加字节后再考虑索引条目。`LogSegment.append()` 使用累计字节计数及追加边界，不是“每第 4096 条消息建一个索引”，也不是每隔精确 4096 字节一定有一个条目。批次大小和压缩改变物理长度，稀疏索引因此需要与 `.log` 一起理解。
 
@@ -149,7 +149,7 @@ CRC-32C（32-bit Cyclic Redundancy Check, Castagnoli，Castagnoli 多项式的 3
 
 `DefaultRecord` 使用可变长编码：`length`、`attributes`、`timestampDelta`、`offsetDelta`，以及带长度的 Key、Value 和 Headers（头字段）。Headers 包含头字段数量、各 Header Key / Value；Key、Value 的长度可以表达 Null，不能把零长度与 Null 混同。Varint/Varlong（变长整数）使这些字段的起始位置随实际值变化，不能照搬批头那张固定偏移表解析每条 Record。
 
-教学例子：某批次 baseOffset=1000，某条记录 offsetDelta=6，它的逻辑 Offset 为 `1000 + 6 = 1006`。在 CreateTime（创建时间）路线下，若 baseTimestamp=1700000000000、timestampDelta=25，则记录时间戳为 1700000000025ms；这些数值不是真实采样。LogAppendTime（日志追加时间）路线由批次时间戳类型控制，不能无条件套用同一个时间戳加法。
+教学例子：某批次 baseOffset=1000，某条记录 offsetDelta=6，它的逻辑 Offset 为 `1000 + 6 = 1006`。在 CreateTime（创建时间）路线下，若 baseTimestamp=1700000000000、timestampDelta=25，则记录时间戳为 1700000000025ms。LogAppendTime（日志追加时间）路线由批次时间戳类型控制，不能无条件套用同一个时间戳加法。
 
 假设原批次范围为 1000～1008，经 Compaction 后只剩 1001、1006、1008：记录数为 3，批次边界及相关序列语义仍需保留，不能把幸存记录重编号为 1000、1001、1002。`lastOffsetDelta=8` 不因此等于 `recordsCount-1=2`。这既解释了 Offset 空洞，也解释了幂等和事务需要保留批次级身份、代际和序列信息。有关控制记录与事务状态的细节见[第 14 章](/articles/kafka-transactions.html)。
 
@@ -179,7 +179,7 @@ Page Cache（页缓存）缓存文件页，近期追加和热读取可能由内�
 
 ### 只读查看日志文件与索引
 
-以下为**未执行**的 Kafka 3.9 Bash 示例。优先使用隔离实验环境中已经停止变化的副本文件，或一致性复制出的诊断目录；不要对生产活动文件做手工修改。`kafka-dump-log.sh` 选项根据 3.9.0 `DumpLogSegments` 中的定义列出，最终仍应以使用的发行包 `--help` 核对：
+以下为 Kafka 3.9 Bash 示例。优先使用隔离实验环境中已经停止变化的副本文件，或一致性复制出的诊断目录；不要对生产活动文件做手工修改。`kafka-dump-log.sh` 选项根据 3.9.0 `DumpLogSegments` 中的定义列出，最终仍应以使用的发行包 `--help` 核对：
 
 ```bash
 bin/kafka-dump-log.sh --help

@@ -29,7 +29,7 @@ order: 23
 
 ## 2. 各项目看什么，而不是谁永远最快
 
-以下是阅读方向，不是功能完整性承诺。FP6、NVMe offload、固定长上下文等不能从“属于同一个生态”直接归到某个独立服务项目，更不能据此承诺单卡加载任意模型。
+可以从以下项目了解推理服务的实现。FP6、NVMe offload、固定长上下文等不能从“属于同一个生态”直接归到某个独立服务项目。
 
 核对具体支持范围时直接查看项目资料：[TensorRT-LLM](https://nvidia.github.io/TensorRT-LLM/)、[LMDeploy](https://lmdeploy.readthedocs.io/en/latest/)、[DeepSpeed-MII](https://github.com/deepspeedai/DeepSpeed-MII)。不要用过时截图中的星级替代当前支持矩阵。
 
@@ -97,7 +97,7 @@ SLO（Service Level Objective，服务等级目标）和 Goodput（满足条件�
 
 ### 一次版本化压测的入口
 
-以下用 vLLM v0.10.2 的客户端测试一个已经授权、独立部署的 OpenAI Completions 端点。先用真实短请求确认协议和模型名。设置 `BASE_URL`、`MODEL`、`TOKENIZER_DIR` 为该实例 URL、服务模型名与固定版本的本地 Tokenizer。随机负载用于性能对照，质量另跑同一固定用例集。本例未运行。
+以下用 vLLM v0.10.2 的客户端测试一个已经授权、独立部署的 OpenAI Completions 端点。先用真实短请求确认协议和模型名。设置 `BASE_URL`、`MODEL`、`TOKENIZER_DIR` 为该实例 URL、服务模型名与固定版本的本地 Tokenizer。随机负载用于性能对照，质量另跑同一固定用例集。
 
 ```bash
 vllm bench serve --backend openai --base-url "$BASE_URL" \

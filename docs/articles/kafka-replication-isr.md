@@ -146,7 +146,7 @@ JMX（Java Management Extensions，Java 管理扩展）提供运行时指标。�
 | `kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions` | 当前 Broker 负责的 Leader 分区中，ISR 数少于分配副本数的数量；不是缺少几条消息 |
 | `kafka.server:type=ReplicaManager,name=UnderMinIsrPartitionCount` | 低于有效最小 ISR 的 Leader 分区数；与“欠复制”不是同一个阈值                    |
 | `kafka.server:type=ReplicaManager,name=IsrShrinksPerSec`          | ISR 收缩事件速率/计数指标；结合具体分区和滞后原因解读                          |
-| `kafka.server:type=ReplicaManager,name=IsrExpandsPerSec`          | ISR 扩张事件速率/计数指标；扩张不代表业务恢复已完整验收                        |
+| `kafka.server:type=ReplicaManager,name=IsrExpandsPerSec`          | ISR 扩张事件速率/计数指标                                                      |
 
 可替换 `--object-name` 分别查询以上指标；跨 Broker 汇总时注意采样时间和 Leader 迁移，避免重复解释同一分区。复制正常时 URP 通常为 0，但单个快照不能证明后续无故障，也不能从 ISR 数量反算所有副本实际字节进度。
 

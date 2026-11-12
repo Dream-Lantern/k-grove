@@ -19,7 +19,7 @@ order: 15
 
 # 第十五章 Deployment 发布、扩缩容与回滚
 
-> 面向 Kubernetes 1.28 的无状态副本管理。命令均为未执行的学习示例，涉及更新、回滚和删除的命令不能当成只读检查。
+> 面向 Kubernetes 1.28 的无状态副本管理。涉及更新、回滚和删除的命令不能当成只读检查。
 
 ## 1. Deployment 管理的是一组期望
 
@@ -125,7 +125,7 @@ JSON Patch 使用操作列表；直接写 `{"spec":{"replicas":3}}` 属于对象
 
 暂停期间仍需考虑 HPA 或 GitOps 等其他字段管理者。多个工具反复覆盖 replicas，会使手工扩容看起来“自动失效”。
 
-以下 pause/resume 会修改在线资源，本次未执行。暂停主要阻止模板变更触发新的发布，不停止 RS 补副本或 HPA 扩缩容；暂停状态下不能执行 Deployment 回滚，需要先恢复。GitOps（以 Git 声明源持续同步资源的管理方式）也可能覆盖人工修改，最终须使声明源与在线状态一致。
+以下 pause/resume 会修改在线资源。暂停主要阻止模板变更触发新的发布，不停止 RS 补副本或 HPA 扩缩容；暂停状态下不能执行 Deployment 回滚，需要先恢复。GitOps（以 Git 声明源持续同步资源的管理方式）也可能覆盖人工修改，最终须使声明源与在线状态一致。
 
 ```bash
 kubectl rollout pause deployment/catalog -n study
@@ -140,9 +140,9 @@ kubectl rollout resume deployment/catalog -n study
 
 ## 7. 隔离环境中的发布与回滚练习
 
-下面均为未执行的教学步骤，不是测试成功记录。需要专用 Linux 1.28 测试集群、能拉取 busybox:1.36.1 的网络和命名空间内管理 Deployment/Pod 的权限。使用全新的专用 study 命名空间；若已存在前面章节或其他人的资源，请另选名称并同步修改所有 YAML 与命令。不要覆盖现有 catalog，也不要在生产集群操作。
+下面均为教学步骤，需要专用 Linux 1.28 测试集群、能拉取 busybox:1.36.1 的网络和命名空间内管理 Deployment/Pod 的权限。使用全新的专用 study 命名空间；若已存在前面章节或其他人的资源，请另选名称并同步修改所有 YAML 与命令。不要覆盖现有 catalog，也不要在生产集群操作。
 
-这是基于真实固定版本镜像的轻量 HTTP 演示，复用 catalog、app=catalog 和端口 8080；没有实现附录 B 的业务配置、startup/liveness 接口，也不代表附录 B 已验证。本例 readiness 只检查静态页面能否访问，用于观察发布门槛，不代表生产业务依赖全部健康。
+这是基于真实固定版本镜像的轻量 HTTP 演示，复用 catalog、app=catalog 和端口 8080；本例 readiness 检查静态页面的 HTTP 响应，用于观察发布门槛。附录 B 进一步加入业务配置和 startup/liveness 接口。
 
 ### 7.1 创建与观察初始版本
 

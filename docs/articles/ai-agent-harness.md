@@ -167,7 +167,7 @@ raise StepBudgetExceeded()
 
 ### 从自然语言到可执行输入
 
-**教学需求：**“在已授权的实验端点上，检查并发 32 时，首个输出词元延迟的 p95 是否不超过 1500 毫秒，且请求成功率是否至少为 99%；先给我方案，批准后再执行。”数字是用户目标的假设输入，不是测得的性能或通用推荐值。
+**教学需求：**“在已授权的实验端点上，检查并发 32 时，首个输出词元延迟的 p95 是否不超过 1500 毫秒，且请求成功率是否至少为 99%；先给我方案，批准后再执行。”
 
 TTFT（Time to First Token，首个输出词元延迟）在本例约定为客户端发出请求至收到第一个输出词元的时间；Token（词元）是模型处理文本的基本单元。p95 指第 95 百分位数：将延迟从小到大排列，约 95% 的样本不超过该值；统计时需固定样本集合和计算方法。
 
@@ -261,7 +261,7 @@ return windowed
 
 ### 上下文消融的对照方法 {#如何做一个有解释力的对照}
 
-消融实验（Ablation Study）通过有控制地移除某类输入或能力，观察它对任务的影响。基线（Baseline）是用于比较的完整配置。下表区分**固定源码的处理方式**与**待实验检验的现象**，不把预测写成实测结论：
+消融实验（Ablation Study）通过有控制地移除某类输入或能力，观察它对任务的影响。基线（Baseline）是用于比较的完整配置。下表区分**固定源码的处理方式**与**待实验检验的现象**，用于设计后续对照：
 
 | 模式              | 这份实现实际改变什么                                                    | 可以观察什么，怎样解释                                                                   |
 | ----------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -277,7 +277,7 @@ return windowed
 
 ### 按步骤完成一次对照
 
-以下是供以后复现的步骤与命令，本次只核对源码和命令入口，未执行上游程序或调用模型。
+下面按步骤组织对照实验：
 
 1. **固定环境。** 获取上述固定提交，按对应 README 准备 Python 与依赖。记录模型服务商、明确的模型标识、工具、输入文件校验值、采样参数和迭代上限；密钥从环境变量读取，不写进笔记或日志。在线内容应固定快照。
 2. **先读离线轨迹。** 在 `chapter1/web-search-agent` 执行 `python main.py --provider offline-demo --output demo.json`，对照 `trace` 与 `answer` 标记调用、观察和退出。这是预写数据回放，不能用于比较模型能力。
@@ -315,7 +315,7 @@ python run_experiment_1_1.py --provider <PROVIDER> --model <MODEL_ID> --modes fu
 
 ## 学习资料与代码出处
 
-本篇为个人学习整理，参考李博杰《深入理解 AI Agent：设计原理与工程实践》及 [ai-agent-book](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6)。代码节选保留正文中的固定提交链接，引用代码沿用上游 [Apache-2.0 许可证](/licenses/ai-agent-book-APACHE-2.0.txt)，不适用本站 CC0 声明；可对照 [该提交的 LICENSE](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/LICENSE)。DemoServe 任务、两轮调用和评测判断表为本篇教学示例，未作为实测结果。
+本篇为个人学习整理，参考李博杰《深入理解 AI Agent：设计原理与工程实践》及 [ai-agent-book](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6)。代码节选保留正文中的固定提交链接，引用代码沿用上游 [Apache-2.0 许可证](/licenses/ai-agent-book-APACHE-2.0.txt)，不适用本站 CC0 声明；可对照 [该提交的 LICENSE](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/LICENSE)。
 
 - [ReAct 论文（v3）](https://arxiv.org/abs/2210.03629v3)：理解原始方法与一般工具调用循环的区别。
 - [Google SRE：Service Level Objectives](https://sre.google/sre-book/service-level-objectives/)：理解指标与服务等级目标的关系。

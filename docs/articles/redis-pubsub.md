@@ -21,13 +21,13 @@ order: 11
 
 PubSub（Publish/Subscribe，发布/订阅）将当前消息分发给相应的在线订阅者，适合通知和实时推送。它采用 At-most-once Delivery（最多一次投递）：对一次匹配的分发，消息至多发送一次，失败后不自动重发。断线期间不会自动重放，也没有供消费者恢复的历史队列或类似 Streams XACK 的业务确认。[官方投递语义](https://redis.io/docs/latest/develop/pubsub/#delivery-semantics)
 
-以下是 Redis 命令与教学推演，未实际建立连接或发布消息。示例以 Redis Open Source 7.2.0 为参照，明确区分订阅连接和发布连接；交互客户端是否允许订阅后继续输入命令，需要另查其支持情况。
+以下是 Redis 命令与教学推演。示例以 Redis Open Source 7.2.0 为参照，明确区分订阅连接和发布连接；交互客户端是否允许订阅后继续输入命令，需要另查其支持情况。
 
 ![发布者、频道与多个在线订阅者](/assets/notes/redis/redis-study-pubsub.svg)
 
 ## 1. 一对多通知
 
-新增教学流程，未执行。订阅连接 A 依次建立频道订阅和模式订阅：
+新增教学流程。订阅连接 A 依次建立频道订阅和模式订阅：
 
 ```redis
 SUBSCRIBE demo:event:created

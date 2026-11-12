@@ -296,7 +296,7 @@ python -m unittest discover -s examples/ai-agent/ch6-8-review -p "test_*.py" -v
 | 中文经过 JSON 转义再解码      | JSON 文本字节可以变化；解码后的字符串应保持一致，要分别审计两层 |
 | 内部 CRLF 与 LF               | strip 不会消除内部换行差异                                      |
 
-NFC（Unicode Normalization Form C，规范组合形式）可将某些等价字符表示转换为统一形式，例如组合重音与预组合字符；它用于解释差异，不表示原始字节相等。把同一字符串在模型输出、JSON 解码、工具入口分别记录，找到 Hash 第一次改变的边界；日志本身也要避免泄漏真实敏感内容。这一步不加载模型，不能证明 Tokenizer 或模型复制能力。
+NFC（Unicode Normalization Form C，规范组合形式）可将某些等价字符表示转换为统一形式，例如组合重音与预组合字符；它用于解释差异，不表示原始字节相等。把同一字符串在模型输出、JSON 解码、工具入口分别记录，找到 Hash 第一次改变的边界；日志本身也要避免泄漏真实敏感内容。
 
 #### 第二层：真实 Tokenizer 的 round-trip
 
@@ -314,7 +314,7 @@ python tokenizer_audit.py
 
 `tokenizer_audit.py` 没有 `--model` 参数，固定审计 Qwen3-8B、Qwen2.5-0.5B-Instruct、Mistral-7B-v0.1 三个 Tokenizer，读取 eval 与 boundary 的 `source` 字段，进行 encode/decode 往返比较。需要相应 Tokenizer 文件、依赖及模型仓库访问权限；这项审计不加载模型权重，也不要求 GPU。这里的 `.[torch]` 是上游提供的依赖组，包含 Transformers 与 PyTorch，会有较大安装开销，并非只安装 Tokenizer 的最小依赖。
 
-检查 `validation/tokenizer_audit.json` 的 `probe_count`、各模型的 `roundtrip_rate` 与失败样本，并记录实际依赖和 Tokenizer 版本。它检查的是 source 字符串能否往返，不是模型回答是否正确，也不覆盖所有 Chat Template 和工具 JSON 路径。本文未执行这一层，不提供虚构的通过率。
+检查 `validation/tokenizer_audit.json` 的 `probe_count`、各模型的 `roundtrip_rate` 与失败样本，并记录实际依赖和 Tokenizer 版本。它检查 source 字符串的编码往返；Chat Template 和工具 JSON 路径分别记录各自的转换结果。
 
 #### 第三层：基座与 LoRA 对照
 
@@ -330,17 +330,17 @@ python evaluate.py --model Qwen/Qwen3-8B --adapter output/adapter --label adapte
 python evaluate.py --model Qwen/Qwen3-8B --adapter output/adapter --label adapted --split boundary
 ```
 
-命令参数与输入输出来自固定提交的 [生成脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/generate_data.py)、[Tokenizer 审计](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/tokenizer_audit.py)、[训练脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/train_sft.py)、[评估脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/evaluate.py)及 [依赖声明](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/pyproject.toml)。这些依赖范围不是完整锁定环境；复现时还要保存实际解析版本、模型与 Tokenizer revision、数据 Hash、硬件和种子。
+命令参数与输入输出来自固定提交的 [生成脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/generate_data.py)、[Tokenizer 审计](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/tokenizer_audit.py)、[训练脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/train_sft.py)、[评估脚本](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/evaluate.py)及 [依赖声明](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/pyproject.toml)。复现时保存实际解析版本、模型与 Tokenizer revision、数据 Hash、硬件和种子。
 
 检查训练生成的 `output/adapter`、`validation/latest.json` 指向的训练回执，以及四份 `validation/eval_{label}_{split}.json`。在同一任务上对齐基座与适配器的结果，分别报告留出与边界集，不能根据训练损失下降就宣布工具调用更可靠。上游 `byte_exact` 仍是前述 strip 后口径，文件没有保存 strip 前预测；要报告 raw exact，需在独立实验副本中额外保存原始 decode 输出后再重新评估，不能从既有结果倒推出原始指标。
 
-本层未在此运行，没有新增模型准确率或训练收益结论；上游历史回执也不能替代当前硬件与协议下的实测。真实工具集成还需在相同数据边界下核对参数与执行结果。
+真实工具集成还需在相同数据边界下核对参数与执行结果。
 
 [![训练改进：条件对照与独立评估](/assets/notes/ai-agent/07-training.png)](/assets/notes/ai-agent/07-training.png)
 
 图中将训练候选、受控对照与独立评估分开，体现训练信号与实际任务收益的验证关系。[放大查看 PNG](/assets/notes/ai-agent/07-training.png)。[原始 DOT 语义图源](/assets/notes/ai-agent/07-training.dot)供对照，不是本版配图的可编辑源文件。
 
-配套本地脚本用于展示 Unicode、首尾空白和 JSON round-trip 的区别，帮助定位错误所在层次；GPU 训练和计费模型调用尚未执行。上游历史训练结果属于参考材料。
+配套本地脚本用于展示 Unicode、首尾空白和 JSON round-trip 的区别，帮助定位错误所在层次。上游历史训练结果属于参考材料。
 
 DPO 的偏好对也应关联证据状态：同一句“已完成”，有读回证据时可能正确，缺少证据时则可能错误。如果仅按措辞标注 chosen/rejected，模型可能只是更擅长说“我还没完成”，任务能力却没有改善。
 

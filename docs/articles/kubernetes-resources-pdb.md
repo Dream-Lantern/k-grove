@@ -106,7 +106,7 @@ QoS（Quality of Service，服务质量类别）根据 CPU、内存配置分类�
 
 QoS 可参与节点压力下的处理，但不是 CPU 性能排名或业务优先级。Burstable 不代表资源一定不足，BestEffort 不代表立即被驱逐；Guaranteed 仍可能因内存 limit 触发 OOM，不等于业务 SLO（Service Level Objective，服务等级目标）的保证，也不等于 PriorityClass（优先级类别）。
 
-以下只读命令对照最终保存的配置与状态，本次未执行：
+以下只读命令对照最终保存的配置与状态：
 
 ```bash
 kubectl get pod POD_NAME -n NAMESPACE -o jsonpath='{.status.qosClass}{"\n"}'
@@ -182,8 +182,6 @@ kubectl get pods -n study -l app=catalog
 设计预算时需要考虑：副本数、每副本承载能力、就绪检查、故障域、节点维护与依赖。单副本服务要求“不允许中断”可能阻塞受控驱逐，但不会让它自动获得高可用。
 
 进阶字段 `unhealthyPodEvictionPolicy` 在 v1.28 受 PDBUnhealthyPodEvictionPolicy 门控控制，为默认开启的 Beta，并非所有版本的稳定字段。未指定时使用 IfHealthyBudget：Running 但未 Ready 的 Pod，需应用当前健康数不低于所需健康数才允许按该规则驱逐。AlwaysAllow 则允许驱逐这类未健康的 Running Pod，不要求满足健康预算；它不取消健康 Pod 的预算检查。Pending、Succeeded、Failed 等 phase 的处理另有规则，不能把所有非 Ready Pod 混为一类。实际集群若关闭门控，不能依赖该字段。[v1.28.0 门控定义](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/features/kube_features.go)与[1.28 不健康 Pod 驱逐策略](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/run-application/configure-pdb.md)共同限定此行为。
-
-本章未执行 drain 或驱逐测试，不能据此声称维护不会影响服务。
 
 ## 6. 如何把数字变成可解释的配置
 

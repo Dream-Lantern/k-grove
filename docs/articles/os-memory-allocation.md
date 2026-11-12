@@ -102,7 +102,7 @@ order: 14
 
 ## 6. Python 空闲区模拟实验
 
-保存为 `allocator.py`，运行 `python3 allocator.py`。只在 Python 中管理整数区间，不向主机申请对应大小的真实内存；所有区间使用半开边界，未覆盖范围是固定占用区。它用地址顺序列表实现三种策略，故查找成本不能代表生产级 malloc。
+保存为 `allocator.py`，运行 `python3 allocator.py`。只在 Python 中管理整数区间，不向主机申请对应大小的真实内存；所有区间使用半开边界，未覆盖范围是固定占用区。它用地址顺序列表实现三种策略，查找时按地址顺序遍历空闲区间。
 
 ```python
 class Arena:

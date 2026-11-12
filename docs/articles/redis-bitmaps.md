@@ -21,7 +21,7 @@ order: 8
 
 记录用户当天是否活跃时，每人只需一个“是/否”状态。Bitmap（位图）利用 String（字符串）的 bit（二进制位，取值为 0 或 1）保存这些标记，**不是独立的 Redis 数据类型**。用户标识能映射到紧凑、有界的位置时，这种存法可以节省空间，String 基础见 [第 3 章](/articles/redis-strings.html)。
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，全部未实际运行。预期结果是教学推演，假定各示例新键起初不存在、无并发修改；同节接续命令沿用前文数据。以 Redis Open Source 7.2.0 为基准，新参数另标最低版本。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，预期结果是教学推演，假定各示例新键起初不存在、无并发修改；同节接续命令沿用前文数据。以 Redis Open Source 7.2.0 为基准，新参数另标最低版本。
 
 ## 1. 先确定偏移映射
 
@@ -50,7 +50,7 @@ GET demo:bitmap
 
 预期依次为旧位值 `0`、当前位值 `1`、一个字节 `0x80`。GET 返回的是二进制字符串，交互客户端可能显示为 `"\x80"`，不是四个可见字符组成的文本；GETBIT 只返回指定位置的 `0` 或 `1`。[SETBIT](https://redis.io/docs/latest/commands/setbit/) · [GETBIT](https://redis.io/docs/latest/commands/getbit/)
 
-再看按用户位置记录活跃标记的例子，未执行：
+再看按用户位置记录活跃标记的例子：
 
 ```redis
 SETBIT demo:active:day-1 42 1
@@ -127,7 +127,7 @@ BITCOUNT demo:{active}:both
 BITCOUNT demo:{active}:any
 ```
 
-四次 SETBIT 预期均返回旧位 `0`；两次 BITOP 均返回结果字符串长度 `1` 字节，后两次计数分别为 `1`、`3`。这是命令结果推演，不是运行记录。
+四次 SETBIT 预期均返回旧位 `0`；两次 BITOP 均返回结果字符串长度 `1` 字节，后两次计数分别为 `1`、`3`。这是命令结果推演。
 
 AND/OR/XOR 会把较短源的缺失字节按零处理，结果长度取最长源长度；NOT 只能有一个源，结果与该源等长。缺失源按空字符串处理。NOT 也会翻转范围内未分配给用户的位置，业务仍需限制有效 ID 范围，不能直接当作“未活跃用户名单”。[BITOP](https://redis.io/docs/latest/commands/bitop/)
 
@@ -163,7 +163,7 @@ KiB（Kibibyte，二进制千字节）等于 1024 字节。容量判断可以归
 MEMORY USAGE demo:bitmap
 ```
 
-返回整数是内存字节数，本次未测量，不能预先写死。它与原始位数据长度不同，还涉及键、对象及分配器开销；进程总内存又包含其他全局开销。[MEMORY USAGE](https://redis.io/docs/latest/commands/memory-usage/)
+返回整数是内存字节数，按实际结果记录。它与原始位数据长度不同，还涉及键、对象及分配器开销；进程总内存又包含其他全局开销。[MEMORY USAGE](https://redis.io/docs/latest/commands/memory-usage/)
 
 先确认最大 offset 和映射规则，再检查实际 MEMORY USAGE 与读写模式。评估内存收益时，也要一起考虑大键的复制、持久化和删除成本。
 

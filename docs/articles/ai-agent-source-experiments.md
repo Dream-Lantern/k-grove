@@ -48,7 +48,7 @@ order: 91
 | 真实模型 API 实验      | 额外固定模型、端点、配置及费用口径；离线轨迹不属于此类                  |
 | GPU 训练／本地模型实验 | 单独准备权重、驱动、依赖与数据；按对应 README 记录硬件和模型 revision   |
 
-下表列出公开仓库中的 22 个实验入口。实验代码及完整运行说明请从 [ai-agent-book 固定提交](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6) 获取，并遵守上游许可证。实验优先级是个人学习建议，不表示这些实验已在本站环境运行。
+下表列出公开仓库中的 22 个实验入口。实验代码及完整运行说明请从 [ai-agent-book 固定提交](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6) 获取，并遵守上游许可证。
 
 ## 22 个重点实验
 
@@ -67,12 +67,12 @@ order: 91
 | 5      | P1     | [chapter5/permission-embedded-data-objects](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter5/permission-embedded-data-objects/README.md) | 把权限和数据访问一起设计             | 阅读授权数据对象及测试，对照仅靠提示词的方案               | 权限是否由服务端强制；不要在笔记里假造集成结果                      |
 | 6      | P0     | [chapter7/user-memory-system-evaluation](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter7/user-memory-system-evaluation/README.md)       | 学习完整评估记录与矩阵验收           | 从 retrieval_metrics/RunRecord 到 completion_assessment    | 缺失单元、API 错误、未计价用量必须显式保留                          |
 | 6      | P1     | [chapter7/agent-cost-analysis](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter7/agent-cost-analysis/README.md)                           | 按完整链路分析成本                   | 对照缓存布局与压缩；计入检索、摘要、重试与主模型           | 总成本、原生币种、成功任务成本；不直接合并不同币种                  |
-| 7      | P1     | [chapter8/exact-copy-sft](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/README.md)                                     | 定位逐字复制失败发生在哪层           | 先 Unicode/JSON/Tokenizer 审计，再考虑 LoRA                | raw byte exact 与后处理 exact 分开；训练需 GPU，未运行              |
+| 7      | P1     | [chapter8/exact-copy-sft](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/README.md)                                     | 定位逐字复制失败发生在哪层           | 先 Unicode/JSON/Tokenizer 审计，再考虑 LoRA                | raw byte exact 与后处理 exact 分开；训练需 GPU                      |
 | 7      | P2     | [chapter8/premature-completion-dpo](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/premature-completion-dpo/README.md)                 | 把提前宣告完成变成证据约束的偏好样本 | 阅读数据生成与评分条件，先检查接口与验证器                 | 区分措辞变化与真实完成；训练和保留集隔离                            |
 | 8      | P0     | [chapter9/trajectory-verifier](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter9/trajectory-verifier/README.md)                           | 让声明与真实工具结果对照             | 先启发式检查，再审视 LLM Judge 的校准                      | 确定性结果冲突可检查；词面匹配不等于语义证明                        |
-| 8      | P1     | [chapter9/self-modifying-agent](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter9/self-modifying-agent/README.md)                         | 理解候选代码门禁和回滚               | 只读诊断、候选、静态检查、Docker 边界与 manifest           | 源码可读不等于已运行；本次未启动候选执行或发布                      |
+| 8      | P1     | [chapter9/self-modifying-agent](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter9/self-modifying-agent/README.md)                         | 理解候选代码门禁和回滚               | 只读诊断、候选、静态检查、Docker 边界与 manifest           | 依次检查候选、验证回执与发布清单                                    |
 | 8      | P1     | [chapter9/harness-safety-gate](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter9/harness-safety-gate/README.md)                           | 比较代码护栏与提示词修补             | 读稳定 dispatcher 与门禁候选，查看边界/保留案例            | 正常任务保留率与违规阻断率，不只看攻击被拒绝                        |
-| 9      | P0     | [chapter6/streaming-speech](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter6/streaming-speech/README.md)                                 | 理解全双工打断状态                   | 先用合成块测试停止、队列清空和重规划，再接真实音频         | 状态机通过不代表首音频/打断延迟达标                                 |
+| 9      | P0     | [chapter6/streaming-speech](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter6/streaming-speech/README.md)                                 | 理解全双工打断状态                   | 先用合成块测试停止、队列清空和重规划，再接真实音频         | 分别记录首音频与打断延迟                                            |
 | 9      | P1     | [chapter6/async-agent](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter6/async-agent/README.md)                                           | 检查取消是否真的生效                 | 阅读真实任务执行与取消测试，追踪子进程生命周期             | 进程退出、进度冻结、晚到事件，不只看取消消息                        |
 | 10     | P0     | [chapter10/book-translation](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/README.md)                               | 把共享契约与上下文隔离结合           | 对照单 Agent、编排、无术语 Agent、无审校 Agent             | 指定术语遵从、语义质量、Manager 峰值与全体总用量                    |
 | 10     | P1     | [chapter10/parallel-web-research](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/parallel-web-research/README.md)                     | 理解并行后的唯一结算和清理           | 同来源串并行对照，观察锁、终止广播与 context 关闭          | 耗时、缺失任务、重复命中、资源泄漏同时核对                          |
@@ -83,8 +83,8 @@ order: 91
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | 上游历史实验 | 固定提交中的历史运行；例如翻译 `real_20260730T061500Z_v4/evidence.json`，原始模型和指标见[第10章](/articles/ai-agent-multi-agent.html) |
 | 当前本地检查 | 在 k-grove 实际执行的脚本和测试；下文给出复制审计的完整记录，不与上游历史数值合并                                                      |
-| 静态源码核查 | 查看固定提交文件、参数与分支；本轮核对了完整索引的 22 个 README 及十章映射，不代表执行全部实验                                         |
-| 待复现       | 当前未运行的付费模型对照、完整 RAG 模型链、GPU 训练、真实音频／浏览器 campaign 和 Docker 候选门禁，分别按实验登记                      |
+| 静态源码核查 | 查看固定提交文件、参数与分支；本轮核对了完整索引的 22 个 README 及十章映射                                                             |
+| 待复现       | 模型对照、完整 RAG 模型链、GPU 训练、音频／浏览器 campaign 和 Docker 候选门禁分别登记实验条件                                          |
 
 仓库 README 中的历史数值、validation 文件和“已验收”标记均属于上游记录，不能将这些数值视为本地复现结果。引用历史结果前，还需核对相应 manifest、输入、硬件、模型和运行条件。
 

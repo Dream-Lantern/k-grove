@@ -23,7 +23,7 @@ order: 18
 
 Redis 提供事务队列、WATCH 和服务端脚本等组合操作方式。理解它们时，可以分别观察命令何时排队、何时执行、错误如何返回，以及并发条件如何检查。原子执行约束其他客户端命令的插入，自动回滚则是另一项需要单独确认的语义。
 
-本章以 Redis Open Source 7.2.0 为基本参照，脚本缓存变化单独标注 7.4.0。这里的 Atomic Execution（原子执行）强调执行过程不被其他正常客户端命令穿插，并不自动包含“发生错误时撤销所有修改”。`redis` 代码块可在交互客户端中输入，`lua` 是脚本源码，`text` 是推演或占位模板；均未实际执行。
+本章以 Redis Open Source 7.2.0 为基本参照，脚本缓存变化单独标注 7.4.0。这里的 Atomic Execution（原子执行）强调执行过程不被其他正常客户端命令穿插，并不自动包含“发生错误时撤销所有修改”。`redis` 代码块可在交互客户端中输入，`lua` 是脚本源码，`text` 是推演或占位模板。
 
 ![组合操作的选择](/assets/notes/redis/redis-study-transaction.svg)
 
@@ -53,7 +53,7 @@ EXEC
 
 中间 LPUSH 因键是 String 而失败时，其余命令仍按事务执行规则处理。客户端应逐项检查 EXEC 返回数组，分别确定计数与最后一条 SET 的结果。DISCARD 用于放弃尚未执行的队列，不是撤销已经提交的写入。
 
-预期推演：若示例计数键原先不存在，没有并发修改、权限或资源错误，EXEC 的三个位置依次是整数 1、WRONGTYPE 错误、OK；计数键为 1，finished 键为 yes。若计数键已有值，第一项不能继续写死为 1；若它不是可递增的整数，也会单独报错。这里解释的是事务逐项执行语义，不是本机实测输出。
+预期推演：若示例计数键原先不存在，没有并发修改、权限或资源错误，EXEC 的三个位置依次是整数 1、WRONGTYPE 错误、OK；计数键为 1，finished 键为 yes。若计数键已有值，第一项不能继续写死为 1；若它不是可递增的整数，也会单独报错。
 
 ## 2. WATCH 是乐观并发控制
 
@@ -110,7 +110,7 @@ redis.call('SET', KEYS[1], ARGV[2])
 return 1
 ```
 
-对应的完整 Redis 调用示例，未执行。先把隔离教学实例中的键设为 old，再按顺序调用：
+对应的完整 Redis 调用示例。先把隔离教学实例中的键设为 old，再按顺序调用：
 
 ```redis
 SET demo:cas old
@@ -118,7 +118,7 @@ EVAL "local current = redis.call('GET', KEYS[1]); if current ~= ARGV[1] then ret
 GET demo:cas
 ```
 
-EVAL 脚本后的 `1` 是键数量，demo:cas 对应 KEYS[1]，old/new 对应 ARGV[1]/ARGV[2]。没有其他写入时，预期依次得到 OK、整数 `1`、字符串 `new`；再用同样 old 条件调用会返回 `0`。这是预期结果，不是实测记录。CAS（Compare-and-Set，比较后设置）在这里比较的是值，不会检测值曾经改变又恢复的历史。
+EVAL 脚本后的 `1` 是键数量，demo:cas 对应 KEYS[1]，old/new 对应 ARGV[1]/ARGV[2]。没有其他写入时，预期依次得到 OK、整数 `1`、字符串 `new`；再用同样 old 条件调用会返回 `0`。CAS（Compare-and-Set，比较后设置）在这里比较的是值，不会检测值曾经改变又恢复的历史。
 
 脚本中的 SET 会采用普通 SET 的 TTL（Time to Live，生存时间）语义，成功覆盖会清除旧期限；若业务需要保留 TTL，可按 Redis Open Source 6.0.0 起的 KEEPTTL 支持另行设计。不要把示例误读成任意对象的通用更新协议。
 
@@ -133,7 +133,7 @@ pcall 是错误捕获，不是自动回滚；此前的写入不会因此撤销�
 
 脚本应该短小、有界，不能用长循环代替后台任务。`SCRIPT KILL` 只适用于尚未执行写操作的相关运行中脚本；已经写入后不能依靠它安全回滚。[SCRIPT KILL 的限制](https://redis.io/docs/latest/commands/script-kill/)
 
-在 Redis Open Source 7.0.0 和 7.2.0 中，`busy-reply-threshold` 使用毫秒配置长脚本进入忙状态的阈值，旧名 `lua-time-limit` 保留为别名；7.2.0 默认值为 5000 ms。它不是到时自动终止脚本：达到阈值后，服务端可处理受限的管理请求，其他正常命令可能收到 BUSY（忙碌错误）。SCRIPT KILL 也不能撤销写入。本章不提供生产实例的强制终止操作；脚本不能用等待外部服务或长循环实现后台任务。[7.0.0 配置定义](https://raw.githubusercontent.com/redis/redis/7.0.0/src/config.c) · [7.2.0 长脚本配置说明](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf)
+在 Redis Open Source 7.0.0 和 7.2.0 中，`busy-reply-threshold` 使用毫秒配置长脚本进入忙状态的阈值，旧名 `lua-time-limit` 保留为别名；7.2.0 默认值为 5000 ms。它不是到时自动终止脚本：达到阈值后，服务端可处理受限的管理请求，其他正常命令可能收到 BUSY（忙碌错误）。SCRIPT KILL 也不能撤销写入。脚本不能用等待外部服务或长循环实现后台任务。[7.0.0 配置定义](https://raw.githubusercontent.com/redis/redis/7.0.0/src/config.c) · [7.2.0 长脚本配置说明](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf)
 
 ## 4. 脚本缓存与 Functions 的区别
 
@@ -164,7 +164,7 @@ redis.register_function('demo_incr', function(keys, args)
 end)
 ```
 
-下面是加载同一函数并调用的完整 Redis 命令示例，未执行。要求 Redis Open Source 7.0.0 或更高版本的隔离实例中没有同名库及函数；示例会设置计数键：
+下面是加载同一函数并调用的完整 Redis 命令示例。要求 Redis Open Source 7.0.0 或更高版本的隔离实例中没有同名库及函数；示例会设置计数键：
 
 ```redis
 FUNCTION LOAD "#!lua name=demo_review\nredis.register_function('demo_incr', function(keys, args) return redis.call('INCR', keys[1]) end)"
@@ -173,7 +173,7 @@ FCALL demo_incr 1 demo:function:count
 GET demo:function:count
 ```
 
-redis-cli 的双引号参数把 `\n` 解释为真实换行；通过客户端 API（Application Programming Interface，应用程序编程接口）调用时应传入包含真实换行的源码。`#!lua` 指定执行引擎，name 指定库名，FCALL 的 `1` 表示随后一个键。预期返回库名 demo_review、OK、整数 `1`、字符串 `1`，不是实测结果。默认 FUNCTION LOAD 不覆盖同名库；变更库需按部署方案处理。[FUNCTION LOAD](https://redis.io/docs/latest/commands/function-load/)
+redis-cli 的双引号参数把 `\n` 解释为真实换行；通过客户端 API（Application Programming Interface，应用程序编程接口）调用时应传入包含真实换行的源码。`#!lua` 指定执行引擎，name 指定库名，FCALL 的 `1` 表示随后一个键。预期返回库名 demo_review、OK、整数 `1`、字符串 `1`。默认 FUNCTION LOAD 不覆盖同名库；变更库需按部署方案处理。[FUNCTION LOAD](https://redis.io/docs/latest/commands/function-load/)
 
 FCALL 可调用允许写入的函数；FCALL_RO 只接受声明 `no-writes` 且不执行写命令的只读函数，本例会写入，不能改用 FCALL_RO。函数需要显式接收它访问的键，Cluster 多键访问仍受同槽约束；函数库持久化和副本恢复取决于实际配置、复制进度及故障状态，并非加载后天然永久存在。[函数标志与部署](https://redis.io/docs/latest/develop/programmability/functions-intro/) · [FCALL_RO](https://redis.io/docs/latest/commands/fcall_ro/)
 

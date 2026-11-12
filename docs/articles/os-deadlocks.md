@@ -111,7 +111,7 @@ Available = (1,1)，已分配总量为 (2,2)，相加为 (3,3)，资源守恒。
 
 ### 安全的纯 Python 实验
 
-保存为 `banker.py`，运行 `python3 banker.py`。程序仅模拟整数向量，不创建线程、不锁定系统资源；输入断言用于教学检查，不作为生产 API 的完整参数校验。
+保存为 `banker.py`，运行 `python3 banker.py`。程序仅模拟整数向量，不创建线程、不锁定系统资源；输入断言检查向量维度与资源约束。
 
 ```python
 def safety(available, allocation, maximum):

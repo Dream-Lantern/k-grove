@@ -202,7 +202,7 @@ cc -std=c11 -Wall -Wextra -Wpedantic ownership.c \
 ./ownership bad-topic
 ```
 
-预期正常路径输出两个本地条目，三个故障路径报告相应错误并以非零状态退出。可在支持的平台给同一编译命令增加 `-g -fsanitize=address -fno-omit-frame-pointer`，用 AddressSanitizer（地址消毒器，ASan）执行四条路径。在支持 Valgrind 的 Linux 环境，另用未加 ASan 的调试版执行 `valgrind --leak-check=full --error-exitcode=99 ./ownership`，并分别传入三个故障参数。检查工具只覆盖实际运行的路径，库内部覆盖还取决于库是否经过相应插桩。本示例未运行完整链接、执行或内存检查。
+预期正常路径输出两个本地条目，三个故障路径报告相应错误并以非零状态退出。可在支持的平台给同一编译命令增加 `-g -fsanitize=address -fno-omit-frame-pointer`，用 AddressSanitizer（地址消毒器，ASan）执行四条路径。在支持 Valgrind 的 Linux 环境，另用未加 ASan 的调试版执行 `valgrind --leak-check=full --error-exitcode=99 ./ownership`，并分别传入三个故障参数。检查工具只覆盖实际运行的路径，库内部覆盖还取决于库是否经过相应插桩。
 
 ## 参考
 

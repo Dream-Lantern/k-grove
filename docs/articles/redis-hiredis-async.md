@@ -23,7 +23,7 @@ order: 16
 
 hiredis 异步接口通过事件循环推进网络连接与命令读写，让应用在等待期间处理其他事件。理解调用过程时，可以依次跟踪连接开始、命令排队、回调取得结果和对象收尾；事件循环的并发机会与服务端处理能力分别评价。
 
-本章固定采用 **hiredis v1.2.0**。Event Loop（事件循环）等待网络可读、可写等事件，再调用相应处理函数；Callback（回调）是事件就绪后被调用的应用函数。异步把网络就绪等待交给事件循环，不代表为每个请求创建线程。同步连接基础见 [第 15 章](/articles/redis-hiredis.html)。下文程序和命令均未编译、未运行。[v1.2.0 官方说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
+本章固定采用 **hiredis v1.2.0**。Event Loop（事件循环）等待网络可读、可写等事件，再调用相应处理函数；Callback（回调）是事件就绪后被调用的应用函数。异步把网络就绪等待交给事件循环，不代表为每个请求创建线程。同步连接基础见 [第 15 章](/articles/redis-hiredis.html)。[v1.2.0 官方说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
 
 [![hiredis 异步回复：对象所有权](/assets/notes/redis/redis-study-async.svg)](/assets/notes/redis/redis-study-async.svg)
 
@@ -153,7 +153,7 @@ cleanup:
 }
 ```
 
-Shell 编译说明，未执行；不是 Redis 命令或 PowerShell 命令：
+Shell 编译说明；不是 Redis 命令或 PowerShell 命令：
 
 ```bash
 cc -std=c11 -Wall -Wextra async-demo.c \
@@ -168,7 +168,7 @@ cc -std=c11 -Wall -Wextra async-demo.c \
 
 默认情况下，异步 redisReply（回复对象）由 hiredis 在命令回调返回后释放，应用不应再次手工释放，也不能保存裸指针供以后使用。若需要长期保留数据，应复制所需字段；非默认选项另见下文。API（Application Programming Interface，应用程序编程接口）的所有权约定见 [v1.2.0 官方说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)。
 
-下面只是一段命令回调教学片段，不是完整程序，也不是 PING 程序的替换代码：
+下面用命令回调片段说明回复处理：
 
 ```c
 void on_reply(redisAsyncContext *ac, void *reply, void *privdata) {

@@ -133,6 +133,6 @@ docker run --rm --platform linux/amd64 --gpus '"device=0"' \
   sh -ec 'ldd /opt/vector_add; /opt/vector_add'
 ```
 
-容器启动验证进程与镜像环境。NVML 成功说明管理路径可用。`cudaMalloc` 成功才验证了示例中的 Runtime 初始化及分配。同步、回拷和逐元素检查均成功后，`PASS` 才能验证 kernel 路径。若部署 PyTorch，另在实际框架镜像运行一次设备张量计算并回读，base 并不预装框架。以上是预期检查，容器内 GPU 运行待实测。
+容器启动验证进程与镜像环境。NVML 成功说明管理路径可用。`cudaMalloc` 成功才验证了示例中的 Runtime 初始化及分配。同步、回拷和逐元素检查均成功后，`PASS` 才能验证 kernel 路径。若部署 PyTorch，另在实际框架镜像运行一次设备张量计算并回读，base 并不预装框架。
 
 记录宿主 OS、CPU 架构、GPU 型号及计算能力、驱动、Docker、Container Toolkit、注入模式、镜像 tag 与 digest、Toolkit、框架构建和实际运行命令与结果。[NVIDIA Container Toolkit 1.18.0 安装与运行时配置](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/1.18.0/install-guide.html)

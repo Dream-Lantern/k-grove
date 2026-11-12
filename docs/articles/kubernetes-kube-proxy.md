@@ -134,7 +134,7 @@ readiness、`publishNotReadyAddresses`、终止端点及相应流量策略，会
 
 ## 7. 按失败层级检查
 
-以下命令是未执行的查询模板；查看输出不等于获准修改网络。
+以下命令是查询模板；查看输出不等于获准修改网络。
 
 ```bash
 kubectl get service SERVICE_NAME -n NAMESPACE -o yaml
@@ -150,7 +150,7 @@ NodePort 是否可达还受节点地址选择、流量策略、防火墙和底�
 
 ### 7.1 对照 Pod IP、Service IP 与服务名 {#catalog-access-test}
 
-先按[第十二章共用实验清单](/articles/kubernetes-api-yaml-labels.html#catalog-lab)准备 `study/catalog` Deployment、Service 和 `dns-debug` Pod。前提是两个应用副本已 Ready、Service selector 匹配 `app=catalog`，客户端到后端 TCP 8080、Service TCP 80 及 DNS 路径未被策略阻断。使用 IPv4 测试地址，命令在同一个 Bash 终端执行；本次未访问真实集群。
+先按[第十二章共用实验清单](/articles/kubernetes-api-yaml-labels.html#catalog-lab)准备 `study/catalog` Deployment、Service 和 `dns-debug` Pod。前提是两个应用副本已 Ready、Service selector 匹配 `app=catalog`，客户端到后端 TCP 8080、Service TCP 80 及 DNS 路径未被策略阻断。使用 IPv4 测试地址，命令在同一个 Bash 终端执行。
 
 ```bash
 kubectl get svc catalog -n study

@@ -21,7 +21,7 @@ order: 10
 
 查找附近商店时，Redis GEO（Geospatial，地理空间索引）可以保存成员位置，再按中心和范围检索。先确定经纬度和单位，再选择范围、排序与返回数量；它不能直接替代完整 GIS（Geographic Information System，地理信息系统）、道路规划和高精度测距。
 
-以下 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，均未实际运行。坐标和结果是教学示意；假定在独立学习实例上从不存在的 `demo:places` 开始，按顺序执行且无并发修改。实现以 Redis Open Source 7.2.0 为参照；基础 GEO 命令自 3.2.0 起提供，GEOSEARCH / GEOSEARCHSTORE 自 6.2.0 起提供。
+以下 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。坐标和结果是教学示意；假定在独立学习实例上从不存在的 `demo:places` 开始，按顺序执行且无并发修改。实现以 Redis Open Source 7.2.0 为参照；基础 GEO 命令自 3.2.0 起提供，GEOSEARCH / GEOSEARCHSTORE 自 6.2.0 起提供。
 
 ## 1. 经纬度顺序与单位
 
@@ -35,7 +35,7 @@ GEODIST demo:places place-a place-b km
 
 GEOADD 参数按经度、纬度排列；GEOPOS 与 GEODIST 通过键名定位索引，再指定成员。解释距离时同时记录单位，区分米与千米。
 
-预期 GEOADD 返回新增成员数 `2`，GEOPOS 返回两个成员的坐标，GEODIST 返回以 km 为单位的近似距离。坐标经过编码，读回值可能与输入有细微差异；本次未测量，不给出虚构的小数结果。[GEOPOS](https://redis.io/docs/latest/commands/geopos/) · [GEODIST](https://redis.io/docs/latest/commands/geodist/)
+预期 GEOADD 返回新增成员数 `2`，GEOPOS 返回两个成员的坐标，GEODIST 返回以 km 为单位的近似距离。坐标经过编码，读回值可能与输入有细微差异。[GEOPOS](https://redis.io/docs/latest/commands/geopos/) · [GEODIST](https://redis.io/docs/latest/commands/geodist/)
 
 GEOADD 接受经度 `[-180, 180]`、纬度 `[-85.05112878, 85.05112878]`；纬度不是一般地理意义下的完整 ±90°。越界会报错，不能把任意平面坐标直接当经纬度。参数先经度、后纬度；返回距离也不是实际道路通行距离。[GEOADD 坐标范围](https://redis.io/docs/latest/commands/geoadd/)
 
@@ -60,7 +60,7 @@ GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km ASC WITHDIST
 GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYBOX 5 3 km ASC WITHCOORD
 ```
 
-接续本节初始化，前两条查询五千米半径内的成员；第三条查询宽五千米、高三千米的矩形。示例两点都在这些范围内，预期返回 place-a、place-b；ASC 按距离从近到远，DESC 则从远到近，WITHDIST 附带所选单位的距离，WITHCOORD 附带坐标。没有实测距离或坐标输出。
+接续本节初始化，前两条查询五千米半径内的成员；第三条查询宽五千米、高三千米的矩形。示例两点都在这些范围内，预期返回 place-a、place-b；ASC 按距离从近到远，DESC 则从远到近，WITHDIST 附带所选单位的距离，WITHCOORD 附带坐标。
 
 ```redis
 GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km COUNT 10
@@ -76,7 +76,7 @@ GEOSEARCHSTORE 把结果写入目标有序集合。下面是单行 Redis 命令�
 GEOSEARCHSTORE demo:nearby demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km ASC COUNT 10 STOREDIST
 ```
 
-第一个键是目标、第二个是源。示例预期写入两个成员并返回 `2`，源 `demo:places` 不变；目标已存在会被结果覆盖，没有匹配结果时旧目标会被删除。默认保存地理编码 score；STOREDIST 改为保存距查询中心的距离，本例单位为 km，因此这个结果不能再当作原 GEO 索引使用。目标与源设为同一个键也会覆盖源，应避免误用。Cluster 部署还要求两键同槽，本节键名示例仅供独立实例使用。[GEOSEARCHSTORE](https://redis.io/docs/latest/commands/geosearchstore/) · [7.2.0 目标覆盖实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/geo.c)
+第一个键是目标、第二个是源。示例预期写入两个成员并返回 `2`，源 `demo:places` 不变；目标已存在会被结果覆盖，没有匹配结果时旧目标会被删除。默认保存地理编码 score；STOREDIST 改为保存距查询中心的距离，本例单位为 km，因此这个结果不能再当作原 GEO 索引使用。目标与源设为同一个键也会覆盖源，应避免误用。Cluster 部署还要求两键同槽，本节键名按独立实例组织。[GEOSEARCHSTORE](https://redis.io/docs/latest/commands/geosearchstore/) · [7.2.0 目标覆盖实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/geo.c)
 
 ## 3. 有序集合索引、位置编码与成员删除 {#_3-底层与删除}
 
@@ -126,7 +126,5 @@ GEOHASH 返回标准的 11 字符 Geohash 编码字符串，不是 Zset 对象�
 | 精确道路导航                 | 不适合直接替代道路与路线模型       |
 | 收费里程计算                 | 不建议直接使用球面距离作为收费依据 |
 | 高精度地理测绘               | 不适合替代专业 GIS                 |
-
-本章没有地图、路线或性能测试，不把近似地理检索写成精确测距承诺。
 
 [返回本册目录](/collections/redis/)

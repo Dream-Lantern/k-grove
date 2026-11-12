@@ -37,7 +37,7 @@ Legacy Default Stream（传统默认流）与同一 Context 中的 blocking stre
 
 ## 2. 用事件表达跨 stream 的依赖
 
-下面是教学片段，不是完整可编译程序；假定 stream 和 event 已创建、对象生命周期覆盖所有异步工作，所有调用均须检查错误。
+下面是教学片段；假定 stream 和 event 已创建、对象生命周期覆盖所有异步工作，所有调用均须检查错误。
 
 ```cpp
 // s_producer 上的工作必须先完成，消费者才能读它的输出。

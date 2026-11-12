@@ -23,7 +23,7 @@ order: 21
 
 复制让副本跟随主节点的数据变化。首次建立关系或历史无法接续时使用全量同步，短暂中断后则尝试部分重同步。它为恢复与读扩展提供数据基础，客户端主节点发现和一致性要求由相应机制进一步处理。
 
-Master（主节点）接收业务写入，Replica（副本）跟随复制流。本章以 Redis Open Source 7.2.0 为参照；PSYNC（Partial Resynchronization，部分重同步）自 2.8.0 提供，后续历史标识机制按 7.2.0 说明。所有命令、偏移数字和故障时间线都是教学示例，未在实例上执行。
+Master（主节点）接收业务写入，Replica（副本）跟随复制流。本章以 Redis Open Source 7.2.0 为参照；PSYNC（Partial Resynchronization，部分重同步）自 2.8.0 提供，后续历史标识机制按 7.2.0 说明。所有命令、偏移数字和故障时间线都是教学示例。
 
 ![复制重连的两条路径](/assets/notes/redis/redis-study-replication.svg)
 
@@ -120,7 +120,7 @@ ROLE
 
 WAIT 自 Redis Open Source 3.0.0 提供，可等待当前连接之前的写入获得一定数量副本确认；必须检查实际返回数量，超时不等于撤销写入。它增强某些故障下的数据安全性，但不能将异步复制变成严格的强一致系统。[WAIT](https://redis.io/docs/latest/commands/wait/)
 
-以下两行在同一连接、向学习环境的主节点顺序发送，未执行：
+以下两行在同一连接、向学习环境的主节点顺序发送：
 
 ```redis
 SET demo:replication:order paid
@@ -131,7 +131,7 @@ WAIT 1 1000
 
 Redis Open Source 7.2.0 起的 WAITAOF 进一步针对 AOF（Append Only File，只追加文件）的 fsync（文件同步到存储的系统调用）确认，是否可用依赖部署和配置。复制处理确认、数据在内存中执行、日志刷盘，是不同保证，应用不能混用。[WAITAOF](https://redis.io/docs/latest/commands/waitaof/)
 
-以下是另一组独立教学调用，必须在同一连接上向主节点执行，且需要本地与目标副本都启用、正常写入和同步 AOF；副本还需支持相应确认协议。未实际执行：
+以下是另一组独立教学调用，必须在同一连接上向主节点执行，且需要本地与目标副本都启用、正常写入和同步 AOF；副本还需支持相应确认协议。
 
 ```redis
 SET demo:replication:order paid

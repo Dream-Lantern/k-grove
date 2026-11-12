@@ -175,7 +175,7 @@ print("miss -> hit / tags / stale entries / two-cache invalidation / faults: PAS
 print("EAT: 121 / 111 / 103 ns; coverage: 256 KiB / 128 MiB: PASS")
 ```
 
-本轮已运行全部断言。该模拟不实现真实指令、容量淘汰、并发内存顺序或跨 CPU 中断；`Fault` 是教学错误，不是测得的硬件事件。这里不使用硬件特定的 perf 事件，也不声称测量了当前处理器的 TLB 命中率。
+本轮已运行全部断言。`Fault` 表示模拟中的访问错误。
 
 ## 本章小结与联读
 

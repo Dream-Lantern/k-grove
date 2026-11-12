@@ -139,7 +139,7 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 
 [![GPU-CR单卡Checkpoint/Restore时序图](/assets/notes/ai-infra/gcr-single-sequence.png)](/assets/notes/ai-infra/gcr-single-sequence.png)
 
-图中的“业务安全点/停止提交”和“验收后放行”是**正确使用所需的外部协作条件**，不是宣称源码已经自动实现了这些屏障。配图区分数据面、驱动控制与外部验收；完成阶段通知不代表数据或业务验收通过。
+图中的“业务安全点/停止提交”和“验收后放行”由应用与调度层协作完成。配图区分数据面、驱动控制与外部验收。
 
 ### 3.1 Checkpoint
 
@@ -389,17 +389,17 @@ Restore wall time ≈ driver CUDA-control restore
 
 | 项目            | 结论与注意                                                                                                                                                                                                                                                               |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 透明性          | `LD_PRELOAD` 依赖动态符号拦截，静态链接、内部动态解析、未覆盖 API、旧式 IPC 可能绕过；对所有应用“零修改”不作绝对保证                                                                                                                                                     |
+| 透明性          | `LD_PRELOAD` 依赖动态符号拦截，静态链接、内部动态解析、未覆盖 API、旧式 IPC 可能绕过                                                                                                                                                                                     |
 | CUDA 指针       | 项目转换被拦截分配为 VMM，使用 2MiB 向上取整，可能出现内存放大和碎片损失                                                                                                                                                                                                 |
 | IPC             | 导出方、导入方、事件、Peer Access 必须联合恢复；不能只 dump 自有显存                                                                                                                                                                                                     |
 | 信号安全        | 实现的 signal-handler 链路调用较复杂的 CUDA、拷贝与分配行为，不属于简单异步信号安全操作；多线程时序、重入性是潜在风险                                                                                                                                                    |
 | Host 容量       | 信号路径每 Worker 默认主映射 25 GiB + staging 2 GiB，另有 IPC/本地 cuMem 备份；映射长度不等于任何时刻的 RSS。约 36 GiB dump 超过默认上限，需修改编译容量并按所选后端配足资源                                                                                             |
-| 指标“0 VRAM”    | 是项目在支持路径上的目标/报告，不是对任何库外分配的数学保证；要实测                                                                                                                                                                                                      |
+| 指标“0 VRAM”    | 记录项目支持路径上的 VRAM 占用变化                                                                                                                                                                                                                                       |
 | 多卡后端        | 当前 README 的多 GPU C/R 主要是 NVIDIA，不能推广成 AMD 多卡已支持                                                                                                                                                                                                        |
 | 恢复范围        | CUDA Control C/R、GPU Data C/R、CPU 进程 C/R 是不同层次；跨故障重启需要额外持久性及进程恢复机制                                                                                                                                                                          |
 | 增量 Checkpoint | 论文有 Shadow Execution 与 Dirty Template；不能在未核实源码/示例时宣称当前仓库已覆盖该完整能力                                                                                                                                                                           |
 | 静态上限        | `MAX_FILE_NUM=4096` 是主快照元数据数组容量，不是“4096 个 IPC 连接”；当前检查在递增后遇到该值即退出，不能把 4096 当成已验证可保存条目数。另有 `MAX_MULTI_GPU_PROCS=32`、`IPC_MAX_EXPORTS_PER_PROC=64`；后者也限制交换时汇总到 peer block 的条目数，不是总可支持规模的保证 |
-| 单进程多设备    | `nv.cpp` 的 cudaMalloc Hook 缓存首次设备/上下文，账本不是完整的按设备隔离实现；多进程多 GPU 的示例不能证明单进程任意多设备/多 Context 已覆盖                                                                                                                             |
+| 单进程多设备    | `nv.cpp` 的 cudaMalloc Hook 缓存首次设备/上下文，账本不是完整的按设备隔离实现                                                                                                                                                                                            |
 | 恢复后验收      | 内存映射校验不等于 NCCL 集合通信和业务输出正确；还需实测通信、数据与服务状态                                                                                                                                                                                             |
 
 信号安全的判断依据是 [Linux signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html)；这里只指出复杂处理不具备一般异步信号安全保证，未声称已经复现某个死锁。

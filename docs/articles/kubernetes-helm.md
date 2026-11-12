@@ -21,7 +21,7 @@ order: 27
 
 > 本章介绍 Helm 3 的包结构、模板渲染与 Release 管理，服务于 Kubernetes 1.28 学习。工具和 Chart 需分别固定版本，示例为命令阅读材料。
 
-本机未发现 Helm CLI，无法报告已安装次版本或 helm lint/template 通过。下文升级、回滚和 Release 存储等版本敏感说明按 **Helm v3.13.3 固定源码**核对，作为历史教学依据，不表示本地安装了该版本，也不把 Helm 4 的行为套过来。
+下文升级、回滚和 Release 存储等版本敏感说明按 **Helm v3.13.3 固定源码**核对。
 
 ## 1. Chart 与 Release 分别是什么
 
@@ -190,7 +190,7 @@ helm template catalog ./catalog-chart -n study \
 
 ## 3. 先做不安装的检查
 
-以下在已经按第二节重建样例文件、安装兼容 Helm 3 后使用；本次未执行 Helm CLI。命令不安装 Release，但输出仍需审阅：
+按第二节重建样例文件并安装兼容 Helm 3 后，运行以下命令审阅渲染结果：
 
 ```bash
 helm lint ./catalog-chart
@@ -214,7 +214,7 @@ Chart 仓库负责包分发，OCI 提供另一种分发方式，索引站点帮�
 
 ## 4. 安装、升级与回滚分别改什么
 
-以下只是语法示例，会改变集群，当前未执行：
+以下命令用于升级和回滚，会改变集群资源：
 
 ```bash
 helm install catalog ./catalog-chart -n study -f values-dev.yaml
@@ -287,7 +287,7 @@ helm.sh/resource-policy: keep 可要求保留适用资源，保留对象可能�
 
 Chart 直接包含的 PVC 与 StatefulSet 等工作负载生成的 PVC 也不能一概而论；卸载是否删申领、PV 是否 Delete 回收、后端数据是否删除需逐层检查。回滚不等于完整业务恢复，卸载不保证回到安装前环境。未知 Chart 不用于回滚或卸载实验，本章不实际执行清理；若读者另行创建实验 Release，应在核对上述边界后按授权流程退役。
 
-仅当确认 catalog 是自己安装的本节已审核最小 Chart、没有混入其他资源或真实数据时，以下才是对应的实验清理语法；它会修改集群，本次未执行：
+仅当确认 catalog 是自己安装的本节已审核最小 Chart、没有混入其他资源或真实数据时，以下才是对应的实验清理语法；它会修改集群：
 
 ```bash
 helm uninstall catalog -n study

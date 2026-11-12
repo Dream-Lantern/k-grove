@@ -100,7 +100,7 @@ Linux 的 SIGKILL 不能被捕获、阻塞或忽略。因此“kill -9 后别的
 
 ## 5. 在独立实验节点比较三组运行
 
-**以下命令会启动和停止 MPS 守护进程。仅用于已授权、无其他业务的单 GPU 实验节点，本文未执行。** 使用 A100 非 MIG 整卡、Linux、CUDA 12.8.1 的配套驱动与 Legacy v2 控制工具。同一 UID 启动控制端和两个客户端。先用 `nvidia-smi -L`、`nvidia-smi`、`nvcc --version` 和工具帮助核对设备、软件、计算模式和现有 MPS 状态。已有服务占用时停止实验。不要复用其目录或修改生产计算模式。
+**以下命令会启动和停止 MPS 守护进程。仅用于已授权、无其他业务的单 GPU 实验节点。** 使用 A100 非 MIG 整卡、Linux、CUDA 12.8.1 的配套驱动与 Legacy v2 控制工具。同一 UID 启动控制端和两个客户端。先用 `nvidia-smi -L`、`nvidia-smi`、`nvcc --version` 和工具帮助核对设备、软件、计算模式和现有 MPS 状态。已有服务占用时停止实验。不要复用其目录或修改生产计算模式。
 
 复用[第 12 章](/articles/ai-infra-performance-profiling.html)的 `layout.cu`，用 `nvcc -std=c++17 -O2 layout.cu -o layout` 编译。将 `repeats` 固定到让两进程可观察重叠的值，三组保持一致。客户端成功标准是同步成功且逐元素校验输出 `PASS`。先在确认未使用 MPS 时分别运行 `./layout row`、`./layout column`（A 组），再并行启动并分别等待两个进程、保存输出和退出码（B 组）。
 
@@ -127,7 +127,7 @@ printf 'client A=%s B=%s\n' "$a_rc" "$b_rc"
 
 只有确认两个客户端已退出且该 daemon 确属本次实验，才执行 `printf 'quit\n' | nvidia-cuda-mps-control`，随后保存日志并确认服务已停止。若客户端异常，先查 Server 日志与状态，按维护流程处理，不进行强制终止。使用 MIG 与 MPS 的组合实验时，另外验证驱动与实例 UUID、可见设备和独立 pipe 目录约束。参见 [NVIDIA MPS 操作指南](https://docs.nvidia.com/deploy/mps/latest/quick-start.html)。
 
-记录 GPU、Driver、Toolkit、MPS 协议、资源限制、输入和预热条件。除内存访问负载外，可用[第 7 章](/articles/ai-infra-cuda-graphs.html)的短 kernel 普通路径，以及固定迭代数的长计算负载，分别做 A/B/C 对照。报告各客户端正确性、错误率、总吞吐、P50/P95/P99、显存及可用 SM 活动。微基准可按多批运行统计批次耗时，不能把批均值当作单请求尾延迟。业务实验则用真实请求延迟。对比同一负载的独跑及同跑干扰，MPS 收益待实测。
+记录 GPU、Driver、Toolkit、MPS 协议、资源限制、输入和预热条件。除内存访问负载外，可用[第 7 章](/articles/ai-infra-cuda-graphs.html)的短 kernel 普通路径，以及固定迭代数的长计算负载，分别做 A/B/C 对照。报告各客户端正确性、错误率、总吞吐、P50/P95/P99、显存及可用 SM 活动。微基准可按多批运行统计批次耗时，不能把批均值当作单请求尾延迟。业务实验则用真实请求延迟。对比同一负载的独跑及同跑干扰，比较 MPS 的性能收益。
 
 ## 6. 按服务约束选择共享方式
 

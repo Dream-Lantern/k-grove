@@ -224,7 +224,7 @@ kubeadm init
 
 ### 6.1 案例 A：init 完成，但 Node NotReady
 
-以下为排查推演，没有本次实测日志。假设已配置可访问 API 的 `kubectl`，先替换 `NODE_NAME`，在相应节点检查主机日志：
+以下为排查推演。假设已配置可访问 API 的 `kubectl`，先替换 `NODE_NAME`，在相应节点检查主机日志：
 
 ```bash
 kubectl get node NODE_NAME -o yaml

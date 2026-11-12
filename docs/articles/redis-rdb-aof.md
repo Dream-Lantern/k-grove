@@ -23,7 +23,7 @@ order: 19
 
 持久化回答的是“进程或机器失效后，可以从哪些文件恢复到什么状态”。它不是备份的同义词：误删除也可能被及时写进持久化文件，而同一块损坏的磁盘可能同时带走数据和文件。
 
-RDB（Redis Database，数据库快照）保存某个数据时点的状态，AOF（Append Only File，只追加文件）保存用于重建状态的记录。本章以 Redis Open Source 7.2.0 为参照，多部分 AOF 自 7.0.0 提供。命令和时间线均为教学说明，未执行保存、重写、修复或恢复操作。
+RDB（Redis Database，数据库快照）保存某个数据时点的状态，AOF（Append Only File，只追加文件）保存用于重建状态的记录。本章以 Redis Open Source 7.2.0 为参照，多部分 AOF 自 7.0.0 提供。命令和时间线均为教学说明。
 
 ![RDB 与 AOF 的侧重点](/assets/notes/redis/redis-study-persistence.svg)
 
@@ -47,7 +47,7 @@ everysec 常被概括为通常约一秒的数据风险窗口，但这不是所�
 
 AOF 重写依据当前数据生成较精简的恢复表示，不是简单逐行删除“重复命令”。例如大量 INCR 最终可以被表示成当前值；重写与业务并发期间，还必须保存新的变化。[持久化机制与策略](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/)
 
-用同一故障场景比较，以下时刻、命令和结果均是假设，不是实测：
+用同一故障场景比较，以下时刻、命令和结果均是假设：
 
 ```text
 12:00:00  BGSAVE 成功，留下一份可用快照
@@ -91,7 +91,7 @@ Redis Open Source 7.0.0 起的多部分 AOF 由 BASE（基础文件）、INCR（
 
 先确认启动配置实际启用了什么。正常配置下同时启用 AOF 与 RDB，重启使用 AOF 重建数据；目录中存在 dump.rdb 不说明本次从它恢复。AOF 损坏也不应假定平台自动挑选旧 RDB 作为无损回退。[AOF 与 RDB 的启动关系](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/#interactions-between-aof-and-rdb-persistence)
 
-以下是适用于 Redis Open Source 7.2.0、有相应查询权限时的只读 Redis 命令示例，未运行。实例已停机时应从保存的配置和日志确认，不能为查询而反复启动唯一现场：
+以下是适用于 Redis Open Source 7.2.0、有相应查询权限时的只读 Redis 命令示例。实例已停机时应从保存的配置和日志确认，不能为查询而反复启动唯一现场：
 
 ```redis
 CONFIG GET appendonly
@@ -165,4 +165,4 @@ RPO（Recovery Point Objective，恢复点目标）表示最多可接受丢失�
 
 持久化与副本确认的区别继续见 [第 21 章复制、WAIT 与 WAITAOF](/articles/redis-replication-psync.html)。
 
-最终应留下可供重复验证的恢复记录，写清所用版本、文件、恢复边界、校验内容和耗时。本文只整理机制与流程，没有创建、修复或恢复任何 Redis 数据。
+最终应留下可供重复验证的恢复记录，写清所用版本、文件、恢复边界、校验内容和耗时。

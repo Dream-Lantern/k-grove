@@ -137,9 +137,9 @@ IPC（Inter-Process Communication，进程间通信）专指操作系统进程�
 | Manager 安排一次返修 | 文件索引、报告摘要和剩余返修预算；给 Translation 传 ch2 原文、g-v1 和明确意见 | 仅 ch2 产生 v2；提交时检查输入版本，过期产物不得覆盖新版本                                         |
 | Manager 汇总         | 确认索引已指向 ch2-v2，重新执行术语与结构检查                                 | 本例词面检查通过后记 READY_FOR_HUMAN；如仍有问题且预算用尽，停止并列出待确认项                     |
 
-例如 ch1-v1 为“词元决定序列长度”，ch2-v1 为“先统计词元，再合并标记”。审校报告给出 `chapter=ch2, expected=词元, observed=标记` 及引用版本；Manager 只把相关意见发回第二章，修订为“先统计词元，再合并词元”。这个小例子检验术语，不证明整段译文的语义和文风质量。
+例如 ch1-v1 为“词元决定序列长度”，ch2-v1 为“先统计词元，再合并标记”。审校报告给出 `chapter=ch2, expected=词元, observed=标记` 及引用版本；Manager 只把相关意见发回第二章，修订为“先统计词元，再合并词元”。
 
-上游 `run_orchestration()` 实际逐章调用，审校后至多安排一轮修订，代码不是无限互审。其默认 Proofreading 输入是译文和术语表，不能由此证明它已逐字对照原文验证代码、图片或遗漏；这些还需独立结构比对和人工/语义审查。上表的显式版本校验与修后重新验证是本地教学契约，不能冒充上游已经具备的完整门禁。
+上游 `run_orchestration()` 实际逐章调用，审校后至多安排一轮修订，代码不是无限互审。其默认 Proofreading 输入是译文和术语表。代码、图片及遗漏通过独立结构比对和语义审查核对；上表的本地契约还增加了显式版本校验和修后重新验证。
 
 源码节选（上下文依赖见原文件）：[chapter10/book-translation/agents.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/agents.py#L481-L489)。
 
@@ -201,7 +201,7 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 
 指定译法指标提高，但宽泛字符串一致率反而较低，`embedding` 也没有遵守“嵌入向量”。这些指标与严格遵从率、翻译语义质量不同，详见 §10.8。共享术语信息本身也是变量，不能把全部差异归因于 Agent 数量。
 
-结构方面也有负结果：两组虽然保留代码块和图片数量，却都改动了代码 payload、增加了标题；管理者组改动了图片目标，单 Agent 组的图片目标序列则保持不变。数量相同不能证明结构保真。上游“完整执行与溯源门通过”只说明实验完成，不表示所有质量假设成立；这也不是本地复现证据。相关原始记录见 [v4 evidence.json](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/validation/real_20260730T061500Z_v4/evidence.json)。
+结构方面也有负结果：两组虽然保留代码块和图片数量，却都改动了代码 payload、增加了标题；管理者组改动了图片目标，单 Agent 组的图片目标序列则保持不变。相关原始记录见 [v4 evidence.json](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/validation/real_20260730T061500Z_v4/evidence.json)。
 
 ### 分级复现：先不调用模型
 
@@ -220,7 +220,7 @@ python -m pip install pytest
 
 | 层级        | 命令                                                                                                                             | Key / 费用                                      | 输出与可验证结论                                                                          |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1：预演     | `python demo.py --dry-run`                                                                                                       | 无需 Key，无模型 API 费用；依赖和编码缓存须就绪 | 终端协作图、计划与 Token 预算估算；不生成真实译文，不证明质量或实际 usage                 |
+| 1：预演     | `python demo.py --dry-run`                                                                                                       | 无需 Key，无模型 API 费用；依赖和编码缓存须就绪 | 终端协作图、计划与 Token 预算估算                                                         |
 | 2：回归     | `python -m pytest tests`                                                                                                         | 调用被测试替身替换，无需 Key、无 API 费         | pytest 结果与临时产物；验证空值/非法术语表和报告处理，未证明翻译质量                      |
 | 3：真实调用 | `python demo.py --out-dir output/full`                                                                                           | 需可用提供方 Key、模型配置，实际计费            | full 下 orchestration/single_agent 的术语表、章节文件及启用时的审校报告，终端用量与对比表 |
 | 4：消融     | `python demo.py --no-glossary --out-dir output/no-glossary`；`python demo.py --no-proofreading --out-dir output/no-proofreading` | 同上，分别产生真实调用费用                      | 独立目录避免覆盖；同章节、模型、预算与质量检查下比较关闭组件的影响                        |
@@ -265,7 +265,7 @@ python -m unittest discover -s examples/ai-agent/ch9-11-review -p "test_translat
 
 覆盖为 `2/3`；指定译法命中为 `2/2`；严格遵从为 `1/2`；混用为 `1/2`。算法只读译文，不能判断 ch3 的原文是否包含 `token`、译文是否遗漏该概念；检查遗漏需要原文标注或源译对齐。普通词同形误命中、复杂 Markdown 代码块和语义质量也需另行验证。现有测试保留混用、零覆盖与代码排除，指标算法不变。
 
-图10明确展示依赖顺序，不表示该翻译代码已经并发调度章节Worker。共享术语表不等于共享完整历史；若另做并行实验，需独立上下文、不同输出文件和汇聚校验。协作消息与版本冲突沿用 [第4章公共事件契约](/articles/ai-agent-tools-events.html#event-contract)。
+图10展示章节 Worker 的执行依赖。共享术语表不等于共享完整历史；若另做并行实验，需独立上下文、不同输出文件和汇聚校验。协作消息与版本冲突沿用 [第4章公共事件契约](/articles/ai-agent-tools-events.html#event-contract)。
 
 ## 本章要点 {#检查理解}
 

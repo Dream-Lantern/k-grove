@@ -128,7 +128,7 @@ Topic 可按业务事实域命名，避免把每个用户或每个订单都变�
 
 准备隔离的 Kafka 3.9 集群，创建全新 4 分区 Topic `orders-routing-r1`，复制因子按实验集群配置。使用发行包自带的 Java Client 3.9.0 JAR、JDK，以及已安装的 librdkafka v2.8.0 开发库。示例没有自定义分区器、拦截器或显式 Partition，均发送 UTF-8 / ASCII 字节 `order-42`。
 
-下载并解压[路由教学示例包](/examples/kafka-review/kafka-routing-examples.zip)，其中包含 `RouteJava.java`、`route_librdkafka.c` 和 `route_calculation.py`。它们是本章的独立教学程序，不是摘录的官方源码。Java 打印 `RecordMetadata`（写入结果元数据），C 通过 delivery report（投递结果回调）打印最终分区；两者都检查客户端版本。以下为 Linux/Bash 步骤，**本轮没有安装客户端或连接 Kafka 实测**：
+下载并解压[路由教学示例包](/examples/kafka-review/kafka-routing-examples.zip)，其中包含 `RouteJava.java`、`route_librdkafka.c` 和 `route_calculation.py`。它们是本章的独立教学程序，不是摘录的官方源码。Java 打印 `RecordMetadata`（写入结果元数据），C 通过 delivery report（投递结果回调）打印最终分区；两者都检查客户端版本。以下为 Linux/Bash 步骤：
 
 ```bash
 # KAFKA_HOME 指向解压的 Kafka 3.9.0 发行包。

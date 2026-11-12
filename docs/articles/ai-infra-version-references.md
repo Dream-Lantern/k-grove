@@ -50,9 +50,9 @@ CUDA/Python 代码可能初始化设备或执行工作；profiling 会启动应�
 
 ## 版本对照与实现来源 {#本轮版本对照与来源边界}
 
-外部审阅以 CUDA 12.4、NVML R535、SGLang v0.4.9 等定位旧稿问题；本册原有机制参考为 CUDA 12.8.1，不能无说明地混成同一实测环境。新增 GI/CI 类型链特意引用 R535，MPS 终止接口标 Release 615，HAMi 协议标 v2.10.0；这些均不代表原 2024/2025 环境已支持相应新能力。
+外部审阅以 CUDA 12.4、NVML R535、SGLang v0.4.9 等定位旧稿问题；本册原有机制参考为 CUDA 12.8.1，不能无说明地混成同一实测环境。新增 GI/CI 类型链特意引用 R535，MPS 终止接口标 Release 615，HAMi 协议标 v2.10.0。
 
-原 HAMi ENML 只保存了文档链接，后续长文中的源码行号也未注明 commit。本册保留职责与设计验收说明，不声称已验证指定 tag 的源码。需要确认精确实现时，应先固定 tag/commit 与部署参数。
+原 HAMi ENML 只保存了文档链接，后续长文中的源码行号也未注明 commit。本册按职责和设计流程组织说明。需要确认精确实现时，应先固定 tag/commit 与部署参数。
 
 正文范围以本册现有条目为准；已移除的条目不在本附录中补写，原始导出与处理记录不作为站点内容。
 
@@ -70,4 +70,4 @@ CUDA/Python 代码可能初始化设备或执行工作；profiling 会启动应�
 | MoE                                    | DeepSeek-V3 技术报告 v2 与官方配置，第 21 章                 | DOCUMENTED / SOURCE VERIFIED |
 | GCR/GPU-CR                             | FAST ’26，原 Artifact 4882e2c，后续 GPU-CR e9bbb52，第 25 章 | DOCUMENTED / SOURCE VERIFIED |
 
-DOCUMENTED 表示有文档或论文支持。SOURCE VERIFIED 表示查阅了可定位源码。STATIC CHECKED 表示检查过算例、语法、链接或制品。RUNTIME VERIFIED 需要记录可复现的目标环境及实测结果。HYPOTHESIS 表示待证工程推断。NOT TESTED 表示尚无相应运行证据。正文覆盖第 1–25 章，实验流程见[附录 B](/articles/ai-infra-practice-guide.html)。本轮 GPU、NCCL 和 Serving 运行验证为 NOT TESTED。
+DOCUMENTED 表示有文档或论文支持。SOURCE VERIFIED 表示查阅了可定位源码。STATIC CHECKED 表示检查过算例、语法、链接或制品。RUNTIME VERIFIED 需要记录可复现的目标环境及实测结果。HYPOTHESIS 表示待证工程推断。NOT TESTED 表示尚无相应运行证据。正文覆盖第 1–25 章，实验流程见[附录 B](/articles/ai-infra-practice-guide.html)。

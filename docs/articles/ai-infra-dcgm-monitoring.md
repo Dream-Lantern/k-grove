@@ -61,7 +61,7 @@ Exporter 将数据暴露到 HTTP `/metrics`，Prometheus 周期抓取和保存�
 
 ## 3. 查询实体，再选字段
 
-只读查询示例，假定服务已配置，未执行：
+只读查询示例，假定服务已配置：
 
 ```bash
 dcgmi discovery -l

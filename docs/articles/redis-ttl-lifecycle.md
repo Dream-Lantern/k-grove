@@ -21,13 +21,13 @@ order: 13
 
 TTL（Time to Live，生存时间）决定数据何时不再有效；过期检查、对象删除和内存归还则是不同步骤。把它们当成同一时刻，容易误判内存和定时任务行为。
 
-本章以 Redis Open Source 7.2.0 的键级过期为参照，Hash 字段过期单独标注 7.4.0。`redis` 代码块是在交互客户端中输入的 Redis 命令，不是 Shell 命令；示例均未执行，返回结果只作教学推演。
+本章以 Redis Open Source 7.2.0 的键级过期为参照，Hash 字段过期单独标注 7.4.0。`redis` 代码块是在交互客户端中输入的 Redis 命令，不是 Shell 命令。
 
 ![期限、过期处理与内存观察的不同阶段](/assets/notes/redis/redis-study-expiration.svg)
 
 ## 1. 单位与边界返回
 
-新增示例，未执行：
+新增示例：
 
 ```redis
 SET demo:temporary value EX 60
@@ -46,7 +46,7 @@ TTL 返回秒，PTTL 返回毫秒精度的剩余时间。Redis Open Source 2.8.0
 | -1     | 键存在，没有过期时间                 |
 | -2     | 键不存在，包括访问时已判为过期的情况 |
 
-短期限示例，未执行：
+短期限示例：
 
 ```redis
 SET demo:ttl value PX 500
@@ -124,7 +124,7 @@ GT/LT 比较时，无 TTL 的键视作期限无限远，因此 GT 不为其设�
 
 expired_keys 与 evicted_keys 表示不同机制。前者与期限相关，后者与内存策略有关；volatile 策略的候选是有 TTL 的键，不是只剩已经过期的键。
 
-可以在有相应权限的学习环境中观察以下命令，均未运行：
+可以在有相应权限的学习环境中观察以下命令：
 
 ```redis
 INFO stats

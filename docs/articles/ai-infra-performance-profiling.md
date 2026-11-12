@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
 }
 ```
 
-保存为 `layout.cu`，在 Linux、兼容驱动、CUDA Toolkit 12.8.1 和受支持宿主编译器下构建。Nsight 与 Toolkit 分别记录版本。先不启动 profiler 运行两组，再按第 3 节过滤分别采样，最后退出 profiler、交替顺序重复两组。两种模式都应输出 `PASS`，时间和瓶颈待实测。不要把带 Replay 的程序计时并入无采集结果。
+保存为 `layout.cu`，在 Linux、兼容驱动、CUDA Toolkit 12.8.1 和受支持宿主编译器下构建。Nsight 与 Toolkit 分别记录版本。先不启动 profiler 运行两组，再按第 3 节过滤分别采样，最后退出 profiler、交替顺序重复两组。两种模式都应输出 `PASS`，分别记录时间和瓶颈。不要把带 Replay 的程序计时并入无采集结果。
 
 ```bash
 nvidia-smi

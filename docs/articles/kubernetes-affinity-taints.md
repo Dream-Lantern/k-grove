@@ -276,7 +276,7 @@ kubectl describe node NODE_NAME
 kubectl get pod POD_NAME -n NAMESPACE -o yaml
 ```
 
-查询未执行。排查时，应按资源、节点选择、Pod 拓扑关系、污点、卷及其他调度约束逐项对照。事件提供的是定位线索，不能把最先看到的原因认定为唯一原因；放宽条件前，还应确认它原本保障的隔离或可用性要求。
+排查时，应按资源、节点选择、Pod 拓扑关系、污点、卷及其他调度约束逐项对照。事件提供的是定位线索，不能把最先看到的原因认定为唯一原因；放宽条件前，还应确认它原本保障的隔离或可用性要求。
 
 先看 Pending Pod 是否已有 spec.nodeName：未分配节点时，重点读 FailedScheduling 事件；已经绑定而仍 Pending 时，还要检查镜像、网络、卷挂载等节点启动过程，不将所有 Pending 都归因于 Affinity。然后依次核对节点标签 → nodeSelector/required NodeAffinity → Pod 亲和/反亲和参照与 Namespace → Taint/Toleration → 拓扑分布 → CPU/内存 requests → PVC 和存储拓扑。
 

@@ -25,7 +25,7 @@ String（字符串）保存字节序列，可以是文本、序列化对象、�
 
 ## 1. SET 与 GET 的基本语义
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，不是 Shell 命令或客户端 API（Application Programming Interface，应用程序编程接口）。以下按 Redis Open Source 7.2.0 语义教学，假定示例键起初不存在、无其他客户端修改，且在过期前完成读取。所有命令均未实际运行；`text` 代码块是预期返回示意，不是实测记录。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，不是 Shell 命令或客户端 API（Application Programming Interface，应用程序编程接口）。以下按 Redis Open Source 7.2.0 语义教学，假定示例键起初不存在、无其他客户端修改，且在过期前完成读取。`text` 代码块是预期返回示意。
 
 ```redis
 SET demo:profile:42 "{\"name\":\"Lin\"}" EX 120

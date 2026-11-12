@@ -132,7 +132,7 @@ spec:
 
 Service 选的是同命名空间 Pod 的 `app=catalog` 标签。客户端访问 Service 的 port=80，`targetPort: http` 引用后端 Pod 名为 http 的容器端口，该声明为 8080。`containerPort` 不会自动让进程监听，应用必须实际监听 `0.0.0.0:8080`。
 
-Startup Probe 成功前，readiness/liveness 暂不执行。readiness 失败通常影响就绪状态与普通服务后端资格；liveness 达到失败条件会触发容器终止及适用重启。探针成功只证明该路径的检查语义满足，不证明所有业务接口健康。[kubelet 与探针](/articles/kubernetes-kubelet.html)及 [Pod 生命周期](/articles/kubernetes-pod-lifecycle.html)分别展开节点执行与终止条件。
+Startup Probe 成功前，readiness/liveness 暂不执行。readiness 失败通常影响就绪状态与普通服务后端资格；liveness 达到失败条件会触发容器终止及适用重启。[kubelet 与探针](/articles/kubernetes-kubelet.html)及 [Pod 生命周期](/articles/kubernetes-pod-lifecycle.html)分别展开节点执行与终止条件。
 
 ## 3. 预期观察与失败分支
 
@@ -219,7 +219,7 @@ spec:
 ceil(4 × 80 / 50) = 7
 ```
 
-这不是实测结果。缺失指标、未就绪样本、稳定窗口、扩缩速率和 min/max 副本数都可能改变最终建议。
+这缺失指标、未就绪样本、稳定窗口、扩缩速率和 min/max 副本数都可能改变最终建议。
 
 这是独立的四副本纸面算例；前面资源清单的初始期望仍为两个副本。增加副本还要考虑预算与配额，并经过调度、启动与就绪；HPA 工作后，Helm、GitOps、人工 scale 等写入者也不应持续用固定 replicas=2 覆盖它。
 
@@ -238,7 +238,7 @@ ceil(4 × 80 / 50) = 7
 | HPA      | 指标有效性、建议副本、实际/Ready 副本、业务收益                |
 | PDB      | 适用 Eviction API 的预算与拒绝行为，区别直接删除               |
 
-未执行的只读观察命令；即使只读，结果和日志也需按权限读取并脱敏：
+只读观察命令；即使只读，结果和日志也需按权限读取并脱敏：
 
 ```bash
 kubectl config current-context

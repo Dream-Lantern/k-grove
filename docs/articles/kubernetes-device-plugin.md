@@ -146,7 +146,7 @@ Linux 常见 Socket 为 `/var/lib/kubelet/pod-resources/kubelet.sock`，与插�
 
 先看设备是否被发现、插件是否注册及 Node 是否暴露资源；再看 Pod 请求是否能调度；最后看 Allocate、运行时设备注入和应用实际访问。
 
-未执行的只读查询模板：
+只读查询模板：
 
 ```bash
 kubectl get nodes -o yaml

@@ -110,7 +110,7 @@ Master 运行时需要快速查询元数据，也需要在进程崩溃后恢复�
 
 检查点（Checkpoint）是一个可恢复的元数据状态快照，采用可直接映射内存的紧凑 B-tree 类格式。创建时 Master 切换到新日志文件，由独立线程生成覆盖切换点之前全部变更的 checkpoint；新的操作继续写入新日志。完成后 checkpoint 同样写到本地及远程。恢复只采用最新的**完整**检查点和后续日志；中途崩溃留下的不完整检查点会被检测并跳过，必要时退回更早的完整检查点及其后续日志。[GFS §2.6.3](https://storage.googleapis.com/gweb-research2023-media/pubtools/4446.pdf)
 
-**教学案例：Master 崩溃后的时间线。** 目录状态仅用于展示逻辑重放，不表示真实日志编码：
+**教学案例：Master 崩溃后的时间线。** 下面用目录状态展示逻辑重放：
 
 ```text
 T0  完整 checkpoint：/data/a、/data/b

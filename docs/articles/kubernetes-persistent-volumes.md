@@ -192,7 +192,7 @@ kubectl get pv PV_NAME -o yaml
 kubectl describe pod POD_NAME -n NAMESPACE
 ```
 
-这些查询未执行。先看事件，再区分 Pending、Attach、Mount 与 Permission denied 等不同阶段。不要因为“PV 看起来正常”就直接删除 PVC 重试。
+先看事件，再区分 Pending、Attach、Mount 与 Permission denied 等不同阶段。不要因为“PV 看起来正常”就直接删除 PVC 重试。
 
 PVC Pending 可能在等待供应或消费者；Bound 但挂载失败应看 Pod Events、CSI 驱动/节点插件和后端状态；已挂载却 Permission denied 则继续检查容器 UID/GID、目录权限和文件系统。不要通过删除申领来掩盖不同阶段的问题。
 

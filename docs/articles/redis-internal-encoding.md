@@ -23,7 +23,7 @@ order: 26
 
 Redis 的对外类型规定可执行命令，内部编码规定对象在某种规模下的存储布局。一个类型可以根据大小和内容选择不同编码。下面先看紧凑布局，再联系 String 表示与字典 rehash，理解空间、访问成本和转换过程。
 
-本章以 Redis Open Source 7.2.0 为源码基线；历史变化单独标注。所有命令都是未实际运行的 Redis 教学示例，不是 Shell；内部编码可以观察，但不能作为跨版本业务协议。
+本章以 Redis Open Source 7.2.0 为源码基线；历史变化单独标注。以下代码块使用 Redis 命令；内部编码可以观察，但不能作为跨版本业务协议。
 
 [![Redis 数据结构编码：需要固定版本](/assets/notes/redis/redis-study-encoding.svg)](/assets/notes/redis/redis-study-encoding.svg)
 
@@ -113,7 +113,7 @@ OBJECT ENCODING demo:encoding:text
 MEMORY USAGE demo:encoding:text
 ```
 
-这是会写入示例键的教学观察。假设 7.2.0 的普通 SET 路径，预期 number 的编码为 `int`，text 为 `embstr`；两次 SET 预期返回 `OK`。这些是源码推导，未实测。MEMORY USAGE 返回字节估算，不编造固定数值；较长非整数内容通常走 raw，更新路径也可能改变编码。[Redis 7.2.0 对象实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/object.c)、[OBJECT ENCODING](https://redis.io/docs/latest/commands/object-encoding/)
+这是会写入示例键的教学观察。假设 7.2.0 的普通 SET 路径，预期 number 的编码为 `int`，text 为 `embstr`；两次 SET 预期返回 `OK`。MEMORY USAGE 返回字节估算，不编造固定数值；较长非整数内容通常走 raw，更新路径也可能改变编码。[Redis 7.2.0 对象实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/object.c)、[OBJECT ENCODING](https://redis.io/docs/latest/commands/object-encoding/)
 
 String 命令与业务边界见[第三章](/articles/redis-strings.html)。
 
@@ -132,7 +132,7 @@ HSET demo:encoding:profile note 123456789012345678901234567890123456789012345678
 OBJECT ENCODING demo:encoding:profile
 ```
 
-预期两个 HSET 各新增一个字段，返回 1；前一次编码为 listpack，后一次为 hashtable，因为 note 的值有 65 个单字节字符，超过 64 字节阈值。虽只有两个字段，也会转换；字段数量和字段/值长度都需要检查。转换要分配哈希表、遍历并建立条目，消耗 CPU（Central Processing Unit，中央处理器）和内存；这里没有性能实测数据。[7.2.0 hashTypeTryConversion / hashTypeSet](https://github.com/redis/redis/blob/7.2.0/src/t_hash.c)
+预期两个 HSET 各新增一个字段，返回 1；前一次编码为 listpack，后一次为 hashtable，因为 note 的值有 65 个单字节字符，超过 64 字节阈值。虽只有两个字段，也会转换；字段数量和字段/值长度都需要检查。转换要分配哈希表、遍历并建立条目，消耗 CPU（Central Processing Unit，中央处理器）和内存。[7.2.0 hashTypeTryConversion / hashTypeSet](https://github.com/redis/redis/blob/7.2.0/src/t_hash.c)
 
 Hash 的业务建模见[第四章](/articles/redis-hashes.html)，Sorted Set 的排序访问见[第七章](/articles/redis-sorted-sets.html)。Hash Field Expiration（Hash 字段过期）是 Open Source 7.4.0 起的独立能力，不能从本章 7.2.0 编码表推断其布局或支持情况。[HEXPIRE 版本](https://redis.io/docs/latest/commands/hexpire/)
 

@@ -40,7 +40,7 @@ Kafka 以分区化、可复制的事件日志组织记录，读取进度与数�
 
 ### 一条订单事件的完整生命周期
 
-以下是教学推演，不是集群实测。假设订单 `O-42` 创建成功，记录写入 `orders` 的 P0（Partition 0），得到 Offset 799；库存组此前已处理到 798。Topic、Partition、Offset 和 Consumer Group 在后两节继续展开。
+以下是教学推演。假设订单 `O-42` 创建成功，记录写入 `orders` 的 P0（Partition 0），得到 Offset 799；库存组此前已处理到 798。Topic、Partition、Offset 和 Consumer Group 在后两节继续展开。
 
 ![订单事件写入、独立读取与位点提交](/assets/notes/kafka/kf-overview-review.svg)
 
@@ -118,7 +118,7 @@ Outbox 解决的是本地业务状态与发送意图的一致保存，通常仍�
 
 若使用全新的单 Broker 实验环境，启动 Broker 前确认 `offsets.topic.replication.factor=1`，使组协调器能创建内部 Topic `__consumer_offsets`。Kafka 3.9 的默认内部位点 Topic 副本因子为 3。下面创建业务 Topic 时指定的副本因子只影响该业务 Topic。该前置条件也适用于后续用到组订阅或组位点提交的单 Broker 实验。[Kafka 3.9 Broker 配置](https://kafka.apache.org/39/configuration/broker-configs/#offsets.topic.replication.factor)
 
-**未实测的可复现实验**：需要已启动的隔离 Kafka 3.9 集群、发行包和 Java。以下为发行包根目录下的 Bash 命令；不启动、格式化或重置任何现有集群。使用全新实验 Topic 和组名，若已存在请整体换名。单副本只用于观察流程，不验证副本可靠性；认证集群还需按环境提供客户端配置。
+**可复现实验**：需要已启动的隔离 Kafka 3.9 集群、发行包和 Java。以下为发行包根目录下的 Bash 命令；不启动、格式化或重置任何现有集群。使用全新实验 Topic 和组名，若已存在请整体换名。单副本只用于观察流程，不验证副本可靠性；认证集群还需按环境提供客户端配置。
 
 ```bash
 bin/kafka-topics.sh --bootstrap-server localhost:9092 \

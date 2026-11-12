@@ -146,7 +146,7 @@ write(1, "\n", 1)         = 1
 
 关注 `write` 的次数、请求字节数与返回值，而不是要求输出逐字相同。运行库、缓冲配置、描述符目标和跟踪能力会影响结果；有的实现还可能使用 `writev`，只跟踪 `write` 并不能覆盖全部底层写入方式。可再把命令改为 `strace -e trace=write,writev -o trace.log ./demo` 作对照。strace 的参数含义见 [strace(1)](https://man7.org/linux/man-pages/man1/strace.1.html)。
 
-若在 `printf` 中加入换行后观察到更早的写入，应结合行缓冲解释；把标准输出重定向到文件又可能改变策略。因此“两个 printf 必然等于一个 write”同样不成立。本轮仅作代码静态复核，未在 Linux 上编译、运行该实验。
+若在 `printf` 中加入换行后观察到更早的写入，应结合行缓冲解释；把标准输出重定向到文件又可能改变策略。因此“两个 printf 必然等于一个 write”同样不成立。
 
 ## 本章小结
 

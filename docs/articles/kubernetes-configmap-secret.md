@@ -46,7 +46,7 @@ ConfigMap 和 Secret 都可通过适用的环境变量或卷投射方式提供�
 
 以下保存为 `catalog-config-demo.yaml`，使用同一份**非敏感** ConfigMap 对照三种交付方式，并让应用仅在启动时读取普通卷文件。固定版本 busybox:1.36.1 实际提供 8080 静态 HTTP 服务，不是附录 B 的占位程序。
 
-前置条件为能拉取镜像的 Linux 1.28 隔离集群、专用 study 命名空间与相应资源权限。本章是独立实验：不要覆盖前章尚在运行的 catalog 或已有 catalog-config；先清理自己前章的实验，或另选命名空间并同步修改所有 YAML 和命令。本次未运行清单或访问任何实际配置。
+前置条件为能拉取镜像的 Linux 1.28 隔离集群、专用 study 命名空间与相应资源权限。本章使用独立实验资源：不要覆盖前章尚在运行的 catalog 或已有 catalog-config；先清理自己前章的实验，或另选命名空间并同步修改所有 YAML 和命令。
 
 ```yaml
 apiVersion: v1
@@ -143,7 +143,7 @@ spec:
 
 ### 4.1 对照配置更新实验
 
-以下 create/apply/patch/delete 是隔离实验资源变更，未执行。部署后先选择一个实际 catalog Pod 名称，下面统一以 POD_NAME 表示；连续观察同一 Pod UID，避免 Deployment 选择到不同实例造成误判：
+以下 create/apply/patch/delete 是隔离实验资源变更。部署后先选择一个实际 catalog Pod 名称，下面统一以 POD_NAME 表示；连续观察同一 Pod UID，避免 Deployment 选择到不同实例造成误判：
 
 ```bash
 # 仅当 study 不存在且专供本实验时创建

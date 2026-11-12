@@ -128,7 +128,7 @@ for (;;) pause();
 
 现代启动可能使用 initramfs（初始内存文件系统）作为早期根文件系统，再进入最终根文件系统与用户空间 init。它不是每种配置都必经的相同阶段。相关对照见 [Linux 6.12 x86 启动协议](https://docs.kernel.org/6.12/arch/x86/boot.html)与 [EFI Boot Stub](https://docs.kernel.org/6.12/admin-guide/efi-stub.html)。
 
-具体 UEFI 配置、安全启动、initramfs 与系统管理器需要另外固定平台和版本。本文未验证这些现代启动细节，也未提供相应安装环境。
+具体 UEFI 配置、安全启动、initramfs 与系统管理器需要另外固定平台和版本。
 
 ## 6. 只读源码追踪练习
 
@@ -143,7 +143,7 @@ for (;;) pause();
 | 5    | `init/main.c`：`main`、`move_to_user_mode`、`init`                                     | 首次 fork 前处于什么特权状态？父子分支各执行什么？                      |
 | 6    | `kernel/sched.c`：`init_task`、`schedule`；`include/asm/system.h`：`move_to_user_mode` | 任务 0 从哪里来？没有普通就绪任务时如何被选中？用户态返回现场如何构造？ |
 
-最后写出两条状态线：一条标记 PE、PG 何时开启；另一条标记任务 0、任务 1、脚本 shell、交互 shell 的父子与等待关系。答案应能逐项指回源码标签，而不只复述流程图。本轮已核对上述原始源码，未编译或模拟启动 Linux 0.11。
+最后写出两条状态线：一条标记 PE、PG 何时开启；另一条标记任务 0、任务 1、脚本 shell、交互 shell 的父子与等待关系。答案应能逐项指回源码标签，而不只复述流程图。
 
 ## 本章小结
 

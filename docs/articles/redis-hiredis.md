@@ -65,7 +65,7 @@ v1.2.0 的 TCP 连接实现会调用系统 `getaddrinfo` 解析域名，不能�
 | 编译器与标准 | GCC 或 Clang，C11                                  |
 | 依赖         | hiredis 开发库、pkg-config                         |
 | 地址与命令   | 127.0.0.1:6379，PING                               |
-| 预期输出     | PONG；这是预期，不是实测结果                       |
+| 预期输出     | PONG；这是预期                                     |
 
 ```c
 #include <stdio.h>
@@ -122,7 +122,7 @@ int main(void) {
 }
 ```
 
-在预先安装对应开发包且 pkg-config 能找到 v1.2.0 的 Linux 或 macOS 开发环境中，可参考以下 Shell 编译命令。它是复现说明，未经实测，也不是 Windows PowerShell 命令：
+在预先安装对应开发包且 pkg-config 能找到 v1.2.0 的 Linux 或 macOS 开发环境中，可参考以下 Shell 编译命令。它是复现说明，也不是 Windows PowerShell 命令：
 
 ```bash
 cc -std=c11 -Wall -Wextra \

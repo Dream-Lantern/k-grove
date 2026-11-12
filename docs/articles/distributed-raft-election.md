@@ -81,7 +81,7 @@ Follower 在选举超时后成为 Candidate，开始一轮选举：`currentTerm`
 
 投票需要比较候选人最后日志的任期；任期相同时，再比较最后索引，候选人应至少一样新。这里比较的是最后日志条目的 term，不是简单比较服务器当前 currentTerm。
 
-以下均为教学日志状态，不是运行记录，元组表示 `(lastLogTerm, lastLogIndex)`：
+以下均为教学日志状态，元组表示 `(lastLogTerm, lastLogIndex)`：
 
 | 本地最后日志       | 候选人最后日志     | 仅按日志资格判断                                     |
 | ------------------ | ------------------ | ---------------------------------------------------- |
@@ -89,7 +89,7 @@ Follower 在选举超时后成为 Candidate，开始一轮选举：`currentTerm`
 | (term=7, index=12) | (term=7, index=10) | 任期相同但候选人索引较小，不够新                     |
 | (term=6, index=12) | (term=6, index=11) | 同样不够新                                           |
 
-教学伪代码如下，未执行；参数中的 term 都指**最后日志任期**，不指 `currentTerm`：
+教学伪代码如下；参数中的 term 都指**最后日志任期**，不指 `currentTerm`：
 
 ```python
 def is_candidate_up_to_date(
@@ -104,7 +104,7 @@ def is_candidate_up_to_date(
     return candidate_index >= local_index
 ```
 
-这只是日志新旧判断，不是完整授票实现。授票还要检查请求任期、`votedFor` 是否为空或已经投给同一候选人，并正确持久化状态。[Raft §5.4.1、RequestVote 规则](https://raft.github.io/raft.pdf)
+这段函数比较日志新旧。授票还要检查请求任期、`votedFor` 是否为空或已经投给同一候选人，并正确持久化状态。[Raft §5.4.1、RequestVote 规则](https://raft.github.io/raft.pdf)
 
 ## 5. 多数交集只是证明的一部分
 
@@ -121,7 +121,7 @@ def is_candidate_up_to_date(
 
 若多个节点同时超时，它们可能各自投给自己并分散其他选票，形成分票。每轮重新随机选择选举超时，让某个候选人有机会更早发起请求并在其他节点超时前取得多数；这降低反复撞车的概率，不是无条件成功证明。
 
-网络延迟、RPC 往返、磁盘持久化停顿、调度暂停和故障恢复目标都会影响超时选择。心跳 100 ms、每轮从 300～600 ms 选一个选举超时，仅是有前提的教学参数，不是通用推荐配置。论文讨论广播耗时、选举超时与平均故障间隔的关系，见 [Raft §5.2、§5.6](https://raft.github.io/raft.pdf)。
+网络延迟、RPC 往返、磁盘持久化停顿、调度暂停和故障恢复目标都会影响超时选择。心跳 100 ms、每轮从 300～600 ms 选一个选举超时，仅是有前提的教学参数。论文讨论广播耗时、选举超时与平均故障间隔的关系，见 [Raft §5.2、§5.6](https://raft.github.io/raft.pdf)。
 
 没有多数时，选举可以持续失败；这不授权少数自行确认写入。读请求也不能只因节点自称 Leader 就自动获得线性一致保证，参见第 11 章。
 

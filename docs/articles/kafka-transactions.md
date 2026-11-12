@@ -118,7 +118,7 @@ Java 3.9 消费者默认 `read_uncommitted`，librdkafka v2.8.0 配置表中则�
 
 ### 实践：观察事务提交和中止
 
-使用 Kafka Broker 3.9、Java 17 和 Maven，确保 Broker 的事务状态日志可以建立并达到最小 ISR（In-Sync Replicas，同步副本集合）。默认配置需要足够的 Broker。单 Broker 教学环境可在内部 Topic 首次创建前将 `transaction.state.log.replication.factor` 和 `transaction.state.log.min.isr` 设为 1。每次使用一个新的空 Topic 和未被其他进程使用的事务 ID。以下命令和代码尚未联机实测。
+使用 Kafka Broker 3.9、Java 17 和 Maven，确保 Broker 的事务状态日志可以建立并达到最小 ISR（In-Sync Replicas，同步副本集合）。默认配置需要足够的 Broker。单 Broker 教学环境可在内部 Topic 首次创建前将 `transaction.state.log.replication.factor` 和 `transaction.state.log.min.isr` 设为 1。每次使用一个新的空 Topic 和未被其他进程使用的事务 ID。
 
 ```bash
 bin/kafka-topics.sh --bootstrap-server localhost:9092 --create \

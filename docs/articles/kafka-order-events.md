@@ -313,7 +313,7 @@ Consumer 校验完整 Schema、事件类型、版本和数量，再执行 `BEGIN
 
 ### 分阶段故障实验
 
-前置条件为 PostgreSQL 17 两个专用数据库、隔离的 Kafka 3.9 和测试用 `review-orders-inventory` Topic。单分区可用于验证顺序，若只运行一个 Broker，则使用 RF=1 做功能测试。准备独立消费组 `review-inventory`。单 Broker 还需满足[内部位点 Topic 的创建条件](/articles/kafka-log-model.html)。以下 SQL 和集成步骤未在 PostgreSQL/Kafka 联机环境实测。
+前置条件为 PostgreSQL 17 两个专用数据库、隔离的 Kafka 3.9 和测试用 `review-orders-inventory` Topic。单分区可用于验证顺序，若只运行一个 Broker，则使用 RF=1 做功能测试。准备独立消费组 `review-inventory`。单 Broker 还需满足[内部位点 Topic 的创建条件](/articles/kafka-log-model.html)。
 
 1. **正常流程**。分别用 `psql -v ON_ERROR_STOP=1` 执行源库与库存库的建表脚本。建立 E1 和 E2 两条 Outbox，E2 使用 `evt-1002`、版本 2、数量 3。用 Relay 伪代码连接 Producer，或由实验人员代替 Relay 执行领取、按 Key 发送和标记。用 Consumer 获取事件并执行库存事务，再按安全前沿提交。空 Topic 的首条记录从 Offset 0 开始，确认实际 Kafka Offset，两个相邻记录都完成后预期恢复位置为 2。
 2. **故障注入**。每组用新实验数据和新组。Relay 在投递成功、标记 SENT 之前退出，等待租约回收。模拟未知结果时忽略一次成功响应，再重发同一事件。乱序实验只在专用 Topic 手工先发 E2 再发 E1。库存事务可在函数返回后、COMMIT 前显式 ROLLBACK，观察原状。然后另做一次数据库 COMMIT 后、Kafka Commit 前退出，重启验证重复交付。启动第二个 Consumer。将旧实例的任务停在调用库存事务前，使用动态成员并暂停旧实例 Poll 直到超过 `max.poll.interval.ms`，让第二个实例接管。用组分配查询确认目标分区已易主，再释放旧任务，验证幂等及旧世代结果隔离。单分区时，仅加入第二个成员可能不会转移原分区。

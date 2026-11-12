@@ -163,7 +163,7 @@ kubectl get pods -n NAMESPACE -o wide
 
 以下保存为 `study-node-agent.yaml`。前置条件：专用 study 命名空间、固定版本 busybox:1.36.1 可拉取，且管理员已把**明确指定的测试节点**标记为 study-node-agent=enabled。这个专用标签和第一节的 agent 纸面标签不同，避免误覆盖已有节点组；没有授权或目标标签时只阅读清单，不修改节点、不部署。
 
-本例仅在容器内周期打印自身 Pod 名，不是生产日志代理。它不使用 hostNetwork、hostPath、hostPort 或 privileged，也不挂载 API 令牌；namespace 已存在其他实验资源时应另选名称并同步修改。
+本例在容器内周期打印自身 Pod 名。它不使用 hostNetwork、hostPath、hostPort 或 privileged，也不挂载 API 令牌；namespace 已存在其他实验资源时应另选名称并同步修改。
 
 ```yaml
 apiVersion: apps/v1
@@ -232,7 +232,7 @@ kubectl get daemonset study-node-agent -n study -o yaml
 kubectl delete -f study-node-agent.yaml
 ```
 
-预期稳定后各目标节点有一个实例，Ready 后再满足 5 秒门槛计入 Available；本例没有探针，Ready 不能证明真实代理功能健康。若 Desired=0，先查测试标签和节点资格；若 Desired>Current 或 Ready/Available 较少，逐个查 Pod、Events、资源、污点与镜像。标签清理由原授权管理者决定，本章不操作。
+预期稳定后各目标节点有一个实例，Ready 后再满足 5 秒门槛计入 Available；若 Desired=0，先查测试标签和节点资格；若 Desired>Current 或 Ready/Available 较少，逐个查 Pod、Events、资源、污点与镜像。标签清理由原授权管理者决定，本章不操作。
 
 节点覆盖与任务完成是两类目标，下一章介绍[Job 与 CronJob](/articles/kubernetes-jobs-cronjobs.html)。
 

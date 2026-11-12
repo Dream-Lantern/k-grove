@@ -33,7 +33,7 @@ Bloom Filter（布隆过滤器）用位数组近似判断成员是否可能已�
 
 FPR（False Positive Rate，假阳性率）描述未加入元素被判为“可能存在”的概率；Expected Capacity（预期容量）是预先规划的元素规模。目标 FPR 越低，通常需要更多位和哈希计算；容量估小也会增加后续扩容成本。这不是精确去重或成员列表，不能代替 Set 枚举成员，建模区别见 [第 2 章](/articles/redis-data-modeling.html)。
 
-以下是 Redis 命令，不是 Shell（命令解释环境）或客户端方法；以已包含这些能力的 Redis Open Source 8.0.0 统一发行包为教学基线。旧版需要相应模块，见第 4 节。全部示例未实际执行，预期结果只按文档语义推演；整数返回按 RESP2（Redis Serialization Protocol 2，Redis 序列化协议第 2 版）说明，客户端封装可能不同。仅用于隔离环境，会创建或修改 `demo:` 示例结构，假定对应键与索引尚不存在：
+以下是 Redis 命令，不是 Shell（命令解释环境）或客户端方法；以已包含这些能力的 Redis Open Source 8.0.0 统一发行包为教学基线。旧版需要相应模块，见第 4 节。整数返回按 RESP2（Redis Serialization Protocol 2，Redis 序列化协议第 2 版）说明，客户端封装可能不同。仅用于隔离环境，会创建或修改 `demo:` 示例结构，假定对应键与索引尚不存在：
 
 ```redis
 BF.RESERVE demo:bloom:items 0.01 10000
@@ -133,7 +133,7 @@ FT.SEARCH demo:idx:products '@category:{database}' NOCONTENT
 FT.SEARCH demo:idx:products '@price:[100 120]' NOCONTENT
 ```
 
-两次预期都只匹配 `demo:product:1001`，因为其价格已改为 109。在 RESP2 中，NOCONTENT 让结果只含总匹配数及键名，示意为 `[1,"demo:product:1001"]`，不是实测输出；不同协议与客户端封装需分别解析。语法见 [FT.CREATE](https://redis.io/docs/latest/commands/ft.create/)、[FT.INFO](https://redis.io/docs/latest/commands/ft.info/)与 [FT.SEARCH](https://redis.io/docs/latest/commands/ft.search/)。
+两次预期都只匹配 `demo:product:1001`，因为其价格已改为 109。在 RESP2 中，NOCONTENT 让结果只含总匹配数及键名，示意为 `[1,"demo:product:1001"]`；不同协议与客户端封装需分别解析。语法见 [FT.CREATE](https://redis.io/docs/latest/commands/ft.create/)、[FT.INFO](https://redis.io/docs/latest/commands/ft.info/)与 [FT.SEARCH](https://redis.io/docs/latest/commands/ft.search/)。
 
 | 索引字段类型    | 用途                               |
 | --------------- | ---------------------------------- |

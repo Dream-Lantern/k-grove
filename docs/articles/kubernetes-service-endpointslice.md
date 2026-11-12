@@ -31,7 +31,7 @@ Service（服务）提供逻辑访问入口，其 selector（选择器）通常�
 
 ## 2. 一个最小端口例子
 
-以下保存为 `catalog-service.yaml`，包含完整 Deployment 与 Service。使用固定版本 busybox:1.36.1，httpd 实际监听 0.0.0.0:8080，提供静态页面及就绪文件。它不是附录 B 的业务程序，也不声称业务依赖健康；本次未拉取镜像或创建资源。
+以下保存为 `catalog-service.yaml`，包含完整 Deployment 与 Service。使用固定版本 busybox:1.36.1，httpd 实际监听 0.0.0.0:8080，提供静态页面及就绪文件。
 
 ```yaml
 apiVersion: apps/v1

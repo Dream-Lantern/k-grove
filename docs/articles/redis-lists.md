@@ -21,11 +21,11 @@ order: 5
 
 List（列表）是按顺序保存字节串的序列，支持两端插入与弹出。它既能表达栈，也能表达队列；选哪一端必须前后一致。
 
-本章 `redis` 代码块均是 Redis 命令，可在 `redis-cli` 交互环境输入。示例和预期返回均未实测；假定学习键起初不存在，无其他客户端修改，除非另有说明。普通命令按 Redis Open Source 7.2.0 语义讲解，历史版本另行标注。
+本章 `redis` 代码块均是 Redis 命令，可在 `redis-cli` 交互环境输入。假定学习键起初不存在，无其他客户端修改，除非另有说明。普通命令按 Redis Open Source 7.2.0 语义讲解，历史版本另行标注。
 
 ## 1. 先画清左右方向
 
-新增例子，未执行：
+新增例子：
 
 ```redis
 RPUSH demo:tasks task-a task-b
@@ -69,7 +69,7 @@ LMOVE、BLMOVE 自 Redis Open Source 6.2.0 起可用。BLMOVE 的 timeout 单位
 BLMOVE demo:{blocking}:ready demo:{blocking}:processing LEFT RIGHT 2
 ```
 
-多键命令在 Redis Cluster（Redis 集群）中须满足同一 Hash Slot（哈希槽，即键所在的分片单元）约束。上面的 a、b 示例仅供单实例使用；`{blocking}` 是 Hash Tag（哈希标签），让源和目标按相同内容计算槽。[BLMOVE](https://redis.io/docs/latest/commands/blmove/) · [Cluster 多键规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#implemented-subset)
+多键命令在 Redis Cluster（Redis 集群）中须满足同一 Hash Slot（哈希槽，即键所在的分片单元）约束。上面的 a、b 示例使用单实例；`{blocking}` 是 Hash Tag（哈希标签），让源和目标按相同内容计算槽。[BLMOVE](https://redis.io/docs/latest/commands/blmove/) · [Cluster 多键规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#implemented-subset)
 
 ## 3. 简单弹出队列的丢失窗口
 
@@ -79,7 +79,7 @@ BLMOVE demo:{blocking}:ready demo:{blocking}:processing LEFT RIGHT 2
 
 ![待处理、处理中与业务确认的分工](/assets/notes/redis/redis-study-list-work.svg)
 
-LMOVE / BLMOVE 的原子性（Atomicity）保证两个 Redis List 的移动操作不会被其他客户端命令插入：不会出现任务已从源移除、却尚未放入目标的可见中间状态。以下正常路径使用 Redis Open Source 6.2.0 起支持的 LMOVE，假定学习键起初不存在、任务 ID（Identifier，标识符）唯一，没有其他消费者，未执行：
+LMOVE / BLMOVE 的原子性（Atomicity）保证两个 Redis List 的移动操作不会被其他客户端命令插入：不会出现任务已从源移除、却尚未放入目标的可见中间状态。以下正常路径使用 Redis Open Source 6.2.0 起支持的 LMOVE，假定学习键起初不存在、任务 ID（Identifier，标识符）唯一，没有其他消费者：
 
 ```redis
 RPUSH demo:{tasks}:ready task-a task-b
@@ -95,7 +95,7 @@ LREM demo:{tasks}:processing 1 task-a
 
 在上述无竞争前提下，预期删除数为 1。若业务失败或消费者崩溃，不应提前执行这次确认。这段流程只覆盖正常处理时的移动—业务—确认过程，下面的接管协议仍需由应用实现。
 
-两个键使用相同 Hash Tag 是为了满足 Cluster 同槽约束。**LMOVE 只保证 Redis 内部移动的原子性，不保证 Redis 操作与数据库扣款等外部业务构成同一个原子事务。**它能避免移动过程中的任务丢失窗口，却不能保证外部业务只执行一次；Redis 数据在故障后的保留仍取决于持久化和复制策略。[LMOVE 的版本和可靠队列模式](https://redis.io/docs/latest/commands/lmove/)
+两个键使用相同 Hash Tag 是为了满足 Cluster 同槽约束。**LMOVE 将两个 Redis List 之间的移动作为原子操作执行。**数据库扣款等外部业务需要单独处理幂等与事务协调；Redis 数据在故障后的保留取决于持久化和复制策略。[LMOVE 的版本和可靠队列模式](https://redis.io/docs/latest/commands/lmove/)
 
 例如：消费者移动任务到 processing → 数据库扣款成功 → 消费者崩溃，尚未 LREM → 应用发现超时后重投 → 新消费者再次扣款。业务实际成功与 Redis 确认完成之间的窗口会产生 Duplicate Processing（重复处理，即同一任务再次执行）。
 

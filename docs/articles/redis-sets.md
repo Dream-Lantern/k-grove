@@ -21,11 +21,11 @@ order: 6
 
 Set（集合）保存不重复的成员，不提供插入顺序或按下标读取。它适合表达“某人是否属于这一组”，而不是需要稳定排名的列表。需要按分数排序时，见 [第 7 章：Sorted Set（有序集合）](/articles/redis-sorted-sets.html)。
 
-本章 `redis` 代码块是 Redis 命令，可在 `redis-cli` 交互环境输入；全部未实际运行，预期结果只用于教学。除特别说明外，以 Redis Open Source 7.2.0 为参照，假定各示例键起初不存在、没有并发修改。Cluster 和 Bloom 示例有额外环境要求。
+本章 `redis` 代码块是 Redis 命令，可在 `redis-cli` 交互环境输入。除特别说明外，以 Redis Open Source 7.2.0 为参照，假定各示例键起初不存在、没有并发修改。Cluster 和 Bloom 示例有额外环境要求。
 
 ## 1. 分别查询键、成员与集合数量 {#_1-键存在与成员存在}
 
-新增例子，未执行：
+新增例子：
 
 ```redis
 SADD demo:tags:user-42 sports music
@@ -59,7 +59,7 @@ CLUSTER KEYSLOT demo:{audience}:a
 CLUSTER KEYSLOT demo:{audience}:b
 ```
 
-预期返回两个相同的槽编号，本次未运行，不提供虚构编号。相同标签解决同槽约束，不解决所有热点问题；大量集合共用同一标签会使负载集中到一个槽及其节点。[CLUSTER KEYSLOT](https://redis.io/docs/latest/commands/cluster-keyslot/) · [Cluster Hash Tag 规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#hash-tags)
+预期返回两个相同的槽编号。相同标签解决同槽约束，不解决所有热点问题；大量集合共用同一标签会使负载集中到一个槽及其节点。[CLUSTER KEYSLOT](https://redis.io/docs/latest/commands/cluster-keyslot/) · [Cluster Hash Tag 规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#hash-tags)
 
 ## 3. 随机返回与随机删除
 
@@ -92,7 +92,7 @@ Bloom Filter（布隆过滤器）是一种概率型数据结构，用较少空�
 
 `BF.*` 属于 RedisBloom 提供的概率结构能力，不是核心 Set 命令。在 Redis Open Source 7.2.0 / 7.4.0 普通实例上，需要另行安装兼容的 RedisBloom 模块，并通过服务端启动配置 `loadmodule` 加载实际模块文件，或使用包含该模块的 Redis Stack；安装客户端库不会补上命令。Redis Open Source 8.0.0 已将 RedisBloom 纳入发行包，二进制分发与自行构建、加载配置仍需分别确认，不能说所有实例都要另装模块或一定已启用。[RedisBloom 项目与版本边界](https://github.com/RedisBloom/RedisBloom#readme) · [8.0.0 Release Notes](https://raw.githubusercontent.com/redis/redis/8.0.0/00-RELEASENOTES)
 
-以下以使用 `redis-full.conf` 加载完整概率结构能力的 Redis Open Source 8.0.0 学习实例为目标，假定 `demo:bloom` 不存在；这是教学语法与推演，未运行。`0.001` 表示期望假阳性率 0.1%，`100000` 是初始容量规划，不保证每批查询恰好有 0.1% 误判：
+以下以使用 `redis-full.conf` 加载完整概率结构能力的 Redis Open Source 8.0.0 学习实例为目标，假定 `demo:bloom` 不存在；这是教学语法与推演。`0.001` 表示期望假阳性率 0.1%，`100000` 是初始容量规划，不保证每批查询恰好有 0.1% 误判：
 
 ```redis
 BF.RESERVE demo:bloom 0.001 100000
@@ -110,7 +110,7 @@ SADD demo:users user-1 user-2 user-3
 SSCAN demo:users 0 COUNT 100
 ```
 
-每次扫描返回“下次游标 + 本批成员”。之后必须传入上次返回的游标，只有返回游标为 `0` 才结束。下面 `123`、`456` **仅是教学占位**，不是实测返回值，也不是应固定复制执行的后续命令；小集合第一次就可能结束，无需继续：
+每次扫描返回“下次游标 + 本批成员”。之后必须传入上次返回的游标，只有返回游标为 `0` 才结束。下面用 `123`、`456` 表示中间游标，执行时替换为上次返回的实际值；小集合第一次就可能结束，无需继续：
 
 ```text
 SSCAN demo:users 123 COUNT 100
@@ -158,7 +158,7 @@ intset 内部还可用 int16、int32、int64（分别为 16、32、64 位有符�
 | intset 内部宽度升级 | 原先只存 `1`，再加入 `32768`，可由 int16 升为 int32，对象仍是 intset |
 | 对象编码转换        | 加入非整数或增长超出条件，intset 可转为 listpack 或 hashtable        |
 
-这是按 7.2.0 源码推演的例子，不是实测。intset 内部有序，也不意味着应用可以按下标或排序读取 Set。转换和回退需按具体命令、版本判断，不能概括为“所有类型永不回退”。[7.2.0 intset.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/intset.c)
+这是按 7.2.0 源码推演的例子。intset 内部有序，也不意味着应用可以按下标或排序读取 Set。转换和回退需按具体命令、版本判断，不能概括为“所有类型永不回退”。[7.2.0 intset.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/intset.c)
 
 优化前先看实际版本与 OBJECT ENCODING，再比较典型负载，而不是只根据教科书里的一个阈值重组全部数据。基础成员语义见 [Set 数据类型](https://redis.io/docs/latest/develop/data-types/sets/)。
 

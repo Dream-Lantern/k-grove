@@ -19,7 +19,7 @@ order: 12
 
 # 第十二章 Streams、消费组与重复处理
 
-> 版本范围：Streams 自 Redis Open Source 5.0.0 提供；基本流程以 7.2.0 为参照，XAUTOCLAIM 自 6.2.0 提供，8.2.0 的新接口单独列出。以下代码块是 Redis 命令或明确标注的模板，不是 Shell 命令；所有预期结果均为教学推演，未实际创建流或消费者。
+> 版本范围：Streams 自 Redis Open Source 5.0.0 提供；基本流程以 7.2.0 为参照，XAUTOCLAIM 自 6.2.0 提供，8.2.0 的新接口单独列出。以下代码块是 Redis 命令或明确标注的模板，不是 Shell 命令；所有预期结果均为教学推演。
 
 ## 1. 条目日志与消费状态
 
@@ -41,7 +41,7 @@ Stream 保存带有 ID（Identifier，标识符）的条目，每条条目包含
 
 ## 2. 从写入到读取
 
-新增示例，未执行：
+新增示例：
 
 ```redis
 XADD demo:events * event_id e-42 kind created
@@ -53,7 +53,7 @@ XREADGROUP GROUP workers consumer-a COUNT 10 STREAMS demo:events >
 
 Stream ID 通常形如 `1730000000000-0`：前半是毫秒时间部分，后半是同一毫秒内的序号。自动 ID 会维持流内递增顺序，不应当作可信业务发生时间；它与字段 `event_id` 的业务事件标识不同。手动指定完整 ID 时，必须大于该流已有的最大 ID，且不能使用 `0-0`。
 
-下面是独立的组创建示例，未执行；使用不同组名，避免把两条命令误当成重复创建 workers：
+下面是独立的组创建示例；使用不同组名，避免把两条命令误当成重复创建 workers：
 
 ```redis
 XGROUP CREATE demo:events future-workers $
@@ -72,7 +72,7 @@ XGROUP CREATE demo:events:new workers 0 MKSTREAM
 
 若消费者在业务成功后、确认前崩溃，重新接管会再次看到该事件。用稳定 event_id 去重、事务写入或业务状态机，才能处理副作用重复。
 
-以下是可逐行输入的独立教学示例，要求学习实例中 `demo:events:ack` 原先不存在，没有并发写入；固定 ID 用于明确后续确认对象，不表示实际事件时间。未执行：
+以下是可逐行输入的独立教学示例，要求学习实例中 `demo:events:ack` 原先不存在，没有并发写入；固定 ID 用于明确后续确认对象，不表示实际事件时间。
 
 ```redis
 XADD demo:events:ack 1000-0 event_id e-01 kind created
@@ -150,7 +150,7 @@ NOACK 省去 pending 跟踪，不提高可靠性，适合能接受丢失或有�
 
 Stream 不是无限增长的免费日志。MAXLEN、MINID 等修剪条件需要与最慢消费者和业务保留期协调；pending 引用与条目本体的删除关系必须理解。
 
-以下是三种修剪策略示例，不是要求连续执行的生产清理脚本，均未运行。返回整数表示实际删除的条目数，取决于已有内容：
+以下是三种修剪策略示例，不是要求连续执行的生产清理脚本。返回整数表示实际删除的条目数，取决于已有内容：
 
 ```redis
 XTRIM demo:events MAXLEN 1000
@@ -169,7 +169,7 @@ Redis Open Source 8.2.0 增加以下引用管理能力，不能在 6.x/7.x 直�
 | XADD    | 如 `XADD demo:events KEEPREF MAXLEN ~ 1000 * event_id e-44`；追加时修剪可指定引用策略，返回新条目 ID           |
 | XTRIM   | 如 `XTRIM demo:events MAXLEN = 1000 DELREF`；修剪时指定引用策略，返回删除的条目数                              |
 
-前两行是语法模板，方括号、中文“或”和省略号不是可输入参数；`IDS` 后必须给出数量和相应 ID。后两行是完整 Redis 命令示例，均未执行。四项能力省略引用策略时都采用 KEEPREF，默认行为不是等待所有组完成。[XACKDEL](https://redis.io/docs/latest/commands/xackdel/) · [XDELEX](https://redis.io/docs/latest/commands/xdelex/) · [XADD](https://redis.io/docs/latest/commands/xadd/) · [8.2.0 参数解析及删除实现](https://raw.githubusercontent.com/redis/redis/8.2.0/src/t_stream.c)
+前两行是语法模板，方括号、中文“或”和省略号不是可输入参数；`IDS` 后必须给出数量和相应 ID。后两行是完整 Redis 命令示例。四项能力省略引用策略时都采用 KEEPREF，默认行为不是等待所有组完成。[XACKDEL](https://redis.io/docs/latest/commands/xackdel/) · [XDELEX](https://redis.io/docs/latest/commands/xdelex/) · [XADD](https://redis.io/docs/latest/commands/xadd/) · [8.2.0 参数解析及删除实现](https://raw.githubusercontent.com/redis/redis/8.2.0/src/t_stream.c)
 
 | 引用策略，Redis Open Source 8.2.0 起 | 确认、消息本体与引用的区别                                                                  |
 | ------------------------------------ | ------------------------------------------------------------------------------------------- |
@@ -179,7 +179,7 @@ Redis Open Source 8.2.0 增加以下引用管理能力，不能在 6.x/7.x 直�
 
 KEEPREF 不代表保留消息本体，PEL 中存在 ID 也不代表还能读到字段。假设组 A 已完成、组 B 尚未读取，默认删除本体会影响 B 之后取得内容；不能把旧流程的 XACK 机械替换成无选项 XACKDEL。ACKED 用于协调现有各组的生命周期，不能恢复已经被删掉的内容；它还可能使修剪无法达到目标长度。
 
-下面是仅适用于 Redis Open Source 8.2.0 或更高版本的独立教学流程，要求 `demo:events:refs` 原先不存在，无其他消费者或组。未实际运行：
+下面是仅适用于 Redis Open Source 8.2.0 或更高版本的独立教学流程，要求 `demo:events:refs` 原先不存在，无其他消费者或组。
 
 ```redis
 XADD demo:events:refs 1000-0 event_id e-01
@@ -193,7 +193,7 @@ XACKDEL demo:events:refs group-b ACKED IDS 1 1000-0
 XDELEX demo:events:refs KEEPREF IDS 1 1000-0
 ```
 
-预期第一次 XACKDEL 返回单元素数组 `[2]`：A 已确认，B 未确认，内容仍在，XRANGE 可读。第二次返回 `[1]`：B 确认后允许删除。最后 XDELEX 返回 `[-1]`，因为本体已不存在。这里的数组是便于阅读的结果示意，不是实测终端输出。
+预期第一次 XACKDEL 返回单元素数组 `[2]`：A 已确认，B 未确认，内容仍在，XRANGE 可读。第二次返回 `[1]`：B 确认后允许删除。最后 XDELEX 返回 `[-1]`，因为本体已不存在。
 
 两条删除命令都逐 ID 返回 `1`（删除成功）、`2`（ACKED 条件未满足，未删除）或 `-1`，但 `-1` 的边界不同：XACKDEL 表示指定组 PEL 中没有该 ID，XDELEX 表示没有可删除的本体。XACKDEL 的 `1` 也可表示已确认并完成删除语义，即使本体早已不存在；不要把状态码等同于业务成功。DELREF 清理悬空引用也不代表找回内容。
 

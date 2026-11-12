@@ -63,7 +63,7 @@ RDB 后台快照由 `BGSAVE` 或配置的 `save` 条件等触发；AOF 重写由
 
 Redis Open Source 7.2.0 的 `object.c` 分别保存对象类型与编码，`OBJECT ENCODING` 返回当前编码名称。后续在 [第 26 章：内部编码](/articles/redis-internal-encoding.html) 展开，入门阶段无需记忆阈值。[7.2.0 对象实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/object.c)
 
-新增只读查询示意，需在获准环境中自行替换键名，本次未运行：
+新增只读查询示意，需在获准环境中自行替换键名：
 
 ```redis
 TYPE demo:user:42
@@ -91,8 +91,6 @@ Cluster（集群）负责按哈希槽分片和集群内故障转移，不需要 
 旧 ziplist 阈值、redis-trib.rb、长期固定超时和内存配置，不直接作为新环境建议。核心机制会说明适用条件；6.2、7.0、7.4 与 8.x 新能力有独立版本标签。
 
 官方资料区分 Redis Open Source、Redis Software、Redis Cloud 等产品，版本号不能跨产品直接比较。[Redis Open Source 发布目录](https://redis.io/docs/latest/operate/oss_and_stack/stack-with-enterprise/release-notes/redisce/)提供新特性索引；升级目标仍需结合兼容性、发布记录与恢复测试选择。
-
-所有新增命令序列均是教学示例，没有实测输出。生产实践还要补上确切版本、拓扑、客户端和恢复验收。
 
 阅读时可以沿问题跳转：[连接与未知结果](/articles/redis-hiredis.html)、[延迟与吞吐](/articles/redis-slow-queries.html)、[持久化加载源](/articles/redis-rdb-aof.html)、[fork 与资源峰值](/articles/redis-fork-copy-on-write.html)。高可用则先区分 [Sentinel](/articles/redis-sentinel.html) 和 [Cluster](/articles/redis-cluster-routing.html) 的职责，避免把它们当成同一种部署模式。
 

@@ -170,7 +170,7 @@ Corefile 是 CoreDNS 配置。初学时先认识职责，比一次复制一整�
 
 CoreDNS Pod Running 只说明生命周期的一部分，`kube-dns` Service 存在也不证明源 Pod 的查询路径可用；节点终端和业务 Pod 的 nameserver、搜索域及策略还可能不同。
 
-以下是授权环境中常见的查询模板，本次未执行。`kube-dns` 与标签要以实际部署为准；权限不足也不能被当成 DNS 服务故障。
+以下是授权环境中常见的查询模板。`kube-dns` 与标签要以实际部署为准；权限不足也不能被当成 DNS 服务故障。
 
 ```bash
 kubectl get service kube-dns -n kube-system

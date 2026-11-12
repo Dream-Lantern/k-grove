@@ -21,13 +21,13 @@ order: 4
 
 Hash（哈希）在一个键下保存 field-value（字段—值）映射，适合需要按字段读取、更新的对象。它不要求每个对象拥有完全相同的字段集合，但也不自动提供关系型数据库的约束和关联查询。整份对象存为 String（字符串）与拆成 Hash 的对比，见 [第 2 章：数据建模](/articles/redis-data-modeling.html)。
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，不是 Shell 命令。所有示例均未实际运行；预期返回与结构图都是教学推演。使用独立学习实例，假定示例键起初不存在、无其他客户端修改，并在所设期限内完成操作；字段过期部分另有最低版本要求。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，不是 Shell 命令。预期返回与结构图都是教学推演。使用独立学习实例，假定示例键起初不存在、无其他客户端修改，并在所设期限内完成操作；字段过期部分另有最低版本要求。
 
 ![Hash 对象、字段与两层过期关系](/assets/notes/redis/redis-study-hash-model.svg)
 
 ## 1. 字段的读写与返回
 
-新增示例，未运行：
+新增示例：
 
 ```redis
 HSET demo:user:42 name Lin level 3
@@ -83,9 +83,9 @@ demo:user:42
     └── session = token-001 → Field TTL = 300s
 ```
 
-这是生命周期结构示意，不是实测状态：键级 TTL 到期会删除整个 Hash；字段 TTL 到期只删除对应字段，不会延长 Key TTL。最后一个字段被删除或过期后，Hash Key 也会消失，因此“无字段 TTL”并不意味着字段一定永久存在。
+这是生命周期结构示意：键级 TTL 到期会删除整个 Hash；字段 TTL 到期只删除对应字段，不会延长 Key TTL。最后一个字段被删除或过期后，Hash Key 也会消失，因此“无字段 TTL”并不意味着字段一定永久存在。
 
-Redis Open Source 7.4.0 起提供字段 TTL。以下流程接续本章用户示例，先准备字段，再设置并查询期限，未运行：
+Redis Open Source 7.4.0 起提供字段 TTL。以下流程接续本章用户示例，先准备字段，再设置并查询期限：
 
 ```redis
 HSET demo:user:42 session demo-session

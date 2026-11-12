@@ -117,7 +117,7 @@ nm -C build/app | grep cudaMalloc
 ./build/plain
 ```
 
-正常预期是 `app` 有一行 `cudaMalloc bytes=4096 ptr=<设备指针> rc=0` 和 `PASS`，`plain` 只有 `PASS`。在 `app` 的 main 中改用 `cudaMallocManaged(&ptr, 4096, cudaMemAttachGlobal)` 并重编，预期该调用点不会触发 `cudaMalloc` 包装，即使分配成功。CUDA 运行结果待实测。
+正常预期是 `app` 有一行 `cudaMalloc bytes=4096 ptr=<设备指针> rc=0` 和 `PASS`，`plain` 只有 `PASS`。在 `app` 的 main 中改用 `cudaMallocManaged(&ptr, 4096, cudaMemAttachGlobal)` 并重编，预期该调用点不会触发 `cudaMalloc` 包装，即使分配成功。
 
 ## 3. 异步内存需要两套账
 

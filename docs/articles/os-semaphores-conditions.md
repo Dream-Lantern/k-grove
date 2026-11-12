@@ -258,7 +258,7 @@ gcc -std=c11 -Wall -Wextra -O0 -pthread bounded-queue.c -o bounded-queue
 - 条件等待正常返回但谓词仍不满足：按 while 重新等待，或依据 closed 退出。
 - `pthread_cond_timedwait()`：处理 `ETIMEDOUT` 后仍要在持锁状态下检查谓词，数据可能与超时竞争到达；绝对期限所用时钟由条件变量属性等规则决定，不要与相对时长混写。它与 sem_wait 的信号中断返回规则不同，不能统一套 `EINTR` 重试。
 - 关闭队列：在同一锁下更新状态，唤醒可能等待“非空”与“非满”的相关线程，并明确排空还是丢弃剩余数据。广播本身不会让不满足退出条件的线程自动结束。
-- 线程取消：条件等待是取消点，适用的取消处理会先重新取得 mutex；清理处理程序需要解除锁及其他已保留资源。上面的实验没有调用 `pthread_cancel()`，不能把它当作已经支持取消清理的生产级队列。[POSIX 条件等待的取消与超时规则](https://man7.org/linux/man-pages/man3/pthread_cond_wait.3p.html)
+- 线程取消：条件等待是取消点，适用的取消处理会先重新取得 mutex；清理处理程序需要解除锁及其他已保留资源。[POSIX 条件等待的取消与超时规则](https://man7.org/linux/man-pages/man3/pthread_cond_wait.3p.html)
 
 ## 本章小结
 

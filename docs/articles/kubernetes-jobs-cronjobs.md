@@ -19,7 +19,7 @@ order: 18
 
 # 第十八章 Job 与 CronJob 批处理
 
-> 本章以 Kubernetes 1.28 的 batch/v1 API 为范围，介绍一次性任务和定时任务的完成条件、重试与结果管理。示例尚未实际运行。
+> 本章以 Kubernetes 1.28 的 batch/v1 API 为范围，介绍一次性任务和定时任务的完成条件、重试与结果管理。
 
 ## 1. 任务的成功条件与服务不同
 
@@ -65,7 +65,7 @@ activeDeadlineSeconds 是 Job 层活跃时间约束，覆盖整个任务，而�
 
 ### 2.3 完整的一次性 Job
 
-以下实验 A 保存为 `report-demo.yaml`，对应上面的三次完成推演。使用固定版本 busybox:1.36.1，只打印文本并休眠，不访问业务数据库或外部存储。前置条件为专用 Linux 1.28 隔离集群、可拉取镜像、专用 study 命名空间及创建和观察批处理资源的权限。study 已有其他人的资源时另选名称并同步修改；本章所有命令均未执行。
+以下实验 A 保存为 `report-demo.yaml`，对应上面的三次完成推演。使用固定版本 busybox:1.36.1，只打印文本并休眠，不访问业务数据库或外部存储。前置条件为专用 Linux 1.28 隔离集群、可拉取镜像、专用 study 命名空间及创建和观察批处理资源的权限。study 已有其他人的资源时另选名称并同步修改。
 
 ```yaml
 apiVersion: batch/v1
@@ -256,7 +256,7 @@ kubectl describe job JOB_NAME -n NAMESPACE
 kubectl get pods -n NAMESPACE -l batch.kubernetes.io/job-name=JOB_NAME
 ```
 
-命令未执行。确认失败次数、截止条件、容器退出结果与业务提交记录后，再决定是否人工重跑；重跑本身属于新的业务操作。
+确认失败次数、截止条件、容器退出结果与业务提交记录后，再决定是否人工重跑；重跑本身属于新的业务操作。
 
 这些控制器分别解决不同目标，不是逐级替代关系：
 

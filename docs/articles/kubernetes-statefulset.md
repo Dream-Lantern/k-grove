@@ -47,7 +47,7 @@ StatefulSet 的 `serviceName` 与管理网络身份的 Service 相关；常见�
 
 `volumeClaimTemplates` 为各副本产生对应的 PVC。Pod 引用相应卷，不意味着多个副本自动共享同一个数据目录，也不意味着一个节点故障后能不受限制地把卷同时挂到另一节点。
 
-以下保存为 `ledger.yaml`，包含完整 Service 和 StatefulSet。它用固定版本 busybox:1.36.1 演示独立目录与身份，不是数据库，也不实现复制协议。前置条件是 Linux 1.28 隔离集群、专用 study 命名空间、镜像拉取权限，以及管理员已提供真实可用的 `study-storage` StorageClass（存储类）。缺少该存储类或供应器时，PVC 可能 Pending，不能预期直接部署成功。本次未运行命令或操作 PVC/PV。
+以下保存为 `ledger.yaml`，包含完整 Service 和 StatefulSet。它用固定版本 busybox:1.36.1 演示独立目录与身份，不是数据库，也不实现复制协议。前置条件是 Linux 1.28 隔离集群、专用 study 命名空间、镜像拉取权限，以及管理员已提供真实可用的 `study-storage` StorageClass（存储类）。缺少该存储类或供应器时，PVC 可能 Pending，不能预期直接部署成功。
 
 ```yaml
 apiVersion: v1
@@ -133,7 +133,7 @@ kubectl apply -f ledger.yaml
 kubectl rollout status statefulset/ledger -n study --timeout=180s
 ```
 
-预期逐步出现三个成员及独立 PVC，全部运行后 HTTP 探针成功；这仅证明静态页面可访问。清理时可删除自己创建的 StatefulSet 与 Service，清单保留策略为 Retain，PVC 将留待核对。本章不提供或执行 PVC/PV 删除命令，后续存储退役需依据备份与后端回收策略单独决定。
+预期逐步出现三个成员及独立 PVC，全部运行后 HTTP 探针成功；清理时可删除自己创建的 StatefulSet 与 Service，清单保留策略为 Retain，PVC 将留待核对。本章不提供或执行 PVC/PV 删除命令，后续存储退役需依据备份与后端回收策略单独决定。
 
 ```bash
 # 仅删除本实验创建的工作负载和服务，保留 PVC
@@ -223,7 +223,7 @@ kubectl get pods,pvc -n NAMESPACE
 kubectl describe pod POD_NAME -n NAMESPACE
 ```
 
-命令未执行。关注当前模板、更新修订、成员序号、就绪、PVC 绑定和应用复制状态；Kubernetes 资源正常只覆盖其中一部分。
+关注当前模板、更新修订、成员序号、就绪、PVC 绑定和应用复制状态；Kubernetes 资源正常只覆盖其中一部分。
 
 currentRevision、updateRevision 分别用于观察当前与目标更新修订，配合各 Pod 的 controller-revision-hash 标签判断版本；分区发布时两者可以不同。status.replicas 是观察到的成员数，readyReplicas 是其中 Ready 数，不能代替应用一致性检查。PVC 为 Bound 也不代表应用数据已正确恢复。
 

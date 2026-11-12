@@ -225,7 +225,7 @@ EXIT_BEFORE_COMMIT=run01-0 ./orders_consumer localhost:9092 review-c-orders
 ./orders_consumer localhost:9092 review-c-orders
 ```
 
-使用新组做实验，重启时保留同一工作目录和组 ID。预期 `run01-0` 被重新读取，同一事件 ID 的文件仍只有一个。另用新组设置 `FAIL_EVENT=run01-1`，预期失败项没有提交，移除环境变量重启后可继续处理。示例尚未联机实测。
+使用新组做实验，重启时保留同一工作目录和组 ID。预期 `run01-0` 被重新读取，同一事件 ID 的文件仍只有一个。另用新组设置 `FAIL_EVENT=run01-1`，预期失败项没有提交，移除环境变量重启后可继续处理。
 
 分区 EOF 只是当前读到末端。临时传输或 Broker 不可达错误可以继续 Poll 等待重连。Topic 不存在或授权失败应停下核对名称、ACL 和订阅。初始位置缺失或越界时，示例的 `earliest` 会应用重置策略。若不能接受自动跳过保留范围外的历史，应改用 `error`，把 `RD_KAFKA_RESP_ERR__AUTO_OFFSET_RESET` 等位置错误转入人工恢复。本例对其余错误停机，保留已提交恢复点。
 

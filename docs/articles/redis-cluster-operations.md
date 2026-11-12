@@ -23,7 +23,7 @@ order: 24
 
 Cluster 扩容依次涉及新节点加入、复制关系建立、槽与数据迁移、客户端拓扑更新和业务验收。沿着这些阶段记录状态，才能判断变更停在哪里、是否能够继续，以及回退需要恢复哪些数据。
 
-本章传统迁移以 Redis Open Source 7.2.0 为核对基线；第五节单独讨论 8.4.0 引入的 ASM（Atomic Slot Migration，原子槽迁移）。本文命令均未实际运行，带 `<...>` 的内容是必须替换的占位符；流程图和预期结果都是教学说明，不是生产迁移脚本或实测记录。
+本章传统迁移以 Redis Open Source 7.2.0 为核对基线；第五节单独讨论 8.4.0 引入的 ASM（Atomic Slot Migration，原子槽迁移）。
 
 ![传统槽迁移的主要步骤](/assets/notes/redis/redis-study-reshard.svg)
 

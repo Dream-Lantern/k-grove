@@ -35,7 +35,7 @@ NPU（Neural Processing Unit，神经网络处理器）专门加速神经网络�
 
 以向量加法为教学例：CPU 准备输入 → 把数据放到 GPU 可访问的内存 → 提交 kernel → 等待所需结果 → CPU 继续处理。在本文采用的 CUDA 12.8.1 语境中，kernel 是在 GPU 上执行的计算函数，与操作系统内核不同；kernel launch 是对该函数的一次启动，通常由多个线程分别处理数据。[kernel 定义与调用](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html#kernels)
 
-下面限定为离散 GPU、显式分配与拷贝的简单路径，做一次数据推演，不是实测：
+下面沿离散 GPU 的显式分配与拷贝路径做一次数据推演：
 
 1. CPU 在主机内存准备 `A=[1,2]`、`B=[3,4]`，并为设备端的 A、B、C 分配内存。
 2. 将 A、B 从主机拷贝到设备，这一步称为 H2D（Host to Device）。此时设备端已有输入，C 尚未得到计算结果。

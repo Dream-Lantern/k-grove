@@ -35,13 +35,13 @@ Redis Open Source 6.0.0 起提供 ACL。应按业务需要授予最小命令和�
 
 PUBLISH/SUBSCRIBE 的频道名可按允许频道模式匹配；PSUBSCRIBE 的订阅模式则有与允许模式进行字面匹配的规则，不能简单按“两个 glob 看起来包含”推导。allchannels 等宽权限又会改变整体结果。设计后分别测试允许/拒绝的键、发布、订阅路径，不用管理员账号证明最小权限正确。
 
-以下 `redis` 代码块是 Redis 命令，均未实际运行；修改账号、数据或备份状态的示例只适用于隔离环境。账号、键和频道使用虚构的 `demo:` 范围，口令为占位值；不要原样用于生产，也不要把 `>`、`<` 当成 Shell（命令解释环境）重定向。以 Redis Open Source 7.2.0 为例，由管理员创建专用测试用户：
+以下 `redis` 代码块是 Redis 命令；修改账号、数据或备份状态的示例只适用于隔离环境。账号、键和频道使用虚构的 `demo:` 范围，口令为占位值；不要原样用于生产，也不要把 `>`、`<` 当成 Shell（命令解释环境）重定向。以 Redis Open Source 7.2.0 为例，由管理员创建专用测试用户：
 
 ```redis
 ACL SETUSER demo:pub-user reset on >placeholder resetchannels &demo:news.* +subscribe +psubscribe +unsubscribe +punsubscribe
 ```
 
-`reset` 清除该测试账号旧规则，`resetchannels` 去掉宽频道权限，再授权 `demo:news.*`。新连接用 `AUTH demo:pub-user placeholder` 认证后，下表是分别在独立连接测试的预期授权结果，不是实测记录：
+`reset` 清除该测试账号旧规则，`resetchannels` 去掉宽频道权限，再授权 `demo:news.*`。新连接用 `AUTH demo:pub-user placeholder` 认证后，下表是分别在独立连接测试的预期授权结果：
 
 | 命令                        | 预期授权结果     | 原因                       |
 | --------------------------- | ---------------- | -------------------------- |
@@ -80,7 +80,7 @@ ACL SETUSER demo:app <password-A-placeholder
 
 `<password` 删除指定有效密码；它不等于强制断开所有已经认证的旧连接。完整流程是“A 生效 → 增加 B → 切换调用方 → 验证新连接与认证 → 撤销 A”。删除 A 前若 B 验证失败，可让调用方切回仍有效的 A；不要先撤销唯一可用凭据。规则语义见 [ACL SETUSER](https://redis.io/docs/latest/commands/acl-setuser/)。
 
-运行态改动不等于重启后仍保留。Redis Open Source 6.0.0 起，配置 `aclfile` 时，`ACL SAVE` 将内存中的用户规则写入该外部 ACL 文件；未配置外部文件或不可写会报错。若用户直接配置在 redis.conf 中，则用 `CONFIG REWRITE` 重写配置文件。两种用户配置方式不能混用，CONFIG REWRITE 不会自动执行 ACL SAVE；还需确认配置管理不会用旧规则覆盖文件。持久化本身也会修改文件，本文未执行，参见 [ACL SAVE](https://redis.io/docs/latest/commands/acl-save/)和 [ACL 配置文件说明](https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/#use-an-external-acl-file)。
+运行态改动不等于重启后仍保留。Redis Open Source 6.0.0 起，配置 `aclfile` 时，`ACL SAVE` 将内存中的用户规则写入该外部 ACL 文件；未配置外部文件或不可写会报错。若用户直接配置在 redis.conf 中，则用 `CONFIG REWRITE` 重写配置文件。两种用户配置方式不能混用，CONFIG REWRITE 不会自动执行 ACL SAVE；还需确认配置管理不会用旧规则覆盖文件。持久化本身也会修改文件，参见 [ACL SAVE](https://redis.io/docs/latest/commands/acl-save/)和 [ACL 配置文件说明](https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/#use-an-external-acl-file)。
 
 ## 3. 多实例的目录、身份与资源隔离 {#_3-多实例隔离不只有端口}
 
@@ -88,7 +88,7 @@ ACL SETUSER demo:app <password-A-placeholder
 
 在 Linux 上，systemd（系统与服务管理器）的服务单元、运行用户、PID（Process ID，进程标识）文件、配置目录、数据目录、appenddirname（AOF 目录）与日志应分别管理。服务名称不同仍不足以隔离资源；按需要配置 CPU（Central Processing Unit，中央处理器）与内存限制，并把共享磁盘 I/O（Input/Output，输入输出）的竞争纳入评估。
 
-CPU、内存、磁盘、网络和故障域仍然共享。maxmemory 是 Redis 的内存控制参数，不是整个进程或主机的硬上限。教学假设：16 GiB 主机上两个实例各设 6 GiB，虽然 6 + 6 < 16，剩余 4 GiB 仍可能不足以容纳操作系统、其他进程、客户端与持久化缓冲、fork（创建子进程）和 COW（Copy On Write，写时复制）峰值，从而触发 OOM（Out Of Memory，内存耗尽）。GiB 为 2³⁰ 字节；这些数字是预算示意，不是容量建议或实测。同机主副本也不能抵御主机故障，见 [第 20 章 fork/COW](/articles/redis-fork-copy-on-write.html)与 [第 25 章内存预算](/articles/redis-memory-eviction.html)。
+CPU、内存、磁盘、网络和故障域仍然共享。maxmemory 是 Redis 的内存控制参数，不是整个进程或主机的硬上限。教学假设：16 GiB 主机上两个实例各设 6 GiB，虽然 6 + 6 < 16，剩余 4 GiB 仍可能不足以容纳操作系统、其他进程、客户端与持久化缓冲、fork（创建子进程）和 COW（Copy On Write，写时复制）峰值，从而触发 OOM（Out Of Memory，内存耗尽）。GiB 为 2³⁰ 字节；这些数字是预算示意。同机主副本也不能抵御主机故障，见 [第 20 章 fork/COW](/articles/redis-fork-copy-on-write.html)与 [第 25 章内存预算](/articles/redis-memory-eviction.html)。
 
 ## 4. 备份验收必须包含隔离恢复
 

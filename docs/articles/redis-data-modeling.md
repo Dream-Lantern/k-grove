@@ -89,7 +89,7 @@ ACL（Access Control List，访问控制列表）用于限制用户可执行的�
 
 同一类读取也有例外：MGET 的逐键 nil 可以来自缺失键或非 String 键，不能直接照搬 GET 对错误类型的处理。示例见 [第 3 章](/articles/redis-strings.html)。
 
-先在专用学习环境中使用独立前缀，避免覆盖已有数据。下面仅是语法示例，未执行：
+先在专用学习环境中使用独立前缀，避免覆盖已有数据。下面仅是语法示例：
 
 ```redis
 SET demo:hello world EX 60

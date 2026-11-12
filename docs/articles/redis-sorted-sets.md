@@ -21,13 +21,13 @@ order: 7
 
 排行榜既要按用户找分数，也要按分数找名次。Sorted Set（有序集合，常写作 Zset）同时维护唯一 member（成员）与 score（分数），解决这两种查询需求。成员不能重复，分数可以相同；同一个成员更新分数不会变成另一名成员。与普通集合的区别见 [第 6 章：Set](/articles/redis-sets.html)。
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。所有示例和预期结果均未实测；假定不同示例使用的新键起初不存在，无并发修改。同一节标明“接续”的命令沿用前面的数据。以 Redis Open Source 7.2.0 为教学基准，新增参数另标最低版本。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。假定不同示例使用的新键起初不存在，无并发修改。同一节标明“接续”的命令沿用前面的数据。以 Redis Open Source 7.2.0 为教学基准，新增参数另标最低版本。
 
 ![成员、分数与查询维度](/assets/notes/redis/redis-study-zset.svg)
 
 ## 1. 把排名和分数区间分开
 
-以下采用 Redis Open Source 6.2.0 起支持的统一 ZRANGE 写法，未执行：
+以下采用 Redis Open Source 6.2.0 起支持的统一 ZRANGE 写法：
 
 ```redis
 ZADD demo:rank 10 user-a 15 user-b 15 user-c
@@ -138,7 +138,7 @@ ZRANGE demo:delayed -inf 110 BYSCORE
 
 ZUNIONSTORE、ZINTERSTORE 等聚合可结合权重与 SUM/MIN/MAX 处理分数，结果写入目标键，属于变更操作。参与键和目的键需要满足适用的 Cluster 约束，不能靠“恰好在同一节点”替代同槽判断。
 
-Redis Cluster（Redis 集群）按 Hash Slot（哈希槽）分配键，同一节点可承载多个槽，所以同节点不等于同槽。以下只在启用了 Cluster 的学习节点执行，无需先创建这些键；预期三个槽编号相同，本次未实测：
+Redis Cluster（Redis 集群）按 Hash Slot（哈希槽）分配键，同一节点可承载多个槽，所以同节点不等于同槽。以下只在启用了 Cluster 的学习节点执行，无需先创建这些键；预期三个槽编号相同：
 
 ```redis
 CLUSTER KEYSLOT demo:{rank}:day1

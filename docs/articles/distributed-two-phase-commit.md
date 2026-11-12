@@ -159,7 +159,7 @@ Skeen 1981 原论文明确假设正常站点之间能通信、网络不发生故
 
 ### PostgreSQL 17：准备一个本地事务
 
-以下是单个数据库作为参与者的教学 SQL，假设 `accounts` 表及账户 id=1 已存在，并由应用验证余额、更新行数等业务条件；它不构成完整跨库转账。服务端还须为 `max_prepared_transactions` 配置非零容量，默认 0 会禁用准备事务，此参数需要按官方说明配置并重启生效。[PostgreSQL 17 资源参数](https://www.postgresql.org/docs/17/runtime-config-resource.html#GUC-MAX-PREPARED-TRANSACTIONS)
+以下是单个数据库作为参与者的教学 SQL，假设 `accounts` 表及账户 id=1 已存在，并由应用验证余额、更新行数等业务条件。服务端还须为 `max_prepared_transactions` 配置非零容量，默认 0 会禁用准备事务，此参数需要按官方说明配置并重启生效。[PostgreSQL 17 资源参数](https://www.postgresql.org/docs/17/runtime-config-resource.html#GUC-MAX-PREPARED-TRANSACTIONS)
 
 ```sql
 BEGIN;
@@ -195,6 +195,6 @@ ROLLBACK PREPARED 'transfer-1001';
 
 若讨论内部存储，还要区分：PostgreSQL 17 的短期准备状态保存在共享内存与 WAL 中，跨越检查点的准备事务才记录到 `pg_twophase`；不是每次 PREPARE 都立即建立一个独立目录文件。其可恢复性来自相应持久 WAL 等机制，不能用某个目录是否有文件代替全局结果判断。[PostgreSQL 17 Two-Phase Transactions](https://www.postgresql.org/docs/17/two-phase.html)
 
-从[第十九章 WAL](/articles/distributed-transactions-wal.html)到[第二十章并发控制](/articles/distributed-concurrency-isolation.html)，再到本章，依次处理本地恢复、事务交错和跨资源原子决定；Paxos/Raft 则处理相应复制状态的共识。这些构件可以组合，但不互相替代。本文状态机与 SQL 均为协议说明和教学示例，未运行数据库或故障测试。
+从[第十九章 WAL](/articles/distributed-transactions-wal.html)到[第二十章并发控制](/articles/distributed-concurrency-isolation.html)，再到本章，依次处理本地恢复、事务交错和跨资源原子决定；Paxos/Raft 则处理相应复制状态的共识。这些构件可以组合，但不互相替代。
 
 [返回本册目录](/collections/distributed-systems/)

@@ -131,7 +131,7 @@ Java Producer 不提供完全同名的 `rd_kafka_message_status()`。应用同�
 
 ### 隔离故障实验与配置对照
 
-使用已准备的独立测试 Topic 和可丢弃的客户端实例，禁止在生产网络断连或重置在线消费组。以下均为**未执行方案**：
+使用已准备的独立测试 Topic 和可丢弃的客户端实例，禁止在生产网络断连或重置在线消费组。以下均为**实验方案**：
 
 1. 记录 Broker 3.9、Java Client 3.9.0 / librdkafka 2.8.0、acks、幂等、在途数、整体交付与请求超时、退避、分区数、业务 event_id。配置有效性按第 3 节及[第 5 章配置表](/articles/kafka-acks-min-isr.html)核对。
 2. 基线发送一小批带不同 event_id 的记录，分别保存 Java 最终元数据与 C Delivery Report 的错误/状态。

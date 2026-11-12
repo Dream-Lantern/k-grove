@@ -21,7 +21,7 @@ order: 19
 
 > 版本导航：Java3.9与librdkafka2.8.0固定版本配置对照。
 >
-> 学习目标：将参数名、作用域、单位、默认值和客户端版本同时记录。以下是复盘用对照，不是建议直接粘贴进生产的配置模板。
+> 学习目标：将参数名、作用域、单位、默认值和客户端版本同时记录。以下对照参数在不同客户端中的作用与默认值。
 
 ## 1. 先确定客户端、作用域与参数单位 {#_1-为什么相似名字仍会误导}
 
@@ -66,7 +66,7 @@ Java、librdkafka 与 Python 封装分别提供自己的配置接口。同名项
 | Java3.9 | 无冲突时默认true | acks=all、retries>0、max.in.flight≤5                                       | 未显式开启时可使默认幂等失效；显式true时抛配置异常 |
 | C2.8.0  | 默认false        | 用户未设置的关联项调整到acks=all、retries=INT32_MAX、max.in.flight=5及fifo | 用户显式不兼容值使实例创建失败                     |
 
-纸面合法组合：Java显式true/all/retries=3/in-flight=5；C显式true、其余关联项未设置。冲突组合：Java显式true但acks=1；C显式true且in-flight=6。后两者按文档不通过配置/创建，未在本机启动客户端验证；初始化通过也不证明外部业务Exactly Once。
+纸面合法组合：Java显式true/all/retries=3/in-flight=5；C显式true、其余关联项未设置。冲突组合：Java显式true但acks=1；C显式true且in-flight=6。后两者按文档不通过配置/创建。
 
 #### 无需运行 Broker 的配置检查
 
@@ -140,7 +140,7 @@ int main(void) {
 }
 ```
 
-两段都只检查客户端构造，不发送消息。C 的 setter 能接受数值 6，冲突应在实例创建时发现。Java 若去掉显式 `enable.idempotence=true`，保留 `acks=1`，则冲突会使默认幂等失效。以上为预期，初始化实验尚未实测。
+两段都只检查客户端构造，不发送消息。C 的 setter 能接受数值 6，冲突应在实例创建时发现。Java 若去掉显式 `enable.idempotence=true`，保留 `acks=1`，则冲突会使默认幂等失效。以上为预期。
 
 ### 有Key路由的固定字节算例
 

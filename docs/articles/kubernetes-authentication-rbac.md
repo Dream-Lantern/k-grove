@@ -144,7 +144,7 @@ kubectl auth can-i get pods --subresource=log -n study --as=system:serviceaccoun
 
 执行者需要对应的 `impersonate` 权限；模拟不是绕过认证或授权。仅指定用户名的模拟也不应被当作已完整复现真实令牌携带的所有组授权，应核对实际身份、组和全部适用规则。1.28 kubectl 支持上述 `--subresource` 用法。[命令源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubectl/pkg/cmd/auth/cani.go)
 
-以下为 **reader 仅适用本例授权、没有其他允许规则时的教学预期**，不是实测结果：
+以下为 **reader 仅适用本例授权、没有其他允许规则时的教学预期**：
 
 | 操作          | 预期 |
 | ------------- | ---- |

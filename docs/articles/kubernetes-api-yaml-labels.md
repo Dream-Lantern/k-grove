@@ -35,7 +35,7 @@ API 资源存在集群级与命名空间级范围。Namespace 能组织 Pod、Se
 
 ## 2. YAML 的映射、列表与多文档
 
-下面的 Deployment 同时用于第十、十一章的 `catalog` 实验，保存为 `deployment.yaml`。它用固定标签 `busybox:1.36.1` 启动 TCP 8080 上的简单 HTTP 服务，镜像仍需由实验节点实际获取；本次未运行。原笔记中的 `registry.example.com/study/catalog:DEMO` 是教学占位，不能当成真实可拉取的发布物。
+下面的 Deployment 同时用于第十、十一章的 `catalog` 实验，保存为 `deployment.yaml`。它用固定标签 `busybox:1.36.1` 启动 TCP 8080 上的简单 HTTP 服务，镜像仍需由实验节点实际获取。原笔记中的 `registry.example.com/study/catalog:DEMO` 是教学占位，不能当成真实可拉取的发布物。
 
 ```yaml
 apiVersion: apps/v1
@@ -197,7 +197,7 @@ template:
 
 同一个 LabelSelector（标签选择器）中的多个 `matchLabels`、`matchExpressions` 要求按 AND 组合；`in` 的集合内可以包含多个允许值。Service 的 `spec.selector` 则是键值映射，不接受这套 `matchExpressions` 结构。[标签选择器语义](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
 
-下面的只读查询示例未执行，结果取决于实际 Pod 标签；共用实验只设置了 `app=catalog`，没有设置 `tier/env`，不能期待它自动产生虚构 A、B、C 的筛选结果：
+下面的只读查询示例，结果取决于实际 Pod 标签；共用实验只设置了 `app=catalog`，没有设置 `tier/env`，不能期待它自动产生虚构 A、B、C 的筛选结果：
 
 ```bash
 kubectl get pods -n study --show-labels
@@ -220,7 +220,7 @@ kubectl explain deployment.spec.template
 kubectl explain pod.spec.containers
 ```
 
-这些是查询模板，仍需先确认上下文和权限。客户端 dry-run 不是完整服务端兼容检查，某些发现或校验也可能需要与集群交互；服务端 dry-run 会发送请求，经过适用校验与准入，但不持久化目标资源。两者都不能证明业务上线成功。
+这些是查询模板，仍需先确认上下文和权限。客户端 dry-run 进行本地处理，某些发现或校验也可能需要与集群交互；服务端 dry-run 会发送请求，经过适用校验与准入，但不持久化目标资源。
 
 对保存好的 `deployment.yaml`，可在有权限的测试 API Server 上请求服务端 Dry-run（试运行）：
 
@@ -228,7 +228,7 @@ kubectl explain pod.spec.containers
 kubectl apply --dry-run=server -f deployment.yaml
 ```
 
-这个命令本次未执行。它仍向 API Server 发送请求，需要与正常操作相应的权限；目标命名空间也需已存在。适用准入会参与处理，Webhook 的副作用声明及服务端配置可能使 Dry-run 被拒绝，不能把失败一律解释为 YAML 缩进错误。
+它仍向 API Server 发送请求，需要与正常操作相应的权限；目标命名空间也需已存在。适用准入会参与处理，Webhook 的副作用声明及服务端配置可能使 Dry-run 被拒绝，不能把失败一律解释为 YAML 缩进错误。
 
 | 层次                    | 主要检查                                                  | 不能证明什么                                                     |
 | ----------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- |

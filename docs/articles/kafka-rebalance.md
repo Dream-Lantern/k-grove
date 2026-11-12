@@ -108,7 +108,7 @@ v2.8.0 的 Early Access 文档仅列出空组离线升级。该版本启用新�
 
 ### 实践：观察成员变化和业务停滞
 
-以下是 Java 3.9 Classic 实验方案，尚未在 Kafka 上实测。使用第 10 章的三分区订单 Topic，使用独立实验组。两个实例都设 `group.protocol=classic`、`enable.auto.commit=false`，显式选 `org.apache.kafka.clients.consumer.RangeAssignor`。配置 `heartbeat.interval.ms=1000`、`session.timeout.ms=10000`、`max.poll.interval.ms=5000`，确认 Broker 允许 10 秒的会话超时。
+以下是 Java 3.9 Classic 实验方案。使用第 10 章的三分区订单 Topic，使用独立实验组。两个实例都设 `group.protocol=classic`、`enable.auto.commit=false`，显式选 `org.apache.kafka.clients.consumer.RangeAssignor`。配置 `heartbeat.interval.ms=1000`、`session.timeout.ms=10000`、`max.poll.interval.ms=5000`，确认 Broker 允许 10 秒的会话超时。
 
 在 `subscribe(..., listener)` 中记录 assigned、revoked、lost 的时间、成员标识和分区列表，显式实现三个回调。所有者平时每轮用 `poll(Duration.ofMillis(200))`，并记录每分区前沿和最老在途任务年龄。每个场景先让组稳定，用组管理命令对照成员和分区。
 

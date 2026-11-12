@@ -55,7 +55,7 @@ CCM 观察相关对象，按云提供者实现和权限调用云接口，再更�
 
 流程按职责概括，不承诺所有元数据字段在同一个 API 写入中完成。v1.28.0 实现将 ProviderID/标签变更与移除污点协调，再更新节点地址；不能把“污点消失”当作所有地址和业务网络都已验证完成。[1.28 外部 CCM 部署说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/administer-cluster/running-cloud-controller.md)、[kubelet 注册状态](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/kubelet/kubelet_node_status.go)、[云 Node Controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/cloud-provider/controllers/node/node_controller.go)。
 
-未执行的只读查询模板，用于对比初始化污点、providerID、标签、地址和事件：
+只读查询模板，用于对比初始化污点、providerID、标签、地址和事件：
 
 ```bash
 kubectl get node node-b -o yaml
@@ -117,7 +117,7 @@ Service 对象存在不代表云负载均衡器已创建；有外部地址也不
 
 EndpointSlice 的生成与云负载均衡管理是独立职责。对本例带 selector 的 Service，kube-controller-manager 中的 EndpointSlice Controller 跟踪匹配 Pod 并协调端点；CCM Service Controller 管理的是云侧负载均衡与相关状态，不把两者合成一个控制器。[v1.28.0 EndpointSlice Controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/controller/endpointslice/endpointslice_controller.go)
 
-故障推演：对象创建成功，但 EXTERNAL-IP 长时间显示 `<pending>`。依次查看以下 **未执行的只读模板**：
+故障推演：对象创建成功，但 EXTERNAL-IP 长时间显示 `<pending>`。依次查看以下 **只读模板**：
 
 ```bash
 kubectl get svc catalog -n study
@@ -161,7 +161,7 @@ PVC 引用 StorageClass → 到达适用供给时机（可能等待首个消费�
 
 标准清理标记是 `service.kubernetes.io/load-balancer-cleanup`。在本例对应的云 Service Controller 路径中，先完成负载均衡清理，再移除该标记，Service 才可彻底删除。它保护清理流程，不保证云 API 永不失败。[v1.28.0 Finalizer 常量](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/cloud-provider/service/helpers/helper.go)与前述 Service Controller 实现。
 
-下面仅是 **已批准退役时的删除命令示例，会删除 Service 并触发适用的云入口清理，本章未执行**，不用于探测故障：
+下面仅是 **已批准退役时的删除命令示例，会删除 Service 并触发适用的云入口清理**，不用于探测故障：
 
 ```bash
 kubectl delete svc catalog -n study

@@ -29,7 +29,7 @@ INFO 提供实例、客户端、复制和内存等状态线索。诊断时先确
 
 记录版本、运行模式、角色、运行时长和采样时间。刚重启的实例累计计数较低，不代表负载一直很低；连接了副本也不能按主节点预期解释所有指标。
 
-CPU（Central Processing Unit，中央处理器）的累计耗时需要用区间差值观察。以下 `redis` 代码块是发给 Redis 的观察命令，不是 Shell（命令解释环境）命令；基线为 Redis Open Source 7.2.0，例外另标，不能据此推断 Redis Software 或 Redis Cloud 的能力。本章未连接实例执行命令，案例数字均为教学假设。
+CPU（Central Processing Unit，中央处理器）的累计耗时需要用区间差值观察。以下 `redis` 代码块是发给 Redis 的观察命令，不是 Shell（命令解释环境）命令；基线为 Redis Open Source 7.2.0，例外另标，不能据此推断 Redis Software 或 Redis Cloud 的能力。
 
 ```redis
 INFO server
@@ -157,7 +157,7 @@ MOVED 通常要求客户端更新槽位映射；ASK 只针对当前迁移请求�
 HTTL user:1001 FIELDS 3 name age status
 ```
 
-返回按字段顺序排列的整数数组。正数为剩余秒数（7.4.0 按剩余毫秒向上取整），-1 表示字段存在但未设字段期限，-2 表示 Key 或字段不存在。教学假设 name 剩余约 30 秒、age 无字段期限、status 缺失，预期返回 `[30,-1,-2]`；Key 整体缺失则预期 `[-2,-2,-2]`；Key 为非 Hash 类型则报 WRONGTYPE，字段数与实参不匹配则报参数错误。这些是按语义推演的示意，不是实测。
+返回按字段顺序排列的整数数组。正数为剩余秒数（7.4.0 按剩余毫秒向上取整），-1 表示字段存在但未设字段期限，-2 表示 Key 或字段不存在。教学假设 name 剩余约 30 秒、age 无字段期限、status 缺失，预期返回 `[30,-1,-2]`；Key 整体缺失则预期 `[-2,-2,-2]`；Key 为非 Hash 类型则报 WRONGTYPE，字段数与实参不匹配则报参数错误。这些是按语义推演的示意。
 
 官方页面示例曾把缺失 Key 显示成 nil，与同页返回说明不一致；此处以 [7.4.0 t_hash.c 的 httlGenericCommand](https://github.com/redis/redis/blob/7.4.0/src/t_hash.c) 为依据，保留逐字段 -2 数组。更多字段过期行为见 [Hash 章节](/articles/redis-hashes.html)。
 
@@ -165,7 +165,7 @@ HTTL user:1001 FIELDS 3 name age status
 
 一份有效的诊断记录可以包含症状与时间、业务影响、只读采样、候选原因、反证、拟采取的最小变更，以及回退和验收方式。先定位问题再调整参数，有助于避免将短暂恢复误认为根因已经解决。
 
-教学案例：应用报告 Redis 请求 P99 从 2 ms 升到 80 ms。以下只是拟定排查流程，未执行采样或验证，不宣称某个指标已证实根因：
+教学案例：应用报告 Redis 请求 P99 从 2 ms 升到 80 ms。按以下流程采样并验证根因：
 
 1. 客户端侧记录连接池等待、线程等待、超时、重试次数和响应大小，确认这两个 P99 的采样范围一致。
 2. 同时采集 Redis Slowlog、commandstats、latencystats、CLIENT LIST，区分执行变慢、输入积压与输出滞留；Slowlog 空也不能排除排队。

@@ -66,7 +66,7 @@ T4 的回调不能当成“恰好执行一次 v1→v2 的业务动作”。它�
 
 ## 2. 通知后的重读与任务分发 {#_2-收到通知之后怎样处理}
 
-以下为应用层教学状态机，不绑定某个 Java/Python 客户端版本，也不是完整生产实现：
+以下为应用层教学状态机，不绑定某个 Java/Python 客户端版本：
 
 ```text
 首次连接 / 同一会话重连：
@@ -107,7 +107,7 @@ version=0 无法区分 G1、G2。原生比较并交换（Compare-And-Set，CAS�
 
 `czxid`可帮助识别创建世代，但普通setData的version参数不同时原子检查czxid；先读czxid再setData仍有竞态。教学起点可约定权威控制节点在生命周期内不删除重建，只更新数据版本；确需重建时，应设计不被随意重置的权威代际或唯一版本路径，并明确原子校验边界，而不是随便增加一个字段。
 
-这一反例由[ZooKeeper 3.9.3 setData契约](https://zookeeper.apache.org/doc/r3.9.3/apidocs/zookeeper-server/org/apache/zookeeper/ZooKeeper.html)及[release-3.9.3 DataTree.createStat](https://github.com/apache/zookeeper/blob/release-3.9.3/zookeeper-server/src/main/java/org/apache/zookeeper/server/DataTree.java)中新对象版本初始化规则推导，未运行服务。
+这一反例由[ZooKeeper 3.9.3 setData契约](https://zookeeper.apache.org/doc/r3.9.3/apidocs/zookeeper-server/org/apache/zookeeper/ZooKeeper.html)及[release-3.9.3 DataTree.createStat](https://github.com/apache/zookeeper/blob/release-3.9.3/zookeeper-server/src/main/java/org/apache/zookeeper/server/DataTree.java)中新对象版本初始化规则推导。
 
 这种方式并不自动得到高吞吐计数器：热点冲突会带来重试，连接丢失还可能导致更新结果未知。版本失败、权限失败和连接失败需要分别处理，不能一概认为“重试即可”。
 
@@ -149,7 +149,7 @@ version=0 无法区分 G1、G2。原生比较并交换（Compare-And-Set，CAS�
 
 配置数据很多时不一定能放进一次 multi；大内容可存外部对象，ZooKeeper 只保存经验证的版本引用。对有限更新，multi/check 等构件可以保护适用的检查与更新，但不能覆盖外部文件原子性。
 
-旧版本回收需要确认没有仍在使用的读者或有适用保留期；切换超时需要查询 current 的事实状态；回退应切回一个完整版本，不直接修改已被读取的不可变内容。这是应用发布协议，不宣称 ZooKeeper 自动实现了这些步骤。
+旧版本回收需要确认没有仍在使用的读者或有适用保留期；切换超时需要查询 current 的事实状态；回退应切回一个完整版本，不直接修改已被读取的不可变内容。
 
 配套构件可参照 [ZooKeeper 3.9.3 Recipes](https://zookeeper.apache.org/doc/r3.9.3/recipes.html)。
 
