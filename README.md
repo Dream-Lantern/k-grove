@@ -101,7 +101,6 @@ docs/
 ├── knowledge/             # 知识分类入口
 ├── collections/           # 技术分册入口
 ├── topics/                # 专题阅读入口
-├── projects/              # 工程实践入口
 ├── assets/                # 文章图片等资源
 └── public/                # 直接复制到产物的静态资源
 content-config/            # 分类词表与公开展示白名单
@@ -117,7 +116,7 @@ artifacts/                 # 本地验收材料与图示输出，不作为站点
 
 ## 文章组织与维护
 
-站点已接入七个查阅分组的学习笔记，按章节和专题顺序阅读。广告引擎及 GPU 内核态虚拟化未纳入本次发布。人工编写的非敏感模拟稿位于 `tests/fixtures/`，只用于测试，不参与站点构建、导航或搜索。
+站点已接入七个查阅分组的学习笔记，按章节和专题顺序阅读。人工编写的非敏感模拟稿位于 `tests/fixtures/`，只用于测试，不参与站点构建、导航或搜索。
 
 文章统一放在 `docs/articles/<article-slug>.md`，对应 `/articles/<article-slug>.html`。ID 与 slug 全局唯一，发布后尽量保持稳定，避免因分类调整而移动正文。
 

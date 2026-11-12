@@ -43,7 +43,6 @@
 .VPNavBarSearch .DocSearch-Button:hover { border-color:var(--kb-accent); background:var(--kb-bg); }
 .VPNavBarSearch .DocSearch-Button-Placeholder { color:var(--kb-muted); }
 .VPNavBarSearch .DocSearch-Button .DocSearch-Search-Icon { color:var(--kb-accent); }
-.local-mode { max-width:1240px; margin:18px auto 0; padding:0 28px; font-size:11px; letter-spacing:.02em; color:var(--kb-muted); }
 .knowledge-home { max-width:1240px; margin:0 auto; padding:20px 28px 36px; }
 .home-hero { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); align-items:center; gap:28px; padding:24px 36px; border:1px solid var(--kb-border); border-radius:16px; background:linear-gradient(115deg,var(--kb-hero-start),var(--kb-hero-mid) 48%,var(--kb-hero-end)); }
 .eyebrow { display:flex; gap:9px; align-items:center; color:var(--kb-accent); font-size:12px; font-weight:650; letter-spacing:.1em; margin:0 0 8px; }
@@ -94,6 +93,7 @@
 .domain-icon svg { width:23px; height:23px; }
 [data-domain='gpu-infra'] .domain-icon,[data-domain='ai-agent'] .domain-icon { color:var(--kb-teal); background:var(--kb-icon-teal); }
 [data-domain='distributed-systems'] .domain-icon,[data-domain='engineering'] .domain-icon { color:var(--kb-muted); background:var(--kb-icon-slate); }
+.knowledge-card .domain-icon { color:var(--category-icon,var(--kb-accent)); background:var(--category-icon-bg,var(--kb-icon-lavender)); }
 .card-title { font-size:16px; font-weight:650; line-height:1.6; color:var(--kb-text); overflow-wrap:anywhere; }
 .card-description { font-size:13px; line-height:1.85; color:var(--kb-muted); overflow-wrap:anywhere; }
 .card-link { display:inline-flex; align-items:center; gap:7px; margin-top:auto; padding-top:9px; color:var(--kb-accent); font-size:12px; font-weight:550; }
@@ -106,20 +106,20 @@
 .knowledge-home .domain-icon svg { width:22px; height:22px; }
 .knowledge-home .card-description { line-height:1.7; }
 .knowledge-home .card-link { padding-top:0; }
-.knowledge-home [data-domain='ai-agent'] { --category-icon:#6969ba; --category-icon-bg:#f0f0fc; }
-.knowledge-home [data-domain='ai-infra'] { --category-icon:#6176bd; --category-icon-bg:#eef2fc; }
-.knowledge-home [data-domain='distributed-systems'] { --category-icon:#557fae; --category-icon-bg:#edf4fb; }
-.knowledge-home [data-domain='operating-systems'] { --category-icon:#647fa4; --category-icon-bg:#f0f4fa; }
-.knowledge-home [data-domain='kubernetes'] { --category-icon:#47839c; --category-icon-bg:#edf6f9; }
-.knowledge-home [data-domain='redis'] { --category-icon:#4f8a7f; --category-icon-bg:#eff7f4; }
-.knowledge-home [data-domain='kafka'] { --category-icon:#7c6aaf; --category-icon-bg:#f2effa; }
-.dark .knowledge-home [data-domain='ai-agent'] { --category-icon:#b2b0f0; --category-icon-bg:#2b2b42; }
-.dark .knowledge-home [data-domain='ai-infra'] { --category-icon:#a3b3ed; --category-icon-bg:#263147; }
-.dark .knowledge-home [data-domain='distributed-systems'] { --category-icon:#91b8df; --category-icon-bg:#253447; }
-.dark .knowledge-home [data-domain='operating-systems'] { --category-icon:#9fb5d2; --category-icon-bg:#293344; }
-.dark .knowledge-home [data-domain='kubernetes'] { --category-icon:#89bed1; --category-icon-bg:#213840; }
-.dark .knowledge-home [data-domain='redis'] { --category-icon:#8bbfb0; --category-icon-bg:#263a36; }
-.dark .knowledge-home [data-domain='kafka'] { --category-icon:#bbace5; --category-icon-bg:#312b42; }
+.knowledge-card[data-domain='ai-agent'] { --category-icon:#6969ba; --category-icon-bg:#f0f0fc; }
+.knowledge-card[data-domain='ai-infra'] { --category-icon:#6176bd; --category-icon-bg:#eef2fc; }
+.knowledge-card[data-domain='distributed-systems'] { --category-icon:#557fae; --category-icon-bg:#edf4fb; }
+.knowledge-card[data-domain='operating-systems'] { --category-icon:#647fa4; --category-icon-bg:#f0f4fa; }
+.knowledge-card[data-domain='kubernetes'] { --category-icon:#47839c; --category-icon-bg:#edf6f9; }
+.knowledge-card[data-domain='redis'] { --category-icon:#4f8a7f; --category-icon-bg:#eff7f4; }
+.knowledge-card[data-domain='kafka'] { --category-icon:#7c6aaf; --category-icon-bg:#f2effa; }
+.dark .knowledge-card[data-domain='ai-agent'] { --category-icon:#b2b0f0; --category-icon-bg:#2b2b42; }
+.dark .knowledge-card[data-domain='ai-infra'] { --category-icon:#a3b3ed; --category-icon-bg:#263147; }
+.dark .knowledge-card[data-domain='distributed-systems'] { --category-icon:#91b8df; --category-icon-bg:#253447; }
+.dark .knowledge-card[data-domain='operating-systems'] { --category-icon:#9fb5d2; --category-icon-bg:#293344; }
+.dark .knowledge-card[data-domain='kubernetes'] { --category-icon:#89bed1; --category-icon-bg:#213840; }
+.dark .knowledge-card[data-domain='redis'] { --category-icon:#8bbfb0; --category-icon-bg:#263a36; }
+.dark .knowledge-card[data-domain='kafka'] { --category-icon:#bbace5; --category-icon-bg:#312b42; }
 .topic-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .path-card { display:flex; flex-direction:column; gap:12px; padding:24px; border:1px solid var(--kb-border); border-radius:12px; border-top:2px solid var(--kb-teal); background:var(--kb-surface); box-shadow:var(--kb-shadow); text-decoration:none !important; transition:border-color .16s,box-shadow .16s; }
 .path-card:hover { border-color:var(--kb-teal); box-shadow:var(--kb-shadow-hover); }
@@ -139,6 +139,17 @@
 .article-row a:hover { color:var(--kb-accent); }
 .article-list p { margin:6px 0 !important; color:var(--kb-muted); font-size:13px; line-height:1.8; overflow-wrap:anywhere; }
 .article-date { display:block; margin-top:8px; color:var(--kb-muted); font-size:11px; font-variant-numeric:tabular-nums; }
+.updates-page { max-width:960px; margin:0 auto; padding:36px 28px; }
+.updates-page .article-count { font-size:12px; color:var(--kb-muted); margin:24px 0 12px; }
+.article-list-compact li { padding:14px 0; }
+.article-list-compact p { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+.article-list-titles li { padding:0; }
+.article-list-titles .article-row { display:block; }
+.article-list-titles .article-row a { display:block; padding:10px 0; }
+.article-pagination { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:20px; font-size:12px; color:var(--kb-muted); }
+.article-pagination button { min-height:36px; padding:6px 12px; border:1px solid var(--kb-border); border-radius:7px; background:var(--kb-surface); color:var(--kb-accent); cursor:pointer; }
+.article-pagination button:hover:not(:disabled) { border-color:var(--kb-accent); background:var(--kb-accent-soft); }
+.article-pagination button:disabled { opacity:.45; cursor:default; }
 .empty-state { border:1px dashed var(--kb-border); border-radius:10px; padding:22px; color:var(--kb-muted); background:var(--kb-surface); font-size:13px; line-height:1.8; }
 .empty-state > svg { width:23px; height:23px; color:var(--kb-muted); margin-bottom:9px; }
 .empty-state p { margin:0 !important; }
@@ -162,7 +173,6 @@
 .stage-title { min-width:0; overflow-wrap:anywhere; }
 .topic-stage p { font-size:13px; color:var(--kb-muted); }
 .stage-empty { padding:12px 15px; border-radius:7px; background:var(--kb-surface); border:1px solid var(--kb-border); }
-.demo-notice { font-size:12px; line-height:1.8; border:1px solid var(--kb-border); border-left:3px solid var(--kb-teal); border-radius:0 7px 7px 0; background:var(--kb-surface); padding:10px 14px; margin-bottom:20px; color:var(--kb-muted); }
 .article-meta { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 18px; font-size:12px; color:var(--kb-muted); line-height:1.9; margin:8px 0 18px; }
 .article-context { display:inline-flex; align-items:baseline; flex-wrap:wrap; gap:8px; min-width:0; overflow-wrap:anywhere; }
 .article-context a { color:var(--kb-accent); }
@@ -204,7 +214,7 @@
 @media (max-width:699px) {
   .knowledge-grid,.topic-grid,.collection-directory { grid-template-columns:1fr; }
   .knowledge-home { padding:16px 20px 26px; }
-  .local-mode { padding:0 20px; margin-top:15px; font-size:10px; }
+  .updates-page { padding:28px 20px; }
   .home-hero { padding:20px; border-radius:12px; }
   .home-hero h1 { font-size:clamp(28px,7.6vw,32px); line-height:1.45; }
   .eyebrow { font-size:12px; letter-spacing:.055em; gap:6px; margin-bottom:8px; }

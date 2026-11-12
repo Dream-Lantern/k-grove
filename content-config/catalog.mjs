@@ -1,10 +1,10 @@
 export const categories = [
   { id: 'adtech', name: '广告技术与实时系统', description: '广告系统的基础概念，以及 SSP / DSP 和实时竞价笔记。' },
-  { id: 'gpu-infra', name: 'GPU 与 AI 基础设施', description: 'GPU 虚拟化、执行上下文、资源管理与状态恢复笔记。' },
+  { id: 'gpu-infra', name: 'GPU 与大模型基础', description: 'GPU 虚拟化、执行上下文、资源管理与状态恢复笔记。' },
   { id: 'llm-inference', name: '大模型推理与性能工程', description: '大模型推理、SGLang / vLLM 与性能测试的学习笔记。' },
   { id: 'ai-agent', name: 'AI Agent 与智能体工程', description: 'AI Agent、MCP、工具调用与工作流的学习和实践记录。' },
   { id: 'distributed-systems', name: '分布式系统与系统设计', description: '操作系统、分布式原理，以及 Kafka、Redis 等相关笔记。' },
-  { id: 'engineering', name: '编程语言与工程工具', description: '编程语言、容器和常用工具的用法与问题记录。' }
+  { id: 'engineering', name: '容器与系统工具', description: '容器、工作负载和常用系统工具的用法与问题记录。' }
 ]
 
 export const collections = [

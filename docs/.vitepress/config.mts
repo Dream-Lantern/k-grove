@@ -63,7 +63,6 @@ export default defineConfig({
       { text: '首页', link: '/' },
       { text: '知识库', link: '/knowledge/' },
       { text: '技术专题', link: '/topics/' },
-      { text: '工程实践', link: '/projects/' },
       { text: '最近更新', link: '/updates' },
       { text: '关于', link: '/about' }
     ],
@@ -73,8 +72,7 @@ export default defineConfig({
       ...collectionSidebars,
       '/articles/': [browseNav],
       '/knowledge/': [
-        browseNav,
-        { text: '知识领域', collapsed: true, items: categories.map(item => ({ text: item.name, link: `/knowledge/${item.id}/` })) }
+        browseNav
       ],
       '/collections/': [browseNav],
       '/topics/': [{ text: '学习专题', items: topics.filter(item => published.some(article => article.series === item.id)).map(item => ({ text: item.name, link: `/topics/${item.id}/` })) }]

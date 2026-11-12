@@ -16,4 +16,3 @@
 
 - [Kafka 分册](/collections/kafka/)
 - [Redis 分册](/collections/redis/)
-- [本地知识阅读验证](/projects/local-reading-demo/)

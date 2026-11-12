@@ -14,5 +14,4 @@
 
 ## 相关知识与实践
 
-- [GPU 与 AI 基础设施](/knowledge/gpu-infra/)
-- [本地知识阅读验证](/projects/local-reading-demo/)
+- [GPU 与大模型基础](/knowledge/gpu-infra/)

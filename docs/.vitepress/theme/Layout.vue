@@ -8,11 +8,7 @@ const { page } = useData()
 <template>
   <DefaultTheme.Layout>
     <template #doc-before>
-      <p class="demo-notice" role="note">个人学习笔记 · 技术前提与验证边界以正文说明为准。</p>
       <ArticleMeta v-if="page.relativePath.startsWith('articles/')" />
-    </template>
-    <template #page-top>
-      <div class="local-mode">个人知识整理 · 持续补充与修订</div>
     </template>
     <template #layout-bottom>
       <footer class="knowledge-footer" aria-label="站点页脚">
