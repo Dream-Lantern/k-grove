@@ -1,0 +1,83 @@
+{
+  "run_id": "local_copy_audit_20261112",
+  "evidence_origin": "local",
+  "execution_type": "stdlib_script",
+  "source_commit": "d2a1fdd533cbeab576e26de404b22376bced0ab7",
+  "script": "examples/ai-agent/ch6-8-review/copy_audit.py",
+  "script_sha256": "58114e2f8b967aac6e9d69366bc1a950339d234f22fe6062bffa00dba1dc15a6",
+  "python": "3.12.10",
+  "command": [
+    ".tmp/ch4-review/python312/python.exe",
+    "-X",
+    "utf8",
+    "examples/ai-agent/ch6-8-review/copy_audit.py"
+  ],
+  "exit_code": 0,
+  "output": {
+    "data_kind": "synthetic teaching data",
+    "audits": [
+      {
+        "prediction": " abc\n",
+        "target": "abc",
+        "prediction_bytes": 5,
+        "target_bytes": 3,
+        "prediction_sha256": "0e876e95f5e8a2d805f13659cf5edeb8dcf6addc50dee5f84ef6f0df42cf1b8e",
+        "target_sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "raw_exact": false,
+        "normalized_exact": true,
+        "nfc_diagnostic_equal": false,
+        "raw_first_diff_byte": 0
+      },
+      {
+        "prediction": "abc",
+        "target": " abc ",
+        "prediction_bytes": 3,
+        "target_bytes": 5,
+        "prediction_sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "target_sha256": "3eaf1941003943dfaa935adecffcaaa217e290def6fb0181141ced6c9daabaad",
+        "raw_exact": false,
+        "normalized_exact": false,
+        "nfc_diagnostic_equal": false,
+        "raw_first_diff_byte": 0
+      },
+      {
+        "prediction": "é",
+        "target": "é",
+        "prediction_bytes": 2,
+        "target_bytes": 3,
+        "prediction_sha256": "4a99557e4033c3539de2eb65472017cad5f9557f7a0625a09f1c3f6e2ba69c4c",
+        "target_sha256": "bf12767b0f2a56b2190075bae8169f656e3ce8d6357d4aff184bc6c7ea48f9f6",
+        "raw_exact": false,
+        "normalized_exact": false,
+        "nfc_diagnostic_equal": true,
+        "raw_first_diff_byte": 0
+      },
+      {
+        "prediction": "中文\né",
+        "target": "中文\né",
+        "prediction_bytes": 9,
+        "target_bytes": 9,
+        "prediction_sha256": "0d59e27255bf24f949eae3561d57dc93a2a6c6ff7c42b39a05bea21c66f20fbb",
+        "target_sha256": "0d59e27255bf24f949eae3561d57dc93a2a6c6ff7c42b39a05bea21c66f20fbb",
+        "raw_exact": true,
+        "normalized_exact": true,
+        "nfc_diagnostic_equal": true,
+        "raw_first_diff_byte": null
+      },
+      {
+        "prediction": "a\r\nb",
+        "target": "a\nb",
+        "prediction_bytes": 4,
+        "target_bytes": 3,
+        "prediction_sha256": "18745f36a05e29072709042d6062ce54f1b08ff36c27ba80c39f81fb010c8ce2",
+        "target_sha256": "7e18f737311b2dc3b2f269dd78396b0351f14fb66efa879f768cb23181883c78",
+        "raw_exact": false,
+        "normalized_exact": false,
+        "nfc_diagnostic_equal": false,
+        "raw_first_diff_byte": 1
+      }
+    ],
+    "json_wire": "{\"value\": \"\\u4e2d\\u6587\\n\\u00e9\"}",
+    "wire_differs_from_unescaped_json": true
+  }
+}

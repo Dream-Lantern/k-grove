@@ -3,7 +3,7 @@ id: ai-agent-source-experiments
 title: 源码实验地图：哪些值得先补、怎样验证
 description: "按学习优先级组织固定提交中的 22 个源码实验入口，说明阅读重点、建议练习与结果记录方式。"
 date: '2026-10-25'
-updated: '2026-10-28'
+updated: '2026-11-12'
 category: ai-agent
 type: explanation
 tags:
@@ -21,9 +21,32 @@ order: 91
 
 源码固定于提交 `dbc046eb896ac4e39aa19c7774c8bf49583b89a6`，获取日期为 2026-10-22。下列优先级是依据学习顺序和工程迁移价值制定的个人建议。P0 用于建立最小理解闭环，P1 用于组件对照，P2 则在基础系统和评估成熟后研究。
 
+这里的 **学习 P0** 是优先理解的基础实验，**学习 P1** 是核心机制的进阶对照，**学习 P2** 是深入研究和扩展；它们不是源码缺陷等级或发布阻塞等级。按周安排见 [六周路线](/articles/ai-agent-learning-exercises.html)，本站与上游章号差异见 [章节对照](/articles/ai-agent-chapter-reference.html)。
+
 ## 先读这条主线
 
 上下文消融 → 工具执行与反馈 → 混合检索 → 环境和轨迹评估 → 经验候选与门禁。语音和多 Agent 按项目需要选做；后训练先完成错误归因和数据审计。
+
+第一次阅读可依次完成以下六站，先看输入怎样变成可检查的输出，再进入完整索引。上游命令均在对应目录执行，并先按该目录 README 准备依赖：
+
+| 顺序与目录                                  | 阅读重点与最小入口                                                                                                  | 运行前提与预期观察                                               | 后续深入                                                   |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------- |
+| 1：`chapter1/web-search-agent`              | 工具循环；`python main.py --provider offline-demo --output demo.json`                                               | 安装项目依赖；无需 Key，观察预写 `trace` 中行动、观察与答案      | 上下文消融或真实工具反馈                                   |
+| 2：`chapter2/context-compression`           | 六种压缩策略；`python experiment.py --list-strategies`                                                              | 先安装依赖；列出策略，随后只读比较保留／丢弃哪些信息             | 固定快照与尾部事实负例；真实模型实验另配服务               |
+| 3：`chapter3/retrieval-pipeline`            | 召回、融合、重排；按[第3章 BM25 步骤](/articles/ai-agent-memory-rag.html#最小-bm25-实验-先验证输入、输出与指标)执行 | BM25 依赖与语料；观察候选 ID、排名和指标，不加载 Dense 模型      | 同数据加入 Dense／RRF／Rerank                              |
+| 4：`chapter4/execution-tools`               | 执行和验证；`python cli.py list` 后阅读文件工具测试                                                                 | 项目依赖；先查看工具目录，再在临时工作区测试允许／拒绝路径       | `python cli.py demo`；执行类工具按 README 准备 Bash 等环境 |
+| 5：`chapter7/user-memory-system-evaluation` | 读 `retrieval_metrics()`、`RunRecord`、完整性检查；依赖就绪后 `python experiment.py --help`                         | 先理解输入配置与结果字段；不从历史报告推定本地已运行             | 配对矩阵、成本覆盖；实际后端实验另配模型和数据             |
+| 6：`chapter10/book-translation`             | 文件交接与上下文隔离；`python demo.py --dry-run`                                                                    | SDK、tiktoken 与编码缓存；观察角色、计划和上下文预算，无模型调用 | 同资料单 Agent 基线、术语／审校消融与质量证据              |
+
+### 先确定实验属于哪个仓库
+
+| 来源／运行方式         | 执行位置与条件                                                          |
+| ---------------------- | ----------------------------------------------------------------------- |
+| 固定提交的上游实验     | 在 ai-agent-book 的对应目录运行；本文 `chapterN/…` 指上游路径           |
+| 本地独立教学脚本       | 从 k-grove 根目录运行 `examples/ai-agent/…`；标准库示例通常无需模型服务 |
+| Markdown 内嵌代码      | 按正文给出的环境、目录和输入操作；片段不一定能脱离上下文独立运行        |
+| 真实模型 API 实验      | 额外固定模型、端点、配置及费用口径；离线轨迹不属于此类                  |
+| GPU 训练／本地模型实验 | 单独准备权重、驱动、依赖与数据；按对应 README 记录硬件和模型 revision   |
 
 下表列出公开仓库中的 22 个实验入口。实验代码及完整运行说明请从 [ai-agent-book 固定提交](https://github.com/bojieli/ai-agent-book/tree/dbc046eb896ac4e39aa19c7774c8bf49583b89a6) 获取，并遵守上游许可证。实验优先级是个人学习建议，不表示这些实验已在本站环境运行。
 
@@ -56,13 +79,27 @@ order: 91
 
 ## 实验记录的证据状态 {#三种证据状态}
 
-| 状态           | 记录含义                                                                                       |
-| -------------- | ---------------------------------------------------------------------------------------------- |
-| 源码阅读       | 已查看指定提交的关键实现；不代表服务已启动或模型已调用                                         |
-| 当前确定性检查 | 已有8组及审阅11组记录属于上游实现观察；修订契约另行记录，运行范围以对应 run_id 为准            |
-| 待复现         | 在线模型对照、完整 RAG 模型链、GPU 训练、真实音频/浏览器 campaign、Docker 候选代码门禁均未运行 |
+| 状态         | 记录含义与可追溯入口                                                                                                                   |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 上游历史实验 | 固定提交中的历史运行；例如翻译 `real_20260730T061500Z_v4/evidence.json`，原始模型和指标见[第10章](/articles/ai-agent-multi-agent.html) |
+| 当前本地检查 | 在 k-grove 实际执行的脚本和测试；下文给出复制审计的完整记录，不与上游历史数值合并                                                      |
+| 静态源码核查 | 查看固定提交文件、参数与分支；本轮核对了完整索引的 22 个 README 及十章映射，不代表执行全部实验                                         |
+| 待复现       | 当前未运行的付费模型对照、完整 RAG 模型链、GPU 训练、真实音频／浏览器 campaign 和 Docker 候选门禁，分别按实验登记                      |
 
 仓库 README 中的历史数值、validation 文件和“已验收”标记均属于上游记录，不能将这些数值视为本地复现结果。引用历史结果前，还需核对相应 manifest、输入、硬件、模型和运行条件。
+
+例如以下记录指向已经存在的上游翻译回执；`run_id` 沿用原目录名，不是本站新跑的翻译任务：
+
+```yaml
+experiment: chapter10/book-translation
+source_commit: dbc046eb896ac4e39aa19c7774c8bf49583b89a6
+evidence_origin: upstream
+execution_type: historical_real_api
+run_id: real_20260730T061500Z_v4
+evidence_ref: validation/real_20260730T061500Z_v4/evidence.json
+```
+
+[原始 evidence.json](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/validation/real_20260730T061500Z_v4/evidence.json)同时保留 Token、时间、匿名质量评价和结构检查。引用时应保留少用 Token 却更慢、术语一致率降低等负结果。此前“8 组／11 组”的笼统汇总不再作为证据，具体结论以各自回执与执行类型为准。
 
 ## 本地检查的记录要求 {#本地检查的唯一说明}
 
@@ -85,6 +122,24 @@ api_errors_and_missing_cells: []
 evidence_paths: []
 conclusion_and_limits: "..."
 ```
+
+### 一份实际完成的本地记录
+
+2026-11-12 在 k-grove 根目录用 Python 3.12.10 执行标准库审计，退出码 0：
+
+```bash
+python -X utf8 examples/ai-agent/ch6-8-review/copy_audit.py
+```
+
+代码基线为本地提交 `d2a1fdd533cbeab576e26de404b22376bced0ab7`，该脚本 SHA-256 为 `58114e2f8b967aac6e9d69366bc1a950339d234f22fe6062bffa00dba1dc15a6`。本次记录 ID 为 `local_copy_audit_20261112`；完整输入、原始输出、Python 版本与实际命令保存在本仓库 `examples/ai-agent/ch6-8-review/validation/copy-audit-20261112.json`，可取得源码后复核。
+
+| 固定输入                              | 实际输出                                                            | 结果解释                                      |
+| ------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- |
+| prediction=`" abc\n"`，target=`"abc"` | 字节数 5／3；`raw_exact=false`、`normalized_exact=true`，首差字节 0 | 匹配来自预测 `.strip()`，不能写成原样复制成功 |
+| 预组合 `é` 与组合重音表示             | raw／normalized 均 false，`nfc_diagnostic_equal=true`               | Unicode 等价诊断不等于字节相等                |
+| 中文经 JSON 转义再解码                | JSON 序列化文本不同，解码后的 `raw_exact=true`                      | 分别审计序列化表示与解析后的字符串            |
+
+这份记录只来自本地标准库脚本，没有加载 Tokenizer 或训练模型。复跑时保存为新的记录，记录代码 Hash、命令与输出，避免覆盖历史回执。
 
 ## 学习资料与代码出处
 

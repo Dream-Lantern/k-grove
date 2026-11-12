@@ -4,7 +4,7 @@ sequenceDiagram
   participant S as MCP Server
   participant B as 业务服务
   Note over H,B: 仅 MCP 2025-11-25；模型不直接连接业务服务
-  C->>S: initialize（版本、能力、身份信息）
+  C->>S: initialize（版本、能力、客户端信息）
   S-->>C: 协商版本与能力
   C->>S: notifications/initialized（无 id）
   C->>S: tools/list

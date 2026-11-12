@@ -6,7 +6,7 @@ identity [label="[本地修订示例]\n输入event_id与目标代次\n去重 / �
 ignore [label="[本地修订示例]\n拒绝过期/重复事件\n不影响当前新回复",width=2.4375,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
 playing [label="[本地修订示例]\n当前代次正在播放？",width=3.15625,height=1.1616,style="rounded,filled,dashed",fillcolor="#EFF6FF",shape=diamond];
 idle [label="[建议设计]\n无当前播放：不发取消\n继续接收用户输入 [建议]",width=3.095833333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
-cancel [label="[本地修订示例]\n请求取消 + 清理待播队列\nCANCEL_REQUESTED ≠ 已静音",width=3.658333333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
+cancel [label="[本地修订示例]\n记录取消请求\nCANCEL_REQUESTED ≠ 已静音",width=3.658333333333333,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
 ack [label="[建议设计]\n播放器ACK与已播位置\n设备缓冲与文本对齐 [建议]",width=3.3041666666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
 state [label="[建议设计]\n按已交付范围更新上下文\n无ACK/位置时记录UNKNOWN",width=3.229166666666667,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
 replan [label="[建议设计]\n由外层重规划 / 新回复\n输出须经本地代次检查",width=2.8874999999999997,height=1.17,style="rounded,filled,dashed",fillcolor="#EFF6FF"];
