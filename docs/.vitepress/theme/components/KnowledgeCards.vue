@@ -32,8 +32,10 @@ const items = computed(() => (groups[props.kind] || []).filter(item => props.kin
         <span class="path-footer"><span>{{ item.stages.length }} 个阅读阶段 · {{ count(item) ? `${count(item)} 篇公开文章` : '章节待审核' }}</span><span class="card-link">查看专题 <KnowledgeIcon name="arrow" /></span></span>
       </template>
       <template v-else>
-        <span class="domain-icon"><KnowledgeIcon :name="item.id === 'ai-infra' ? 'gpu-infra' : item.id" /></span>
-        <span class="card-title">{{ item.name }}</span>
+        <span class="card-heading">
+          <span class="domain-icon"><KnowledgeIcon :name="item.id === 'ai-infra' ? 'gpu-infra' : item.id" /></span>
+          <span class="card-title">{{ item.name }}</span>
+        </span>
         <span class="card-description">{{ item.description }}</span>
         <span class="card-link">查看笔记 <KnowledgeIcon name="arrow" /></span>
       </template>
