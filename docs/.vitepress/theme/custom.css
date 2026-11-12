@@ -146,6 +146,10 @@
 .article-list-titles li { padding:0; }
 .article-list-titles .article-row { display:block; }
 .article-list-titles .article-row a { display:block; padding:10px 0; }
+.article-list-titles .article-row a.article-link-with-module { display:flex; align-items:baseline; gap:10px; }
+.article-link-with-module > span:last-child { min-width:0; }
+.article-module { flex:none; padding:1px 7px; border-radius:999px; background:#f0f0fc; color:#514d89; font-size:11px; font-weight:500; line-height:1.7; white-space:nowrap; }
+.dark .article-module { background:#302f48; color:#d0c9f4; }
 .article-pagination { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:20px; font-size:12px; color:var(--kb-muted); }
 .article-pagination button { min-height:36px; padding:6px 12px; border:1px solid var(--kb-border); border-radius:7px; background:var(--kb-surface); color:var(--kb-accent); cursor:pointer; }
 .article-pagination button:hover:not(:disabled) { border-color:var(--kb-accent); background:var(--kb-accent-soft); }

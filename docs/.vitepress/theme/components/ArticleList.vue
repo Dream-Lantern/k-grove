@@ -3,13 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { withBase } from 'vitepress'
 import { data as articles } from '../../data/articles.data'
 import { byCategory, byCollection, bySeries, recent, publicationHistory, paginate } from '../../../../lib/queries.mjs'
-import { featuredIds } from '../../../../content-config/catalog.mjs'
+import { featuredIds, collectionById, categoryById } from '../../../../content-config/catalog.mjs'
 import { publicArticles } from '../../../../lib/public-display.mjs'
 import KnowledgeIcon from './KnowledgeIcon.vue'
 
 const props = defineProps({
   category: String, collection: String, series: String, project: String,
-  mode: { type: String, default: 'all' }, limit: Number, pageSize: Number, titlesOnly: Boolean,
+  mode: { type: String, default: 'all' }, limit: Number, pageSize: Number, titlesOnly: Boolean, showModule: Boolean,
   empty: { type: String, default: '暂时还没有公开笔记，相关内容正在整理，审核后会陆续补充。' }
 })
 const items = computed(() => {
@@ -27,13 +27,14 @@ const items = computed(() => {
 const currentPage = ref(1)
 const pagination = computed(() => paginate(items.value, currentPage.value, props.pageSize || items.value.length || 1))
 watch(items, () => { currentPage.value = 1 })
+const moduleName = item => collectionById[item.collection]?.name || categoryById[item.category]?.name || item.category
 </script>
 
 <template>
   <p v-if="pageSize" class="article-count">共 {{ items.length }} 篇 · 每页 {{ pageSize }} 篇</p>
   <ul v-if="items.length" class="article-list" :class="{ 'article-list-compact': pageSize, 'article-list-titles': titlesOnly }">
     <li v-for="item in pagination.items" :key="item.id">
-      <div class="article-row"><a :href="withBase(item.url)">{{ item.title }}</a></div>
+      <div class="article-row"><a :href="withBase(item.url)" :class="{ 'article-link-with-module': showModule }" :aria-label="showModule ? `${moduleName(item)}：${item.title}` : undefined"><span v-if="showModule" class="article-module">{{ moduleName(item) }}</span><span>{{ item.title }}</span></a></div>
       <p v-if="!titlesOnly">{{ item.description }}</p>
       <time v-if="!titlesOnly" class="article-date" :datetime="mode === 'new' ? item.date : item.updated">{{ mode === 'new' ? '发布' : '更新' }} {{ mode === 'new' ? item.date : item.updated }}</time>
     </li>
