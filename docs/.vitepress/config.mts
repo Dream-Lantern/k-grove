@@ -61,7 +61,6 @@ export default defineConfig({
     siteTitle: '系统工程知识库',
     nav: [
       { text: '首页', link: '/' },
-      { text: '知识库', link: '/knowledge/' },
       { text: '技术专题', link: '/topics/' },
       { text: '最近更新', link: '/updates' },
       { text: '关于', link: '/about' }

@@ -15,5 +15,5 @@
 ## 继续查阅
 
 - [返回K8s分类](/collections/kubernetes/)
-- [返回知识库](/knowledge/)
+- [返回首页分类](/#domains-title)
 - [最近更新](/updates.html)

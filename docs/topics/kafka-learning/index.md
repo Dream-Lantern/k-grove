@@ -15,5 +15,5 @@
 ## 继续查阅
 
 - [返回Kafka分类](/collections/kafka/)
-- [返回知识库](/knowledge/)
+- [返回首页分类](/#domains-title)
 - [最近更新](/updates.html)
