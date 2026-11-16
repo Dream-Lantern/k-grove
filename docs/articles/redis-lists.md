@@ -173,7 +173,7 @@ K 是批量添加或返回的元素数；LRANGE 中 S 是定位起始位置需�
 | 6.2.0                      | quicklist，紧凑节点使用 ziplist（压缩列表）                                                       |
 | 7.0.0                      | quicklist，紧凑节点改为 listpack（紧凑列表）；大元素可用单独节点                                  |
 | 7.2.0                      | 小 List 可直接用 listpack，超出节点大小或元素数量条件时转为 quicklist；符合条件的缩小路径也可转回 |
-| 7.4.0、8.0.0               | 仍有 listpack / quicklist 及相应转换路径                          |
+| 7.4.0、8.0.0               | 仍有 listpack / quicklist 及相应转换路径                                                          |
 
 7.2.0 的转换检查使用 `list-max-listpack-size` 对应的节点容量规则，还会检查节点数量与安全余量，不能只看 List 元素总数。具体诊断可用 `OBJECT ENCODING`，但不应把内部阈值当成应用协议。[6.2.0 t_list.c](https://raw.githubusercontent.com/redis/redis/6.2.0/src/t_list.c) · [7.0.0 quicklist.c](https://raw.githubusercontent.com/redis/redis/7.0.0/src/quicklist.c) · [7.2.0 t_list.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_list.c) · [7.4.0 t_list.c](https://raw.githubusercontent.com/redis/redis/7.4.0/src/t_list.c) · [8.0.0 t_list.c](https://raw.githubusercontent.com/redis/redis/8.0.0/src/t_list.c)
 
