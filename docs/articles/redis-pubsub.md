@@ -30,13 +30,16 @@ PubSub（Publish/Subscribe，发布/订阅）将当前消息分发给相应的�
 新增教学流程。订阅连接 A 依次建立频道订阅和模式订阅：
 
 ```redis
+# 订阅精确频道 demo:event:created；之后连接接收推送消息
 SUBSCRIBE demo:event:created
+# 按模式订阅频道 demo:event:*；* 匹配任意字符，因此可匹配多个频道；之后连接接收推送消息
 PSUBSCRIBE demo:event:*
 ```
 
 另一个发布连接 B 发送：
 
 ```redis
+# 向频道 demo:event:created 发布消息 {"event_id":"e-42"}；返回本次接收消息的订阅客户端数，不是业务处理成功数
 PUBLISH demo:event:created "{\"event_id\":\"e-42\"}"
 ```
 
@@ -56,14 +59,18 @@ ACK（Acknowledgment，确认）在这里指业务完成确认，PubSub 不提�
 Channel（频道）不属于某个逻辑 DB（Database，数据库）。另做一个独立实验：在包含 DB 1、DB 10 的非 Cluster 学习实例上，仅以下订阅者在线，先用订阅连接执行：
 
 ```redis
+# 将当前连接切换到逻辑数据库 1；只改变键操作的数据库，普通 PubSub 不按数据库隔离；Cluster 仅支持数据库 0
 SELECT 1
+# 订阅精确频道 demo:event:created；之后连接接收推送消息
 SUBSCRIBE demo:event:created
 ```
 
 确认订阅建立后，另一条发布连接执行：
 
 ```redis
+# 将当前连接切换到逻辑数据库 10；只改变键操作的数据库，普通 PubSub 不按数据库隔离；Cluster 仅支持数据库 0
 SELECT 10
+# 向频道 demo:event:created 发布消息 hello；返回本次接收消息的订阅客户端数，不是业务处理成功数
 PUBLISH demo:event:created hello
 ```
 
@@ -110,12 +117,14 @@ Redis Open Source 7.0.0 起的 Sharded PubSub（分片发布订阅）提供 SPUB
 以下在 Redis Open Source 7.0.0 或更高版本的 Cluster 学习环境中使用能正确路由的客户端。先在一条连接上订阅：
 
 ```redis
+# 订阅分片频道（Redis 7.0+） demo:order:created；之后连接接收推送消息
 SSUBSCRIBE demo:order:created
 ```
 
 确认成功后，另一条连接将发布命令路由到该槽主节点：
 
 ```redis
+# 向分片频道 demo:order:created 发布消息 order-42；返回本次接收消息的订阅客户端数，不是业务处理成功数
 SPUBLISH demo:order:created order-42
 ```
 

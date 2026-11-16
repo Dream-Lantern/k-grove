@@ -75,9 +75,13 @@ metadata:
   namespace: study
 spec:
   completionMode: NonIndexed
+  # Job 期望成功完成的任务数；与同时运行数量 parallelism 分开配置。
   completions: 3
+  # Job 允许的并行任务数量，实际运行数仍受完成进度和失败处理影响。
   parallelism: 2
+  # 失败重试预算；不是保证每个 Pod 都精确重试这一次数。
   backoffLimit: 2
+  # Job 的总执行期限，单位秒，超出后终止任务，不是单次命令超时。
   activeDeadlineSeconds: 600
   template:
     spec:
@@ -92,18 +96,30 @@ create/apply/delete 会修改实验资源；下面其余命令观察状态：
 
 ```bash
 # 仅当 study 不存在且专供本实验时创建
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace study
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f report-demo.yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get job report-demo -n study -w
 ```
 
 观察后按 Ctrl+C 退出 watch，再查询；预期最终 Complete=True、Succeeded=3，不要求恰好捕捉到表中的每个瞬间：
 
 ```bash
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe job report-demo -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l batch.kubernetes.io/job-name=report-demo 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l batch.kubernetes.io/job-name=report-demo
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n study 限定命名空间
 kubectl logs job/report-demo -n study
 # 仅清理本实验的 Job 及其依赖 Pod
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f report-demo.yaml
 ```
 
@@ -120,9 +136,13 @@ metadata:
   name: report-fail
   namespace: study
 spec:
+  # Job 期望成功完成的任务数；与同时运行数量 parallelism 分开配置。
   completions: 1
+  # Job 允许的并行任务数量，实际运行数仍受完成进度和失败处理影响。
   parallelism: 1
+  # 失败重试预算；不是保证每个 Pod 都精确重试这一次数。
   backoffLimit: 2
+  # Job 的总执行期限，单位秒，超出后终止任务，不是单次命令超时。
   activeDeadlineSeconds: 300
   template:
     spec:
@@ -134,16 +154,27 @@ spec:
 ```
 
 ```bash
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f report-fail.yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get job report-fail -n study -w
 ```
 
 退出 watch 后检查；预期在简单、资源充足场景下经历退避与新 Pod 尝试，最终 Failed=True。若期限先耗尽，则失败原因不同，不能伪定实际 Events 或重试精确时刻：
 
 ```bash
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe job report-fail -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l batch.kubernetes.io/job-name=report-fail 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l batch.kubernetes.io/job-name=report-fail
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n study 限定命名空间
 kubectl logs job/report-fail -n study
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f report-fail.yaml
 ```
 
@@ -190,17 +221,24 @@ metadata:
   name: report-schedule
   namespace: study
 spec:
+  # 五段 Cron 表达式按分、时、日、月、周解释；*/5 在此表示每 5 分钟。
   schedule: "*/5 * * * *"
+  # 调度表达式使用的时区；这里显式指定 UTC，避免依赖控制器本地时区。
   timeZone: Etc/UTC
+  # Forbid 避免同一 CronJob 的前后两次 Job 重叠，不约束其他 CronJob。
   concurrencyPolicy: Forbid
+  # 错过计划时刻后允许补启动的时间窗口，单位秒。
   startingDeadlineSeconds: 120
   suspend: false
   successfulJobsHistoryLimit: 2
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      # 失败重试预算；不是保证每个 Pod 都精确重试这一次数。
       backoffLimit: 1
+      # Job 的总执行期限，单位秒，超出后终止任务，不是单次命令超时。
       activeDeadlineSeconds: 60
+      # Job 结束后等待相应秒数再清理，区别于 activeDeadlineSeconds 的执行期限。
       ttlSecondsAfterFinished: 3600
       template:
         spec:
@@ -218,19 +256,35 @@ CronJob 不是严格实时定时器。120 秒表示错过计划后允许创建�
 本例不依赖后续版本增加的计划时间 annotation；不要把新版本观测字段反推为 1.28 默认行为。Job 名称与 ownerReferences 才是本章跟踪资源归属的依据。
 
 ```bash
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f report-schedule.yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get cronjob,job -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe cronjob report-schedule -n study
 ```
 
 等待计划窗口后，预期出现归属于 report-schedule 的 Job，Job 再拥有 Pod。把下面 JOB_NAME 替换成实际生成的名称；成功或失败历史只有出现相应终态后才有内容，本例正常执行不会主动制造失败 Job：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get job JOB_NAME -n study -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe job JOB_NAME -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l batch.kubernetes.io/job-name=JOB_NAME 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l batch.kubernetes.io/job-name=JOB_NAME
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n study 限定命名空间
 kubectl logs job/JOB_NAME -n study
 # 只清理本实验的 CronJob 及适用的依赖 Job/Pod
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f report-schedule.yaml
 ```
 
@@ -251,8 +305,15 @@ CronJob 的成功与失败历史保留，和 Job 的 TTL（Time to Live，生存
 清理对象不会同时清理外部结果，也不能代替结果审计和持久存储备份。查询时应先确认 CronJob → Job → Pod 的拥有关系，避免混淆不同次计划的日志。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
 kubectl get cronjob,job -n NAMESPACE
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe job JOB_NAME -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -l batch.kubernetes.io/job-name=JOB_NAME 按标签选择对象，不是按名称匹配
 kubectl get pods -n NAMESPACE -l batch.kubernetes.io/job-name=JOB_NAME
 ```
 

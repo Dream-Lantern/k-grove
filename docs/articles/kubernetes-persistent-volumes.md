@@ -76,7 +76,9 @@ Immediate 不必然选错区域；上述是揭示提前绑定风险的可能路�
 ```yaml
 affinity:
   nodeAffinity:
+    # 调度时必须满足；已经运行后标签变化通常不会仅因这条规则主动驱逐。
     requiredDuringSchedulingIgnoredDuringExecution:
+      # 不同 term 之间为 OR，同一个 term 内的 matchExpressions 为 AND。
       nodeSelectorTerms:
         - matchExpressions:
             - key: topology.kubernetes.io/zone
@@ -97,11 +99,14 @@ metadata:
   name: catalog-data
   namespace: study
 spec:
+  # 卷访问模式由存储实现支持；ReadWriteOnce 限定单节点读写，不等于只能一个 Pod 使用。
   accessModes:
     - ReadWriteOnce
   volumeMode: Filesystem
+  # 选择存储类；动态供给还需要集群中存在该类及其可用的存储控制器。
   storageClassName: study-storage
   resources:
+    # 声明调度资源需求；CPU 的 m 表示千分之一核，内存 Mi 表示二进制兆字节（按字段单位）。
     requests:
       storage: 10Gi
 ---
@@ -128,6 +133,7 @@ spec:
   volumes:
     - name: data
       persistentVolumeClaim:
+        # 引用同一命名空间的 PVC；这里引用申领，而不是直接填写某个 PV 名称。
         claimName: catalog-data
 ```
 
@@ -138,11 +144,25 @@ spec:
 实验者只有在明确授权的测试环境创建上述对象后，才使用以下只读观察。预期先看到 PVC 的绑定或等待消费者事件，再检查 Pod 的挂载和测试文件；单 Pod 限时运行一小时，退出不会自动删除 PVC：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get storageclass study-storage -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get pvc catalog-data -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pvc catalog-data -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pod catalog-storage -n study -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod catalog-storage -n study
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec catalog-storage -n study -c app -- cat /data/study-message.txt
 ```
 
@@ -150,6 +170,8 @@ kubectl exec catalog-storage -n study -c app -- cat /data/study-message.txt
 
 ```bash
 # 仅清理自己创建的测试 Pod，保留持久卷申领
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n study 限定命名空间
 kubectl delete pod catalog-storage -n study
 ```
 
@@ -183,12 +205,25 @@ PVC Bound 表示绑定关系形成。之后仍可能卡在卷附加、节点挂�
 | 应用实际访问                            | 指定容器身份可在指定路径读写                                       | 应用并发一致性、业务数据完整性与恢复仍需另验 |
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
 kubectl get pvc -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get pvc -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pvc catalog-data -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
 kubectl get pv
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pvc CLAIM_NAME -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pv PV_NAME -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
 ```
 

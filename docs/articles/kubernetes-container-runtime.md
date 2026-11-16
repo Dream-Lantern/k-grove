@@ -119,17 +119,27 @@ Kubernetes Namespace 是 API 资源组织与权限等机制的一部分。contai
 
 ```bash
 # Kubernetes API 视角
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -A 跨全部命名空间查询，适合定位资源所在范围
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -A -o wide
 
 # CRI 视角；前提是已配置正确的运行时端点
+# 通过 CRI 查询 Pod Sandbox 列表，与 Kubernetes API 中的 Pod 对象分开核对
 crictl pods
+# 通过 CRI 列出容器，-a 包含已退出的容器，便于定位启动失败和重启
 crictl ps -a
+# 通过 CRI 查询运行时镜像列表；需与正确的运行时端点连接
 crictl images
 
 # containerd 视角；先观察 namespace，再检查常见的 k8s.io
+# 列出 containerd 自身的命名空间；它不同于 Kubernetes Namespace
 ctr namespaces list
+# 在 -n k8s.io 指定的 containerd 命名空间中列出镜像元数据；容器元数据不等于运行中的进程
 ctr -n k8s.io images list
+# 在 -n k8s.io 指定的 containerd 命名空间中列出容器元数据；容器元数据不等于运行中的进程
 ctr -n k8s.io containers list
+# 在 -n k8s.io 指定的 containerd 命名空间中列出运行中的 task；容器元数据不等于运行中的进程
 ctr -n k8s.io tasks list
 ```
 
@@ -182,9 +192,13 @@ ctr -n k8s.io tasks list
 在目标节点可先做只读检查，端点和权限前提同第 6 节：
 
 ```bash
+# 查看 containerd 客户端和服务端版本，核对诊断工具环境
 ctr version
+# 在 -n k8s.io 指定的 containerd 命名空间中列出镜像元数据；容器元数据不等于运行中的进程
 ctr -n k8s.io images list
+# 检查 k8s.io 这个 containerd 命名空间内镜像内容的完整性/可用状态；不启动容器
 ctr -n k8s.io images check
+# 通过 CRI 查询运行时镜像列表；需与正确的运行时端点连接
 crictl images
 ```
 

@@ -45,6 +45,8 @@ RAG（Retrieval-Augmented Generation，检索增强生成）是让模型在回�
 
 示意卡片【实践补充】：
 
+字段说明：`scope` 限定记忆的适用场景，`source` 记录来源，`confidence` 是置信度记录；`expires_at: null` 表示此记录没有设置过期时间，并非事实永远正确。
+
 ```json
 {
   "fact_id": "f-001",
@@ -262,26 +264,38 @@ TopK 表示保留排名前 K 个候选，不表示它们都相关。对本章文
 先运行不加载模型的稀疏检索。以下为 PowerShell 步骤，起点是**当前知识库仓库根目录**，Python 使用独立虚拟环境。上游工作目录必须是固定提交的 `chapter3/retrieval-pipeline`，其中 `evaluate.py` 会导入同目录的 `fusion.py`。
 
 ```powershell
+# 在指定路径创建独立 Python 虚拟环境；-m venv 调用标准库模块，不自动激活环境
 python -m venv .tools/rag-demo-venv
+# 激活前面创建的 Python 虚拟环境，使后续 python/pip 使用该环境
 & ./.tools/rag-demo-venv/Scripts/Activate.ps1
+# 在当前解释器环境安装依赖；包名后的版本约束用于固定或限制可用版本
 python -m pip install rank-bm25==0.2.2 jieba==0.42.1
 
 $notesRoot = (Get-Location).Path
+# 把上游仓库克隆到指定实验目录；这一步会访问网络并创建本地副本
 git clone https://github.com/bojieli/ai-agent-book.git .tools/ai-agent-book-rag
+# -C 在指定仓库执行 Git 命令；checkout --detach 将工作区固定到给定提交，不切换或新建分支
 git -C .tools/ai-agent-book-rag checkout --detach dbc046eb896ac4e39aa19c7774c8bf49583b89a6
 $corpus = Join-Path $notesRoot 'examples/ai-agent/ch3-rag/corpus.json'
 $queries = Join-Path $notesRoot 'examples/ai-agent/ch3-rag/queries.json'
 Set-Location .tools/ai-agent-book-rag/chapter3/retrieval-pipeline
+# 运行检索评估；--no-dense 禁用稠密检索，--no-rerank 禁用重排（仅在指定时生效）
+# --device cpu 选择 CPU，--top-k 5 保留 5 个候选，--eval-k 5 按前 5 项评估
+# --corpus/--queries 传入语料及问题文件，--output 指定结果 JSON
 python evaluate.py --no-dense --no-rerank --device cpu --top-k 5 --eval-k 5 --corpus "$corpus" --queries "$queries" --output bm25.json
 ```
 
 若上述临时目录已存在，先确认其用途及 Git 版本，或换一个空目录，勿覆盖别的实验。语料文件是对象数组，字段为 `doc_id` 和 `text`；本仓库提供 A/B/X/Y 四条合成资料，例如 A 的对象为：
+
+字段说明：`doc_id` 是后续排名和相关性标注引用的文档标识，`text` 才是参与检索的正文；这里的端口与产品均为合成示例。
 
 ```json
 {"doc_id": "A", "text": "DemoServe 1.0 配置说明：默认端口 9000，可通过 --port 修改监听端口。"}
 ```
 
 问题文件也是数组，每项使用 `query` 和相关文档列表 `expected`。本实验只有一题，标注 A/B 均相关：
+
+字段说明：`query` 为检索输入，`expected` 列出应命中的文档 ID；`category` 用于分组分析，不参与相关性命中的判定。
 
 ```json
 [
@@ -294,6 +308,8 @@ C/D 在准备语料时已经排除：这是模拟一个已确定访问范围的�
 运行后先检查 `bm25.json` 是否生成，再读取其真实字段：
 
 ```python
+# 从评估报告取第一个问题，提取 sparse 排名及 gold 相关文档；交集大小除以 gold 数得到 Recall@5。
+# 本片段假定该问题的 expected 非空；最后同时输出本地重算值与报告字段供核对。
 import json
 
 with open("bm25.json", encoding="utf-8") as stream:
@@ -325,8 +341,17 @@ Dense 对照不使用不存在的 `--dense-only` 参数。具备所需本地模�
 以下三条命令在同一上游目录执行，沿用前面定义的 `$corpus`、`$queries` 和语料；所有组固定 `--top-k 5 --eval-k 5`。前一条已经用于本章 BM25 实验，后两条需要先准备本地模型。
 
 ```powershell
+# 运行检索评估；--no-dense 禁用稠密检索，--no-rerank 禁用重排（仅在指定时生效）
+# --device cpu 选择 CPU，--top-k 5 保留 5 个候选，--eval-k 5 按前 5 项评估
+# --corpus/--queries 传入语料及问题文件，--output 指定结果 JSON
 python evaluate.py --no-dense --no-rerank --device cpu --top-k 5 --eval-k 5 --corpus "$corpus" --queries "$queries" --output bm25.json
+# 运行检索评估；--no-dense 禁用稠密检索，--no-rerank 禁用重排（仅在指定时生效）
+# --device cpu 选择 CPU，--top-k 5 保留 5 个候选，--eval-k 5 按前 5 项评估
+# --corpus/--queries 传入语料及问题文件，--output 指定结果 JSON
 python evaluate.py --no-rerank --device cpu --top-k 5 --eval-k 5 --corpus "$corpus" --queries "$queries" --output hybrid.json
+# 运行检索评估；--no-dense 禁用稠密检索，--no-rerank 禁用重排（仅在指定时生效）
+# --device cpu 选择 CPU，--top-k 5 保留 5 个候选，--eval-k 5 按前 5 项评估
+# --corpus/--queries 传入语料及问题文件，--output 指定结果 JSON
 python evaluate.py --device cpu --top-k 5 --eval-k 5 --corpus "$corpus" --queries "$queries" --output rerank.json
 ```
 
@@ -380,6 +405,8 @@ A/B 并列、X/Y 并列，分数并列不代表语义完全相同。最终展示
 源码节选（上下文依赖见原文件）：[chapter3/retrieval-pipeline/fusion.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter3/retrieval-pipeline/fusion.py#L83-L91)。外层循环遍历检索路，内层从名次 1 开始，按候选 ID 累加贡献，最后降序排序：
 
 ```python
+# 加权 RRF 融合：每个检索来源按 weight/(k+rank) 累加同一 doc_id 的分数，不直接混加原始相似度。
+# rank 从 1 开始，未配置来源权重时用 1.0；最后按累加分数降序排列。
 weights = weights or {}
 fused: Dict[str, float] = {}
 

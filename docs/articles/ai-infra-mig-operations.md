@@ -28,11 +28,17 @@ order: 14
 只读查询示例；目标命令是否支持以本机 `--help` 为准：
 
 ```bash
+# 列出可见 GPU 的名称与 UUID，以及适用的 MIG 设备；用于核对设备枚举
 nvidia-smi -L
+# 查询 -i 0 指定 GPU 的详细状态；-q 输出设备、显存及适用的 MIG 等信息
 nvidia-smi -i 0 -q
+# nvidia-smi mig -lgip 列出 GPU Instance 支持的配置规格；-i 0 指定物理 GPU 索引 0，只查询不创建实例
 nvidia-smi mig -i 0 -lgip
+# nvidia-smi mig -lgipp 列出 GPU Instance 规格可用的放置位置；-i 0 指定物理 GPU 索引 0，只查询不创建实例
 nvidia-smi mig -i 0 -lgipp
+# nvidia-smi mig -lgi 列出现有 GPU Instance；-i 0 指定物理 GPU 索引 0，只查询不创建实例
 nvidia-smi mig -i 0 -lgi
+# nvidia-smi mig -lci 列出现有 Compute Instance；-i 0 指定物理 GPU 索引 0，只查询不创建实例
 nvidia-smi mig -i 0 -lci
 ```
 

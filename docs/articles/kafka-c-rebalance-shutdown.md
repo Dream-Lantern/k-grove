@@ -71,6 +71,8 @@ order: 18
 以下是第 17 章串行程序的可嵌入片段，限定 `review-orders` 的 P0–P2。串行版本进入回调时没有 Worker 在途，故无需排空。若改为批次提交，`next` 只记录连续完成前沿。回调仅收集撤销列表中有进度的分区，已丢失时跳过提交。
 
 ```c
+// 重平衡时区分 eager/cooperative 协议：前者整体 assign，后者增量分配/撤销。
+// 撤销前只提交仍拥有分区的安全完成位点；assignment_lost 后不能把旧工作视为仍持有的分区。
 struct handoff {
     int active[3];
     int64_t next[3]; /* -1 表示尚无可提交位置 */
@@ -99,6 +101,7 @@ static void rebalance(rd_kafka_t *rk, rd_kafka_resp_err_t event,
             err = rd_kafka_assign(rk, NULL);
         } else if (event == RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS) {
             if (cooperative)
+                // cooperative 协议只加入本次新增分区，不替换仍保留的其他分区。
                 incremental_error = rd_kafka_incremental_assign(rk, partitions);
             else
                 err = rd_kafka_assign(rk, partitions);
@@ -140,6 +143,7 @@ static void rebalance(rd_kafka_t *rk, rd_kafka_resp_err_t event,
             }
             rd_kafka_topic_partition_list_destroy(safe);
             if (cooperative)
+                // cooperative 协议只撤销本次交回的分区，保留其他仍拥有的分区。
                 incremental_error = rd_kafka_incremental_unassign(rk, partitions);
             else
                 err = rd_kafka_assign(rk, NULL);
@@ -183,6 +187,7 @@ Topic 句柄、应用持有的消息、列表、客户端和回调上下文都�
 使用第 17 章的信号处理器。收到信号后由 Poll 线程停止派发，串行任务结束后退出循环。若使用 Worker，先按预算排空或隔离剩余任务，把安全前沿留给回调。同步路径在同一线程调用 Close，由它服务适用回调，记录返回码，最后 Destroy。可把第 17 章原来的 Close 调用替换为以下函数，`asynchronous` 可用 `getenv("ASYNC_CLOSE") != NULL` 选择。调用方收到返回值后照常检查并 Destroy，同时也检查 `state.failed`。本片段走回调模式，注册以下错误与提交回调，使关闭队列能处理预期的回调事件。保持默认的 Event 配置，不启用 Event API 或统计事件。
 
 ```c
+// 对比同步关闭与显式队列关闭；异步路径需持续派发关闭队列回调，直到 consumer_closed 确认完成。
 static void closing_error(rd_kafka_t *rk, int err, const char *reason,
                           void *opaque) {
     (void)rk;
@@ -203,9 +208,11 @@ static void closing_commit(rd_kafka_t *rk, rd_kafka_resp_err_t err,
 
 static rd_kafka_resp_err_t close_orders(rd_kafka_t *rk, int asynchronous) {
     if (!asynchronous)
+        // 结束消费并处理退组等关闭流程；完成后仍需 destroy 客户端对象。
         return rd_kafka_consumer_close(rk);
 
     rd_kafka_queue_t *queue = rd_kafka_queue_new(rk);
+    // 发起使用显式队列的关闭流程；启动成功后仍须持续派发该队列回调直到关闭完成。
     rd_kafka_error_t *error = rd_kafka_consumer_close_queue(rk, queue);
     if (error) {
         rd_kafka_resp_err_t code = rd_kafka_error_code(error);

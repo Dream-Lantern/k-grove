@@ -92,6 +92,7 @@ Follower 在选举超时后成为 Candidate，开始一轮选举：`currentTerm`
 教学伪代码如下；参数中的 term 都指**最后日志任期**，不指 `currentTerm`：
 
 ```python
+# 比较候选人与本地最后一条日志：先比任期，再在任期相等时比较索引；不能只按日志长度判断新旧。
 def is_candidate_up_to_date(
     candidate_term,
     candidate_index,

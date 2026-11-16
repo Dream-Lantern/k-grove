@@ -67,6 +67,8 @@ CAS（Compare-And-Swap，比较并交换）尝试在当前值等于预期值时�
 下面是 API 使用片段，假设 `balance` 是正确初始化、只承载余额的 `atomic_int`；不是完整支付程序：
 
 ```c
+// 用 CAS 实现余额足够时扣除 80：expected 是预期旧值，失败时会更新为当前值，再重新检查余额。
+// weak 允许虚假失败，所以放在循环中；relaxed 只提供该原子对象的原子性，不发布其他数据。
 int expected = atomic_load_explicit(&balance, memory_order_relaxed);
 while (expected >= 80) {
     if (atomic_compare_exchange_weak_explicit(
@@ -133,6 +135,7 @@ return false;
 第一份保存为 `atomic-count.c`。只统计单个原子对象，不用于发布其他数据，所以可使用 relaxed：
 
 ```c
+// 两个线程对同一个 atomic_ulong 逐次加 1，join 后读取总数；relaxed 适用于这里独立的计数。
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -152,6 +155,7 @@ static void check(int error, const char *operation) {
 static void *worker(void *unused) {
     (void)unused;
     for (int i = 0; i < LOOPS; ++i) {
+        // 对原子计数器执行不可分割的加 1；relaxed 不为其他共享数据提供发布/获取关系。
         atomic_fetch_add_explicit(&total, 1UL, memory_order_relaxed);
     }
     return NULL;
@@ -162,6 +166,7 @@ int main(void) {
     for (int i = 0; i < 2; ++i)
         check(pthread_create(&threads[i], NULL, worker, NULL), "pthread_create");
     for (int i = 0; i < 2; ++i)
+        // 等待指定线程结束，再读取其完成结果或回收相关共享资源。
         check(pthread_join(threads[i], NULL), "pthread_join");
     unsigned long result = atomic_load_explicit(&total, memory_order_relaxed);
     printf("atomic total=%lu\n", result);
@@ -172,6 +177,7 @@ int main(void) {
 第二份保存为 `mutex-count.c`，用同一互斥锁保护每次完整更新；主线程等所有工作线程结束后才读取普通计数器：
 
 ```c
+// 两个线程在同一个 mutex 保护下更新普通计数器；join 后校验总数，最后销毁互斥锁。
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -203,6 +209,7 @@ int main(void) {
     for (int i = 0; i < 2; ++i)
         check(pthread_create(&threads[i], NULL, worker, NULL), "pthread_create");
     for (int i = 0; i < 2; ++i)
+        // 等待指定线程结束，再读取其完成结果或回收相关共享资源。
         check(pthread_join(threads[i], NULL), "pthread_join");
     check(pthread_mutex_destroy(&mutex), "pthread_mutex_destroy");
     printf("mutex total=%lu\n", total);
@@ -211,9 +218,15 @@ int main(void) {
 ```
 
 ```bash
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# -pthread 同时配置线程编译与链接选项
 gcc -std=c11 -Wall -Wextra -O0 -pthread atomic-count.c -o atomic-count
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# -pthread 同时配置线程编译与链接选项
 gcc -std=c11 -Wall -Wextra -O0 -pthread mutex-count.c -o mutex-count
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./atomic-count
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./mutex-count
 ```
 

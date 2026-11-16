@@ -28,6 +28,8 @@ order: 28
 租约（Lease）是有期限的访问资格。TTL（Time To Live，存活时间）让持有者崩溃后锁能到期释放，但不会终止持有者的业务进程。下面是 Redis 命令，不是 Shell（命令解释环境）或客户端方法；本章命令和预期返回均为教学示例。基础示例适用于 Redis Open Source 7.2.0，新命令另标版本，不推断 Redis Software 或 Redis Cloud 的能力。
 
 ```redis
+# 仅当键 lock:order:1001 不存在时写入 unique-token；NX 不满足时返回 nil，成功返回 OK
+# PX 30000 设置键的 TTL，单位毫秒；unique-token 应替换为本次持有者唯一标识
 SET lock:order:1001 unique-token NX PX 30000
 ```
 
@@ -36,10 +38,12 @@ SET lock:order:1001 unique-token NX PX 30000
 续租需要核对所有权。原子性（Atomicity）在这里表示比较和修改期间不会插入其他客户端命令；先 GET、再单独 PEXPIRE 仍有竞态。下面是 Lua 服务端脚本正文，`KEYS[1]` 为锁键，`ARGV[1]` 为本次标识，`ARGV[2]` 为新的正整数毫秒租期：
 
 ```lua
+-- KEYS[1] 为锁键；ARGV[1] 为本次持有标识；ARGV[2] 为续租毫秒数。
 local ttl = tonumber(ARGV[2])
 if not ttl or ttl <= 0 or ttl ~= math.floor(ttl) or ttl > 300000 then
     return redis.error_reply('invalid lease milliseconds')
 end
+-- GET 读取锁持有标识；只有匹配才用 PEXPIRE 更新该键的 TTL，单位毫秒。
 if redis.call('GET', KEYS[1]) == ARGV[1] then
     return redis.call('PEXPIRE', KEYS[1], ttl)
 end
@@ -55,6 +59,7 @@ return 0
 ```lua
 -- 教学解锁逻辑：KEYS[1] 是锁键，ARGV[1] 是本次持有标识
 if redis.call('GET', KEYS[1]) == ARGV[1] then
+    -- DEL 删除匹配的锁键；返回删除数，未匹配则走下面的 return 0。
     return redis.call('DEL', KEYS[1])
 end
 return 0
@@ -65,6 +70,7 @@ return 0
 Redis Open Source 8.4.0 起可用 [DELEX](https://redis.io/docs/latest/commands/delex/) 原生执行条件删除，Redis Open Source 7.x 继续使用 Lua：
 
 ```redis
+# 仅当锁键 lock:order:1001 的值等于 unique-token 时删除；IFEQ 指定相等条件，unique-token 是本次持有标识（Redis 8.4+）
 DELEX lock:order:1001 IFEQ unique-token
 ```
 
@@ -125,9 +131,13 @@ Redlock 不把同一主节点的副本当作独立投票节点。例如 5 个独
 INCR 负责计数，EXPIRE 负责清理过期窗口；分开发送可能在递增后进程崩溃，留下无期限键。Redis Open Source 7.2.0 可用以下事务，四条命令必须在同一连接执行：
 
 ```redis
+# 开始当前连接的事务队列；无额外参数，后续命令先入队，等待 EXEC 执行
 MULTI
+# 将整数计数键 rate:user:1001:minute:123 增加 1；键不存在从 0 开始，返回计算后的值
 INCR rate:user:1001:minute:123
+# 为键 rate:user:1001:minute:123 设置 120 秒 TTL；从本次执行时刻计时，成功返回 1，键不存在返回 0
 EXPIRE rate:user:1001:minute:123 120
+# 执行当前连接中已入队的事务命令；无额外参数，返回逐条结果；WATCH 冲突时返回空结果，执行期错误不会回滚其他命令
 EXEC
 ```
 
@@ -136,10 +146,12 @@ EXEC
 事务适合步骤已确定的组合；若希望“仅第一次递增时设期限”，可用 Lua 在服务端根据结果判断。下面是脚本正文，调用格式为 `EVAL "脚本正文" 1 rate:user:1001:minute:123 120`，需将占位正文替换为代码：
 
 ```lua
+-- KEYS[1] 是计数键；ARGV[1] 是窗口 TTL，单位秒。
 local ttl = tonumber(ARGV[1])
 if not ttl or ttl <= 0 or ttl ~= math.floor(ttl) or ttl > 86400 then
     return redis.error_reply('invalid window seconds')
 end
+-- INCR 将计数加 1，键不存在从 0 开始；只有首次计数时用 EXPIRE 设置秒级期限。
 local count = redis.call('INCR', KEYS[1])
 if count == 1 then
     redis.call('EXPIRE', KEYS[1], ttl)
@@ -152,6 +164,8 @@ return count
 Redis Open Source 8.8.0 起，[INCREX](https://redis.io/docs/latest/commands/increx/) 可以在单条命令中组合递增、数值边界和过期控制：
 
 ```redis
+# 原子增加整数计数键 rate:user:1001:second-demo；BYINT 1 加 1，UBOUND 10 限制结果不超过 10（Redis 8.8+）
+# EX 1 指定秒数，ENX 仅在键无 TTL 时设置期限；返回 [新值, 实际增量]，超界默认返回 [当前值, 0]
 INCREX rate:user:1001:second-demo BYINT 1 UBOUND 10 EX 1 ENX
 ```
 

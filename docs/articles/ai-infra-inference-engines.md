@@ -100,6 +100,10 @@ SLO（Service Level Objective，服务等级目标）和 Goodput（满足条件�
 以下用 vLLM v0.10.2 的客户端测试一个已经授权、独立部署的 OpenAI Completions 端点。先用真实短请求确认协议和模型名。设置 `BASE_URL`、`MODEL`、`TOKENIZER_DIR` 为该实例 URL、服务模型名与固定版本的本地 Tokenizer。随机负载用于性能对照，质量另跑同一固定用例集。
 
 ```bash
+# --backend openai 选择兼容接口；--base-url 与 --endpoint 拼出请求地址，--model/--tokenizer 指定模型与分词器
+# random 数据集使用 512 输入与 128 输出 token 的长度参数，--num-prompts 1000 发出 1000 个请求
+# --request-rate 10 指定请求到达率，单位请求/秒；--seed 42 固定随机种子
+# --percentile-metrics 选择 TTFT/TPOT/ITL/端到端延迟，--metric-percentiles 50,95,99 选择统计分位数
 vllm bench serve --backend openai --base-url "$BASE_URL" \
   --endpoint /v1/completions --model "$MODEL" --tokenizer "$TOKENIZER_DIR" \
   --dataset-name random --random-input-len 512 --random-output-len 128 \

@@ -104,6 +104,8 @@ Graph 复用不意味着输入数据无需传输；只有实现确实复用或�
 Linux、兼容 NVIDIA 驱动、CUDA Toolkit 12.8.1 和受支持的 C++ 编译器。保存为 `graph_bench.cu` 后运行 `nvcc -std=c++17 -O2 graph_bench.cu -o graph_bench && ./graph_bench`。示例用相同设备缓冲区、输入、kernel、流和重复次数。构建前先做一次不计时的普通提交并同步，触发首次加载。正式测量前每种模式各预热 100 轮，每组计时 10000 轮。每轮 A 从固定输入重写中间值，因此各轮预期结果相同。
 
 ```cpp
+// 比较普通启动与 CUDA Graph 重放同一条 a→b→c 计算链；单次最终结果应为 2*i-1。
+// 分别记录图构建/实例化、主机提交、设备事件及端到端耗时；这些计时边界不能互相替代。
 #include <cuda_runtime.h>
 #include <chrono>
 #include <cstdio>
@@ -160,6 +162,7 @@ int main() {
   cudaGraph_t graph;
   cudaGraphExec_t exec;
   auto begin = Clock::now();
+  // 从此处开始捕获流中的依赖链，EndCapture 生成图结构；实例化另行计时。
   check(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
   normal();
   check(cudaStreamEndCapture(stream, &graph));
@@ -172,6 +175,7 @@ int main() {
   cudaEvent_t start, stop;
   check(cudaEventCreate(&start));
   check(cudaEventCreate(&stop));
+  // 分别对普通提交与图重放执行同一套预热、计时和结果校验。
   auto run = [&](const char* label, auto submit) {
     for (int i = 0; i < 100; ++i) submit();
     check(cudaStreamSynchronize(stream));
@@ -198,6 +202,7 @@ int main() {
                 ms(before, completed), ms(request_begin, request_end), ok ? "PASS" : "FAIL");
     return ok;
   };
+  // 先运行普通路径，再重放已实例化的图；两者都必须通过结果校验。
   const bool normal_ok = run("normal", normal);
   const bool graph_ok = run("graph", [&] { check(cudaGraphLaunch(exec, stream)); });
   check(cudaEventDestroy(stop));

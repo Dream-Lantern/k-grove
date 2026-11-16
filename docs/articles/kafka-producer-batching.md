@@ -90,6 +90,8 @@ Java 4.0 将 `linger.ms` 的默认值改为 5 ms，Java 3.9 的默认值仍为 0
 Java 3.9 发行包提供性能测试工具，以下命令只展示一组输入；Topic 需预先在测试环境创建，认证参数按环境提供：
 
 ```bash
+# 运行对应 Kafka 管理工具，作用范围由命令中的 Topic、消费组或 Broker 参数决定
+# acks=all 按 ISR 确认规则等待；enable.idempotence=true 启用生产端幂等（若指定）
 bin/kafka-producer-perf-test.sh --topic r3-batch-1p \
   --num-records 60000 --record-size 500 --throughput 1000 \
   --producer-props bootstrap.servers=localhost:9092 \
@@ -137,11 +139,16 @@ Backpressure（背压）把下游处理不及的信号传回上游，限制输�
 下载[第 8 章发送示例包](/examples/kafka-review/batching-examples.zip)，包含 `BatchJava.java` 与 `batch_librdkafka.c`。前者使用 Kafka Java Client 3.9.0，后者要求 librdkafka v2.8.0，均输出最终结果，不以入队返回代替成功。它们用于观察消息发送和投递结果。
 
 ```bash
+# 编译 Java 源文件；-cp 把 Kafka 发行包中的依赖 JAR 加入类路径
 javac -cp "$KAFKA_HOME/libs/*" BatchJava.java
+# 通过 -cp 指定依赖及程序类路径；后面的类名/源文件名是入口，其余值是示例程序的命令行参数
 java -cp ".:$KAFKA_HOME/libs/*" BatchJava localhost:9092 r3-batch-1p lz4
 
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# pkg-config --cflags --libs 提供库头文件及链接参数
 cc -Wall -Wextra batch_librdkafka.c -o batch_librdkafka \
   $(pkg-config --cflags --libs rdkafka)
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./batch_librdkafka localhost:9092 r3-batch-1p lz4
 ```
 

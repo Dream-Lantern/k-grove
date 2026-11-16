@@ -56,6 +56,7 @@ Diff/Patch 比整文件重写更利于审查，旧字符串替换适合简单稳
 以第 5.6 节的平均值修复为例，假设上一会话已经补上空输入检查，但还没运行修复后的测试。它可以留下下面的**教学状态记录**：
 
 ```yaml
+# 状态摘要供恢复工作使用；last_test 记录的是修复前结果，current_status 明确修复后仍待测试。
 task: "空列表求平均值时抛出明确的 ValueError，保留非空输入行为"
 workspace: ".tools/average-demo"
 changed_files: ["average.py"]
@@ -135,6 +136,7 @@ next_step: "先核对环境，不直接宣称修复完成"
 配套代码位于知识库仓库的 `examples/ai-agent/ch5-average/`。`before/average.py` 保留初始实现：
 
 ```python
+# 修复前的最小实现：values 是数值序列；空序列会因除数为 0 而失败，用来暴露需求缺口。
 def average(values):
     return sum(values) / len(values)
 ```
@@ -142,6 +144,7 @@ def average(values):
 pytest 是 Python 测试工具。先写需求对应的测试，保留它们不变，再修改实现：
 
 ```python
+# 分别覆盖整数、小数与空输入；pytest.raises 要求异常类型和消息都符合约定，而非仅仅发生异常。
 import pytest
 from average import average
 
@@ -177,6 +180,7 @@ def test_empty_input_has_explicit_error():
 修复版 `average.py` 为：
 
 ```python
+# 先拒绝空输入并抛出约定的 ValueError，再沿用非空序列的平均值计算。
 def average(values):
     if not values:
         raise ValueError("values must not be empty")
@@ -186,22 +190,31 @@ def average(values):
 在知识库根目录准备独立环境，然后使用一个**不存在的新目录**建立实验副本。下面使用 PowerShell，不修改本仓库的示例原件：
 
 ```powershell
+# 在指定路径创建独立 Python 虚拟环境；-m venv 调用标准库模块，不自动激活环境
 python -m venv .tools/average-demo-venv
+# 激活前面创建的 Python 虚拟环境，使后续 python/pip 使用该环境
 & ./.tools/average-demo-venv/Scripts/Activate.ps1
+# 在当前解释器环境安装依赖；包名后的版本约束用于固定或限制可用版本
 python -m pip install 'pytest>=8,<9'
 $notesRoot = (Get-Location).Path
 $demo = Join-Path $notesRoot '.tools/average-demo'
+# 先检查实验目录是否已存在；存在则抛错，避免覆盖原有工作
 if (Test-Path -LiteralPath $demo) { throw '实验目录已存在，请换一个空目录' }
+# 把源路径复制到 -Destination 指定的实验路径；-Recurse 递归复制目录内容（若指定）
 Copy-Item -LiteralPath examples/ai-agent/ch5-average -Destination $demo -Recurse
 Set-Location $demo
+# 把源路径复制到 -Destination 指定的实验路径；-Recurse 递归复制目录内容（若指定）
 Copy-Item -LiteralPath before/average.py -Destination average.py
+# 用当前解释器运行指定范围的 pytest；-q 使用简洁输出，非零退出码表示测试未通过
 python -m pytest -q
 ```
 
 此处初始测试退出码应为 1，因为需求尚未满足。按上面的修复版编辑临时副本的 `average.py`，再执行：
 
 ```powershell
+# 用当前解释器运行指定范围的 pytest；-q 使用简洁输出，非零退出码表示测试未通过
 python -m pytest -q
+# --no-index 比较两个普通文件，显示修复前后差异；存在差异时退出码 1 不代表命令异常
 git diff --no-index -- before/average.py average.py
 ```
 
@@ -210,13 +223,19 @@ git diff --no-index -- before/average.py average.py
 Linux / macOS 可用等价步骤建立另一份实验副本；目录已存在时先检查其用途或换名：
 
 ```sh
+# 在指定路径创建独立 Python 虚拟环境；-m venv 调用标准库模块，不自动激活环境
 python3 -m venv .tools/average-demo-venv
+# 激活前面创建的 Python 虚拟环境，使后续 python/pip 使用该环境
 . .tools/average-demo-venv/bin/activate
+# 在当前解释器环境安装依赖；包名后的版本约束用于固定或限制可用版本
 python -m pip install 'pytest>=8,<9'
+# 确认目标实验目录不存在；若已存在则退出，避免覆盖已有实验文件
 test ! -e .tools/average-demo || exit 1
+# -R 递归复制示例目录到独立实验目录，后续修改在副本中进行
 cp -R examples/ai-agent/ch5-average .tools/average-demo
 cd .tools/average-demo
 cp before/average.py average.py
+# 用当前解释器运行指定范围的 pytest；-q 使用简洁输出，非零退出码表示测试未通过
 python -m pytest -q
 ```
 
@@ -229,6 +248,7 @@ python -m pytest -q
 先看 `_execute_impl()` 可能返回的两份数据：
 
 ```python
+# 两条独立的 Python 字典示意不同工具的结果格式，不能只凭字段名称把两者都判定为成功。
 {"success": False, "error": "denied"}
 {"status": "SUCCEEDED", "value": 3}
 ```
@@ -242,6 +262,7 @@ python -m pytest -q
 源码节选（上下文依赖见原文件）：[chapter5/coding-agent/tools/base.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter5/coding-agent/tools/base.py#L11-L26)。
 
 ```python
+# to_dict 复制 data 后合并 error/metadata；success 字段未写入结果，调用方不能据返回字典直接推断它。
 @dataclass
 class ToolResult:
     """Result from a tool execution"""

@@ -43,11 +43,17 @@ QUEUED（已排队）只表示进入队列，不代表执行成功。正常执�
 以下仅用于隔离教学数据库，会修改示例键：
 
 ```redis
+# 将字符串键 demo:tx:value 写为 text；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:tx:value text
+# 开始当前连接的事务队列；无额外参数，后续命令先入队，等待 EXEC 执行
 MULTI
+# 将整数计数键 demo:tx:count 增加 1；键不存在从 0 开始，返回计算后的值
 INCR demo:tx:count
+# 将 item 插入 List demo:tx:value 左端；本例已将该键设为字符串，用于演示 EXEC 中的 WRONGTYPE 错误
 LPUSH demo:tx:value item
+# 将字符串键 demo:tx:finished 写为 yes；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:tx:finished yes
+# 执行当前连接中已入队的事务命令；无额外参数，返回逐条结果；WATCH 冲突时返回空结果，执行期错误不会回滚其他命令
 EXEC
 ```
 
@@ -66,27 +72,34 @@ WATCH 的正确性不能在任意借还连接的过程中得到保证，因为�
 以下是双客户端教学推演，未运行，要求没有其他并发修改。先初始化：
 
 ```redis
+# 将字符串键 demo:balance 写为 100；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:balance 100
 ```
 
 客户端 A 用同一条连接依次执行：
 
 ```redis
+# 监视键 demo:balance；若它在 EXEC 前被其他客户端修改，本次事务将放弃执行，须在同一连接操作
 WATCH demo:balance
+# 读取字符串键 demo:balance 的完整值；键不存在返回 nil，非字符串类型会报错
 GET demo:balance
 ```
 
 此时 A 预期读到 `100`，计划扣减 20。提交前，客户端 B 执行：
 
 ```redis
+# 将字符串键 demo:balance 写为 120；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:balance 120
 ```
 
 A 再在原连接上执行：
 
 ```redis
+# 开始当前连接的事务队列；无额外参数，后续命令先入队，等待 EXEC 执行
 MULTI
+# 将字符串键 demo:balance 写为 80；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:balance 80
+# 执行当前连接中已入队的事务命令；无额外参数，返回逐条结果；WATCH 冲突时返回空结果，执行期错误不会回滚其他命令
 EXEC
 ```
 
@@ -102,6 +115,7 @@ Lua 是 Redis 内嵌的脚本语言；EVAL 自 Redis Open Source 2.6.0 提供，
 
 ```lua
 -- KEYS[1]: 示例键；ARGV[1]: 预期值；ARGV[2]: 新值
+-- GET 读取 KEYS[1] 指定键的值，与 ARGV[1] 比较；匹配后 SET 写入 ARGV[2]，清除原 TTL。
 local current = redis.call('GET', KEYS[1])
 if current ~= ARGV[1] then
     return 0
@@ -113,8 +127,12 @@ return 1
 对应的完整 Redis 调用示例。先把隔离教学实例中的键设为 old，再按顺序调用：
 
 ```redis
+# 将字符串键 demo:cas 写为 old；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:cas old
+# 执行引号中的 Lua 脚本；脚本后的 1 表示有 1 个键：demo:cas 传入 KEYS[1]
+# old、new 分别传入 ARGV[1]、ARGV[2]；仅当旧值等于 old 时写入 new，返回 1 表示成功、0 表示不匹配
 EVAL "local current = redis.call('GET', KEYS[1]); if current ~= ARGV[1] then return 0 end; redis.call('SET', KEYS[1], ARGV[2]); return 1" 1 demo:cas old new
+# 读取字符串键 demo:cas 的完整值；键不存在返回 nil，非字符串类型会报错
 GET demo:cas
 ```
 
@@ -159,6 +177,7 @@ Redis Open Source 7.0.0 引入 Functions（服务端函数），将函数组织�
 
 ```lua
 #!lua name=demo_review
+-- keys[1] 是 FCALL 传入的第一个键；INCR 将其整数值加 1，并返回新值。
 redis.register_function('demo_incr', function(keys, args)
     return redis.call('INCR', keys[1])
 end)
@@ -167,9 +186,13 @@ end)
 下面是加载同一函数并调用的完整 Redis 命令示例。要求 Redis Open Source 7.0.0 或更高版本的隔离实例中没有同名库及函数；示例会设置计数键：
 
 ```redis
+# 加载 Lua 函数库；name=demo_review 指定库名，\n 分隔声明行与代码，demo_incr 是注册的函数名（Redis 7.0+）
 FUNCTION LOAD "#!lua name=demo_review\nredis.register_function('demo_incr', function(keys, args) return redis.call('INCR', keys[1]) end)"
+# 将字符串键 demo:function:count 写为 0；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:function:count 0
+# 调用函数 demo_incr；1 表示后面有 1 个键，demo:function:count 传入 keys[1]，本例没有额外 args
 FCALL demo_incr 1 demo:function:count
+# 读取字符串键 demo:function:count 的完整值；键不存在返回 nil，非字符串类型会报错
 GET demo:function:count
 ```
 

@@ -36,10 +36,16 @@ kubectl 通过 kubeconfig 等配置确定 API 地址、身份与上下文。上�
 上下文名称叫 study 或 test，并不证明 API 地址一定属于测试环境。命令行 --context、-n 等参数还可能覆盖默认值；对有影响的操作应显式指定已核验的目标上下文和 Namespace。
 
 ```bash
+# 查看当前 kubectl 上下文，确认后续命令将连接哪个集群；此命令不切换上下文
 kubectl config current-context
+# 列出 kubeconfig 中的上下文及当前选中项，便于核对集群和身份
 kubectl config get-contexts
+# 查询当前集群控制平面及服务入口信息，用于确认 API 连接
 kubectl cluster-info
+# 检查当前或 --as 指定身份是否获准执行后面的动词与资源操作；结果是授权判断，不实际执行该操作
+# -n study 限定命名空间
 kubectl auth can-i get pods -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
 kubectl get namespaces
 ```
 
@@ -58,9 +64,20 @@ kubectl 的 GET 请求由 API 服务端相应的资源处理机制响应，不�
 | logs     | 容器输出             | 明确 Pod、容器、当前或上次实例 |
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n NAMESPACE -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get deployment APP -n NAMESPACE -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# --tail=100 仅取末尾相应行数
+# -n NAMESPACE 限定命名空间
 kubectl logs POD_NAME -n NAMESPACE -c CONTAINER_NAME --tail=100
 ```
 
@@ -111,9 +128,16 @@ HPA、Helm、GitOps 和人工修改可能共同影响 replicas；字段归属与
 新增学习模板，以下不执行。服务端 dry-run 仍会联系集群，diff 也不能在未确认上下文时随意运行：
 
 ```bash
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
+# -n study 限定命名空间；--context 显式选择 kubeconfig 上下文
+# --dry-run=server 请求服务端校验与默认化，但不持久化资源
 kubectl --context=STUDY_CONTEXT -n study apply --dry-run=server -f app.yaml
+# 比较 -f 指定清单与集群现有对象的差异；只展示变更，不应用清单
+# -n study 限定命名空间；--context 显式选择 kubeconfig 上下文
 kubectl --context=STUDY_CONTEXT -n study diff -f app.yaml
 # 真正变更，仅作语法说明
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
+# -n study 限定命名空间；--context 显式选择 kubeconfig 上下文
 kubectl --context=STUDY_CONTEXT -n study apply -f app.yaml
 ```
 
@@ -129,6 +153,8 @@ JSON Patch 使用 `[{"op": ...}]` 一类操作数组；Merge Patch 使用对象�
 
 假设 Deployment 已有 spec.replicas 字段，要改为 3。JSON Patch 是有序操作数组，replace 要求目标路径存在：
 
+补丁说明：这是 JSON Patch 操作数组；`replace` 把 `/spec/replicas` 的已有值改为 `3`，后续通过 `--type=json` 提交，不是独立的 kubectl 命令。
+
 ```json
 [
   {
@@ -141,6 +167,8 @@ JSON Patch 使用 `[{"op": ...}]` 一类操作数组；Merge Patch 使用对象�
 
 Merge Patch 则描述要合并的对象结构：
 
+补丁说明：这是 Merge Patch 对象；只合并 `spec.replicas: 3`，未列出的对象字段不会像整体替换那样全部丢弃。
+
 ```json
 {
   "spec": {
@@ -152,7 +180,13 @@ Merge Patch 则描述要合并的对象结构：
 下面两条为独立的等目标示例，均会修改在线资源，本次不执行，也不要求读者依次运行。catalog 若由 HPA 管理，不应拿它做未经协调的副本变更：
 
 ```bash
+# 局部修改指定资源；--type=json 按 JSON Patch 操作列表修改，--type=merge 按对象合并
+# 补丁把 spec.replicas 设为 3，即期望副本数；不是直接创建指定数量的新 Pod
+# -n study 限定命名空间；--context 显式选择 kubeconfig 上下文
 kubectl --context=STUDY_CONTEXT -n study patch deployment catalog --type=json -p '[{"op":"replace","path":"/spec/replicas","value":3}]'
+# 局部修改指定资源；--type=json 按 JSON Patch 操作列表修改，--type=merge 按对象合并
+# 补丁把 spec.replicas 设为 3，即期望副本数；不是直接创建指定数量的新 Pod
+# -n study 限定命名空间；--context 显式选择 kubeconfig 上下文
 kubectl --context=STUDY_CONTEXT -n study patch deployment catalog --type=merge -p '{"spec":{"replicas":3}}'
 ```
 

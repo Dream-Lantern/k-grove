@@ -61,6 +61,7 @@ Volta（计算能力 7.0）起的 Independent Thread Scheduling（独立线程�
 下面的错误片段假定一维块启动多个线程，只有线程 0 到达屏障，其他线程会绕过它。这样的条件式屏障可能挂起或产生意外结果。
 
 ```cpp
+// 错误示例：只有 threadIdx.x==0 的线程进入屏障，块内其他线程不参与，违反同步的参与条件。
 if (threadIdx.x == 0) {
   shared_value = 42;
   __syncthreads();  // 错误：块内条件不一致
@@ -70,6 +71,7 @@ if (threadIdx.x == 0) {
 对于一维块，将写入限定在线程 0，让所有线程执行同一屏障，再读取共享值：
 
 ```cpp
+// 块内线程 0 写共享内存，然后所有线程在同一位置同步，再读取 shared_value；这是片段而非完整内核。
 __shared__ int shared_value;
 if (threadIdx.x == 0) {
   shared_value = 42;
@@ -118,6 +120,8 @@ Occupancy（占用率）是一个 SM 上活跃（常驻）warp 数与其支持�
 下面为 kernel 片段，它解释了覆盖协议。
 
 ```cpp
+// 网格步长循环：start 是线程全局起点，stride 是整个网格线程数；每个线程处理相隔 stride 的元素。
+// a/b 为输入，c 为输出，n 为元素数量；i<n 同时处理尾部不足一个线程块的情况。
 __global__ void add_stride(const float* a, const float* b,
                            float* c, size_t n) {
   size_t start = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
@@ -135,6 +139,7 @@ __global__ void add_stride(const float* a, const float* b,
 复用[第 4 章的完整向量加法程序](/articles/ai-infra-cuda-memory.html)，把 `add` 定义替换为上面的 `add_stride`，将原 `main` 改为 `int run_case(int n)`，删除原有的 `const int n = 1000;`，并在任何分配前加入 `if (n == 0) return 0;`。将启动行替换为 `add_stride<<<4, 256>>>(da, db, dc, n);`。在启动前加上 `CHECK(cudaMemset(dc, 0, bytes));`，以便逐元素校验捕获未写入的结果。保留原程序的错误检查、同步、回拷、逐元素比较及释放，再添加：
 
 ```cpp
+// 对 run_case 依次测试空输入、单元素、整块及越过块边界的长度；任一用例失败即返回非零。
 int main() {
   const int sizes[] = {0, 1, 1024, 1025, 10000};
   for (int n : sizes) {
@@ -158,8 +163,11 @@ int main() {
 在安装 CUDA Toolkit 12.8.1、兼容驱动、NVIDIA GPU 和宿主 C++ 工具链的环境中，将合并后的代码保存为 `vector_add_stride.cu`。以下以类 Unix 终端为例，必要时用 `-arch=sm_XX` 指定 Toolkit 支持的目标计算能力：
 
 ```sh
+# 用 nvcc 编译后面的 CUDA 源码；-o 指定可执行文件名
 nvcc vector_add_stride.cu -o vector_add_stride
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./vector_add_stride
+# --tool memcheck 检查 CUDA 访存错误；--error-exitcode 1 让检测到的错误反映为非零退出码
 compute-sanitizer --tool memcheck --error-exitcode 1 ./vector_add_stride
 ```
 
@@ -178,6 +186,8 @@ Windows 终端运行对应的 `vector_add_stride.exe`。预期空输入直接通
 下面是调用关系片段。主机调用普通 host 函数，用启动语法提交 kernel。运行在设备上的 kernel 再调用 device 函数。
 
 ```cpp
+// __host__ 在 CPU 执行，__device__ 仅在设备侧调用，__global__ 是由主机启动的 GPU 内核。
+// <<<1,threads_per_block()>>> 表示 1 个线程块，块内 256 个线程；输出缓冲须至少容纳 256 个 float。
 __host__ int threads_per_block() { return 256; }
 __device__ float twice(float x) { return x + x; }
 

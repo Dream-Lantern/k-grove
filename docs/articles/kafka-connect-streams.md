@@ -47,32 +47,50 @@ Kafka 3.9 的 Source Exactly Once（源端恰好一次）需 Distributed Mode，
 使用 Kafka 3.9 发行包、Java 和已有的隔离 Broker。新建单分区 `review-connect-orders`，在发行包根目录运行。准备 `orders-worker.properties`：
 
 ```properties
+# Kafka Broker 引导地址；用于发现集群，不是把所有请求永远固定到这个节点。
 bootstrap.servers=localhost:9092
+# Connect 记录 Key 的转换器；这里采用字符串转换。
 key.converter=org.apache.kafka.connect.storage.StringConverter
+# Connect 记录 Value 的转换器；不等同于 Streams 的 Serde 配置。
 value.converter=org.apache.kafka.connect.storage.StringConverter
+# 独立模式 Worker 的本地来源位点文件；不等同于 Kafka 消费组提交位点。
 offset.storage.file.filename=/tmp/review-orders-connect.offsets
+# 来源位点刷写的时间间隔，单位毫秒。
 offset.flush.interval.ms=1000
+# Worker 的 REST API 监听地址，仅绑定本机 127.0.0.1:8083。
 listeners=http://127.0.0.1:8083
+# 连接器插件发现路径；此处指向文件连接器 JAR，须按实际安装核对。
 plugin.path=libs/connect-file-3.9.2.jar
 ```
 
 将 JAR 名改为发行包内实际的 3.9.x 版本，确认 `/tmp` 的位点文件名专用于该实验，且 Worker 用户可以读写。准备文件并启动：
 
 ```bash
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --create 创建 Topic；--partitions 指定分区数，--replication-factor 指定每个分区副本数
 bin/kafka-topics.sh --bootstrap-server localhost:9092 --create \
   --topic review-connect-orders --partitions 1 --replication-factor 1
 printf 'order-001\n' > /tmp/review-orders-connect.txt
+# 使用 orders-worker.properties 启动独立模式 Connect Worker；文件中的 listeners 定义 REST 地址
 bin/connect-standalone.sh orders-worker.properties
 ```
 
 在另一终端创建 Connector 并观察：
 
 ```bash
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
+# -X POST 创建 Connector，-H 指定 JSON 内容类型，-d 为配置请求体；这会修改 Connect 集群状态
 curl -fsS -H 'Content-Type: application/json' -X POST \
   -d '{"name":"review-file-orders","config":{"connector.class":"org.apache.kafka.connect.file.FileStreamSourceConnector","tasks.max":"1","file":"/tmp/review-orders-connect.txt","topic":"review-connect-orders"}}' \
   http://127.0.0.1:8083/connectors
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
 curl -fsS http://127.0.0.1:8083/connectors/review-file-orders/status
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
 curl -fsS http://127.0.0.1:8083/connectors/review-file-orders/tasks/0/status
+# 从 --topic 指定的 Topic 读取记录；--group 指定消费组，--bootstrap-server 为 Broker 入口
+# --from-beginning：无已提交位点时从最早可用位置开始
+# --max-messages：限定本次读取消息条数
+# --timeout-ms：设置等待超时，单位毫秒
 bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --topic review-connect-orders --from-beginning --max-messages 1 --timeout-ms 10000
 ```
@@ -98,6 +116,8 @@ State Store（状态存储）在本地保存聚合值。启用日志记录的存
 在 Kafka 3.9 测试 Broker 创建各一个分区的 `review-window-input` 和 `review-window-output`。用 Java 17、Maven 项目依赖 `org.apache.kafka:kafka-streams:3.9.2`，将代码存为 `src/main/java/OrderWindows.java`，执行 `mvn compile exec:java -Dexec.mainClass=OrderWindows`，项目编译级别设为 17。使用独立应用 ID、空 Topic 和本地状态目录。此例选默认至少一次，避免单 Broker 实验依赖事务配置。
 
 ```java
+// 从 Value 的第一段解析事件时间，再以第二段 SKU 重新分组；按 10 秒窗口和 5 秒宽限期计数。
+// 输出键为 SKU@窗口起点；关闭钩子先关闭 Streams，再解除主线程等待。
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -125,6 +145,7 @@ class OrderWindows {
                     Long.parseLong(((String) record.value()).split(",", 2)[0])))
             .selectKey((order, value) -> value.split(",", 2)[1])
             .groupByKey(Grouped.with(strings, strings))
+            // 按事件时间做 10 秒固定窗口，允许 5 秒宽限；不能理解成每 5 秒输出一次。
             .windowedBy(TimeWindows.ofSizeAndGrace(
                 Duration.ofSeconds(10), Duration.ofSeconds(5)))
             .count()
@@ -145,10 +166,15 @@ class OrderWindows {
 ```
 
 ```bash
+# 向 --topic 指定的 Topic 生产标准输入中的记录；--bootstrap-server 是 Broker 入口
+# parse.key=true 按 key.separator 拆分输入中的 Key 和 Value，不把整行都作为 Value
 printf '%s\n' 'o1:1000,sku-100' 'o2:12000,sku-100' 'o3:7000,sku-100' \
   'o4:16000,sku-100' 'o5:8000,sku-100' | \
   bin/kafka-console-producer.sh --bootstrap-server localhost:9092 \
     --topic review-window-input --property parse.key=true --property key.separator=:
+# 从 --topic 指定的 Topic 读取记录；--group 指定消费组，--bootstrap-server 为 Broker 入口
+# --from-beginning：无已提交位点时从最早可用位置开始
+# print.key=true 将记录 Key 一并输出
 bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --topic review-window-output --from-beginning --property print.key=true
 ```

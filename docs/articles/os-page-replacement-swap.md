@@ -128,6 +128,8 @@ R 位提供近期访问线索，而非精确的全局最近使用排序，所以
 保存为 `replacement.py`，运行 `python3 replacement.py`。输出每步 `(步骤, 页面, H/F, 淘汰页, 槽位, 累计缺页)`；Clock 另输出 R 位、下一指针与扫描动作。H 表示命中，F 表示本模型缺页，None 表示空槽/无淘汰。
 
 ```python
+# 用相同引用串比较 FIFO、LRU、OPT，并单独模拟 Clock；capacity 是页框数，refs 是页号访问序列。
+# 输出的 faults 是模型缺页次数，不是实际系统统计；断言覆盖 Belady 异常、页框唯一性与 Clock 指针变化。
 REFS = [1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5]
 
 
@@ -146,6 +148,7 @@ def simulate(policy, capacity, refs):
                 slot = frames.index(None)
             elif policy == "FIFO":
                 slot = min(range(capacity), key=lambda j: (entered[j], j))
+            # 选择最近使用时间最早的页；entered 用于 FIFO，used 用于 LRU，两者不能混用。
             elif policy == "LRU":
                 slot = min(range(capacity), key=lambda j: (used[j], j))
             else:
@@ -165,6 +168,7 @@ def simulate(policy, capacity, refs):
     return rows
 
 
+# hand 指向当前候选框；扫描时清引用位，遇到空框或引用位 0 才替换。
 def clock(frames, bits, hand, refs):
     frames, bits = list(frames), list(bits)
     assert len(frames) == len(bits) > 0 and 0 <= hand < len(frames)

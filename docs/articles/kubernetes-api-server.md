@@ -130,9 +130,18 @@ Watch 关注的是对象变化，不是 API Server 为每个控制器安排一�
 终端 A 创建对象，读取其数据和版本，再开启 Watch：
 
 ```bash
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace k8s-api-demo
+# 创建命令中指定的资源；--dry-run 时仅生成或校验请求，需区分是否实际落库
+# -n k8s-api-demo 限定命名空间
 kubectl create configmap watch-demo -n k8s-api-demo --from-literal=message=hello
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-api-demo 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get configmap watch-demo -n k8s-api-demo -o yaml
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -n k8s-api-demo 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get configmap watch-demo -n k8s-api-demo --watch --output-watch-events -o yaml
 ```
 
@@ -141,7 +150,12 @@ kubectl get configmap watch-demo -n k8s-api-demo --watch --output-watch-events -
 保持终端 A 运行，在终端 B 修改数据并重新读取：
 
 ```bash
+# 局部修改指定资源；--type=json 按 JSON Patch 操作列表修改，--type=merge 按对象合并
+# -n k8s-api-demo 限定命名空间
 kubectl patch configmap watch-demo -n k8s-api-demo --type=merge -p '{"data":{"message":"updated"}}'
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-api-demo 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get configmap watch-demo -n k8s-api-demo -o yaml
 ```
 
@@ -150,7 +164,10 @@ kubectl get configmap watch-demo -n k8s-api-demo -o yaml
 最后在终端 B 删除 ConfigMap，预期终端 A 可看到 `DELETED`；按 `Ctrl+C` 停止观察，再删除专用空间：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n k8s-api-demo 限定命名空间
 kubectl delete configmap watch-demo -n k8s-api-demo
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete namespace k8s-api-demo
 ```
 
@@ -175,10 +192,19 @@ API 状态也是已经观察、更新并保存的状态表示，不能把某个�
 下面的命令分别观察客户端上下文、资源种类、对象状态与授权结果：
 
 ```bash
+# 查看当前 kubectl 上下文，确认后续命令将连接哪个集群；此命令不切换上下文
 kubectl config current-context
+# 查询当前 API Server 提供的资源类型、简称和作用域，确认目标版本实际支持哪些资源
 kubectl api-resources
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n default 限定命名空间
 kubectl get deployments -n default
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n default 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n default -o wide
+# 检查当前或 --as 指定身份是否获准执行后面的动词与资源操作；结果是授权判断，不实际执行该操作
+# -n default 限定命名空间
 kubectl auth can-i list pods -n default
 ```
 

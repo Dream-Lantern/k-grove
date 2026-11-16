@@ -50,7 +50,9 @@ user:{42}:orders
 以下是 Redis 命令，需在启用 Cluster 的实例执行；以下列出命令的预期结果：
 
 ```redis
+# 计算键 user:{42}:profile 所属的槽号；花括号内的 hash tag 用于确定槽，相同 tag 的键会落在同一槽
 CLUSTER KEYSLOT user:{42}:profile
+# 计算键 user:{42}:cart 所属的槽号；花括号内的 hash tag 用于确定槽，相同 tag 的键会落在同一槽
 CLUSTER KEYSLOT user:{42}:cart
 ```
 
@@ -86,6 +88,7 @@ MOVED 表示当前已知的槽归属在别处，客户端应重试并更新相�
 教学假设：槽 S 正从 A 迁到 B，`user:{42}:profile` 仍在 A，`user:{42}:cart` 已在 B。两键都存在且属于同槽，客户端向源端 A 发出：
 
 ```redis
+# 按参数顺序批量读取字符串键 user:{42}:profile、user:{42}:cart；每个结果与键对应，不存在或非字符串键返回 nil
 MGET user:{42}:profile user:{42}:cart
 ```
 
@@ -126,6 +129,7 @@ Redis Open Source 7.2.0 默认 `cluster-require-full-coverage yes`，槽未分�
 副本可用于读扩展。在 Cluster 副本连接上发送：
 
 ```redis
+# 将当前 Cluster 连接切为允许从副本读取的模式；无额外参数，不保证读到最新写入
 READONLY
 ```
 

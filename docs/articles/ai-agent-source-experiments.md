@@ -91,6 +91,7 @@ order: 91
 例如以下记录指向已经存在的上游翻译回执；`run_id` 沿用原目录名，不是本站新跑的翻译任务：
 
 ```yaml
+# 记录指向上游历史真实 API 运行的提交和证据；这不是本次重新运行成功的记录。
 experiment: chapter10/book-translation
 source_commit: dbc046eb896ac4e39aa19c7774c8bf49583b89a6
 evidence_origin: upstream
@@ -108,6 +109,7 @@ evidence_ref: validation/real_20260730T061500Z_v4/evidence.json
 ## 在线实验的记录模板
 
 ```yaml
+# 实验记录模板：固定源提交、数据快照和受控变量，再记录运行条件、失败与证据；null 指标表示尚无测量。
 source_commit: dbc046eb896ac4e39aa19c7774c8bf49583b89a6
 entrypoint: "chapterN/project/script.py"
 model_and_revision: "实际使用值，不沿用 README 默认值"
@@ -128,6 +130,7 @@ conclusion_and_limits: "..."
 2026-11-12 在 k-grove 根目录用 Python 3.12.10 执行标准库审计，退出码 0：
 
 ```bash
+# 使用当前 Python 解释器运行精确复制评估口径核对；-X utf8 固定 UTF-8 模式
 python -X utf8 examples/ai-agent/ch6-8-review/copy_audit.py
 ```
 

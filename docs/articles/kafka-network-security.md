@@ -38,18 +38,31 @@ order: 21
 以下是单节点、静态 KRaft 仲裁、Broker 与 Controller 合设的隔离实验配置节选。它以已经初始化的测试环境为前提。节点 ID 和端口应与该环境一致。假设内网客户端能解析 `broker-1.lab.example`，外网客户端能解析 `broker-1.example.net`，后者的 9094 直达或经 NAT 转发到这个 Broker 的 9094。地址均为教学占位。示例仅用于验证网络和 TLS，ACL 实验另用已配置身份认证与授权的环境。
 
 ```properties
+# 此节点同时承担 broker/controller；教学组合角色不等同于所有生产拓扑。
 process.roles=broker,controller
+# 节点唯一 ID，需与静态 controller 仲裁组中的 ID 对应。
 node.id=1
+# 静态 KRaft 投票节点列表，格式为 node.id@host:port。
 controller.quorum.voters=1@broker-1.lab.example:9093
+# 供 Controller 通信使用的监听器名称。
 controller.listener.names=CONTROLLER
+# Broker 之间通信选择的监听器名称，不是客户端的外网入口。
 inter.broker.listener.name=INTERNAL
+# 服务实际监听的地址；0.0.0.0 是绑定地址，不是应公布给远端客户端的可达主机名。
 listeners=INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
+# 公布给客户端的可达地址；主机名需能从对应客户端网络解析和连接。
 advertised.listeners=INTERNAL://broker-1.lab.example:9092,EXTERNAL://broker-1.example.net:9094
+# 把逻辑监听器名映射到实际安全协议；名称本身不会自动开启 TLS。
 listener.security.protocol.map=INTERNAL:PLAINTEXT,EXTERNAL:SSL,CONTROLLER:PLAINTEXT
+# 外部监听器密钥库格式为 PKCS12。
 listener.name.external.ssl.keystore.type=PKCS12
+# 证书及私钥所在的密钥库路径，需换成实际文件。
 listener.name.external.ssl.keystore.location=/path/to/lab-broker.p12
+# 密钥库口令占位符，不能把示例文字当作实际凭据。
 listener.name.external.ssl.keystore.password=<keystore-password>
+# 私钥口令占位符，与密钥库口令的用途分开核对。
 listener.name.external.ssl.key.password=<key-password>
+# none 不要求客户端证书；不代表服务端 TLS 加密被关闭。
 listener.name.external.ssl.client.auth=none
 ```
 
@@ -72,6 +85,8 @@ ACL（Access Control List，访问控制列表）决定已识别的 Principal（
 从同一客户端网络使用 OpenSSL 3.0 做只读检查，每个 advertised 地址分别测一次：
 
 ```bash
+# 连接 -connect 指定的 TLS 端点；-servername 发送 SNI，-verify_hostname 校验证书主机名
+# -CAfile 指定信任 CA，-verify_return_error 遇验证失败返回错误，-showcerts 显示证书链
 openssl s_client -connect broker-1.example.net:9094 \
   -servername broker-1.example.net -verify_hostname broker-1.example.net \
   -CAfile lab-ca.pem -verify_return_error -showcerts </dev/null
@@ -121,8 +136,12 @@ client.id 可以帮助识别流量与适用配额，但不是可靠的应用身�
 | C · 身份认证成功，授权失败   | 在已经启用认证和 ACL 的隔离环境用有限权限的测试身份，分别对已有 Topic 尝试写入、加入已有组或初始化事务身份。按缺失权限观察对应拒绝 | 记录请求阶段、错误码、认证主体和资源。由有查询权限的运维身份查看匹配的 ACL，按矩阵补足具体操作。分别检查 Topic、Group 和 TransactionalId，避免把失败归于网络                   |
 
 ```bash
+# 连接指定 Broker 并查询支持的 API 版本；用于检查客户端连接与协议能力
+# --command-config：加载客户端连接、认证等属性文件
 bin/kafka-broker-api-versions.sh --bootstrap-server broker-1.example.net:9094 \
   --command-config client.properties
+# --list 查询 ACL；--topic 指定资源，--resource-pattern-type match 包含对该资源生效的匹配规则
+# --command-config：加载客户端连接、认证等属性文件
 bin/kafka-acls.sh --bootstrap-server broker-1.example.net:9094 \
   --command-config audit-client.properties --list --topic review-orders \
   --resource-pattern-type match

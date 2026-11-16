@@ -59,9 +59,14 @@ order: 20
 以下 Bash 模板适用于核对 Kafka 3.9 工具语法，只展示只读 describe。占位符必须替换，并核对网络、授权与安全配置。
 
 ```bash
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --describe 查询分区、Leader、Replica 与 ISR，不修改 Topic
+# --command-config：加载客户端连接、认证等属性文件
 bin/kafka-topics.sh --bootstrap-server '<broker-host:port>' \
   --command-config '<client.properties>' --describe --topic '<topic>'
 
+# 查询 --group 指定消费组的成员或提交进度；--describe 输出当前状态，--members 展示成员（如有）
+# --command-config：加载客户端连接、认证等属性文件
 bin/kafka-consumer-groups.sh --bootstrap-server '<broker-host:port>' \
   --command-config '<client.properties>' --describe --group '<group>'
 ```

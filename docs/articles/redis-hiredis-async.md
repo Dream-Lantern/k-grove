@@ -116,6 +116,7 @@ static void on_connect(const redisAsyncContext *ac, int status) {
         event_base_loopbreak(app->base);
         return;
     }
+    /* PING 无参数，预期返回 PONG；on_ping 是处理回复的回调，app 是回调上下文。 */
     if (redisAsyncCommand(app->ac, on_ping, app, "PING") != REDIS_OK) {
         fputs("Could not enqueue PING\n", stderr);
         redisAsyncDisconnect(app->ac);
@@ -156,6 +157,8 @@ cleanup:
 Shell 编译说明；不是 Redis 命令或 PowerShell 命令：
 
 ```bash
+# 编译 async-demo.c：-std=c11 选择 C11 标准，-Wall -Wextra 启用更多编译告警
+# pkg-config --cflags --libs hiredis libevent 提供头文件及链接参数，-o hiredis-async-demo 指定输出文件
 cc -std=c11 -Wall -Wextra async-demo.c \
   $(pkg-config --cflags --libs hiredis libevent) -o hiredis-async-demo
 ```

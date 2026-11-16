@@ -132,14 +132,22 @@ Topic 可按业务事实域命名，避免把每个用户或每个订单都变�
 
 ```bash
 # KAFKA_HOME 指向解压的 Kafka 3.9.0 发行包。
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --create 创建 Topic；--partitions 指定分区数，--replication-factor 指定每个分区副本数
 "$KAFKA_HOME/bin/kafka-topics.sh" --bootstrap-server localhost:9092 \
   --create --topic orders-routing-r1 --partitions 4 --replication-factor 1
+# 编译 Java 源文件；-cp 把 Kafka 发行包中的依赖 JAR 加入类路径
 javac -cp "$KAFKA_HOME/libs/*" RouteJava.java
+# 通过 -cp 指定依赖及程序类路径；后面的类名/源文件名是入口，其余值是示例程序的命令行参数
 java -cp ".:$KAFKA_HOME/libs/*" RouteJava localhost:9092 orders-routing-r1
 
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# pkg-config --cflags --libs 提供库头文件及链接参数
 cc -Wall -Wextra route_librdkafka.c -o route_librdkafka \
   $(pkg-config --cflags --libs rdkafka)
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./route_librdkafka localhost:9092 orders-routing-r1 consistent_random
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./route_librdkafka localhost:9092 orders-routing-r1 murmur2_random
 ```
 

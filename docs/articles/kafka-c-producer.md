@@ -42,6 +42,8 @@ COPY 表示库会复制 Payload，调用返回后，原缓冲可按应用规则�
 以下片段假定 `topic`、长度 `len` 和合法缓冲已准备好。Key 在 `rd_kafka_produce()` 返回后可复用，以下标志只影响 Payload。
 
 ```c
+// 对比 produce 的 payload 所有权：COPY 复制内容，FREE 成功入队后由库释放，flags=0 为借用。
+// len 是负载字节数；失败入队不转移所有权，必须按分支自行释放或保留原缓冲。
 /* COPY：stack_buf 可在调用返回后改写，两种结果都不转移原缓冲。 */
 int rc = rd_kafka_produce(topic, RD_KAFKA_PARTITION_UA,
                          RD_KAFKA_MSG_F_COPY, stack_buf, len, NULL, 0, NULL);
@@ -67,6 +69,8 @@ if (rc == -1)
 以下片段假定 opaque 指向仍存活的应用计数对象，且回调在应用选择的受控线程中被服务。多线程扩展要自行同步计数。没有在本机编译执行。
 
 ```c
+// delivery report 按 m->err 累计投递成功/失败；opaque 指向调用方设置的计数结构。
+// 回调中的消息为借用对象，不在这里 destroy，也不能保留其 payload 指针异步使用。
 struct delivery_counts { size_t ok; size_t failed; };
 
 static void on_delivery(rd_kafka_t *rk,
@@ -102,16 +106,23 @@ static void on_delivery(rd_kafka_t *rk,
 用 Kafka 3.9 和 librdkafka v2.8.0。在 Linux 安装 GCC、pkg-config 以及固定版本的 librdkafka 开发头文件和库，例如检出官方 `v2.8.0` 后按其构建说明安装。确认 `pkg-config --modversion rdkafka` 输出 2.8.0。若实验 Topic 已存在，先确认它有三个分区。
 
 ```bash
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --create 创建 Topic；--partitions 指定分区数，--replication-factor 指定每个分区副本数
 bin/kafka-topics.sh --bootstrap-server localhost:9092 --create \
   --topic review-orders --partitions 3 --replication-factor 1
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# pkg-config --cflags --libs 提供库头文件及链接参数
 cc -std=c11 -Wall -Wextra -Wpedantic orders_producer.c \
   $(pkg-config --cflags --libs rdkafka) -o orders_producer
+# 启动生产示例；第一个参数为 Broker 地址，第二个标识本次演示运行
 ./orders_producer localhost:9092 run01
 ```
 
 将下面保存为 `orders_producer.c`。每个实验使用新的运行前缀。恢复同一批事件时保留原前缀。示例仅用内存保存投递状态，退出时用事件 ID 输出恢复线索，生产应用应持久化待发事件及其结果。
 
 ```c
+// 先设置配置和投递回调，再创建 Producer 与 Topic；produce 入队成功不等于 Broker 已确认。
+// 队列满时按预算 poll 后重试，退出前 flush 等待投递报告，再按依赖顺序销毁资源。
 #include <librdkafka/rdkafka.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -195,6 +206,7 @@ int main(int argc, char **argv) {
             break;
 
         for (int attempt = 0; attempt < 6; ++attempt) {
+            // 将记录提交到本地发送队列；payload/key 按显式字节长度传递，Key 与消息体是不同字段。
             if (rd_kafka_produce(topic, RD_KAFKA_PARTITION_UA,
                                  RD_KAFKA_MSG_F_COPY, payload, (size_t)len,
                                  key, sizeof(key) - 1, order) == 0) {
@@ -207,6 +219,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "enqueue %s: %s\n", order->id, rd_kafka_err2str(err));
             if (err != RD_KAFKA_RESP_ERR__QUEUE_FULL)
                 break;
+            // 派发投递报告等客户端事件；等待毫秒数控制本次最多阻塞多久，不等同于发送超时。
             rd_kafka_poll(rk, 25 << attempt);
         }
         if (order->state == UNSENT)
@@ -214,6 +227,7 @@ int main(int argc, char **argv) {
         rd_kafka_poll(rk, 0);
     }
 
+    // 等待已排队消息完成；超时参数使用毫秒，需结合返回码和投递报告判断最终结果。
     rd_kafka_resp_err_t flush = rd_kafka_flush(rk, 3000);
     if (flush)
         fprintf(stderr, "flush: %s\n", rd_kafka_err2str(flush));

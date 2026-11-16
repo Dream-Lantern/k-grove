@@ -122,6 +122,8 @@ msync 地址须满足适用页对齐条件，返回 −1 时检查 errno 并处�
 保存为 `mmap-demo.c`，运行 `gcc -std=c11 -Wall -Wextra -Werror mmap-demo.c -o mmap-demo`，然后 `./mmap-demo`。程序用 mkdtemp 新建私有目录，用排他创建建立测试文件，文件长 8192、前缀 ABCDEFGH；先测私有 X、解除私有映射，再测共享 Y、MS_SYNC、清理自己创建的文件和目录。没有覆盖用户文件。
 
 ```c
+// 对同一个文件分别创建 MAP_PRIVATE 与 MAP_SHARED 映射，修改首字节并通过文件描述符验证可见性。
+// 长度 8192 是映射字节数；MS_SYNC 请求同步共享映射，最后按成功创建状态解除映射并清理测试文件。
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <fcntl.h>
@@ -172,6 +174,7 @@ int main(void)
     if (fd == -1) { perror("openat"); goto cleanup; }
     created = 1;
     if (write_initial(fd) == -1) { perror("initialize"); goto cleanup; }
+    // 私有映射写入不应修改该文件读取到的前缀；后面先解除映射再换共享映射。
     view = mmap(NULL, 8192, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
     if (view == MAP_FAILED) { perror("mmap private"); goto cleanup; }
     view[0] = 'X';
@@ -180,6 +183,7 @@ int main(void)
     if (munmap(view, 8192) == -1) { perror("munmap private"); goto cleanup; }
     view = MAP_FAILED;
 
+    // 共享映射写入可经文件读取观察到；可见性与同步持久化分开检查。
     view = mmap(NULL, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (view == MAP_FAILED) { perror("mmap shared"); goto cleanup; }
     view[0] = 'Y';

@@ -112,10 +112,13 @@ Controller quorum 的可用性与其多数派有关。业务分区的数据可�
 以下 Kafka 3.9 Bash 命令只查询状态。前提是存在可访问的 KRaft 集群以及 `orders` Topic，认证环境应使用相应客户端配置。Topic 不存在或授权不足时会报错，不应为取得输出去格式化数据目录。
 
 ```bash
+# 通过 --bootstrap-server 连接 KRaft 集群；describe --status 查询元数据仲裁组状态
 bin/kafka-metadata-quorum.sh \
   --bootstrap-server localhost:9092 \
   describe --status
 
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --describe 查询分区、Leader、Replica 与 ISR，不修改 Topic
 bin/kafka-topics.sh \
   --bootstrap-server localhost:9092 \
   --describe --topic orders

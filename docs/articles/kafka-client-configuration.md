@@ -73,6 +73,8 @@ Java、librdkafka 与 Python 封装分别提供自己的配置接口。同名项
 Java 17 环境准备 Kafka Client 3.9 及其运行依赖。可复用[第 14 章](/articles/kafka-transactions.html)的 Maven 依赖下载方式。保存为 `CheckProducer.java`，执行 `java -cp 'lib/*' CheckProducer.java`。
 
 ```java
+// 用 acks=all 与 acks=1 两组配置构造启用幂等的 Java Producer，验证相容配置与冲突配置的结果。
+// 此实验检查客户端构造，不发送业务消息；ConfigException 是预期配置冲突的依据。
 import java.time.Duration;
 import java.util.HashMap;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -109,6 +111,7 @@ class CheckProducer {
 C 使用 v2.8.0 开发包。保存为 `check_producer.c`，用 `cc check_producer.c $(pkg-config --cflags --libs rdkafka) -o check_producer` 编译并执行 `./check_producer`。
 
 ```c
+// 逐项设置 librdkafka 幂等配置，并分别检查 conf_set 与客户端创建失败；创建失败时配置仍需自行释放。
 #include <librdkafka/rdkafka.h>
 #include <stdio.h>
 #include <stdlib.h>

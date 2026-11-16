@@ -60,10 +60,15 @@ HLL 不保存一份可重新取出的完整用户名单。因此不能用它判�
 新增示例：
 
 ```redis
+# 将标识 user-a、user-b、user-a 加入 HyperLogLog demo:uv:day-1；重复标识不重复计数，返回寄存器是否变化的 0/1，不是新增人数
 PFADD demo:uv:day-1 user-a user-b user-a
+# 查询 HyperLogLog demo:uv:day-1 的估算去重数量；这是近似基数，不是精确成员数
 PFCOUNT demo:uv:day-1
+# 将标识 user-b、user-c 加入 HyperLogLog demo:uv:day-2；重复标识不重复计数，返回寄存器是否变化的 0/1，不是新增人数
 PFADD demo:uv:day-2 user-b user-c
+# 合并源 HyperLogLog demo:uv:day-1、demo:uv:day-2 到目标 demo:uv:combined；目标已有数据也参与合并，成功返回 OK
 PFMERGE demo:uv:combined demo:uv:day-1 demo:uv:day-2
+# 查询 HyperLogLog demo:uv:combined 的估算去重数量；这是近似基数，不是精确成员数
 PFCOUNT demo:uv:combined
 ```
 
@@ -81,10 +86,15 @@ PFCOUNT demo:uv:combined
 还要注意旧目标是否已经含有统计状态。下面用另一组新键，先给目标写入 old-user，再合并两天的数据：
 
 ```redis
+# 将标识 old-user 加入 HyperLogLog demo:uv:period；重复标识不重复计数，返回寄存器是否变化的 0/1，不是新增人数
 PFADD demo:uv:period old-user
+# 将标识 user-a、user-b 加入 HyperLogLog demo:uv:day1；重复标识不重复计数，返回寄存器是否变化的 0/1，不是新增人数
 PFADD demo:uv:day1 user-a user-b
+# 将标识 user-b、user-c 加入 HyperLogLog demo:uv:day2；重复标识不重复计数，返回寄存器是否变化的 0/1，不是新增人数
 PFADD demo:uv:day2 user-b user-c
+# 合并源 HyperLogLog demo:uv:day1、demo:uv:day2 到目标 demo:uv:period；目标已有数据也参与合并，成功返回 OK
 PFMERGE demo:uv:period demo:uv:day1 demo:uv:day2
+# 查询 HyperLogLog demo:uv:period 的估算去重数量；这是近似基数，不是精确成员数
 PFCOUNT demo:uv:period
 ```
 

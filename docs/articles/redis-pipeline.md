@@ -75,6 +75,8 @@ for 每个有界批次:
 int pipeline_example(redisContext *c) {
     int ok = 1;
     if (c == NULL) return 1;
+    /* 第一条 SET 将 demo:a 写为字符串 10；第二条 GET 读取该键，预期得到字符串 10。 */
+    /* 两次 redisAppendCommand 只提交到输出缓冲，后面按顺序读取各自回复。 */
     if (c->err ||
         redisAppendCommand(c, "SET demo:a 10") != REDIS_OK ||
         redisAppendCommand(c, "GET demo:a") != REDIS_OK) {
@@ -136,8 +138,14 @@ P95/P99 是 95%/99% 请求延迟不超过的分位值，用于观察较慢请求
 下面是隔离学习环境中的 Shell 实验设计，不是 Redis 命令。使用 Redis Open Source 7.2.0 的 redis-benchmark，并预先准备代表业务大小的数据；默认目标为本机 6379，不能把未命中 GET 的成绩当作实际载荷测试：
 
 ```bash
+# 运行 GET 压测：-n 100000 为请求总数，-c 10 为并发连接数，-t get 只测 GET
+# -P 1 为每条连接的 Pipeline 批量深度，-q 仅输出简要结果；这会实际产生测试负载
 redis-benchmark -n 100000 -c 10 -t get -P 1 -q
+# 运行 GET 压测：-n 100000 为请求总数，-c 10 为并发连接数，-t get 只测 GET
+# -P 10 为每条连接的 Pipeline 批量深度，-q 仅输出简要结果；这会实际产生测试负载
 redis-benchmark -n 100000 -c 10 -t get -P 10 -q
+# 运行 GET 压测：-n 100000 为请求总数，-c 10 为并发连接数，-t get 只测 GET
+# -P 100 为每条连接的 Pipeline 批量深度，-q 仅输出简要结果；这会实际产生测试负载
 redis-benchmark -n 100000 -c 10 -t get -P 100 -q
 ```
 

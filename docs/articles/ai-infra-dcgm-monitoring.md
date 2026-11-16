@@ -64,8 +64,11 @@ Exporter 将数据暴露到 HTTP `/metrics`，Prometheus 周期抓取和保存�
 只读查询示例，假定服务已配置：
 
 ```bash
+# 列出 DCGM 发现的 GPU 设备及标识；用于核对监控实体
 dcgmi discovery -l
+# 查询 DCGM 已发现的 GPU 数量；-c 是计数查询
 dcgmi discovery -c
+# 列出 GPU 0 支持的 DCGM Profiling 指标组；-l 表示列举，-i 0 选择设备
 dcgmi profile -l -i 0
 ```
 
@@ -81,10 +84,15 @@ DCGM_FI_DEV_FB_USED, gauge, Framebuffer used (MiB).
 在具备支持的 NVIDIA GPU、Linux、Docker、Container Toolkit 的实验节点运行。宿主安装并启动 DCGM 4.2.3 的独立 `nv-hostengine`，让本机客户端可以连接默认 5555 端口。先核对版本与目标设备。
 
 ```bash
+# 查询驱动侧 GPU 状态、显存与进程概况；不等于 CUDA Toolkit 编译器版本
 nvidia-smi
+# 查看本地 DCGM 工具版本，便于核对可用功能
 dcgmi --version
+# 列出 DCGM 发现的 GPU 设备及标识；用于核对监控实体
 dcgmi discovery -l
+# 查询 DCGM 已发现的 GPU 数量；-c 是计数查询
 dcgmi discovery -c
+# 列出 GPU 0 支持的 DCGM Profiling 指标组；-l 表示列举，-i 0 选择设备
 dcgmi profile -l -i 0
 ```
 
@@ -94,7 +102,12 @@ dcgmi profile -l -i 0
 
 ```bash
 image=nvcr.io/nvidia/k8s/dcgm-exporter:4.2.3-4.1.1-ubuntu22.04
+# 运行 $image 指定的容器镜像；--rm 在容器退出后清理容器
 docker run --rm "$image" --help
+# 运行 $image 指定的容器镜像；--rm 在容器退出后清理容器
+# --gpus 选择暴露给容器的 GPU；device=0 表示指定设备，all 表示全部设备（按本命令参数）
+# 挂载参数把宿主文件映射到容器路径，readonly 或 :ro 表示只读
+# -r 连接 DCGM Host Engine；-a 指定指标监听地址，-f 选择指标 CSV，-c 5000 为采集间隔毫秒数
 docker run --rm --gpus all --network host \
   --mount "type=bind,source=$PWD/collectors.csv,target=/tmp/collectors.csv,readonly" \
   "$image" -r 127.0.0.1:5555 -a 127.0.0.1:9400 -f /tmp/collectors.csv -c 5000
@@ -105,6 +118,7 @@ docker run --rm --gpus all --network host \
 ```yaml
 scrape_configs:
   - job_name: dcgm-lab
+    # Prometheus 拉取指标的间隔；与 exporter 自身采集间隔不是同一个参数。
     scrape_interval: 30s
     static_configs:
       - targets: ["127.0.0.1:9400"]

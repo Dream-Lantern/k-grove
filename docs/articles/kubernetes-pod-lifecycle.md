@@ -70,6 +70,7 @@ metadata:
     app: catalog-init
 spec:
   restartPolicy: Always
+  # 按声明顺序完成初始化后才启动普通容器；共享数据须通过卷等明确传递。
   initContainers:
     - name: prepare
       image: busybox:1.36.1
@@ -105,6 +106,7 @@ spec:
           mountPath: /work
   volumes:
     - name: work
+      # Pod 生命周期内的共享临时卷；容器重启通常保留，Pod 删除后随之清理。
       emptyDir: {}
 ```
 
@@ -116,18 +118,34 @@ prepare 通过临时文件再替换目标文件，允许重复准备；verify �
 
 ```bash
 # 仅当 study 不存在且确认为本练习专用时创建
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace study
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f catalog-init.yaml
 
 # 只读观察
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get pod catalog-init -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod catalog-init -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod catalog-init -n study -o jsonpath='{.status.initContainerStatuses}'
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n study 限定命名空间
 kubectl logs catalog-init -n study -c prepare
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n study 限定命名空间
 kubectl logs catalog-init -n study -c verify
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n study 限定命名空间
 kubectl logs catalog-init -n study -c app
 
 # 仅清理本练习的 Pod
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f catalog-init.yaml
 ```
 
@@ -163,10 +181,12 @@ preStop 用于适用终止流程中的收尾。它不是“Pod 对象只要消�
 假设某测试容器宽限期为 30 秒，PreStop 执行 8 秒。以下仅为 Pod spec 下局部字段，不能单独提交：
 
 ```yaml
+# Pod 终止宽限期，单位秒；preStop 执行耗时也计入这一阶段。
 terminationGracePeriodSeconds: 30
 containers:
   - name: app
     lifecycle:
+      # 在容器终止前执行钩子；此处 sleep 用于演示终止阶段，不是服务自动排空的保证。
       preStop:
         exec:
           command: ["sh", "-c", "sleep 8"]
@@ -206,10 +226,23 @@ EndpointSlice（服务端点切片）更新是并行分支：终止中的端点�
 在隔离环境记录同一名称的多次快照，比较 UID、restartCount、deletionTimestamp、state 与 lastState。下列均为只读模板，先替换名称；本章不主动注入故障或触发删除来制造结果。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod POD_NAME -n NAMESPACE -o jsonpath='{.metadata.uid}{"\n"}{.metadata.deletionTimestamp}{"\n"}{.status.containerStatuses}{"\n"}'
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pod POD_NAME -n NAMESPACE -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n NAMESPACE 限定命名空间
 kubectl logs POD_NAME -n NAMESPACE -c CONTAINER_NAME
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# --previous 读取该 Pod 内容器上一次终止实例的日志，不是所有历史 Pod 的日志
+# -n NAMESPACE 限定命名空间
 kubectl logs POD_NAME -n NAMESPACE -c CONTAINER_NAME --previous
 ```
 

@@ -41,11 +41,14 @@ nodeSelector（节点选择器）、Node Affinity（节点亲和性）描述 Pod
 新增片段，位于 Pod spec 下：
 
 ```yaml
+# 所有列出的节点标签都要匹配；它限定候选节点，不会自动给节点添加标签。
 nodeSelector:
   gpu: "true"
 affinity:
   nodeAffinity:
+    # 调度时必须满足；已经运行后标签变化通常不会仅因这条规则主动驱逐。
     requiredDuringSchedulingIgnoredDuringExecution:
+      # 不同 term 之间为 OR，同一个 term 内的 matchExpressions 为 AND。
       nodeSelectorTerms:
         - matchExpressions:
             - key: disktype
@@ -74,7 +77,9 @@ affinity:
 ```yaml
 affinity:
   nodeAffinity:
+    # 调度时必须满足；已经运行后标签变化通常不会仅因这条规则主动驱逐。
     requiredDuringSchedulingIgnoredDuringExecution:
+      # 不同 term 之间为 OR，同一个 term 内的 matchExpressions 为 AND。
       nodeSelectorTerms:
         - matchExpressions:
             - key: topology.kubernetes.io/zone
@@ -103,7 +108,9 @@ affinity:
 下面位于 affinity.nodeAffinity 下，是独立的软偏好片段，可与相应硬条件共同配置：
 
 ```yaml
+# 调度偏好而非硬约束；不匹配时仍可能调度到其他可行节点。
 preferredDuringSchedulingIgnoredDuringExecution:
+  # 该偏好项的权重；用于评分，不代表匹配概率或固定资源配额。
   - weight: 80
     preference:
       matchExpressions:
@@ -134,7 +141,9 @@ Pod Affinity（Pod 亲和性，字段 podAffinity）选择与某组 Pod 靠近�
 
 ```yaml
 affinity:
+  # 要求或偏好靠近符合标签选择器的 Pod，作用域由 namespaces 与 topologyKey 确定。
   podAffinity:
+    # 调度时必须满足；已经运行后标签变化通常不会仅因这条规则主动驱逐。
     requiredDuringSchedulingIgnoredDuringExecution:
       - labelSelector:
           matchLabels:
@@ -147,7 +156,9 @@ affinity:
 
 ```yaml
 affinity:
+  # 要求或偏好避开已有匹配 Pod 所在的拓扑域，不是简单地要求节点标签不同。
   podAntiAffinity:
+    # 调度时必须满足；已经运行后标签变化通常不会仅因这条规则主动驱逐。
     requiredDuringSchedulingIgnoredDuringExecution:
       - labelSelector:
           matchLabels:
@@ -179,6 +190,7 @@ Node Affinity 直接匹配 Node 标签；Pod Affinity/Anti-Affinity 通过参照
 Pod B 的 spec 局部字段如下，未应用：
 
 ```yaml
+# 容忍匹配的污点；容忍本身不保证会调度到该节点，也不赋予其他资源权限。
 tolerations:
   - key: dedicated
     operator: Equal
@@ -199,11 +211,13 @@ tolerations:
 最后一行的 Pod spec 片段如下。仅说明规则，不修改真实节点污点或执行驱逐：
 
 ```yaml
+# 容忍匹配的污点；容忍本身不保证会调度到该节点，也不赋予其他资源权限。
 tolerations:
   - key: dedicated
     operator: Equal
     value: storage
     effect: NoExecute
+    # 对匹配的 NoExecute 污点可容忍的秒数；不能当作 Pod 自身的 TTL。
     tolerationSeconds: 60
 ```
 
@@ -226,7 +240,9 @@ metadata:
   labels:
     app: catalog
 spec:
+  # 按 topologyKey 划分拓扑域，再结合 maxSkew 与 whenUnsatisfiable 约束分布。
   topologySpreadConstraints:
+    # 允许的分布偏差；实际比较基准还受可参与拓扑域等规则影响。
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
       whenUnsatisfiable: DoNotSchedule
@@ -270,9 +286,17 @@ nodeTaintsPolicy=Ignore 只是计数时的策略，不表示 Pod 可以穿过未
 ## 6. 先用事件解释 Pending
 
 ```bash
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get nodes --show-labels
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
 kubectl describe node NODE_NAME
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pod POD_NAME -n NAMESPACE -o yaml
 ```
 

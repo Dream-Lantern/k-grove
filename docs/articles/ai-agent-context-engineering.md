@@ -184,6 +184,7 @@ description: 按目标版本查询技术文档，回答配置问题并附原文�
 示例：
 
 ```yaml
+# 任务状态快照：已完成与待处理项分开记录；remaining_budget_seconds/tool_calls 是剩余预算而非已消耗量。
 task_status:
   goal: "查询 DemoServe 1.0 默认端口、修改方式和来源"
   constraints: ["只读给定文档", "只使用 1.0 版本"]
@@ -232,6 +233,7 @@ read_doc(另一页)：超时，没有取得内容。
 压缩检查点需要保留可继续执行任务的信息，而非仅概括对话主题。将这段历史整理为：
 
 ```yaml
+# 交接时分别保留确认事实、进行中工作、已发生错误及文件读取位置，避免把未核实项压缩成已完成结论。
 handoff:
   user_goal: "查询 DemoServe 1.0 默认端口、修改方式及来源"
   accepted_constraints: ["只读给定文档", "只使用 1.0 版本"]
@@ -308,6 +310,7 @@ handoff:
 源码节选（上下文依赖见原文件）：[chapter2/context-compression/compression_strategies.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter2/context-compression/compression_strategies.py#L219-L228)。
 
 ```python
+# 压缩失败时回退为前 2000 个字符并附截断标记；这是上下文降级片段，不是完整函数。
 except Exception as e:
     logger.error(f"Error compressing for history: {str(e)}")
     # Fallback to truncation

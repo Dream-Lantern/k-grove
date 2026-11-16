@@ -113,14 +113,18 @@ Java `KafkaConsumer` 实例由一个线程独占。该线程负责 `poll()`、`p
 使用 Kafka 3.9 发行包的 Bash 脚本，假设本地 Broker 可访问、允许建 Topic 和加入组，且实验 Topic 与 `group.id` 未被占用。单 Broker 实验还需满足[内部位点 Topic 的创建条件](/articles/kafka-log-model.html)。
 
 ```bash
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --create 创建 Topic；--partitions 指定分区数，--replication-factor 指定每个分区副本数
 bin/kafka-topics.sh --bootstrap-server localhost:9092 --create \
   --topic review-orders --partitions 3 --replication-factor 1
 
 # 在不同终端运行同一命令，可分别设置 client.id 为 review-c1 到 review-c5
+# 从 --topic 指定的 Topic 读取记录；--group 指定消费组，--bootstrap-server 为 Broker 入口
 bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --topic review-orders --group review-g1 \
   --consumer-property group.protocol=classic --consumer-property client.id=review-c1
 
+# 查询 --group 指定消费组的成员或提交进度；--describe 输出当前状态，--members 展示成员（如有）
 bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
   --describe --group review-g1 --members --verbose
 ```

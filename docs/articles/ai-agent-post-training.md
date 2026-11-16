@@ -245,6 +245,7 @@ JSON 编码可能把换行表示为转义文本，解码后应恢复原字符；
 例如同一输出可以得到两种指标：
 
 ```python
+# 对比原始字节精确匹配与 strip 后匹配；strip 会移除首尾空白，因此两种口径不能混用。
 prediction = " abc\n"
 target = "abc"
 raw_exact = prediction.encode("utf-8") == target.encode("utf-8")
@@ -257,6 +258,8 @@ normalized_exact = prediction.strip().encode("utf-8") == target.encode("utf-8")
 源码节选（上下文依赖见原文件）：[chapter8/exact-copy-sft/evaluate.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter8/exact-copy-sft/evaluate.py#L20-L23)。
 
 ```python
+# 只解码输入长度之后的新生成 token，并比较 UTF-8 字节；first 记录首个差异位置或共同前缀长度。
+# 该片段先 strip，统计的是去首尾空白后的精确率，不是原始输出逐字节精确率。
 pred = tok.decode(generated[0, ids.shape[-1]:], skip_special_tokens=True).strip(); target = row["target"]
 pb, tb = pred.encode("utf-8"), target.encode("utf-8")
 first = next((i for i, (a, b) in enumerate(zip(pb, tb)) if a != b), min(len(pb), len(tb)))
@@ -282,7 +285,9 @@ out.append({"id": row["id"], "kind": row["kind"], "exact": int(pb == tb), "predi
 在本项目仓库根目录，使用 Python 3.11～3.13 运行独立教学示例，仅依赖标准库。字节审计会输出组合重音等 Unicode 字符，使用 `-X utf8` 避免 Windows 默认 GBK 输出无法编码这些字符：
 
 ```bash
+# 使用当前 Python 解释器运行精确复制评估口径核对；-X utf8 固定 UTF-8 模式
 python -X utf8 examples/ai-agent/ch6-8-review/copy_audit.py
+# 发现并运行单元测试；-s 指定目录，-p 指定文件名匹配模式，-v 展示各测试结果
 python -m unittest discover -s examples/ai-agent/ch6-8-review -p "test_*.py" -v
 ```
 
@@ -303,10 +308,14 @@ NFC（Unicode Normalization Form C，规范组合形式）可将某些等价字�
 在单独的上游实验工作副本中固定到 `dbc046eb896ac4e39aa19c7774c8bf49583b89a6`，使用兼容 Python 环境。下列命令从该副本根目录开始：
 
 ```bash
+# 在当前解释器环境安装依赖；-e 以可编辑方式安装当前工程，方括号选择额外依赖组
 python -m pip install -e ".[torch]"
 cd chapter8/exact-copy-sft
+# 使用当前 Python 解释器运行生成训练/评估数据
 python generate_data.py
+# 通过 python -c 执行引号内短程序；mkdir(exist_ok=True) 创建目录，已存在时不报错
 python -c "from pathlib import Path; Path('validation').mkdir(exist_ok=True)"
+# 使用当前 Python 解释器运行分词与字节差异核对
 python tokenizer_audit.py
 ```
 
@@ -321,12 +330,18 @@ python tokenizer_audit.py
 需要适配的 CUDA GPU、驱动与训练栈，以及足够的权重、激活和优化器显存。固定训练脚本采用 bf16，并在没有 CUDA 时退出；显存需求不能仅靠模型名称或 LoRA 参数比例确定。在独立实验副本根目录安装训练依赖，再使用第二层生成并审核过的数据：
 
 ```bash
+# 在当前解释器环境安装依赖；-e 以可编辑方式安装当前工程，方括号选择额外依赖组
 python -m pip install -e ".[train]"
 cd chapter8/exact-copy-sft
+# 运行模型评估；--model 指定基础模型，--adapter 选择适配器（若指定），--split 选择评估集，--label 标记结果
 python evaluate.py --model Qwen/Qwen3-8B --label base --split eval
+# 运行模型评估；--model 指定基础模型，--adapter 选择适配器（若指定），--split 选择评估集，--label 标记结果
 python evaluate.py --model Qwen/Qwen3-8B --label base --split boundary
+# --model 指定待训练的基础模型；此入口启动 SFT 训练，会读取数据并使用相应计算资源
 python train_sft.py --model Qwen/Qwen3-8B
+# 运行模型评估；--model 指定基础模型，--adapter 选择适配器（若指定），--split 选择评估集，--label 标记结果
 python evaluate.py --model Qwen/Qwen3-8B --adapter output/adapter --label adapted --split eval
+# 运行模型评估；--model 指定基础模型，--adapter 选择适配器（若指定），--split 选择评估集，--label 标记结果
 python evaluate.py --model Qwen/Qwen3-8B --adapter output/adapter --label adapted --split boundary
 ```
 

@@ -70,6 +70,7 @@ values-override.yaml
 `catalog-chart/Chart.yaml`：
 
 ```yaml
+# Chart 的 version 是图表包版本，appVersion 是展示的应用版本；两者不能互换。
 apiVersion: v2
 name: catalog-chart
 description: Minimal catalog teaching chart
@@ -81,6 +82,7 @@ appVersion: "1.36.1"
 `catalog-chart/values.yaml`：
 
 ```yaml
+# values.yaml 为模板输入：replicaCount、image、service.port 与 autoscaling.enabled 由模板显式读取才生效。
 replicaCount: 2
 image:
   repository: busybox
@@ -92,6 +94,8 @@ autoscaling:
 ```
 
 `catalog-chart/templates/deployment.yaml`：
+
+模板说明：`.Release` 提供本次发布的名称与命名空间，`.Values` 读取合并后的配置；`if not` 使启用自动扩缩容时省略 replicas，`printf` 拼接镜像引用，`quote` 将结果转为带引号的字符串。
 
 ```text
 apiVersion: apps/v1
@@ -138,6 +142,8 @@ spec:
 
 `catalog-chart/templates/service.yaml`：
 
+模板说明：Service 通过与 Deployment 一致的发布名称标签选择后端；`.Values.service.port` 是 Service 端口，`targetPort: http` 引用容器中命名为 http 的端口。
+
 ```text
 apiVersion: v1
 kind: Service
@@ -173,6 +179,8 @@ replicaCount: 4
 ```
 
 ```bash
+# 在本地渲染 catalog 发布的 Chart，不安装到集群；-n 指定命名空间，-f 按顺序合并 values 文件
+# 后出现的文件覆盖前面的同名值，--set replicaCount=5 再覆盖文件值（若指定）
 helm template catalog ./catalog-chart -n study \
   -f values-dev.yaml \
   -f values-override.yaml \
@@ -193,8 +201,12 @@ helm template catalog ./catalog-chart -n study \
 按第二节重建样例文件并安装兼容 Helm 3 后，运行以下命令审阅渲染结果：
 
 ```bash
+# 检查 Chart 的结构与模板常见问题；这不是对目标集群运行效果的验收
 helm lint ./catalog-chart
+# 在本地渲染 catalog 发布的 Chart，不安装到集群；-n 指定命名空间，-f 按顺序合并 values 文件
+# 后出现的文件覆盖前面的同名值，--set replicaCount=5 再覆盖文件值（若指定）
 helm template catalog ./catalog-chart -n study -f values-dev.yaml
+# 显示 Chart 自带的默认 values；不包含某次发布的覆盖值
 helm show values ./catalog-chart
 ```
 
@@ -217,8 +229,11 @@ Chart 仓库负责包分发，OCI 提供另一种分发方式，索引站点帮�
 以下命令用于升级和回滚，会改变集群资源：
 
 ```bash
+# 安装名为 catalog 的发布；Chart 路径是 ./catalog-chart，-n 为命名空间，-f 提供覆盖配置，会创建资源
 helm install catalog ./catalog-chart -n study -f values-dev.yaml
+# 升级已有 catalog 发布，使用给定 Chart 和 -f 覆盖文件；这会实际更新集群资源
 helm upgrade catalog ./catalog-chart -n study -f values-override.yaml
+# 把 catalog 发布回退到 REVISION 指定的历史修订；需替换成 helm history 中的实际修订号
 helm rollback catalog REVISION -n study
 ```
 
@@ -242,10 +257,15 @@ v3.13.3 的 rollback 按当前 Revision+1 建立新记录并执行适用资源�
 以下查询会连接集群，不在本次执行。get values 及 --all 输出可能含敏感值，不可未经脱敏传播：
 
 ```bash
+# 列出 study 命名空间中的 Helm 发布；-n 限定命名空间
 helm list -n study
+# 查看 catalog 发布的修订号和历史状态，供选择回退目标
 helm history catalog -n study
+# 查看 catalog 发布当前状态及关联信息，不变更资源
 helm status catalog -n study
+# 查看 catalog 发布保存的用户配置；加 --all 时显示包含默认值的计算结果
 helm get values catalog -n study
+# 查看 catalog 发布保存的用户配置；加 --all 时显示包含默认值的计算结果
 helm get values catalog -n study --all
 ```
 
@@ -290,6 +310,7 @@ Chart 直接包含的 PVC 与 StatefulSet 等工作负载生成的 PVC 也不能
 仅当确认 catalog 是自己安装的本节已审核最小 Chart、没有混入其他资源或真实数据时，以下才是对应的实验清理语法；它会修改集群：
 
 ```bash
+# 卸载 study 命名空间中的 catalog 发布及由其管理的适用资源；实际保留项仍按资源策略核对
 helm uninstall catalog -n study
 ```
 

@@ -65,10 +65,12 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
           readinessProbe:
             httpGet:
               path: /ready
               port: http
+            # 探针执行间隔，单位秒；不是单次请求的超时时间。
             periodSeconds: 2
 ---
 apiVersion: v1
@@ -84,6 +86,7 @@ spec:
     - name: http
       protocol: TCP
       port: 80
+      # 后端容器的端口号或端口名；与面向客户端的 Service port 分开理解。
       targetPort: http
 ```
 
@@ -134,6 +137,7 @@ ready       = Service publishNotReadyAddresses
 如果 Service spec 设置以下字段，ready 可被置为 true，即使 serving=false；该字段用于特定发现需求，不能代替修复探针或应用：
 
 ```yaml
+# 设为 true 会影响未就绪地址的发布；此时不能只凭地址已发布就认定后端健康。
 publishNotReadyAddresses: true
 ```
 
@@ -166,8 +170,19 @@ ExternalName 返回适用的 DNS CNAME（规范名称别名），不为目标创
 ## 5. 不可达时按关系逐层核对
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get svc catalog -n study -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=catalog -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
 ```
 
@@ -180,15 +195,38 @@ kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
 需要能拉取 busybox:1.36.1 的 Linux 1.28 隔离集群、正常 CNI/集群 DNS/Service 数据平面及相应创建权限。使用全新专用 study；若已有前章 catalog 或其他资源，另选名称并同步修改全部 YAML 和命令，避免覆盖。以下均为未执行步骤，create/apply/run/delete 会修改实验资源：
 
 ```bash
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace study
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f catalog-service.yaml
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status deployment/catalog -n study --timeout=180s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=catalog -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
+# 用 --image 指定镜像创建测试 Pod；--restart=Never 不创建控制器，--command 后是容器启动命令
+# -n study 限定命名空间
 kubectl run catalog-client -n study --image=busybox:1.36.1 --restart=Never --command -- sleep 3600
+# 等待 --for 指定的资源条件满足；--timeout 限定本次等待时长，不会主动修复资源
+# -n study 限定命名空间
 kubectl wait pod/catalog-client -n study --for=condition=Ready --timeout=120s
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec catalog-client -n study -- wget -qO- -T 5 http://catalog/
+# 用 kubectl 查询对象字段并保存到 CATALOG_SERVICE_IP；-o jsonpath 只提取表达式指定的值，供后续请求使用
 CATALOG_SERVICE_IP=$(kubectl get svc catalog -n study -o jsonpath='{.spec.clusterIP}')
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec catalog-client -n study -- wget -qO- -T 5 "http://$CATALOG_SERVICE_IP/"
 ```
 
@@ -199,11 +237,27 @@ kubectl exec catalog-client -n study -- wget -qO- -T 5 "http://$CATALOG_SERVICE_
 仅在上述专用实验中修改 Service selector，不改真实生产标签。merge 补丁会改变资源：
 
 ```bash
+# 局部修改指定资源；--type=json 按 JSON Patch 操作列表修改，--type=merge 按对象合并
+# -p 中修改 Service 的 selector；这会改变后端匹配，不会直接删除 Pod
+# -n study 限定命名空间
 kubectl patch service catalog -n study --type=merge -p '{"spec":{"selector":{"app":"catalog-missing"}}}'
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get svc catalog -n study -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec catalog-client -n study -- wget -qO- -T 5 http://catalog/
 # 恢复选择器
+# 局部修改指定资源；--type=json 按 JSON Patch 操作列表修改，--type=merge 按对象合并
+# -p 中修改 Service 的 selector；这会改变后端匹配，不会直接删除 Pod
+# -n study 限定命名空间
 kubectl patch service catalog -n study --type=merge -p '{"spec":{"selector":{"app":"catalog"}}}'
 ```
 
@@ -214,12 +268,31 @@ kubectl patch service catalog -n study --type=merge -p '{"spec":{"selector":{"ap
 先确认实验 A 已恢复，选择其中一个 catalog Pod 的实际名称替换 POD_NAME。以下只移除这个实验容器的就绪文件，业务页面仍在，readiness 失败不会触发 liveness 重启：
 
 ```bash
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# rm 会实际移除测试文件，用于触发正文中的探针失败情形
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- rm /www/ready
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=catalog -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod POD_NAME -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec catalog-client -n study -- wget -qO- -T 5 http://catalog/
 # 恢复本实验的就绪文件
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# printf 与重定向在容器内写入测试文件，用于准备或恢复实验状态
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- sh -c 'printf "ready\n" > /www/ready'
 ```
 
@@ -228,7 +301,10 @@ kubectl exec POD_NAME -n study -c app -- sh -c 'printf "ready\n" > /www/ready'
 若 Pod 已被替换，先按新对象重新核对状态，不向旧名称盲目执行恢复。清理只针对自己创建的资源，不删除整个命名空间：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n study 限定命名空间
 kubectl delete pod catalog-client -n study
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f catalog-service.yaml
 ```
 

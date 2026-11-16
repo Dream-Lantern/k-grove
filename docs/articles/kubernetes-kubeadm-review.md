@@ -70,6 +70,7 @@ swapon --show
 containerd --version
 kubeadm version -o short
 kubelet --version
+# 查看 kubectl 版本；--client 只查询本地客户端，不请求服务端版本
 kubectl version --client
 ```
 
@@ -102,6 +103,8 @@ br_netfilter
 对应的内核参数片段在原记录中是：
 
 ```ini
+# sysctl 配置片段：前两项让适用的桥接流量进入相应 iptables 路径，最后一项允许 IPv4 转发。
+# 这里只展示配置值，是否需要及相关模块是否存在须按本文的网络方案核对。
 net.bridge.bridge-nf-call-iptables = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward = 1
@@ -134,12 +137,14 @@ cgroup 是 Linux 对进程分组并统计、限制 CPU、内存等资源的机�
 下面只对比配置位置，不能混合粘贴为同一个文件：
 
 ```toml
+# SystemdCgroup=true 让 runc 采用 systemd cgroup 管理；配置层级必须与 containerd 1.x 插件路径对应。
 # containerd 1.x 文档中的相关配置位置示意
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
   SystemdCgroup = true
 ```
 
 ```toml
+# 相同选项在 containerd 2.x 的插件层级不同；不能把这条 TOML 路径直接覆盖到 1.x。
 # containerd 2.x 文档中的相关配置位置示意
 # 这是后续版本旁注，不代表已验证为原 1.28 环境
 [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
@@ -156,11 +161,19 @@ kubelet 通过 CRI（Container Runtime Interface，容器运行时接口）请�
 
 ```bash
 containerd --version
+# 查看 containerd 服务状态；--no-pager 直接输出，不启动或重启服务
 systemctl status containerd --no-pager
+# 查看 containerd 的 systemd 单元及覆盖配置，用于核对启动参数
 systemctl cat containerd
+# --config 选择 containerd 配置文件；config dump 输出其解析后的配置，用于核对插件与 Runtime 设置
 sudo containerd --config /etc/containerd/config.toml config dump
+# --runtime-endpoint/--image-endpoint 指向 CRI 套接字；info 查询运行时信息，不启动容器
 sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock --image-endpoint unix:///run/containerd/containerd.sock info
+# 读取系统日志；-u 指定服务，-k 选择内核，-b 选择本次启动，-n 100 取最近 100 行（按所用选项）
+# --no-pager 直接输出；管道中的 grep 进一步筛选驱动、GPU Xid 或内存错误（如有）
 sudo journalctl -u containerd --no-pager -n 100
+# 读取系统日志；-u 指定服务，-k 选择内核，-b 选择本次启动，-n 100 取最近 100 行（按所用选项）
+# --no-pager 直接输出；管道中的 grep 进一步筛选驱动、GPU Xid 或内存错误（如有）
 sudo journalctl -u kubelet --no-pager -n 100
 ```
 
@@ -227,12 +240,24 @@ kubeadm init
 以下为排查推演。假设已配置可访问 API 的 `kubectl`，先替换 `NODE_NAME`，在相应节点检查主机日志：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get node NODE_NAME -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
 kubectl describe node NODE_NAME
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -A 跨全部命名空间查询，适合定位资源所在范围
 kubectl get events -A --field-selector involvedObject.kind=Node,involvedObject.name=NODE_NAME --sort-by=.metadata.creationTimestamp
+# 读取系统日志；-u 指定服务，-k 选择内核，-b 选择本次启动，-n 100 取最近 100 行（按所用选项）
+# --no-pager 直接输出；管道中的 grep 进一步筛选驱动、GPU Xid 或内存错误（如有）
 sudo journalctl -u kubelet --no-pager -n 100
+# --runtime-endpoint/--image-endpoint 指向 CRI 套接字；info 查询运行时信息，不启动容器
 sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock info
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n kube-system 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n kube-system -o wide
+# 分别列出 CNI 网络配置与插件二进制目录，核对实际安装内容；不修改网络配置
 sudo ls /etc/cni/net.d /opt/cni/bin
 ```
 
@@ -249,11 +274,25 @@ sudo ls /etc/cni/net.d /opt/cni/bin
 先替换 `NAMESPACE`、`POD_NAME`、`NODE_NAME`。这些命令观察现有故障对象，不创建额外工作负载：
 
 ```bash
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pod POD_NAME -n NAMESPACE -o yaml
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -n NAMESPACE 限定命名空间
 kubectl get events -n NAMESPACE --field-selector involvedObject.kind=Pod,involvedObject.name=POD_NAME --sort-by=.metadata.creationTimestamp
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
 kubectl describe node NODE_NAME
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get nodes --show-labels
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n kube-system 限定命名空间
+# -l component=kube-scheduler 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n kube-system -l component=kube-scheduler -o wide
 ```
 
@@ -291,12 +330,28 @@ kubectl get pods -n kube-system -l component=kube-scheduler -o wide
 最后一层可以接着[第一章 Web 实验](/articles/kubernetes-architecture.html#web-demo-lab)验证。前提是 `k8s-arch-demo` 和已就绪的 `web-demo` 尚未清理，有创建 Service 和临时 Pod 的权限，测试镜像可获取且 Pod 能调度；若单节点有污点，先按第 6.2 节明确实验调度策略。以下是 Bash 命令示例：
 
 ```bash
+# 为指定工作负载创建 Service；--port 是 Service 端口，--target-port 是后端容器端口
+# -n k8s-arch-demo 限定命名空间
 kubectl expose deployment web-demo -n k8s-arch-demo --name=web-demo --port=80 --target-port=80
+# 用 --image 指定镜像创建测试 Pod；--restart=Never 不创建控制器，--command 后是容器启动命令
+# -n k8s-arch-demo 限定命名空间
 kubectl run net-check -n k8s-arch-demo --image=busybox:1.36.1 --restart=Never --command -- sleep 3600
+# 等待 --for 指定的资源条件满足；--timeout 限定本次等待时长，不会主动修复资源
+# -n k8s-arch-demo 限定命名空间
 kubectl wait -n k8s-arch-demo --for=condition=Ready pod/net-check --timeout=120s
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# nslookup 查询后面的名称，用于检查容器内 DNS 解析
+# -n k8s-arch-demo 限定命名空间
 kubectl exec -n k8s-arch-demo net-check -- nslookup web-demo.k8s-arch-demo.svc.cluster.local
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n k8s-arch-demo 限定命名空间
 kubectl exec -n k8s-arch-demo net-check -- wget -qO- -T 5 http://web-demo
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n k8s-arch-demo 限定命名空间
 kubectl delete pod net-check -n k8s-arch-demo
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n k8s-arch-demo 限定命名空间
 kubectl delete service web-demo -n k8s-arch-demo
 ```
 
@@ -305,9 +360,17 @@ kubectl delete service web-demo -n k8s-arch-demo
 以下命令模板按节点、Pod 和事件组织观察：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o wide 展示节点、IP 等扩展列
 kubectl get nodes -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -A 跨全部命名空间查询，适合定位资源所在范围
 kubectl get pods -A
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -A 跨全部命名空间查询，适合定位资源所在范围
 kubectl get events -A --sort-by=.metadata.creationTimestamp
+# 读取系统日志；-u 指定服务，-k 选择内核，-b 选择本次启动，-n 100 取最近 100 行（按所用选项）
+# --no-pager 直接输出；管道中的 grep 进一步筛选驱动、GPU Xid 或内存错误（如有）
 journalctl -u kubelet --no-pager -n 100
 ```
 

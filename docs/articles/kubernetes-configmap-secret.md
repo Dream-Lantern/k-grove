@@ -87,10 +87,12 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
           readinessProbe:
             httpGet:
               path: /
               port: http
+            # 探针执行间隔，单位秒；不是单次请求的超时时间。
             periodSeconds: 2
           env:
             - name: CATALOG_CONFIG
@@ -101,9 +103,11 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/study-config
+              # 在当前挂载层面以只读方式使用；不替代其他客户端或存储端的写权限控制。
               readOnly: true
             - name: config
               mountPath: /etc/study-subpath.conf
+              # 只挂载卷中的指定路径；ConfigMap/Secret 的 subPath 挂载不接收常规投射更新。
               subPath: app.conf
               readOnly: true
       volumes:
@@ -147,16 +151,41 @@ spec:
 
 ```bash
 # 仅当 study 不存在且专供本实验时创建
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace study
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f catalog-config-demo.yaml
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status deployment/catalog -n study --timeout=180s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=catalog -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod POD_NAME -n study -o jsonpath='{.metadata.uid}{"\n"}'
 # 仅观察本实验的非敏感 ConfigMap 内容
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- printenv CATALOG_CONFIG
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- cat /etc/study-config/app.conf
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- cat /etc/study-subpath.conf
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- cat /tmp/config-at-start
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- wget -qO- -T 5 http://127.0.0.1:8080/
 ```
 
@@ -165,13 +194,35 @@ kubectl exec POD_NAME -n study -c app -- wget -qO- -T 5 http://127.0.0.1:8080/
 把对象更新为 debug/true，使用 JSON 字符串中的换行转义表示多行 app.conf；这是对专用测试 ConfigMap 的变更：
 
 ```bash
+# 局部修改指定资源；--type=json 按 JSON Patch 操作列表修改，--type=merge 按对象合并
+# -n study 限定命名空间
 kubectl patch configmap catalog-config -n study --type=merge -p '{"data":{"app.conf":"log_level=debug\nfeature_enabled=true\n"}}'
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get configmap catalog-config -n study -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod POD_NAME -n study -o jsonpath='{.metadata.uid}{"\n"}'
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- printenv CATALOG_CONFIG
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- cat /etc/study-config/app.conf
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- cat /etc/study-subpath.conf
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- cat /tmp/config-at-start
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec POD_NAME -n study -c app -- wget -qO- -T 5 http://127.0.0.1:8080/
 ```
 
@@ -188,8 +239,10 @@ kubectl exec POD_NAME -n study -c app -- wget -qO- -T 5 http://127.0.0.1:8080/
 恢复原文件中的 info/false，并在同一 Pod 上重新检查对象、投射文件与应用输出，普通卷恢复也可能延迟：
 
 ```bash
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f catalog-config-demo.yaml
 # 清理自己创建的 Deployment 和非敏感 ConfigMap
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f catalog-config-demo.yaml
 ```
 
@@ -205,6 +258,7 @@ kind: ConfigMap
 metadata:
   name: catalog-config-v1
   namespace: study
+# 设为 true 后不能就地修改此对象的数据；用新名称版本配合工作负载引用完成更新。
 immutable: true
 data:
   app.conf: |
@@ -234,6 +288,7 @@ immutable=true 限制原地修改数据，不加密、不阻止授权读取。�
 以下是 Pod spec 下的局部引用，不是独立清单，也不包含实际仓库认证数据：
 
 ```yaml
+# 引用同一命名空间中的镜像拉取凭据 Secret，供 kubelet 拉取私有镜像。
 imagePullSecrets:
   - name: registry-credential
 ```

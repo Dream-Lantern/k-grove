@@ -62,6 +62,8 @@ Shared Memory 在普通用法下由同一个 Block 的线程共享。这个例�
 下面是新增的最小 CUDA C++ 示例，面向 Linux + CUDA Toolkit 的独立学习环境。错误检查失败时，进程退出并由系统回收资源；正常路径则显式释放资源。
 
 ```cpp
+// 向设备复制两个 n 元素数组，启动加法内核，再取回并逐项检查结果；bytes 是字节数而非元素数。
+// CHECK 遇 CUDA 错误立即退出；本例分开检查启动配置错误与同步时暴露的异步执行错误。
 #include <cuda_runtime.h>
 #include <cstdio>
 #include <cstdlib>
@@ -79,11 +81,13 @@ int main() {
   const size_t bytes = n * sizeof(float);
   std::vector<float> a(n, 1.0f), b(n, 2.0f), c(n);
   float *da = nullptr, *db = nullptr, *dc = nullptr;
+  // 按 bytes 分配设备缓冲，主机 vector 的 data() 不能直接当设备指针使用。
   CHECK(cudaMalloc(&da, bytes));
   CHECK(cudaMalloc(&db, bytes));
   CHECK(cudaMalloc(&dc, bytes));
   CHECK(cudaMemcpy(da, a.data(), bytes, cudaMemcpyHostToDevice));
   CHECK(cudaMemcpy(db, b.data(), bytes, cudaMemcpyHostToDevice));
+  // 网格大小向上取整，块内 256 线程；内核中的 i<n 排除末尾越界线程。
   add<<<(n + 255) / 256, 256>>>(da, db, dc, n);
   CHECK(cudaGetLastError());          // 检查 launch 配置等即时错误
   CHECK(cudaDeviceSynchronize());     // 在这里检查异步执行错误
@@ -114,9 +118,13 @@ int main() {
 使用 NVIDIA GPU、兼容驱动、CUDA Toolkit 12.8.1 与受支持的宿主 C++ 编译器。将上面程序保存为 `vector_add.cu`。
 
 ```bash
+# 查询驱动侧 GPU 状态、显存与进程概况；不等于 CUDA Toolkit 编译器版本
 nvidia-smi
+# 查看当前 PATH 中 CUDA 编译器的 Toolkit 版本，与驱动版本分别核对
 nvcc --version
+# 用 nvcc 编译后面的 CUDA 源码；-o 指定可执行文件名
 nvcc vector_add.cu -o vector_add
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./vector_add
 ```
 

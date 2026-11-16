@@ -58,7 +58,10 @@ CCM 观察相关对象，按云提供者实现和权限调用云接口，再更�
 只读查询模板，用于对比初始化污点、providerID、标签、地址和事件：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get node node-b -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
 kubectl describe node node-b
 ```
 
@@ -103,6 +106,7 @@ spec:
     app: catalog
   ports:
     - port: 80
+      # 后端容器的端口号或端口名；与面向客户端的 Service port 分开理解。
       targetPort: 8080
 ```
 
@@ -120,9 +124,18 @@ EndpointSlice 的生成与云负载均衡管理是独立职责。对本例带 se
 故障推演：对象创建成功，但 EXTERNAL-IP 长时间显示 `<pending>`。依次查看以下 **只读模板**：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get svc catalog -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe svc catalog -n study
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -n study 限定命名空间
 kubectl get events -n study --sort-by=.lastTimestamp
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog
 ```
 
@@ -164,6 +177,8 @@ PVC 引用 StorageClass → 到达适用供给时机（可能等待首个消费�
 下面仅是 **已批准退役时的删除命令示例，会删除 Service 并触发适用的云入口清理**，不用于探测故障：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n study 限定命名空间
 kubectl delete svc catalog -n study
 ```
 

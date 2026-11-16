@@ -69,6 +69,7 @@ Payload 是字节数组，不保证以零结尾。打印或解析应使用 len�
 下面是 Consumer Poll 路径的对照。若 `m->err` 非零，先检查错误码，例如区分分区 EOF 和实际消费错误，可用 `rd_kafka_message_errstr(m)` 记录错误。包括错误消息在内，所有非 NULL 的 Poll 返回对象最后都应销毁。
 
 ```c
+// 反例：saved 只保存了 payload 地址；销毁消息后不会延长这块内存的生命期，不可交给异步 Worker。
 /* 错误：下面两行结束后，saved 可能指向已释放内存。假设 m 是正常消息。 */
 const void *saved = m->payload;
 rd_kafka_message_destroy(m);
@@ -76,6 +77,7 @@ rd_kafka_message_destroy(m);
 ```
 
 ```c
+// 在销毁消息前同步处理内容，或由 handle_bytes 复制异步所需数据；m->len/key_len 是明确的字节长度。
 /* 正确：handle_bytes 在返回前消费字节，或者自行复制需要异步使用的数据。 */
 if (m != NULL) {
     if (m->err)
@@ -117,6 +119,8 @@ COPY 和 FREE 互斥。循环中的栈缓冲或临时可变数组适合 COPY。�
 保存为 `ownership.c`。使用 v2.8.0 的开发头文件、库和 `pkg-config`。程序只创建本地 Producer、Topic 句柄和分区列表，不配置 Broker、不发消息，成功路径无需 Kafka 服务。三个可选参数分别触发配置设置、客户端创建和 Topic 句柄创建的失败分支。
 
 ```c
+// 分别演示配置、客户端和 Topic 创建的所有权边界；错误模式走相应清理路径，不发送消息。
+// 列表扩容可能使旧元素指针失效，因此添加完成后通过 find 重新取得元素指针。
 #include <librdkafka/rdkafka.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,6 +175,7 @@ int main(int argc, char **argv) {
     rd_kafka_topic_partition_list_add(partitions, name, 0);
     rd_kafka_topic_partition_list_add(partitions, name, 1);
     rd_kafka_topic_partition_t *first =
+        // 添加/扩容完成后按 Topic 与分区号重新查找元素，避免使用扩容前的旧元素地址。
         rd_kafka_topic_partition_list_find(partitions, name, 0);
     if (first == NULL) {
         fputs("partition not found\n", stderr);
@@ -193,12 +198,19 @@ cleanup:
 ```
 
 ```bash
+# 查询本地 rdkafka 开发库的安装版本；--modversion 不连接 Broker
 pkg-config --modversion rdkafka  # 本例要求 2.8.0
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# pkg-config --cflags --libs 提供库头文件及链接参数
 cc -std=c11 -Wall -Wextra -Wpedantic ownership.c \
   $(pkg-config --cflags --libs rdkafka) -o ownership
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./ownership
+# 向所有权示例传入错误场景名，验证配置、客户端或 Topic 创建失败时的资源回收
 ./ownership bad-config
+# 向所有权示例传入错误场景名，验证配置、客户端或 Topic 创建失败时的资源回收
 ./ownership bad-client
+# 向所有权示例传入错误场景名，验证配置、客户端或 Topic 创建失败时的资源回收
 ./ownership bad-topic
 ```
 

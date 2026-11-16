@@ -38,6 +38,9 @@ PUBLISH/SUBSCRIBE 的频道名可按允许频道模式匹配；PSUBSCRIBE 的订
 以下 `redis` 代码块是 Redis 命令；修改账号、数据或备份状态的示例只适用于隔离环境。账号、键和频道使用虚构的 `demo:` 范围，口令为占位值；不要原样用于生产，也不要把 `>`、`<` 当成 Shell（命令解释环境）重定向。以 Redis Open Source 7.2.0 为例，由管理员创建专用测试用户：
 
 ```redis
+# 配置用户 demo:pub-user：reset 清空旧规则并重置，on 启用用户，>placeholder 添加示例密码
+# resetchannels 清空频道规则；&demo:news.* 允许匹配该模式的频道；四个 +命令 只授予相应订阅/退订权限
+# 这是 redis-cli 交互命令；>、& 不应直接裸写到 shell，placeholder 须替换为实际密码
 ACL SETUSER demo:pub-user reset on >placeholder resetchannels &demo:news.* +subscribe +psubscribe +unsubscribe +punsubscribe
 ```
 
@@ -67,6 +70,7 @@ Redis Open Source 8.0.0 统一发行版还改变了类别覆盖：JSON、Time Se
 一个 ACL 用户可以同时有多个有效密码。假设隔离环境的 `demo:app` 已使用密码 A 且已有正确权限，先增加 B，不重置其他规则：
 
 ```redis
+# 为已有用户 demo:app 添加新密码 B，暂时保留旧密码；> 表示添加密码，不是 shell 重定向
 ACL SETUSER demo:app >password-B-placeholder
 ```
 
@@ -75,6 +79,7 @@ ACL SETUSER demo:app >password-B-placeholder
 确认全部调用方已迁移、B 的恢复通道可用后，才删除 A 并再次持久化：
 
 ```redis
+# 移除用户 demo:app 的旧密码 A；< 表示删除指定密码，应在客户端切换到新密码后执行
 ACL SETUSER demo:app <password-A-placeholder
 ```
 
@@ -101,6 +106,7 @@ RDB（Redis Database，数据库快照）保存时点数据；AOF（Append Only 
 因此，在重写过程中逐个复制目录，可能拿到“旧清单 + 新文件”或缺少被清单引用的文件。单次 INFO 显示没有重写，也不保证复制期间不会开始重写：
 
 ```redis
+# 查询 RDB/AOF 状态、后台任务及最近持久化结果；persistence 是 INFO 的信息分区名，不是键名
 INFO persistence
 ```
 
@@ -109,21 +115,27 @@ INFO persistence
 **Redis Open Source 8.10.0 在线备份。** BACKUP 命令族由节点生成可恢复的独立文件集，调用方仍负责传输、校验和保留；不是自动完成异地备份。以下是隔离环境中的分阶段命令，必须按实际状态推进，不能一次无条件连续发送：
 
 ```redis
+# 开始节点备份流程；无额外参数，要求 Redis 8.10+ 及正文所列配置；返回 OK 不代表文件已经可恢复
 BACKUP START
+# 查询节点备份的阶段、时间与错误；无额外参数，用于判断能否继续封存或复制
 BACKUP STATUS
 ```
 
 START 打开备份窗口，在 `dir` 下的 `backupdirname` 生成基础快照；目录起初必须为空，单实例一次只有一个备份。可能先进入 pending（等待），再 snapshotting（生成快照）；直到 STATUS 返回 incrementing（累积增量），才说明 BASE 已固定。AOF 原来关闭也可使用，Redis 会临时启用相关机制而不改变配置的 appendonly 值。START 返回 OK 不表示完整备份已经就绪，见 [START](https://redis.io/docs/latest/commands/backup-start/)与 [STATUS](https://redis.io/docs/latest/commands/backup-status/)。
 
 ```redis
+# 列出当前备份固定的文件及信息；无额外参数，封存前文件集未必完整
 BACKUP LIST
 ```
 
 LIST 返回已经通过硬链接固定、不会再变化的文件绝对路径。incrementing 阶段通常只有 BASE，可提前复制它，但这不是完整恢复集，不能清理或宣称备份成功，见 [LIST](https://redis.io/docs/latest/commands/backup-list/)。
 
 ```redis
+# 封存当前备份文件集并确定恢复边界；无额外参数，应在备份进入可封存阶段后执行
 BACKUP SEAL
+# 查询节点备份的阶段、时间与错误；无额外参数，用于判断能否继续封存或复制
 BACKUP STATUS
+# 列出当前备份固定的文件及信息；无额外参数，封存前文件集未必完整
 BACKUP LIST
 ```
 
@@ -132,6 +144,7 @@ SEAL 将状态从 incrementing 推进到 sealed（封存），同步增量文件
 确认异地副本完整、校验通过且保留策略满足后，才进入清理阶段：
 
 ```redis
+# 清理已封存或失败备份的本地文件；无额外参数，应在复制和校验完成后执行
 BACKUP CLEANUP
 ```
 
@@ -140,6 +153,8 @@ CLEANUP 清理 sealed 或 failed 状态的本地备份文件并返回 idle（空
 **隔离恢复。** Redis Open Source 8.10.0 的启动配置可指定此次备份 Manifest，以下为配置片段，不是 Redis 命令或 Shell 命令；路径是假定文件已完整复制到该位置：
 
 ```text
+# redis.conf 配置项，不是 Redis 命令；preload-file 指定启动时只加载这里的备份文件集
+# aof: 表示后面是 AOF manifest 路径；使用隔离副本并按正文准备清单引用的全部文件（8.10+）
 preload-file aof:/tmp/demo-restore/appendonly.aof.manifest
 ```
 

@@ -108,6 +108,8 @@ shell 常采用“创建子进程，再在子进程 exec”的路径，但不同
 环境为现代 Linux，任意可用架构，需 GCC 和 `wc`。在新的练习目录中保存下面的 `spawn-demo.c`，再创建示例文件。程序本身是单线程的；父进程只在等待成功后解释退出状态。
 
 ```c
+// 父进程 fork 后等待；子进程用 execve 运行 path 指定程序，参数数组以 NULL 结束，environ 传递环境。
+// execve 只有失败才返回；此时子进程用 _exit(127) 退出，父进程区分正常退出与信号终止。
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <stdio.h>
@@ -123,6 +125,7 @@ int main(int argc, char **argv) {
         perror("fflush");
         return 1;
     }
+    // fork 在父进程返回子 PID，在子进程返回 0；负值表示创建失败。
     pid_t child = fork();
     if (child == -1) {
         perror("fork");
@@ -130,12 +133,14 @@ int main(int argc, char **argv) {
     }
     if (child == 0) {
         char *args[] = {"wc", "-w", "sample.txt", NULL};
+        // path 指定可执行文件，args 是以 NULL 结束的参数数组；成功后进程映像被替换，不会返回。
         execve(path, args, environ);
         const char msg[] = "execve failed\n";
         (void)write(STDERR_FILENO, msg, sizeof msg - 1);
         _exit(127);
     }
 
+    // 父进程等待指定子进程；EINTR 重试，status 再通过 WIFEXITED/WIFSIGNALED 解释。
     int status;
     pid_t result;
     do {
@@ -160,10 +165,14 @@ int main(int argc, char **argv) {
 
 ```bash
 uname -srmo
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
 gcc --version
 printf 'red blue\nred\n' > sample.txt
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
 gcc -std=c11 -Wall -Wextra -O0 spawn-demo.c -o spawn-demo
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./spawn-demo "$(command -v wc)"
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./spawn-demo /no-such-directory/wc
 ```
 

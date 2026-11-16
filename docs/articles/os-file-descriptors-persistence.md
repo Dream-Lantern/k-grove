@@ -63,6 +63,8 @@ order: 12
 下面是可以单独编译成目标文件的 C 辅助函数，不含 main。保存为 `write_all.c`，可用 `gcc -std=c11 -Wall -Wextra -Werror -c write_all.c` 检查。适用于按字节连续写入且调用方协调访问的场景，不直接覆盖数据报边界、直接 I/O 对齐和多写者记录原子性。
 
 ```c
+// fd 为输出描述符，buf/len 为待写缓冲及字节数，done 记录已成功写入的字节数。
+// 循环处理短写与 EINTR；其他错误返回 -1，调用方可据 done 判断已发生的部分写入。
 #define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <limits.h>
@@ -150,6 +152,8 @@ int write_all(int fd, const void *buf, size_t len, size_t *done)
 保存为 `offset.py`，运行 `python3 offset.py`：
 
 ```python
+# 同一路径分别通过 dup 与再次 open 获取描述符；dup 共享打开文件的偏移，独立 open 的偏移从 0 开始。
+# 断言逐次核对读取内容、共享 EOF 与独立偏移，finally 按逆序关闭所有成功打开的描述符。
 import os
 import tempfile
 from pathlib import Path
@@ -164,6 +168,7 @@ fds = []
 try:
     first = os.open(path, os.O_RDONLY)
     fds.append(first)
+    # dup 与 first 引用同一个打开文件描述；independent 的新 open 则拥有独立偏移。
     duplicate = os.dup(first)
     fds.append(duplicate)
     independent = os.open(path, os.O_RDONLY)
@@ -201,6 +206,8 @@ print("test directory retained:", directory)
 保存为 `publish.py`，运行 `python3 publish.py`。使用 `os.replace()` 表达 POSIX rename 的覆盖替换语义，父目录通过 Linux 的 `O_DIRECTORY` 打开。失败时报告所在阶段并保留专用目录；不在异常分支自动回滚已发生的发布。
 
 ```python
+# 在私有临时目录发布新文件：写临时文件并 fsync，再同目录 replace，最后 fsync 目录。
+# stage 记录失败阶段，避免把重命名成功等同于目录项已经持久化；示例保留目录供检查。
 import os
 import tempfile
 from pathlib import Path
@@ -238,6 +245,7 @@ try:
     finally:
         os.close(fd)
     stage = "rename"
+    # 同目录原子替换名称之后，再同步目录项；仅同步临时文件内容还不够。
     os.replace(name, target)   # Same-directory POSIX rename replacement.
     stage = "renamed; directory sync pending"
     os.fsync(dirfd)

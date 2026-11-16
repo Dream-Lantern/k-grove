@@ -121,10 +121,14 @@ Outbox 解决的是本地业务状态与发送意图的一致保存，通常仍�
 **可复现实验**：需要已启动的隔离 Kafka 3.9 集群、发行包和 Java。以下为发行包根目录下的 Bash 命令；不启动、格式化或重置任何现有集群。使用全新实验 Topic 和组名，若已存在请整体换名。单副本只用于观察流程，不验证副本可靠性；认证集群还需按环境提供客户端配置。
 
 ```bash
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --create 创建 Topic；--partitions 指定分区数，--replication-factor 指定每个分区副本数
 bin/kafka-topics.sh --bootstrap-server localhost:9092 \
   --create --topic orders-review-r1 --partitions 1 --replication-factor 1
 
 # 终端 A：保持运行，控制台输出不是库存数据库处理证明。
+# 从 --topic 指定的 Topic 读取记录；--group 指定消费组，--bootstrap-server 为 Broker 入口
+# --from-beginning：无已提交位点时从最早可用位置开始
 bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --topic orders-review-r1 --group inventory-review-r1 --from-beginning \
   --consumer-property enable.auto.commit=true \
@@ -132,6 +136,8 @@ bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --property print.partition=true --property print.offset=true
 
 # 终端 B：不同 group.id，各自维护进度。
+# 从 --topic 指定的 Topic 读取记录；--group 指定消费组，--bootstrap-server 为 Broker 入口
+# --from-beginning：无已提交位点时从最早可用位置开始
 bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --topic orders-review-r1 --group analytics-review-r1 --from-beginning \
   --consumer-property enable.auto.commit=true \
@@ -139,14 +145,19 @@ bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --property print.partition=true --property print.offset=true
 
 # 终端 C：输入一条 Key:Value 记录。
+# 向 --topic 指定的 Topic 生产标准输入中的记录；--bootstrap-server 是 Broker 入口
+# parse.key=true 按 key.separator 拆分输入中的 Key 和 Value，不把整行都作为 Value
+# acks=all 按 ISR 确认规则等待；enable.idempotence=true 启用生产端幂等（若指定）
 printf '%s\n' 'O-42:{"event_id":"evt-42","type":"OrderCreated"}' | \
   bin/kafka-console-producer.sh --bootstrap-server localhost:9092 \
     --topic orders-review-r1 --producer-property acks=all \
     --property parse.key=true --property key.separator=:
 
 # 等两个消费者继续轮询并完成自动提交后，分别查看已提交进度。
+# 查询 --group 指定消费组的成员或提交进度；--describe 输出当前状态，--members 展示成员（如有）
 bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
   --describe --group inventory-review-r1
+# 查询 --group 指定消费组的成员或提交进度；--describe 输出当前状态，--members 展示成员（如有）
 bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
   --describe --group analytics-review-r1
 ```

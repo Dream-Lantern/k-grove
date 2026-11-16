@@ -105,6 +105,7 @@ redo 是恢复所需变更，不必等同再次调用业务接口；重新调用
 **案例一：已提交但页面未写回。** 假设 account 表的 id=1 余额原为 1000，T1 执行以下语句后，修改日志与提交记录已经持久，数据页仍未写回，此时崩溃：
 
 ```sql
+-- BEGIN/COMMIT 界定本地事务；UPDATE 将 id=1 的余额直接设为 900，不是扣除 900。
 BEGIN;
 UPDATE account SET balance = 900 WHERE id = 1;
 COMMIT;

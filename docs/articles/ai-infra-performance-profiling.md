@@ -41,8 +41,11 @@ GPU 性能分析先把业务延迟拆到 CPU、提交、搬运与设备计算等
 下面是 Linux 文档示例，`app.py` 为占位应用；实际采集会运行应用、产生报告并带来开销。
 
 ```bash
+# 采集 CUDA/NVTX 时间线；--delay=5 延后 5 秒，--duration=10 采集 10 秒，--output=trial 指定报告前缀
+# --kill=none 停止采集后不终止应用；--stop-on-exit=true 在应用退出时结束采集
 nsys profile --trace=cuda,nvtx --delay=5 --duration=10 --kill=none --stop-on-exit=true \
   --output=trial python app.py
+# 读取 trial.nsys-rep 并生成统计摘要；这一步分析已有报告，不重新运行应用
 nsys stats trial.nsys-rep
 ```
 
@@ -64,6 +67,7 @@ nsys stats trial.nsys-rep
 ## 3. 再缩小到一个 Kernel
 
 ```bash
+# 用 Nsight Compute 采集 basic 指标集；--launch-count 1 限定采集 1 次内核启动，--output 指定报告前缀
 ncu --set basic --launch-count 1 --output=kernel-trial python app.py
 ```
 
@@ -101,6 +105,8 @@ Theoretical Occupancy（理论占用率）由启动配置和寄存器、共享�
 固定为一张 GPU、一个进程、一条默认流，复制 2048 × 2048 个整数。两组只切换线程到元素的映射：行向连续与列向跨步。每组均读写同样的数据，执行同一 kernel，网格与块大小固定。下面的测试不启用 profiler 时用 CUDA Event 计量整批并除以轮数，排除初始化、回拷与校验。
 
 ```cpp
+// 同一份数据分别按 row 线性索引与 column 转置式索引访存；两种方式都拷贝相同元素并校验内容。
+// 先预热，再用 CUDA Event 测量重复内核的设备执行时间；它不包含所有主机端开销。
 #include <cuda_runtime.h>
 #include <cstdio>
 #include <cstdlib>
@@ -119,6 +125,7 @@ void check(cudaError_t status) {
 
 __global__ void copy_layout(const int* input, int* output, bool column) {
   int t = blockIdx.x * blockDim.x + threadIdx.x;
+  // column 改变相邻线程访问的地址间隔，row 直接采用线性线程索引。
   int i = column ? (t % side) * side + t / side : t;
   output[i] = input[i];
 }
@@ -146,6 +153,7 @@ int main(int argc, char** argv) {
   };
   for (int i = 0; i < 20; ++i) launch();
   check(cudaDeviceSynchronize());
+  // 在同一设备执行序列记录起止事件，后面等待结束事件再读取耗时。
   check(cudaEventRecord(start));
   for (int i = 0; i < repeats; ++i) launch();
   check(cudaEventRecord(stop));
@@ -166,12 +174,19 @@ int main(int argc, char** argv) {
 保存为 `layout.cu`，在 Linux、兼容驱动、CUDA Toolkit 12.8.1 和受支持宿主编译器下构建。Nsight 与 Toolkit 分别记录版本。先不启动 profiler 运行两组，再按第 3 节过滤分别采样，最后退出 profiler、交替顺序重复两组。两种模式都应输出 `PASS`，分别记录时间和瓶颈。不要把带 Replay 的程序计时并入无采集结果。
 
 ```bash
+# 查询驱动侧 GPU 状态、显存与进程概况；不等于 CUDA Toolkit 编译器版本
 nvidia-smi
+# 查看当前 PATH 中 CUDA 编译器的 Toolkit 版本，与驱动版本分别核对
 nvcc --version
+# 查看性能分析工具版本，便于核对采集参数及报告兼容性
 nsys --version
+# 查看性能分析工具版本，便于核对采集参数及报告兼容性
 ncu --version
+# 用 nvcc 编译后面的 CUDA 源码；-o 指定可执行文件名；-std=c++17 选择 C++17，-O2 开启编译优化
 nvcc -std=c++17 -O2 layout.cu -o layout
+# 运行访存布局对比；row/column 选择线性或跨步索引方式，具体计时范围见代码
 ./layout column
+# 运行访存布局对比；row/column 选择线性或跨步索引方式，具体计时范围见代码
 ./layout row
 ```
 

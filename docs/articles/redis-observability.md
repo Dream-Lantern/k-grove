@@ -32,15 +32,25 @@ INFO 提供实例、客户端、复制和内存等状态线索。诊断时先确
 CPU（Central Processing Unit，中央处理器）的累计耗时需要用区间差值观察。以下 `redis` 代码块是发给 Redis 的观察命令，不是 Shell（命令解释环境）命令；基线为 Redis Open Source 7.2.0，例外另标，不能据此推断 Redis Software 或 Redis Cloud 的能力。
 
 ```redis
+# 查询 服务器版本、运行模式和启动时间；server 是 INFO 的信息分区名，不是键名
 INFO server
+# 查询 客户端连接数量、阻塞连接等指标；clients 是 INFO 的信息分区名，不是键名
 INFO clients
+# 查询 累计命令数、命中/未命中、过期及淘汰等统计；stats 是 INFO 的信息分区名，不是键名
 INFO stats
+# 查询 内存使用、峰值、碎片及分配器指标；memory 是 INFO 的信息分区名，不是键名
 INFO memory
+# 查询 RDB/AOF 状态、后台任务及最近持久化结果；persistence 是 INFO 的信息分区名，不是键名
 INFO persistence
+# 查询 主从角色、复制链路、偏移量及积压缓冲状态；replication 是 INFO 的信息分区名，不是键名
 INFO replication
+# 查询 各命令的调用次数、累计耗时及错误统计；commandstats 是 INFO 的信息分区名，不是键名
 INFO commandstats
+# 查询 已启用延迟跟踪的命令耗时百分位；latencystats 是 INFO 的信息分区名，不是键名
 INFO latencystats
+# 查询 Redis 主进程及子进程的 CPU 时间；cpu 是 INFO 的信息分区名，不是键名
 INFO cpu
+# 查询 各逻辑数据库的键数、带期限键数和平均 TTL；keyspace 是 INFO 的信息分区名，不是键名
 INFO keyspace
 ```
 
@@ -92,7 +102,9 @@ Rate = (Counter_t2 - Counter_t1) / (t2 - t1)
 输入侧可能因大请求、Pipeline 积压或处理速度不足出现压力；输出侧则可能因大回复、慢读客户端、订阅者消费慢或复制链路落后而增长。
 
 ```redis
+# 列出当前客户端连接的地址、状态、缓冲等信息；无额外参数
 CLIENT LIST
+# 读取配置 client-output-buffer-limit：普通、复制及 PubSub 客户端输出缓冲的软硬限制；GET 只查询，不修改配置
 CONFIG GET client-output-buffer-limit
 ```
 
@@ -154,6 +166,8 @@ MOVED 通常要求客户端更新槽位映射；ASK 只针对当前迁移请求�
 例如 [MGET](/articles/redis-strings.html) 对非 String 键也会给出逐键 nil；[HTTL](https://redis.io/docs/latest/commands/httl/) 自 Redis Open Source 7.4.0 提供，查询 Hash 字段的 TTL（Time To Live，存活时间），不等于整个 Hash Key 的 TTL：
 
 ```redis
+# 查询 Hash user:1001 中字段 name、age、status 的剩余秒数；FIELDS 3 表示查询 3 个字段
+# 结果按字段顺序组成数组：-1 表示字段无 TTL，-2 表示键或字段不存在（Redis 7.4+）
 HTTL user:1001 FIELDS 3 name age status
 ```
 

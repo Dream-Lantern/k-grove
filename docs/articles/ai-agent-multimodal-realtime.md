@@ -157,6 +157,8 @@ VLA 是 Vision-Language-Action（视觉—语言—动作）模型；Sim2Real �
 源码节选（上下文依赖见原文件）：[chapter6/streaming-speech/interruption_manager.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter6/streaming-speech/interruption_manager.py#L307-L318)。
 
 ```python
+# 用户打断时先停止播放，再给最后一个可中断回复标记 interrupted；有截断位置则保留已播放前缀。
+# 这里修改本地对话状态；不能据此推断远端生成或已经发生的工具副作用也已取消。
 self.stop_playback()
 self.barge_in_count += 1
 truncated_turns_count = 0
@@ -254,7 +256,9 @@ Guard 使用进程内内存记录事件；外层需把已播采样映射到文�
 在本项目仓库根目录，用 Python 3.11～3.13 运行，不需要麦克风、模型 API、GPU 或额外依赖：
 
 ```bash
+# 使用当前 Python 解释器运行音频交互状态实验
 python examples/ai-agent/ch9-11-review/audio_state.py
+# 发现并运行单元测试；-s 指定目录，-p 指定文件名匹配模式，-v 展示各测试结果
 python -m unittest discover -s examples/ai-agent/ch9-11-review -p "test_audio*.py" -v
 ```
 

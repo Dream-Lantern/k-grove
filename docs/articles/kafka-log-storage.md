@@ -182,17 +182,23 @@ Page Cache（页缓存）缓存文件页，近期追加和热读取可能由内�
 以下为 Kafka 3.9 Bash 示例。优先使用隔离实验环境中已经停止变化的副本文件，或一致性复制出的诊断目录；不要对生产活动文件做手工修改。`kafka-dump-log.sh` 选项根据 3.9.0 `DumpLogSegments` 中的定义列出，最终仍应以使用的发行包 `--help` 核对：
 
 ```bash
+# 查看当前安装版本的工具参数帮助；不读取日志或修改集群
 bin/kafka-dump-log.sh --help
 
 # SAMPLE_LOG_DIR 指向既有的、获准读取的诊断文件目录；不指向待初始化目录。
 # 文件名只是上面的教学示意，需替换为该目录真实存在的一组同基准文件。
+# 解析 --files 指定的本地 Kafka 日志或索引文件；这不是查询在线 Broker 的命令
+# --deep-iteration：深入遍历批次中的记录
+# --max-bytes：限定日志读取字节量
 bin/kafka-dump-log.sh \
   --files "$SAMPLE_LOG_DIR/00000000000000001000.log" \
   --deep-iteration --max-bytes 1048576
 
+# 解析 --files 指定的本地 Kafka 日志或索引文件；这不是查询在线 Broker 的命令
 bin/kafka-dump-log.sh \
   --files "$SAMPLE_LOG_DIR/00000000000000001000.index"
 
+# 解析 --files 指定的本地 Kafka 日志或索引文件；这不是查询在线 Broker 的命令
 bin/kafka-dump-log.sh \
   --files "$SAMPLE_LOG_DIR/00000000000000001000.timeindex"
 ```

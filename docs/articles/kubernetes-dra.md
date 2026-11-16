@@ -63,8 +63,13 @@ DRA（Dynamic Resource Allocation，动态资源分配）尝试通过资源申�
 这些是配置核对项，不是让读者直接修改现有集群的操作指令。仅打开 API 不代表调度、分配和节点准备已可用。[1.28 启用条件](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/dynamic-resource-allocation.md)、[默认调度插件](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/scheduler/apis/config/v1/default_plugins.go)。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
 kubectl get resourceclasses
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get resourceclaims -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get podschedulingcontexts -n study
 ```
 
@@ -75,6 +80,7 @@ API 存在但没有对象时，可能返回 `No resources found`；未服务该�
 以下是 **1.28 合成结构示例，未提交**，假定 study 已存在、虚构驱动 `resource-driver.example.com` 已正确安装；未包含驱动部署或自定义参数配置，不代表可用的 GPU 安装方案。
 
 ```yaml
+# 历史 DRA alpha 配置：ResourceClass、WaitForFirstConsumer 与 resourceClaims.source 属于这里注明的版本模型。
 apiVersion: resource.k8s.io/v1alpha2
 kind: ResourceClass
 metadata:
@@ -152,6 +158,7 @@ Immediate 表示 Claim 创建后即可启动分配，不等待具体 Pod；WaitF
 驱动发布设备属性的局部片段，例如 ResourceSlice `spec.devices` 中的一项；不是完整 ResourceSlice：
 
 ```yaml
+# 设备条目片段：memoryGB 是驱动发布的整型属性，不是 Pod 的标准 memory request。
 - name: gpu-a
   basic:
     attributes:
@@ -162,6 +169,7 @@ Immediate 表示 Claim 创建后即可启动分配，不等待具体 Pod；WaitF
 对应的 **1.32 合成选择示例，未提交**：
 
 ```yaml
+# DRA beta 模型：DeviceClass 选驱动，Claim 再以 CEL 过滤至少 70 GB 属性的设备并申请 1 个。
 apiVersion: resource.k8s.io/v1beta1
 kind: DeviceClass
 metadata:
@@ -178,6 +186,7 @@ metadata:
   namespace: study
 spec:
   devices:
+    # 设备请求列表；每项通过 deviceClassName 与 selectors 选设备，count 是需要的设备数量。
     requests:
       - name: gpu
         deviceClassName: example-gpu

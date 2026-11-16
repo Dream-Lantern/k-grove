@@ -44,8 +44,14 @@ Stream 保存带有 ID（Identifier，标识符）的条目，每条条目包含
 新增示例：
 
 ```redis
+# 向 Stream demo:events 追加消息； * 表示由服务端生成消息 ID
+# 后续参数是字段/值对：event_id=e-42、kind=created；返回消息 ID
 XADD demo:events * event_id e-42 kind created
+# 为 Stream demo:events 创建消费者组 workers；0 从历史起点开始读取；要求流已存在
 XGROUP CREATE demo:events workers 0
+# 以组 workers、消费者 consumer-a 读取 Stream demo:events；GROUP 后依次是组名和消费者名
+# COUNT 10 限制本次每个流最多返回 10 条；STREAMS 后依次是键和读取位置
+# > 请求尚未分配给组内消费者的新消息，消息进入该组待确认列表
 XREADGROUP GROUP workers consumer-a COUNT 10 STREAMS demo:events >
 ```
 
@@ -56,7 +62,9 @@ Stream ID 通常形如 `1730000000000-0`：前半是毫秒时间部分，后半�
 下面是独立的组创建示例；使用不同组名，避免把两条命令误当成重复创建 workers：
 
 ```redis
+# 为 Stream demo:events 创建消费者组 future-workers；$ 将当前位置设为创建时的流尾，仅读取后续新消息；要求流已存在
 XGROUP CREATE demo:events future-workers $
+# 为 Stream demo:events:new 创建消费者组 workers；0 从历史起点开始读取；MKSTREAM 允许流不存在时创建空流
 XGROUP CREATE demo:events:new workers 0 MKSTREAM
 ```
 
@@ -75,14 +83,28 @@ XGROUP CREATE demo:events:new workers 0 MKSTREAM
 以下是可逐行输入的独立教学示例，要求学习实例中 `demo:events:ack` 原先不存在，没有并发写入；固定 ID 用于明确后续确认对象，不表示实际事件时间。
 
 ```redis
+# 向 Stream demo:events:ack 追加消息；1000-0 是指定的消息 ID（毫秒时间部分-序号），须满足递增要求
+# 后续参数是字段/值对：event_id=e-01、kind=created；返回消息 ID
 XADD demo:events:ack 1000-0 event_id e-01 kind created
+# 为 Stream demo:events:ack 创建消费者组 workers；0 从历史起点开始读取；要求流已存在
 XGROUP CREATE demo:events:ack workers 0
+# 为 Stream demo:events:ack 创建消费者组 audit；0 从历史起点开始读取；要求流已存在
 XGROUP CREATE demo:events:ack audit 0
+# 以组 workers、消费者 consumer-a 读取 Stream demo:events:ack；GROUP 后依次是组名和消费者名
+# COUNT 1 限制本次每个流最多返回 1 条；STREAMS 后依次是键和读取位置
+# > 请求尚未分配给组内消费者的新消息，消息进入该组待确认列表
 XREADGROUP GROUP workers consumer-a COUNT 1 STREAMS demo:events:ack >
+# 以组 audit、消费者 auditor 读取 Stream demo:events:ack；GROUP 后依次是组名和消费者名
+# COUNT 1 限制本次每个流最多返回 1 条；STREAMS 后依次是键和读取位置
+# > 请求尚未分配给组内消费者的新消息，消息进入该组待确认列表
 XREADGROUP GROUP audit auditor COUNT 1 STREAMS demo:events:ack >
+# 确认 Stream demo:events:ack 中组 workers 的消息 1000-0；从该组待确认列表移除，不删除流正文；返回实际确认数
 XACK demo:events:ack workers 1000-0
+# 查询 Stream demo:events:ack 的消费者组 workers 的待确认摘要，包括数量、ID 范围及消费者分布
 XPENDING demo:events:ack workers
+# 查询 Stream demo:events:ack 的消费者组 audit 的待确认摘要，包括数量、ID 范围及消费者分布
 XPENDING demo:events:ack audit
+# 按消息 ID 正序读取 Stream demo:events:ack；-、+ 表示无下界和无上界，读取全部现存消息，不改变确认状态
 XRANGE demo:events:ack - +
 ```
 
@@ -93,7 +115,9 @@ XRANGE demo:events:ack - +
 新增教学模板，接续上节：保留 XREADGROUP 返回的实际条目 ID，将下面的 STREAM_ID 替换为该 ID。它不是键名，也不是 event_id 字段。只有业务成功提交后才确认：
 
 ```text
+# 确认 Stream demo:events 中 workers 组的一条消息；STREAM_ID 替换为实际消息 ID，不删除正文
 XACK demo:events workers STREAM_ID
+# 查看同一个流和消费者组的待确认摘要；workers 是组名，不是消费者名
 XPENDING demo:events workers
 ```
 
@@ -102,9 +126,18 @@ XPENDING demo:events workers
 再写入另一个教学事件并由 consumer-a 领取，但暂不确认，形成恢复情景：
 
 ```redis
+# 向 Stream demo:events 追加消息； * 表示由服务端生成消息 ID
+# 后续参数是字段/值对：event_id=e-43、kind=updated；返回消息 ID
 XADD demo:events * event_id e-43 kind updated
+# 以组 workers、消费者 consumer-a 读取 Stream demo:events；GROUP 后依次是组名和消费者名
+# COUNT 10 限制本次每个流最多返回 10 条；STREAMS 后依次是键和读取位置
+# > 请求尚未分配给组内消费者的新消息，消息进入该组待确认列表
 XREADGROUP GROUP workers consumer-a COUNT 10 STREAMS demo:events >
+# 查询 Stream demo:events 的消费者组 workers 的待确认摘要，包括数量、ID 范围及消费者分布
 XPENDING demo:events workers
+# 以组 workers、消费者 consumer-a 读取 Stream demo:events；GROUP 后依次是组名和消费者名
+# COUNT 10 限制本次每个流最多返回 10 条；STREAMS 后依次是键和读取位置
+# 0 从头检查当前消费者自己的待确认消息，不会读取其他消费者的待确认项
 XREADGROUP GROUP workers consumer-a COUNT 10 STREAMS demo:events 0
 ```
 
@@ -119,6 +152,8 @@ XPENDING 可查看待确认状态。Redis Open Source 6.2.0 起的 XAUTOCLAIM �
 例如由 consumer-b 接管满足至少 60000 毫秒空闲条件的条目，起始游标为 0-0：
 
 ```redis
+# 把 Stream demo:events 中组 workers 的超时待确认消息转给 consumer-b
+# 60000 是最短空闲毫秒数，0-0 是起始扫描 ID，COUNT 10 最多认领 10 条；须使用返回的游标继续扫描（Redis 6.2+）
 XAUTOCLAIM demo:events workers consumer-b 60000 0-0 COUNT 10
 ```
 
@@ -153,8 +188,11 @@ Stream 不是无限增长的免费日志。MAXLEN、MINID 等修剪条件需要�
 以下是三种修剪策略示例，不是要求连续执行的生产清理脚本。返回整数表示实际删除的条目数，取决于已有内容：
 
 ```redis
+# 裁剪 Stream demo:events，MAXLEN 1000 表示精确保留至多 1000 条，删除最旧消息；返回删除条数
 XTRIM demo:events MAXLEN 1000
+# 裁剪 Stream demo:events，MAXLEN ~ 1000 表示近似保留 1000 条，允许超出以减少裁剪成本；返回删除条数
 XTRIM demo:events MAXLEN ~ 1000
+# 裁剪 Stream demo:events；MINID 1730000000000-0 删除 ID 小于该值的消息，单位为消息 ID，不是 TTL（Redis 6.2+）
 XTRIM demo:events MINID 1730000000000-0
 ```
 
@@ -182,14 +220,31 @@ KEEPREF 不代表保留消息本体，PEL 中存在 ID 也不代表还能读到�
 下面是仅适用于 Redis Open Source 8.2.0 或更高版本的独立教学流程，要求 `demo:events:refs` 原先不存在，无其他消费者或组。
 
 ```redis
+# 向 Stream demo:events:refs 追加消息；1000-0 是指定的消息 ID（毫秒时间部分-序号），须满足递增要求
+# 后续参数是字段/值对：event_id=e-01；返回消息 ID
 XADD demo:events:refs 1000-0 event_id e-01
+# 为 Stream demo:events:refs 创建消费者组 group-a；0 从历史起点开始读取；要求流已存在
 XGROUP CREATE demo:events:refs group-a 0
+# 为 Stream demo:events:refs 创建消费者组 group-b；0 从历史起点开始读取；要求流已存在
 XGROUP CREATE demo:events:refs group-b 0
+# 以组 group-a、消费者 a 读取 Stream demo:events:refs；GROUP 后依次是组名和消费者名
+# COUNT 1 限制本次每个流最多返回 1 条；STREAMS 后依次是键和读取位置
+# > 请求尚未分配给组内消费者的新消息，消息进入该组待确认列表
 XREADGROUP GROUP group-a a COUNT 1 STREAMS demo:events:refs >
+# 以组 group-b、消费者 b 读取 Stream demo:events:refs；GROUP 后依次是组名和消费者名
+# COUNT 1 限制本次每个流最多返回 1 条；STREAMS 后依次是键和读取位置
+# > 请求尚未分配给组内消费者的新消息，消息进入该组待确认列表
 XREADGROUP GROUP group-b b COUNT 1 STREAMS demo:events:refs >
+# 确认 Stream demo:events:refs 在组 group-a 中的消息，并按 ACKED 策略尝试删除正文（Redis 8.2+）
+# IDS 1 表示后面只有 1 个消息 ID：1000-0；ACKED 要求所有相关消费者组均已确认后才删除
 XACKDEL demo:events:refs group-a ACKED IDS 1 1000-0
+# 按消息 ID 正序读取 Stream demo:events:refs；-、+ 表示无下界和无上界，读取全部现存消息，不改变确认状态
 XRANGE demo:events:refs - +
+# 确认 Stream demo:events:refs 在组 group-b 中的消息，并按 ACKED 策略尝试删除正文（Redis 8.2+）
+# IDS 1 表示后面只有 1 个消息 ID：1000-0；ACKED 要求所有相关消费者组均已确认后才删除
 XACKDEL demo:events:refs group-b ACKED IDS 1 1000-0
+# 删除 Stream demo:events:refs 中的消息 1000-0；IDS 1 指定 1 个消息 ID（Redis 8.2+）
+# KEEPREF 保留各消费者组的待确认引用；消息已不存在时不会重新创建
 XDELEX demo:events:refs KEEPREF IDS 1 1000-0
 ```
 

@@ -94,6 +94,7 @@ spec:
       image: busybox:1.36.1
       command: ["sleep", "3600"]
       resources:
+        # 声明运行时资源限制或扩展资源需求；资源名和单位须按对应类型及插件核对。
         limits:
           vendor.example.com/gpu: 2
 ```
@@ -149,9 +150,17 @@ Linux 常见 Socket 为 `/var/lib/kubelet/pod-resources/kubelet.sock`，与插�
 只读查询模板：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get nodes -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
 kubectl describe node NODE_NAME
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pod catalog-gpu -n study -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod catalog-gpu -n study
 ```
 

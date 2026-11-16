@@ -128,13 +128,18 @@ HTTP、TCP、exec 以及内置 gRPC 都可用于相应探针目的，但各自�
 下面只是放在容器配置中的片段，省略镜像和其他 Pod 字段，不是可直接提交的完整清单。路径必须由应用实现；数字用于解释，不是通用推荐值。
 
 ```yaml
+# 启动探针成功前，暂不执行该容器的就绪和存活探针。
 startupProbe:
   httpGet:
     path: /health/startup
     port: 8080
+  # 探针执行间隔，单位秒；不是单次请求的超时时间。
   periodSeconds: 5
+  # 本次调用/探测的超时秒数，具体对象见所在配置段。
   timeoutSeconds: 2
+  # 连续失败达到此次数后，才按该探针的类型处理。
   failureThreshold: 24
+# 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
 readinessProbe:
   httpGet:
     path: /health/ready
@@ -142,6 +147,7 @@ readinessProbe:
   periodSeconds: 5
   timeoutSeconds: 2
   failureThreshold: 3
+# 存活探针连续失败达阈值后触发容器重启，而非只从 Service 后端摘除。
 livenessProbe:
   httpGet:
     path: /health/live
@@ -185,10 +191,20 @@ livenessProbe:
 以下命令模板用于依次查看对象、事件和日志。使用时先确认集群上下文并替换占位符；输出含业务信息时，分享前需要脱敏。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
 kubectl get nodes
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
 kubectl describe node NODE_NAME
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pod POD_NAME -n NAMESPACE -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# --previous 读取该 Pod 内容器上一次终止实例的日志，不是所有历史 Pod 的日志
+# -n NAMESPACE 限定命名空间
 kubectl logs POD_NAME -n NAMESPACE -c CONTAINER_NAME --previous
 ```
 
@@ -201,11 +217,27 @@ kubectl logs POD_NAME -n NAMESPACE -c CONTAINER_NAME --previous
 以下是排查推演，未在本次修订中执行。假设第一章 `web-demo` 的某个 Pod 出现此现象，具备读取 Pod、Events 和容器日志的权限。先从列表选择实际 Pod，将 `POD_NAME` 替换为名称；容器名 `web` 与第一章一致：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
 kubectl get pods -n k8s-arch-demo -l app=web-demo
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pod POD_NAME -n k8s-arch-demo -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n k8s-arch-demo 限定命名空间
 kubectl describe pod POD_NAME -n k8s-arch-demo
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -n k8s-arch-demo 限定命名空间
 kubectl get events -n k8s-arch-demo --field-selector involvedObject.kind=Pod,involvedObject.name=POD_NAME --sort-by=.metadata.creationTimestamp
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod POD_NAME -n k8s-arch-demo -o jsonpath='{.metadata.uid}{"\n"}{range .status.containerStatuses[*]}{.name}{" restart="}{.restartCount}{" id="}{.containerID}{"\nstate="}{.state}{"\nlastState="}{.lastState}{"\n"}{end}'
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# --previous 读取该 Pod 内容器上一次终止实例的日志，不是所有历史 Pod 的日志
+# -n k8s-arch-demo 限定命名空间
 kubectl logs POD_NAME -n k8s-arch-demo -c web --previous
 ```
 

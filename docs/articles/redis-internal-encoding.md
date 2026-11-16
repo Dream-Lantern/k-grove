@@ -106,10 +106,15 @@ buf：   实际数据字节 ... | '\0'
 能表示成适用整数的值、较短字符串和较长字符串，可能采用不同内部编码。以固定标签 Redis 7.2.0 的 object.c 为例，适用的字符串创建路径以 44 字节为 embstr 阈值，长度小于等于 44 时进入对应创建分支。这个数字不是应用协议：整数优化、其他命令路径以及后续更新都可能影响最终编码，不能仅按创建时的长度推断所有对象布局。
 
 ```redis
+# 将字符串键 demo:encoding:number 写为 123；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:encoding:number 123
+# 将字符串键 demo:encoding:text 写为 hello；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:encoding:text hello
+# 查询键 demo:encoding:number 的内部编码；ENCODING 返回实现形式，而不是逻辑类型
 OBJECT ENCODING demo:encoding:number
+# 查询键 demo:encoding:text 的内部编码；ENCODING 返回实现形式，而不是逻辑类型
 OBJECT ENCODING demo:encoding:text
+# 估算键 demo:encoding:text 及其结构的内存占用，返回字节数；不存在返回 nil
 MEMORY USAGE demo:encoding:text
 ```
 
@@ -126,9 +131,15 @@ String 命令与业务边界见[第三章](/articles/redis-strings.html)。
 教学示例假设键此前不存在，Redis Open Source 7.2.0 使用默认 `hash-max-listpack-entries 512`、`hash-max-listpack-value 64`，且无并发修改：
 
 ```redis
+# 在 Hash demo:encoding:profile 中写入字段和值：name=alice；返回新增字段数
+# 已有字段会更新，普通 HSET 覆盖字段时会清除该字段原有 TTL
 HSET demo:encoding:profile name alice
+# 查询键 demo:encoding:profile 的内部编码；ENCODING 返回实现形式，而不是逻辑类型
 OBJECT ENCODING demo:encoding:profile
+# 在 Hash demo:encoding:profile 中写入字段和值：note=12345678901234567890123456789012345678901234567890123456789012345；返回新增字段数
+# 已有字段会更新，普通 HSET 覆盖字段时会清除该字段原有 TTL
 HSET demo:encoding:profile note 12345678901234567890123456789012345678901234567890123456789012345
+# 查询键 demo:encoding:profile 的内部编码；ENCODING 返回实现形式，而不是逻辑类型
 OBJECT ENCODING demo:encoding:profile
 ```
 

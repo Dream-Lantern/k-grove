@@ -59,7 +59,9 @@ selector:
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
+    # 滚动更新允许不可用的 Pod 上限；0 要求更新过程维持原有可用数量目标。
     maxUnavailable: 1
+    # 滚动更新允许超出期望数量的 Pod 上限；需结合该工作负载类型及 maxUnavailable 一起理解。
     maxSurge: 0
 ```
 
@@ -90,7 +92,9 @@ DaemonSet 的 RollingUpdate 使用自己的字段语义。v1.28.0 API 中，`max
 ```yaml
 type: RollingUpdate
 rollingUpdate:
+  # 滚动更新允许不可用的 Pod 上限；0 要求更新过程维持原有可用数量目标。
   maxUnavailable: 0
+  # 滚动更新允许超出期望数量的 Pod 上限；需结合该工作负载类型及 maxUnavailable 一起理解。
   maxSurge: 1
 ```
 
@@ -140,8 +144,16 @@ DaemonSet 类型本身不授予这些能力，应逐项按最小权限配置。
 ## 5. 从期望覆盖到实际可用 {#_5-不要只看期望数量}
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get daemonset AGENT -n NAMESPACE -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe daemonset AGENT -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n NAMESPACE -o wide
 ```
 
@@ -175,19 +187,24 @@ spec:
   selector:
     matchLabels:
       app: study-node-agent
+  # Pod 持续 Ready 达到此秒数后才计为 Available。
   minReadySeconds: 5
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
+      # 滚动更新允许不可用的 Pod 上限；0 要求更新过程维持原有可用数量目标。
       maxUnavailable: 1
+      # 滚动更新允许超出期望数量的 Pod 上限；需结合该工作负载类型及 maxUnavailable 一起理解。
       maxSurge: 0
   template:
     metadata:
       labels:
         app: study-node-agent
     spec:
+      # 所有列出的节点标签都要匹配；它限定候选节点，不会自动给节点添加标签。
       nodeSelector:
         study-node-agent: enabled
+      # 控制是否自动挂载 ServiceAccount 凭据；设为 false 不等于取消 Pod 的 ServiceAccount 身份。
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
@@ -211,9 +228,11 @@ spec:
             capabilities:
               drop: ["ALL"]
           resources:
+            # 声明调度资源需求；CPU 的 m 表示千分之一核，内存 Mi 表示二进制兆字节（按字段单位）。
             requests:
               cpu: 10m
               memory: 16Mi
+            # 声明运行时资源限制或扩展资源需求；资源名和单位须按对应类型及插件核对。
             limits:
               cpu: 100m
               memory: 32Mi
@@ -222,13 +241,30 @@ spec:
 以下步骤未执行，apply/delete 会改变实验资源；不包含节点标签修改命令：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -l study-node-agent=enabled 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get nodes -l study-node-agent=enabled -o wide
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f study-node-agent.yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get daemonset study-node-agent -n study -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe daemonset study-node-agent -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=study-node-agent 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=study-node-agent -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get daemonset study-node-agent -n study -o yaml
 # 仅清理本实验的 DaemonSet
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f study-node-agent.yaml
 ```
 

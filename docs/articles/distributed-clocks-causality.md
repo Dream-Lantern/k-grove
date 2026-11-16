@@ -125,6 +125,8 @@ Raft 依据为 [2014 扩展论文 §5、图 2](https://raft.github.io/raft.pdf)�
 保存为 `lamport_demo.py`，运行 `python lamport_demo.py`，不依赖第三方库。为核对已建模的因果关系，代码同时保存因果边；Lamport 数字本身不能识别所有并发事件。
 
 ```python
+# 每个节点维护 Lamport 时钟；receive 取本地与消息时间戳的较大值再加 1。
+# edges 保存真实的因果边，before 通过可达性判断先后关系，避免把数值大小误当成因果证明。
 class Clock:
     def __init__(self):
         self.value = 0

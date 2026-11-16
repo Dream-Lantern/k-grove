@@ -66,6 +66,7 @@ order: 13
 用新建的实验数据库和 `psql -v ON_ERROR_STOP=1` 执行下面的建表和事务。输入是事件 `evt-1001`，订单 `order-001`，类型 `PAYMENT_CONFIRMED`，金额为 100 个最小货币单位。应用应先校验事件类型和金额，实际代码使用绑定参数。
 
 ```sql
+-- 用 event_id 主键去重；只有 accepted 真正插入的新事件才进入金额累加，两项变化放在同一数据库事务中。
 CREATE TABLE processed_order_event (
     event_id text PRIMARY KEY
 );

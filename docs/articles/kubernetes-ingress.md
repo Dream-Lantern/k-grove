@@ -46,12 +46,14 @@ metadata:
   name: catalog
   namespace: study
 spec:
+  # 选择处理此 Ingress 的类；仍需环境中有对应的 Ingress Controller。
   ingressClassName: study-controller
   rules:
     - host: catalog.example.com
       http:
         paths:
           - path: /api
+            # Prefix 按路径段前缀匹配，Exact 精确匹配；与后端端口配置是不同层面。
             pathType: Prefix
             backend:
               service:
@@ -115,6 +117,7 @@ TLS（Transport Layer Security，传输层安全协议）证书需要与入口�
 tls:
   - hosts:
       - catalog.example.com
+    # TLS 配置引用同一命名空间的证书 Secret；不直接把证书内容写在规则里。
     secretName: catalog-tls
 ```
 
@@ -131,8 +134,14 @@ SNI（Server Name Indication，服务器名称指示）位于 TLS 握手，用�
 先核对客户端名称与地址，再看 IngressClass、规则是否被控制器接受、入口服务是否暴露、后端 Service 与端点是否可用。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -A 跨全部命名空间查询，适合定位资源所在范围
 kubectl get ingress,ingressclass -A
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe ingress catalog -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get svc,endpointslice -n study
 ```
 
@@ -173,6 +182,7 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
           readinessProbe:
             httpGet:
               path: /api/admin/
@@ -190,22 +200,49 @@ spec:
     - name: http
       protocol: TCP
       port: 80
+      # 后端容器的端口号或端口名；与面向客户端的 Service port 分开理解。
       targetPort: http
 ```
 
 检查真实类的 spec.controller，并从该实现的安装记录确定 Controller 命名空间、Pod 和版本，不能凭教学类名猜部署名。下列 CONTROLLER_NAMESPACE、CONTROLLER_POD 需替换，不是已知存在的资源：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get ingressclass study-controller -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n CONTROLLER_NAMESPACE 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n CONTROLLER_NAMESPACE -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n CONTROLLER_NAMESPACE 限定命名空间
 kubectl describe pod CONTROLLER_POD -n CONTROLLER_NAMESPACE
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f catalog-admin.yaml
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status deployment/catalog-admin -n study --timeout=180s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get svc catalog catalog-admin -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog-admin 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog-admin -o yaml
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f catalog-ingress.yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get ingress catalog -n study -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe ingress catalog -n study
 ```
 
@@ -216,9 +253,13 @@ kubectl describe ingress catalog -n study
 下面 INGRESS_ADDRESS 是占位符，需要实际可访问的入口地址，可能由 LB、NodePort 或其他方式提供，不能任意换成某个 Node IP。使用 NodePort 时还需加入实际端口。curl -i 同时显示响应头，便于区分入口响应与应用响应：
 
 ```bash
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
 curl -i -H 'Host: catalog.example.com' http://INGRESS_ADDRESS/api
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
 curl -i -H 'Host: catalog.example.com' http://INGRESS_ADDRESS/api/items
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
 curl -i -H 'Host: catalog.example.com' http://INGRESS_ADDRESS/api/admin/
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
 curl -i -H 'Host: catalog.example.com' http://INGRESS_ADDRESS/apix
 ```
 
@@ -227,8 +268,12 @@ curl -i -H 'Host: catalog.example.com' http://INGRESS_ADDRESS/apix
 HTTPS 必须先满足第四节的 TLS Secret、证书域名、信任链与入口监听条件。若这些条件未提供，完整 HTTPS 验证尚未成立。具备条件后可用 --resolve 指定入口 IP，同时保留 URL 域名供 SNI、HTTP Host 与证书校验使用；INGRESS_IP 需要替换为实际入口 IP：
 
 ```bash
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
+# --resolve 将指定域名和端口固定到 INGRESS_IP，同时保留 URL 的主机名和 TLS 校验
 curl -i --resolve catalog.example.com:443:INGRESS_IP https://catalog.example.com/api/items
 # 使用专用测试 CA 时，需替换为已信任的测试 CA 文件
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
+# --resolve 将指定域名和端口固定到 INGRESS_IP，同时保留 URL 的主机名和 TLS 校验
 curl -i --cacert TEST_CA_PEM --resolve catalog.example.com:443:INGRESS_IP https://catalog.example.com/api/items
 ```
 
@@ -250,7 +295,9 @@ curl -i --cacert TEST_CA_PEM --resolve catalog.example.com:443:INGRESS_IP https:
 以下 delete 仅用于自己创建的本章资源；借用的第十九章后端和客户端应按该章清理，Controller、IngressClass 和外部提供的 TLS Secret 不在本章清理范围：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f catalog-ingress.yaml
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f catalog-admin.yaml
 ```
 

@@ -153,10 +153,15 @@ Sentinel 会更新自己的动态状态文件。文件不可写、节点身份�
 在对应 Sentinel 端点，可以按权限使用这些只读观察命令。代码块是 Redis 命令，不是 Shell 命令或客户端函数：
 
 ```redis
+# 向 Sentinel 查询全部受监控主节点及状态；无额外参数
 SENTINEL MASTERS
+# 向 Sentinel 查询主节点组 demo-primary 的副本列表；demo-primary 是监控组名称，不是主机地址
 SENTINEL REPLICAS demo-primary
+# 向 Sentinel 查询同样监控 demo-primary 的其他 Sentinel 实例
 SENTINEL SENTINELS demo-primary
+# 向 Sentinel 查询主节点组 demo-primary 当前主节点的主机地址和端口
 SENTINEL GET-MASTER-ADDR-BY-NAME demo-primary
+# 检查 Sentinel 对监控组 demo-primary 是否同时满足故障判定 quorum 和故障转移授权所需多数条件
 SENTINEL CKQUORUM demo-primary
 ```
 

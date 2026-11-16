@@ -128,10 +128,13 @@ Kafka 3.9 的 `unclean.leader.election.enable` 默认 false，Topic 可覆盖 Br
 下面为 Kafka 3.9 Bash 命令和指标入口，**未执行集群实测**。`orders` 必须已经存在；读取需要相应授权，不创建 Topic、不更改副本或生产集群配置。
 
 ```bash
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --describe 查询分区、Leader、Replica 与 ISR，不修改 Topic
 bin/kafka-topics.sh --bootstrap-server localhost:9092 \
   --describe --topic orders
 
 # 仅当本机 Broker 已经安全配置 JMX/RMI 端口 9999 时使用；不为此开启公网 JMX。
+# 运行对应 Kafka 管理工具，作用范围由命令中的 Topic、消费组或 Broker 参数决定
 bin/kafka-run-class.sh org.apache.kafka.tools.JmxTool \
   --jmx-url service:jmx:rmi:///jndi/rmi://localhost:9999/jmxrmi \
   --object-name 'kafka.server:type=ReplicaManager,name=UnderReplicatedPartitions' \

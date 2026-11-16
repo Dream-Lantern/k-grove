@@ -79,7 +79,9 @@ MIG、虚拟机和容器还可能限制可用通信路径。
 PCIe（Peripheral Component Interconnect Express）将设备接入主机，NVLink 是 NVIDIA GPU 高速互连，NVSwitch 在支持的系统上为 NVLink 提供交换。GPUDirect P2P（Peer-to-Peer）允许可达 GPU 直接访问对端设备内存。跨节点经 GPU → NIC（Network Interface Card，网卡）→ 网络 → NIC → GPU；RDMA（Remote Direct Memory Access，远程直接内存访问）可由网卡直接操作远端注册内存，GPUDirect RDMA 在兼容配置下允许 NIC 访问 GPU 内存。GPU/NIC 跨 PCIe Root Complex 或 NUMA（Non-Uniform Memory Access，非一致性内存访问）节点，可能多走主机互连或受限于可达性。
 
 ```bash
+# 列出可见 GPU 的名称与 UUID，以及适用的 MIG 设备；用于核对设备枚举
 nvidia-smi -L
+# 查询 GPU 与 CPU/其他 GPU 的拓扑矩阵；-m 输出互连关系，不是带宽实测
 nvidia-smi topo -m
 ```
 
@@ -102,9 +104,17 @@ NCCL 2.31 之前缺少 MIG communicator 支持。自 2.31 起支持多个不同 
 在授权的 Linux 四卡隔离节点执行，先记录 GPU 型号与 UUID、驱动、CUDA、NCCL 2.32.3、NIC/互连、环境变量和工具 commit。使用 nccl-tests 2.17.9（commit `2535da805b34e96d1dc08be66289be1a6d57f5ad`），按 README 指定 CUDA_HOME 和 NCCL_HOME 编译，固定二进制与动态链接库；先验证全卡 GPU，MIG 另按上节条件单独对照。以下未执行。
 
 ```bash
+# 运行 NCCL 集体通信测试；-b/-e 为起止消息字节数，-f 2 表示消息大小逐次翻倍
+# -g 指定每个线程使用的 GPU 数，-c 1 启用结果正确性检查；实际互连能力需结合拓扑分析
 ./build/all_reduce_perf -b 8 -e 64M -f 2 -g 2 -c 1
+# 运行 NCCL 集体通信测试；-b/-e 为起止消息字节数，-f 2 表示消息大小逐次翻倍
+# -g 指定每个线程使用的 GPU 数，-c 1 启用结果正确性检查；实际互连能力需结合拓扑分析
 ./build/all_reduce_perf -b 8 -e 64M -f 2 -g 4 -c 1
+# 运行 NCCL 集体通信测试；-b/-e 为起止消息字节数，-f 2 表示消息大小逐次翻倍
+# -g 指定每个线程使用的 GPU 数，-c 1 启用结果正确性检查；实际互连能力需结合拓扑分析
 ./build/all_gather_perf -b 32 -e 64M -f 2 -g 4 -c 1
+# 运行 NCCL 集体通信测试；-b/-e 为起止消息字节数，-f 2 表示消息大小逐次翻倍
+# -g 指定每个线程使用的 GPU 数，-c 1 启用结果正确性检查；实际互连能力需结合拓扑分析
 ./build/reduce_scatter_perf -b 32 -e 64M -f 2 -g 4 -c 1
 ```
 

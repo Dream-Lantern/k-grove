@@ -106,10 +106,25 @@ Deployment 负责发布，ReplicaSet 协调副本，RC 则是另一类历史资�
 以下是推演与观察命令，未在本次修订中执行。可复用[第一章实验](/articles/kubernetes-architecture.html#web-demo-lab)的 `web-demo`，只完成创建三个副本的场景，暂不扩容和清理；需要相同上下文、命名空间及读取这些资源的权限：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
 kubectl get deployment,rs,pods -n k8s-arch-demo
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n k8s-arch-demo 限定命名空间
 kubectl describe deployment web-demo -n k8s-arch-demo
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get deployment web-demo -n k8s-arch-demo -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get rs -n k8s-arch-demo -l app=web-demo -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pods -n k8s-arch-demo -l app=web-demo -o yaml
 ```
 
@@ -172,8 +187,15 @@ ResourceQuota 表达某个命名空间的资源配额约束。相关状态统计
 如果第三个 Pod 本来应由 ReplicaSet 创建，应查 ReplicaSet 的创建失败事件及命名空间配额，而不是只盯着 Pod Pending：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
 kubectl get resourcequota -n k8s-arch-demo
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n k8s-arch-demo 限定命名空间
 kubectl describe resourcequota -n k8s-arch-demo
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
 kubectl describe rs -n k8s-arch-demo -l app=web-demo
 ```
 

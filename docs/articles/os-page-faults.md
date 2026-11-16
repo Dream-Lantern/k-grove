@@ -117,6 +117,8 @@ CPU 异常是硬件到内核的控制转移，用户信号是内核报告事件�
 保存为 `faults.c`，用 `gcc -std=c11 -O2 -Wall -Wextra -Werror faults.c -o faults` 编译并运行 `./faults`。仅映射 16 个系统页，不做内存压力测试；volatile 访问避免写入被优化掉。先记录映射但不触碰，再每页写一次、再写一次，通过 getrusage 记录相邻阶段差值。
 
 ```c
+// 映射 16 页私有匿名内存，分别在仅映射、首次逐页写入、第二次写入后读取 getrusage 统计。
+// page_size 来自运行时查询；相邻快照的差值用于观察缺页，不能把它直接等同于实际物理页数。
 #define _DEFAULT_SOURCE
 #include <stdint.h>
 #include <stdio.h>
@@ -127,6 +129,7 @@ CPU 异常是硬件到内核的控制转移，用户信号是内核报告事件�
 
 static int snapshot(struct rusage *r)
 {
+    // 采集当前进程资源统计；ru_minflt/ru_majflt 是累计计数，实验比较相邻快照差值。
     if (getrusage(RUSAGE_SELF, r) == -1) {
         perror("getrusage");
         return -1;
@@ -136,6 +139,7 @@ static int snapshot(struct rusage *r)
 
 int main(void)
 {
+    // 查询运行时页大小，单位字节；不能直接假设所有系统都是 4096 字节。
     long page_size = sysconf(_SC_PAGESIZE);
     if (page_size <= 0 || (size_t)page_size > SIZE_MAX / 16) {
         fputs("invalid page size\n", stderr);

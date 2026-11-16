@@ -94,6 +94,7 @@ int ping_example(void) {
         redisFree(c);
         return 1;
     }
+    /* PING 无参数：检查当前连接能否正常交互，预期返回状态 PONG。 */
     redisReply *r = redisCommand(c, "PING");
     if (r == NULL) {
         fprintf(stderr, "Redis communication/context error: %s\n", c->errstr);
@@ -125,6 +126,8 @@ int main(void) {
 在预先安装对应开发包且 pkg-config 能找到 v1.2.0 的 Linux 或 macOS 开发环境中，可参考以下 Shell 编译命令。它是复现说明，也不是 Windows PowerShell 命令：
 
 ```bash
+# 编译 demo.c：-std=c11 选择 C11 标准，-Wall -Wextra 启用更多编译告警
+# pkg-config --cflags --libs hiredis 提供头文件及链接参数，-o hiredis-demo 指定输出文件
 cc -std=c11 -Wall -Wextra \
   demo.c \
   $(pkg-config --cflags --libs hiredis) \
@@ -165,6 +168,8 @@ int set_binary_example(redisContext *c) {
     if (c == NULL || c->err) return 1;
     const char *value = "hello";
     size_t value_len = 5;
+    /* SET 写入字符串键 demo:binary；%b 是 hiredis 的二进制占位符，不是 Redis 参数。 */
+    /* value 是数据地址，value_len 是字节数；成功时 Redis 返回 OK。 */
     redisReply *reply = redisCommand(c, "SET demo:binary %b", value, value_len);
     if (reply == NULL) {
         fprintf(stderr, "Redis communication/context error: %s\n", c->errstr);

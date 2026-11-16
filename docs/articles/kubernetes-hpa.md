@@ -108,6 +108,7 @@ metadata:
   name: catalog
   namespace: study
 spec:
+  # HPA 控制的目标工作负载；不是直接列出需要修改的 Pod。
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
@@ -120,9 +121,11 @@ spec:
         name: cpu
         target:
           type: Utilization
+          # CPU 利用率目标按 CPU request 为分母，不是按节点总 CPU 或容器 limit 计算。
           averageUtilization: 50
   behavior:
     scaleDown:
+      # 缩容稳定窗口，单位秒，用于平滑近期建议，不是每隔这么久固定缩容一次。
       stabilizationWindowSeconds: 300
 ```
 
@@ -134,6 +137,7 @@ spec:
 containers:
   - name: app
     resources:
+      # 声明调度资源需求；CPU 的 m 表示千分之一核，内存 Mi 表示二进制兆字节（按字段单位）。
       requests:
         cpu: 250m
 ```
@@ -197,13 +201,29 @@ v1.28 的资源利用率路径会忽略正在终止、已 Failed 的 Pod；Pendi
 HPA 通过 Scale 写入副本数，而 Helm Chart 可能渲染固定 spec.replicas；Helm upgrade、人工 scale、GitOps 同步可能再次改它。应协调自动扩缩容与声明源的责任，例如让支持 HPA 的 Chart 按设计省略固定 replicas，而不是假定这些工具天然互不干扰。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get hpa catalog -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe hpa catalog -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get deployment catalog -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l app=catalog
+# 查询 Metrics API 提供的 Pod CPU/内存使用量；需要 Metrics Server 等提供指标，不等于 requests/limits
 kubectl top pods -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
 kubectl get hpa -n NAMESPACE
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe hpa HPA_NAME -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
 kubectl get deployment APP -n NAMESPACE
 ```
 

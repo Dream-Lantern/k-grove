@@ -58,6 +58,8 @@ MIG（Multi-Instance GPU，多实例 GPU）在支持的硬件上划分 GPU。GI�
 Python 包通常通过 `nvidia-ml-py` 分发，导入名为 `pynvml`。在有 NVIDIA 驱动和设备访问权限的 Python 3 环境中安装 `python -m pip install nvidia-ml-py==12.570.86`，保存为 `observe_nvml.py`，执行 `python observe_nvml.py`。预期逐设备输出实际值或字段错误，空进程列表表示本次查询成功且没有返回计算进程。当前仅做静态与模拟检查。[固定包版本](https://pypi.org/project/nvidia-ml-py/12.570.86/)
 
 ```python
+# 初始化 NVML 后按设备索引查询标识、显存、温度、利用率和计算进程；read 将查询错误保留为可识别状态。
+# 字段缺失不填成 0，进程显存不可用标为 N/A；finally 保证调用 nvmlShutdown 释放 NVML 会话。
 import pynvml as nv
 
 STATUS = {
@@ -67,6 +69,7 @@ STATUS = {
     nv.NVML_ERROR_GPU_IS_LOST: "GPU_IS_LOST",
 }
 
+# 把每项查询独立封装，保留 NOT_SUPPORTED、NO_PERMISSION 等不同失败原因。
 def read(field, query, *args):
     try:
         value = query(*args)
@@ -84,6 +87,7 @@ def utilization(handle):
     value = nv.nvmlDeviceGetUtilizationRates(handle)
     return {"gpu_percent": value.gpu, "memory_percent": value.memory}
 
+# 按进程枚举显存字节数；不可用值与真实的 0 字节分开记录。
 def processes(handle):
     rows = []
     for process in nv.nvmlDeviceGetComputeRunningProcesses(handle):
@@ -122,6 +126,7 @@ def main():
             read("utilization", utilization, handle)
             read("compute_processes", processes, handle)
         return 0
+    # 即使某次查询失败，也结束本次 NVML 使用会话。
     finally:
         nv.nvmlShutdown()
 
@@ -154,6 +159,8 @@ MIG 下某些 NVML 利用率接口可能返回不支持，`nvidia-smi` 显示 N/
 下面是 Python 绑定调用关系片段；`physical`、`gi_id`、`ci_id` 必须来自当前枚举结果，包签名也需核对，不是创建操作：
 
 ```python
+# physical 是物理 GPU 句柄；先按 gi_id 查询 GPU Instance，再按 ci_id 查询其下的 Compute Instance。
+# 两个 ID 的作用域不同，不能把它们当作 nvidia-smi 的普通 GPU 索引。
 gi = pynvml.nvmlDeviceGetGpuInstanceById(physical, gi_id)
 ci = pynvml.nvmlGpuInstanceGetComputeInstanceById(gi, ci_id)
 ```

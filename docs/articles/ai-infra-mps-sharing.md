@@ -107,20 +107,28 @@ Linux 的 SIGKILL 不能被捕获、阻塞或忽略。因此“kill -9 后别的
 C 组只在独立环境中执行。以下是 Bash 示例，先把占位符替换为 `nvidia-smi -L` 的实际物理 UUID。守护进程只暴露选中的卡。客户端不再用宿主数字索引过滤由 MPS 重新枚举的设备。
 
 ```bash
+# 创建唯一临时目录并保存路径到 lab，后续管道和日志放在该目录中
 lab=$(mktemp -d)
 mkdir "$lab/pipe" "$lab/log"
+# 设置本实验 MPS 的管道或日志目录，让守护进程与客户端使用同一实验环境
 export CUDA_MPS_PIPE_DIRECTORY="$lab/pipe"
+# 设置本实验 MPS 的管道或日志目录，让守护进程与客户端使用同一实验环境
 export CUDA_MPS_LOG_DIRECTORY="$lab/log"
+# 在 CUDA_VISIBLE_DEVICES 指定设备上启动 MPS 控制守护进程；-d 表示后台运行
 CUDA_VISIBLE_DEVICES='<GPU_UUID>' nvidia-cuda-mps-control -d
 ```
 
 启动成功后运行下列客户端。在它们仍运行时，从同一实验终端环境的另一个 Shell 查询 `printf 'get_server_list\n' | nvidia-cuda-mps-control`，再将返回的 Server PID 填入 `get_client_list <SERVER_PID>` 进行查询。查询太晚时列表可能已为空，应延长三组的相同工作轮数并重测。
 
 ```bash
+# 仅为此客户端移除 CUDA_VISIBLE_DEVICES 环境变量；后台运行布局测试，记录 PID，并把标准输出和错误写入日志
 env -u CUDA_VISIBLE_DEVICES ./layout row >"$lab/a.log" 2>&1 & a=$!
+# 仅为此客户端移除 CUDA_VISIBLE_DEVICES 环境变量；后台运行布局测试，记录 PID，并把标准输出和错误写入日志
 env -u CUDA_VISIBLE_DEVICES ./layout column >"$lab/b.log" 2>&1 & b=$!
 a_rc=0; b_rc=0
+# 等待前面记录 PID 的后台任务退出；用退出码记录各任务是否成功
 wait "$a" || a_rc=$?
+# 等待前面记录 PID 的后台任务退出；用退出码记录各任务是否成功
 wait "$b" || b_rc=$?
 printf 'client A=%s B=%s\n' "$a_rc" "$b_rc"
 ```

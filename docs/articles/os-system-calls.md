@@ -111,6 +111,8 @@ TSS（Task State Segment，任务状态段）是此处 x86 硬件取得特权栈
 推荐在有 GCC 和 strace 的 Linux 环境中运行以下实验；终端显示和系统调用跟踪是不同的观察结果。将代码保存为 `demo.c`：
 
 ```c
+// 两次 printf 先写到 stdio 缓冲，fflush 显式刷新，再用 write 向标准输出写 1 字节换行。
+// 用后续 strace 观察实际系统调用，不能假定一次 printf 就对应一次 write。
 #include <stdio.h>
 #include <unistd.h>
 
@@ -131,7 +133,9 @@ int main(void) {
 这段小程序遇到输出失败即退出，用于观察调用边界，不实现通用写入重试策略。在普通工作目录中执行：
 
 ```bash
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
 gcc -Wall -Wextra -O0 demo.c -o demo
+# -e trace=write 只跟踪 write 系统调用；-o trace.log 保存跟踪记录，./demo 是被跟踪程序
 strace -e trace=write -o trace.log ./demo
 cat trace.log
 ```

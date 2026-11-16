@@ -105,6 +105,8 @@ order: 14
 保存为 `allocator.py`，运行 `python3 allocator.py`。只在 Python 中管理整数区间，不向主机申请对应大小的真实内存；所有区间使用半开边界，未覆盖范围是固定占用区。它用地址顺序列表实现三种策略，查找时按地址顺序遍历空闲区间。
 
 ```python
+# 用 [start,end) 区间模拟连续内存分配；first/best/worst 分别选择首个、最小及最大可用空洞。
+# check 校验区间不重叠及容量守恒，release 仅合并相邻空洞；分配失败保持原状态。
 class Arena:
     # Address intervals are [start, end); barriers are permanent allocations.
     def __init__(self, total, free):
@@ -125,6 +127,7 @@ class Arena:
             self.capacity = covered
         assert self.free == sorted(self.free)
 
+    # 先筛选能容纳 size 的空洞，再按策略选择；仅在成功选中后修改空闲表。
     def allocate(self, name, size, policy):
         if size <= 0 or name in self.used or policy not in ("first", "best", "worst"):
             raise ValueError("invalid request")
@@ -146,6 +149,7 @@ class Arena:
         self.check()
         return start
 
+    # 释放后按地址排序，只合并端点恰好相接的空闲区间。
     def release(self, name):
         if name not in self.used:
             raise ValueError("unknown or already released allocation")

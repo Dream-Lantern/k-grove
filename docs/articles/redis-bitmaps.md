@@ -43,8 +43,11 @@ bitIndex  = 7 - (offset % 8)
 先在新键上只设置 offset 0：
 
 ```redis
+# 将位图 demo:bitmap 的位偏移 0 设为 1；位偏移从 0 开始，返回该位置修改前的位值
 SETBIT demo:bitmap 0 1
+# 读取位图 demo:bitmap 在位偏移 0 的 0/1 值；不存在或超出当前长度的位置视为 0
 GETBIT demo:bitmap 0
+# 读取字符串键 demo:bitmap 的完整值；键不存在返回 nil，非字符串类型会报错
 GET demo:bitmap
 ```
 
@@ -53,8 +56,11 @@ GET demo:bitmap
 再看按用户位置记录活跃标记的例子：
 
 ```redis
+# 将位图 demo:active:day-1 的位偏移 42 设为 1；位偏移从 0 开始，返回该位置修改前的位值
 SETBIT demo:active:day-1 42 1
+# 读取位图 demo:active:day-1 在位偏移 42 的 0/1 值；不存在或超出当前长度的位置视为 0
 GETBIT demo:active:day-1 42
+# 统计位图 demo:active:day-1 中值为 1 的位数；不限定范围时统计整个字符串
 BITCOUNT demo:active:day-1
 ```
 
@@ -73,9 +79,13 @@ Redis Open Source 7.2.0 默认 String 长度限制为 512 MB（512 × 1024 × 10
 BITCOUNT 统计值为 1 的位数。传统 start/end 默认按 byte（字节，每字节 8 位）索引解释；Redis Open Source 7.0.0 起可显式指定 BYTE 或 BIT，边界均包含在范围内。接续上一节仅 offset 0 置位的 `demo:bitmap`，再置位 offset 8：
 
 ```redis
+# 将位图 demo:bitmap 的位偏移 8 设为 1；位偏移从 0 开始，返回该位置修改前的位值
 SETBIT demo:bitmap 8 1
+# 统计位图 demo:bitmap 中值为 1 的位数；0～2 是包含两端的范围，单位为字节（默认）
 BITCOUNT demo:bitmap 0 2
+# 统计位图 demo:bitmap 中值为 1 的位数；0～2 是包含两端的范围，单位为字节（显式 BYTE，Redis 7.0+）
 BITCOUNT demo:bitmap 0 2 BYTE
+# 统计位图 demo:bitmap 中值为 1 的位数；0～2 是包含两端的范围，单位为位（BIT，Redis 7.0+）
 BITCOUNT demo:bitmap 0 2 BIT
 ```
 
@@ -93,9 +103,13 @@ BITPOS 查找第一个指定的位值，返回**整个字符串中的绝对位�
 下面用 BITFIELD（位字段命令，可读写指定宽度整数，自 Redis Open Source 3.2.0 起支持）初始化一个全为 1 的八字节字符串。`i64` 表示 64 位有符号整数，`-1` 的这 64 位均为 1；直接 SET 文本 `0xffff...` 不会生成这样的二进制内容。
 
 ```redis
+# 将 demo:full 从位偏移 0 起的 64 位设为 -1；i64 表示有符号 64 位整数，因此这 64 位全为 1
 BITFIELD demo:full SET i64 0 -1
+# 查找 demo:full 中第一个 0 位；不限定结束位置时允许把末尾补零计入搜索，本例预期返回位偏移 64
 BITPOS demo:full 0
+# 查找第一个 0 位；末尾的 0、7 是字节范围，包含两端；本例前 8 字节全为 1，预期返回 -1
 BITPOS demo:full 0 0 7
+# 查找第一个 0 位；BIT 将范围 0～7 的单位改为位，包含两端；本例预期返回 -1
 BITPOS demo:full 0 0 7 BIT
 ```
 
@@ -117,13 +131,21 @@ BITOP 对整个 String 做对应位运算并写入目标键，不是只处理一
 以下初始化两个新位图，day1 置位 1、3，day2 置位 3、4：
 
 ```redis
+# 将位图 demo:{active}:day1 的位偏移 1 设为 1；位偏移从 0 开始，返回该位置修改前的位值
 SETBIT demo:{active}:day1 1 1
+# 将位图 demo:{active}:day1 的位偏移 3 设为 1；位偏移从 0 开始，返回该位置修改前的位值
 SETBIT demo:{active}:day1 3 1
+# 将位图 demo:{active}:day2 的位偏移 3 设为 1；位偏移从 0 开始，返回该位置修改前的位值
 SETBIT demo:{active}:day2 3 1
+# 将位图 demo:{active}:day2 的位偏移 4 设为 1；位偏移从 0 开始，返回该位置修改前的位值
 SETBIT demo:{active}:day2 4 1
+# 对源位图 demo:{active}:day1、demo:{active}:day2 做按位与运算；demo:{active}:both 是覆盖写入的目标键，返回结果字符串的字节数
 BITOP AND demo:{active}:both demo:{active}:day1 demo:{active}:day2
+# 对源位图 demo:{active}:day1、demo:{active}:day2 做按位或运算；demo:{active}:any 是覆盖写入的目标键，返回结果字符串的字节数
 BITOP OR demo:{active}:any demo:{active}:day1 demo:{active}:day2
+# 统计位图 demo:{active}:both 中值为 1 的位数；不限定范围时统计整个字符串
 BITCOUNT demo:{active}:both
+# 统计位图 demo:{active}:any 中值为 1 的位数；不限定范围时统计整个字符串
 BITCOUNT demo:{active}:any
 ```
 
@@ -160,6 +182,7 @@ KiB（Kibibyte，二进制千字节）等于 1024 字节。容量判断可以归
 在完成前面小位图示例后，可用以下只读命令查看对象的内存占用：
 
 ```redis
+# 估算键 demo:bitmap 及其结构的内存占用，返回字节数；不存在返回 nil
 MEMORY USAGE demo:bitmap
 ```
 
@@ -170,8 +193,13 @@ MEMORY USAGE demo:bitmap
 简短扩展：BITFIELD 还能把相邻位作为整数使用，例如新键中的一个八位计数器：
 
 ```redis
+# 在 demo:counter 的位偏移 0 操作 u8 整数；u8 表示无符号 8 位
+# SET 写入 10 并返回旧值数组
 BITFIELD demo:counter SET u8 0 10
+# 在 demo:counter 的位偏移 0 操作 u8 整数；u8 表示无符号 8 位
+# INCRBY 增加 1 并返回新值数组，默认溢出按 WRAP 回绕
 BITFIELD demo:counter INCRBY u8 0 1
+# 从 demo:counter 的位偏移 0 读取 u8 整数；u8 表示无符号 8 位，返回包含读值的数组
 BITFIELD demo:counter GET u8 0
 ```
 

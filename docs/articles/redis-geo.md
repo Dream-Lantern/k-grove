@@ -28,8 +28,12 @@ order: 10
 新增示例坐标是教学数据，不代表实际用户位置；未运行：
 
 ```redis
+# 向地理索引 demo:places 写入地点；每组参数依次是经度、纬度、成员名
+# place-a=(116.40,39.90)，place-b=(116.42,39.91)，坐标单位为度，返回新增成员数
 GEOADD demo:places 116.40 39.90 place-a 116.42 39.91 place-b
+# 查询地理索引 demo:places 中 place-a、place-b 的经纬度；按成员顺序返回，不存在的成员对应 nil
 GEOPOS demo:places place-a place-b
+# 计算地理索引 demo:places 中 place-a 与 place-b 的球面距离；km 指定返回单位为千米
 GEODIST demo:places place-a place-b km
 ```
 
@@ -55,16 +59,31 @@ Redis Open Source 6.2.0 起的 GEOSEARCH 可以分别选择查询中心和范围
 查询先根据中心和形状确定覆盖网格，再从有序索引的相应分数区间取候选，最后按真实坐标与范围条件过滤；不是把编码前缀匹配结果直接作为精确命中。旧 GEORADIUS 系列可作为历史接口认识。[GEOSEARCH 参数](https://redis.io/docs/latest/commands/geosearch/) · [7.2.0 搜索实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/geo.c)
 
 ```redis
+# 查询地理索引 demo:places 中的地点；FROMMEMBER place-a 以该成员为中心
+# BYRADIUS 5 km 指定半径 5 千米的圆形；ASC 按距离由近到远排序；COUNT 10 最多取 10 个结果
+# WITHDIST 随成员返回距离，单位沿用 km
 GEOSEARCH demo:places FROMMEMBER place-a BYRADIUS 5 km ASC COUNT 10 WITHDIST
+# 查询地理索引 demo:places 中的地点；FROMLONLAT 116.40 39.90 指定中心经度、纬度
+# BYRADIUS 5 km 指定半径 5 千米的圆形；ASC 按距离由近到远排序
+# WITHDIST 随成员返回距离，单位沿用 km
 GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km ASC WITHDIST
+# 查询地理索引 demo:places 中的地点；FROMLONLAT 116.40 39.90 指定中心经度、纬度
+# BYBOX 5 3 km 指定宽 5 千米、高 3 千米的矩形；ASC 按距离由近到远排序
+# WITHCOORD 随成员返回经纬度
 GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYBOX 5 3 km ASC WITHCOORD
 ```
 
 接续本节初始化，前两条查询五千米半径内的成员；第三条查询宽五千米、高三千米的矩形。示例两点都在这些范围内，预期返回 place-a、place-b；ASC 按距离从近到远，DESC 则从远到近，WITHDIST 附带所选单位的距离，WITHCOORD 附带坐标。
 
 ```redis
+# 查询地理索引 demo:places 中的地点；FROMLONLAT 116.40 39.90 指定中心经度、纬度
+# BYRADIUS 5 km 指定半径 5 千米的圆形；COUNT 10 最多取 10 个结果
 GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km COUNT 10
+# 查询地理索引 demo:places 中的地点；FROMLONLAT 116.40 39.90 指定中心经度、纬度
+# BYRADIUS 5 km 指定半径 5 千米的圆形；ASC 按距离由近到远排序；COUNT 10 最多取 10 个结果
 GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km ASC COUNT 10
+# 查询地理索引 demo:places 中的地点；FROMLONLAT 116.40 39.90 指定中心经度、纬度
+# BYRADIUS 5 km 指定半径 5 千米的圆形；COUNT 10 最多取 10 个结果；ANY 允许找到足够结果就停止，不保证最近 10 个
 GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km COUNT 10 ANY
 ```
 
@@ -73,6 +92,9 @@ GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km COUNT 10 ANY
 GEOSEARCHSTORE 把结果写入目标有序集合。下面是单行 Redis 命令，不使用 Shell 的反斜杠续行：
 
 ```redis
+# 查询源地理索引 demo:places，将结果覆盖保存到目标 Zset demo:nearby；FROMLONLAT 116.40 39.90 指定中心经度、纬度
+# BYRADIUS 5 km 指定半径 5 千米的圆形；ASC 按距离由近到远排序；COUNT 10 最多取 10 个结果
+# STOREDIST 将距离作为目标分数，单位沿用 km；命令返回保存的成员数
 GEOSEARCHSTORE demo:nearby demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km ASC COUNT 10 STOREDIST
 ```
 

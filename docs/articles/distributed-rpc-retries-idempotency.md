@@ -123,6 +123,8 @@ COMMIT
 将以下代码保存为 `rpc_demo.py`，运行 `python rpc_demo.py`。程序在临时目录创建数据库，记录一笔订单扣款；第一次提交后主动抛出超时，模拟响应丢失，再用同一 ID 重试。复合主键提供唯一约束，`BEGIN IMMEDIATE` 让本例的写事务先获得写入资格。SQLite 一次只允许一个写事务，等待写锁也可能超时；这与多节点服务的调度模型不同。依据见 [SQLite 事务](https://www.sqlite.org/lang_transaction.html) 和 [唯一约束冲突处理](https://www.sqlite.org/lang_conflict.html)。
 
 ```python
+# 在 SQLite 本地事务中用 tenant/kind/operation_id 唯一键去重，并保存请求摘要与结果。
+# lose_reply 模拟提交成功后回复丢失；相同 ID 重试读取原结果，参数不同则拒绝，示例不调用外部支付系统。
 import hashlib
 import json
 import sqlite3
@@ -137,6 +139,7 @@ def charge(path, operation_id, amount, lose_reply=False):
     digest = hashlib.sha256(payload.encode()).hexdigest()
     db = sqlite3.connect(str(path), isolation_level=None, timeout=5)
     try:
+        # 先开启写事务，让唯一键检查、业务账本和结果记录处于同一个提交边界。
         db.execute("BEGIN IMMEDIATE")
         try:
             db.execute(
@@ -170,6 +173,7 @@ def charge(path, operation_id, amount, lose_reply=False):
         raise
     finally:
         db.close()
+    # 先提交再丢回复，模拟客户端无法仅凭超时判断服务端是否已经执行。
     if lose_reply:
         raise TimeoutError("reply lost after commit")
     return result

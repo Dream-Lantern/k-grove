@@ -38,6 +38,8 @@ order: 17
 为避免位点先于处理，本例假定 `enable.auto.commit=false`、`enable.auto.offset.store=false`，每个分区记录按交付顺序串行处理，不含工作线程池。代码只演示一个分支，省略创建、订阅、错误分类和业务实现；没有编译运行。
 
 ```c
+// consumer_poll 的 100 是等待毫秒数；先检查消息错误，再执行幂等业务，成功后才同步提交该消息位点。
+// 消息对象由本段负责销毁；业务失败必须进入恢复路径，不能跳过后继续提交更高位点。
 /* Teaching fragment: all setup/error paths are outside this snippet. */
 rd_kafka_message_t *m = rd_kafka_consumer_poll(consumer, 100);
 if (m != NULL) {
@@ -66,6 +68,8 @@ if (m != NULL) {
 保存为 `orders_consumer.c`。正常运行时收到 SIGINT 或 SIGTERM 后退出。设置 `FAIL_EVENT` 可在业务前注入失败，设置 `EXIT_BEFORE_COMMIT` 可在文件已建立后模拟进程突然退出。
 
 ```c
+// consumer_poll 轮询消息；本地业务 apply 成功后用 commit_message(...,0) 同步提交下一读取位点。
+// EXIT_BEFORE_COMMIT 用于故障注入；错误分支与 cleanup 保证消息、订阅列表和客户端按所有权回收。
 #include <librdkafka/rdkafka.h>
 #include <signal.h>
 #include <stdio.h>
@@ -135,6 +139,7 @@ int main(int argc, char **argv) {
     }
     topics = rd_kafka_topic_partition_list_new(1);
     rd_kafka_topic_partition_list_add(topics, "review-orders", RD_KAFKA_PARTITION_UA);
+    // 注册 Topic 订阅；实际入组与分区分配由后续消费轮询推进。
     err = rd_kafka_subscribe(rk, topics);
     rd_kafka_topic_partition_list_destroy(topics);
     topics = NULL;
@@ -145,6 +150,7 @@ int main(int argc, char **argv) {
 
     status = EXIT_SUCCESS;
     while (!stopping) {
+        // 轮询等待参数使用毫秒；NULL 表示本次未取得消息，非 NULL 仍需先检查 m->err。
         rd_kafka_message_t *m = rd_kafka_consumer_poll(rk, 200);
         if (!m)
             continue;
@@ -189,6 +195,7 @@ int main(int argc, char **argv) {
                 const char *crash = getenv("EXIT_BEFORE_COMMIT");
                 if (crash && strcmp(crash, id) == 0)
                     _Exit(2); /* 故障注入，故意跳过正常收尾。 */
+                // 同步提交该消息之后的读取位置；末尾 0 表示同步等待，提交失败不能当作业务未执行。
                 err = rd_kafka_commit_message(rk, m, 0);
                 if (err) {
                     fprintf(stderr, "commit %s: %s\n", id, rd_kafka_err2str(err));
@@ -204,6 +211,7 @@ int main(int argc, char **argv) {
 cleanup:
     if (topics) rd_kafka_topic_partition_list_destroy(topics);
     if (rk) {
+        // 结束消费并处理退组等关闭流程；完成后仍需 destroy 客户端对象。
         rd_kafka_resp_err_t close_err = rd_kafka_consumer_close(rk);
         if (close_err) {
             fprintf(stderr, "close: %s\n", rd_kafka_err2str(close_err));
@@ -217,11 +225,16 @@ cleanup:
 ```
 
 ```bash
+# 查询本地 rdkafka 开发库的安装版本；--modversion 不连接 Broker
 pkg-config --modversion rdkafka
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# pkg-config --cflags --libs 提供库头文件及链接参数
 cc -std=c11 -Wall -Wextra -Wpedantic orders_consumer.c \
   $(pkg-config --cflags --libs rdkafka) -o orders_consumer
 mkdir -p order-effects
+# 设置故障注入标识，在指定事件的业务处理后、位点提交前退出；用于验证重放路径
 EXIT_BEFORE_COMMIT=run01-0 ./orders_consumer localhost:9092 review-c-orders
+# 启动消费示例；第一个参数为 Broker 地址，第二个为消费组，读取与提交行为见上方程序
 ./orders_consumer localhost:9092 review-c-orders
 ```
 

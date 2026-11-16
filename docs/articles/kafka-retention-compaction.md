@@ -121,8 +121,11 @@ gzip、lz4、zstd 等编码压缩减少字节体积，通常不改变业务记�
 **实验步骤**：需要已运行且允许实验的 Kafka 3.9 集群，Cleaner 已启用；只创建全新的实验 Topic，不清理既有业务数据。以下为发行包目录下的 Bash，不更改 Broker 级配置：
 
 ```bash
+# 按列表中的模式或资源逐项执行下面的检查；循环内保留各自的采样状态
 for policy in delete compact delete,compact; do
   suffix=${policy//,/-}
+  # 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+  # --create 创建 Topic；--partitions 指定分区数，--replication-factor 指定每个分区副本数
   bin/kafka-topics.sh --bootstrap-server localhost:9092 --create \
     --topic "r3-clean-$suffix" --partitions 1 --replication-factor 1 \
     --config "cleanup.policy=$policy" --config segment.ms=1000 \
@@ -131,6 +134,8 @@ for policy in delete compact delete,compact; do
     --config min.compaction.lag.ms=0 --config max.compaction.lag.ms=60000 \
     --config delete.retention.ms=60000
 
+  # 向 --topic 指定的 Topic 生产标准输入中的记录；--bootstrap-server 是 Broker 入口
+  # parse.key=true 按 key.separator 拆分输入中的 Key 和 Value，不把整行都作为 Value
   printf '%s\n' 'A:v1' 'B:x1' 'A:v2' 'A:__NULL__' | \
     bin/kafka-console-producer.sh --bootstrap-server localhost:9092 \
       --topic "r3-clean-$suffix" --property parse.key=true \

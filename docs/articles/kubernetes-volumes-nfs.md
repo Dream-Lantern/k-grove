@@ -66,11 +66,14 @@ spec:
         - |
           touch /tmp/healthy
           while true; do sleep 5; done
+      # 存活探针连续失败达阈值后触发容器重启，而非只从 Service 后端摘除。
       livenessProbe:
         exec:
           command: ["sh", "-c", "test -f /tmp/healthy"]
         initialDelaySeconds: 2
+        # 探针执行间隔，单位秒；不是单次请求的超时时间。
         periodSeconds: 2
+        # 连续失败达到此次数后，才按该探针的类型处理。
         failureThreshold: 2
       volumeMounts:
         - name: work
@@ -81,9 +84,11 @@ spec:
       volumeMounts:
         - name: work
           mountPath: /input
+          # 在当前挂载层面以只读方式使用；不替代其他客户端或存储端的写权限控制。
           readOnly: true
   volumes:
     - name: work
+      # Pod 生命周期内的共享临时卷；容器重启通常保留，Pod 删除后随之清理。
       emptyDir:
         sizeLimit: 1Gi
 ```
@@ -98,21 +103,45 @@ writer 的 /work 与 reader 的 /input 对应同一个卷。`sizeLimit` 也不�
 
 ```bash
 # 仅当 study 不存在且专供本实验时创建
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace study
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f volume-demo.yaml
+# 等待 --for 指定的资源条件满足；--timeout 限定本次等待时长，不会主动修复资源
+# -n study 限定命名空间
 kubectl wait pod/volume-demo -n study --for=condition=Ready --timeout=120s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod volume-demo -n study -o jsonpath='{.metadata.uid}{"\n"}{.status.containerStatuses}{"\n"}'
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# printf 与重定向在容器内写入测试文件，用于准备或恢复实验状态
+# -n study 限定命名空间
 kubectl exec volume-demo -n study -c writer -- sh -c 'printf "hello-from-writer\n" > /work/message.txt'
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec volume-demo -n study -c reader -- cat /input/message.txt
 ```
 
 预期 reader 读到 hello-from-writer。接着仅在此测试 Pod 中移除 writer 的存活标记，让 liveness 达到失败阈值后由 kubelet 重启 writer；这不是删除重建整个 Pod：
 
 ```bash
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# rm 会实际移除测试文件，用于触发正文中的探针失败情形
+# -n study 限定命名空间
 kubectl exec volume-demo -n study -c writer -- rm /tmp/healthy
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod volume-demo -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod volume-demo -n study -o jsonpath='{.metadata.uid}{"\n"}{.status.containerStatuses}{"\n"}'
 # 等待 writer 重启并重新运行后，再读取
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec volume-demo -n study -c reader -- cat /input/message.txt
 ```
 
@@ -121,6 +150,7 @@ kubectl exec volume-demo -n study -c reader -- cat /input/message.txt
 如出现 Pod UID 改变、节点故障或 Pod 驱逐，已不是同一实验前提。最后只清理测试 Pod；删除后的新 Pod 即使同名，也不会继承原 emptyDir，不能用它代替持久化：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f volume-demo.yaml
 ```
 
@@ -131,7 +161,9 @@ kubectl delete -f volume-demo.yaml
 ```yaml
 volumes:
   - name: cache
+    # Pod 生命周期内的共享临时卷；容器重启通常保留，Pod 删除后随之清理。
     emptyDir:
+      # Memory 使用内存介质，相关占用仍需结合容器/Pod 的内存记账和限制评估。
       medium: Memory
       sizeLimit: 256Mi
 ```
@@ -180,6 +212,7 @@ volumes:
     nfs:
       server: 192.0.2.10
       path: /exports/study
+      # 在当前挂载层面以只读方式使用；不替代其他客户端或存储端的写权限控制。
       readOnly: true
 containers:
   - name: reader

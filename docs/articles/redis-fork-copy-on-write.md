@@ -63,8 +63,11 @@ fork 时的暂停可能影响请求尾延迟，后台子进程运行时可能争
 CPU（Central Processing Unit，中央处理器）与磁盘竞争要结合系统观测。以下是只读 Redis 命令示例；下表字段均已按 Redis Open Source 7.2.0 核对：
 
 ```redis
+# 查询 累计命令数、命中/未命中、过期及淘汰等统计；stats 是 INFO 的信息分区名，不是键名
 INFO stats
+# 查询 RDB/AOF 状态、后台任务及最近持久化结果；persistence 是 INFO 的信息分区名，不是键名
 INFO persistence
+# 查询 内存使用、峰值、碎片及分配器指标；memory 是 INFO 的信息分区名，不是键名
 INFO memory
 ```
 

@@ -137,8 +137,18 @@ readiness、`publishNotReadyAddresses`、终止端点及相应流量策略，会
 以下命令是查询模板；查看输出不等于获准修改网络。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get service SERVICE_NAME -n NAMESPACE -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get pods -n NAMESPACE --show-labels
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -l kubernetes.io/service-name=SERVICE_NAME 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n NAMESPACE -l kubernetes.io/service-name=SERVICE_NAME -o yaml
 ```
 
@@ -153,13 +163,34 @@ NodePort 是否可达还受节点地址选择、流量策略、防火墙和底�
 先按[第十二章共用实验清单](/articles/kubernetes-api-yaml-labels.html#catalog-lab)准备 `study/catalog` Deployment、Service 和 `dns-debug` Pod。前提是两个应用副本已 Ready、Service selector 匹配 `app=catalog`，客户端到后端 TCP 8080、Service TCP 80 及 DNS 路径未被策略阻断。使用 IPv4 测试地址，命令在同一个 Bash 终端执行。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get svc catalog -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=catalog -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
+# 用 kubectl 查询对象字段并保存到 POD_IP；-o jsonpath 只提取表达式指定的值，供后续请求使用
 POD_IP=$(kubectl get pods -n study -l app=catalog -o jsonpath='{.items[0].status.podIP}')
+# 用 kubectl 查询对象字段并保存到 SERVICE_IP；-o jsonpath 只提取表达式指定的值，供后续请求使用
 SERVICE_IP=$(kubectl get svc catalog -n study -o jsonpath='{.spec.clusterIP}')
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec dns-debug -n study -- wget -qO- -T 5 "http://$POD_IP:8080"
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec dns-debug -n study -- wget -qO- -T 5 "http://$SERVICE_IP:80"
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec dns-debug -n study -- wget -qO- -T 5 http://catalog.study.svc.cluster.local:80
 ```
 

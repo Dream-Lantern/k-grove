@@ -30,10 +30,16 @@ TTL（Time to Live，生存时间）决定数据何时不再有效；过期检�
 新增示例：
 
 ```redis
+# 将字符串键 demo:temporary 写为 value；键已存在时覆盖原值
+# EX 60 设置键的 TTL，单位秒
 SET demo:temporary value EX 60
+# 查询键 demo:temporary 的剩余 TTL，单位秒；-1 表示键存在但无期限，-2 表示键不存在
 TTL demo:temporary
+# 查询键 demo:temporary 的剩余 TTL，单位毫秒；-1 表示键存在但无期限，-2 表示键不存在
 PTTL demo:temporary
+# 为键 demo:temporary 设置 120 秒 TTL；从本次执行时刻计时，成功返回 1，键不存在返回 0
 EXPIRE demo:temporary 120
+# 移除键 demo:temporary 的 TTL，保留键值；成功返回 1，键不存在或本来无期限返回 0
 PERSIST demo:temporary
 ```
 
@@ -49,8 +55,12 @@ TTL 返回秒，PTTL 返回毫秒精度的剩余时间。Redis Open Source 2.8.0
 短期限示例：
 
 ```redis
+# 将字符串键 demo:ttl 写为 value；键已存在时覆盖原值
+# PX 500 设置键的 TTL，单位毫秒
 SET demo:ttl value PX 500
+# 查询键 demo:ttl 的剩余 TTL，单位秒；-1 表示键存在但无期限，-2 表示键不存在
 TTL demo:ttl
+# 查询键 demo:ttl 的剩余 TTL，单位毫秒；-1 表示键存在但无期限，-2 表示键不存在
 PTTL demo:ttl
 ```
 
@@ -127,7 +137,9 @@ expired_keys 与 evicted_keys 表示不同机制。前者与期限相关，后�
 可以在有相应权限的学习环境中观察以下命令：
 
 ```redis
+# 查询 累计命令数、命中/未命中、过期及淘汰等统计；stats 是 INFO 的信息分区名，不是键名
 INFO stats
+# 查询 内存使用、峰值、碎片及分配器指标；memory 是 INFO 的信息分区名，不是键名
 INFO memory
 ```
 

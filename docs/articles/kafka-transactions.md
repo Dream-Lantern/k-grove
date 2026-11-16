@@ -94,6 +94,7 @@ LEO 是某副本日志末端的下一位置。HW 是复制提交相关上界。L
 Java 3.9 先配置 `transactional.id` 和序列化器，再创建 `KafkaProducer`。每个实例先成功调用一次 `initTransactions()`，随后按批次 `beginTransaction()`、`send()`。Kafka 到 Kafka 的处理关闭输入 Consumer 的 `enable.auto.commit`，不单独提交同一批输入。输出全部准备好后，把仍持有的各分区安全下一位置作为 `Map<TopicPartition, OffsetAndMetadata>` 纳入事务：
 
 ```java
+// 把输入消费位点及当前组元数据加入 Producer 事务，再提交；offsets 应保存下一条待消费的位置。
 producer.sendOffsetsToTransaction(offsets, consumer.groupMetadata());
 producer.commitTransaction();
 ```
@@ -121,19 +122,26 @@ Java 3.9 消费者默认 `read_uncommitted`，librdkafka v2.8.0 配置表中则�
 使用 Kafka Broker 3.9、Java 17 和 Maven，确保 Broker 的事务状态日志可以建立并达到最小 ISR（In-Sync Replicas，同步副本集合）。默认配置需要足够的 Broker。单 Broker 教学环境可在内部 Topic 首次创建前将 `transaction.state.log.replication.factor` 和 `transaction.state.log.min.isr` 设为 1。每次使用一个新的空 Topic 和未被其他进程使用的事务 ID。
 
 ```bash
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --create 创建 Topic；--partitions 指定分区数，--replication-factor 指定每个分区副本数
 bin/kafka-topics.sh --bootstrap-server localhost:9092 --create \
   --topic review-txn-orders --partitions 1 --replication-factor 1
 
+# 下载 -Dartifact 指定坐标和版本的 JAR；-DoutputDirectory=lib 指定保存目录
 mvn dependency:copy -Dartifact=org.apache.kafka:kafka-clients:3.9.2 \
   -DoutputDirectory=lib
+# 下载 -Dartifact 指定坐标和版本的 JAR；-DoutputDirectory=lib 指定保存目录
 mvn dependency:copy -Dartifact=org.slf4j:slf4j-api:1.7.36 \
   -DoutputDirectory=lib
+# 通过 -cp 指定依赖及程序类路径；后面的类名/源文件名是入口，其余值是示例程序的命令行参数
 java -cp 'lib/*' TxnVisibility.java
 ```
 
 把下面的代码保存为 `TxnVisibility.java`。实验只发送未压缩的字符串。两个消费者手动分配同一分区，从 0 读取且关闭自动提交，分别观察事务输出。实验关注可见性，因此没有输入组位点需要加入事务。
 
 ```java
+// 用两个消费者对比 read_uncommitted/read_committed 对未提交、已提交与中止事务的可见性。
+// initTransactions 初始化事务身份；begin/commit/abort 分别开始、提交或中止，不等同于外部数据库事务。
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

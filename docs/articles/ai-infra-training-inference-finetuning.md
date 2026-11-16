@@ -36,6 +36,8 @@ Model Parameters（模型参数）是优化器可调整的张量。Forward（前
 以下使用 Python 3 和 PyTorch CPU 环境。令初始权重 `w=1`，输入 `x=2`，目标为 0。平方损失为 4，梯度为 8。SGD（Stochastic Gradient Descent，随机梯度下降）学习率为 0.1 时，`w ← 1 − 0.1 × 8 ≈ 0.2`。保存为 `train_step.py`，先用 `python -c "import torch; print(torch.__version__)"` 记录版本，再执行 `python train_step.py`。
 
 ```python
+# 用单个线性权重展示训练步骤：先清梯度，再前向计算、反向求导，最后由 optimizer.step 更新权重。
+# 后半段分别检查 eval、no_grad 和 inference_mode；切换 eval 本身并不会关闭自动求导。
 import torch
 from torch import nn
 
@@ -52,6 +54,7 @@ before = model.weight.detach().clone()
 optimizer.zero_grad(set_to_none=True)
 prediction = model(x)
 loss = nn.functional.mse_loss(prediction, target)
+# 反向传播只计算并累积梯度，参数是否更新由后面的 optimizer.step 决定。
 loss.backward()
 
 assert torch.equal(model.weight.detach(), before)
@@ -60,6 +63,7 @@ torch.testing.assert_close(model.weight.grad, torch.tensor([[8.0]]))
 optimizer.step()
 torch.testing.assert_close(model.weight.detach(), torch.tensor([[0.2]]))
 
+# 切换层的推理行为；是否记录梯度仍由 no_grad/inference_mode 等上下文控制。
 model.eval()
 assert model(x).requires_grad
 with torch.no_grad():

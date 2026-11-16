@@ -48,19 +48,24 @@ Cluster 扩容依次涉及新节点加入、复制关系建立、槽与数据迁
 先在 **B** 声明 IMPORTING（迁入），源 ID 为 A：
 
 ```redis
+# 在目标节点执行：将槽 100 设为导入状态；<A_NODE_ID> 替换为源节点 ID
 CLUSTER SETSLOT 100 IMPORTING <A_NODE_ID>
 ```
 
 再在 **A** 声明 MIGRATING（迁出），目标 ID 为 B：
 
 ```redis
+# 在源节点执行：将槽 100 设为迁出状态；<B_NODE_ID> 替换为目标节点 ID
 CLUSTER SETSLOT 100 MIGRATING <B_NODE_ID>
 ```
 
 在 **A** 读取一批实际键名，再迁移返回的键；以下只展示其中一个：
 
 ```redis
+# 列出当前节点上属于槽 100 的至多 10 个键；用于下一步逐批搬迁
 CLUSTER GETKEYSINSLOT 100 10
+# 将源节点上的 <returned-key> 迁往目标主机和端口；0 是目标数据库，5000 是超时毫秒数
+# <returned-key> 替换为上一步返回的真实键名；默认迁移成功后删除源键，Cluster 仅使用数据库 0
 MIGRATE <target-host> <target-port> <returned-key> 0 5000
 ```
 
@@ -69,6 +74,7 @@ MIGRATE <target-host> <target-port> <returned-key> 0 5000
 这时在 **B、A 及其他主节点** 推进槽归属，优先让 B 接管，再更新源和其他主节点，最后核对各方视图：
 
 ```redis
+# 在相关主节点上更新槽 100 的归属为目标节点 ID；应在数据搬迁完成后按正文流程执行
 CLUSTER SETSLOT 100 NODE <B_NODE_ID>
 ```
 
@@ -124,15 +130,21 @@ MIGRATE 默认迁移的核心过程是：源端序列化键 → 目标导入并�
 变更前后可在多个数据节点按权限执行以下只读 Redis 命令：
 
 ```redis
+# 查询当前节点的集群状态、槽覆盖及集群消息统计；无额外参数
 CLUSTER INFO
+# 列出当前节点所知的节点 ID、地址、角色、连接状态及槽归属；无额外参数
 CLUSTER NODES
+# 按分片查询槽范围及主副本拓扑；无额外参数，要求 Redis 7.0+
 CLUSTER SHARDS
+# 查询 主从角色、复制链路、偏移量及积压缓冲状态；replication 是 INFO 的信息分区名，不是键名
 INFO replication
 ```
 
 另有 Shell 命令模板，需替换实际入口，认证按环境设置：
 
 ```bash
+# 从 <host>:<port> 指定的节点连接集群并检查槽覆盖及一致性；替换为实际主机和端口
+# --cluster check 是 redis-cli 的集群检查模式，不执行槽迁移
 redis-cli --cluster check <host>:<port>
 ```
 
@@ -157,6 +169,7 @@ Redis Open Source **8.4.0** 引入 ASM 和 `CLUSTER MIGRATION`。它在后台传
 以下以 **8.4.0 固定源码**核对语法。IMPORT 在目标主节点 B 执行，参数是成对的闭区间起止槽号，单槽也要写两次：
 
 ```redis
+# 在目标节点发起原子槽迁移；两个 100 分别是起始槽和结束槽，闭区间表示只导入槽 100（Redis 8.4+）
 CLUSTER MIGRATION IMPORT 100 100
 ```
 
@@ -167,7 +180,9 @@ CLUSTER MIGRATION IMPORT 100 100
 以下查询在实际参与任务的节点执行；`<task-id>` 要替换为 IMPORT 返回的 ID：
 
 ```redis
+# 查询当前节点的全部原子迁移任务；ALL 表示不按任务 ID 筛选
 CLUSTER MIGRATION STATUS ALL
+# 查询单个原子迁移任务；<task-id> 替换为发起迁移后获得的任务 ID
 CLUSTER MIGRATION STATUS ID <task-id>
 ```
 
@@ -185,7 +200,9 @@ CLUSTER MIGRATION STATUS ID <task-id>
 STATUS 包含当前和本地保留的归档任务，查不到 ID 可返回空列表，不是集群所有节点的全局历史。以下是**修改任务的命令模板**，不属于只读诊断：
 
 ```redis
+# 取消指定的原子迁移任务；<task-id> 是任务 ID，不是节点 ID
 CLUSTER MIGRATION CANCEL ID <task-id>
+# 取消当前节点的全部原子迁移任务；ALL 作用于所有相关任务
 CLUSTER MIGRATION CANCEL ALL
 ```
 

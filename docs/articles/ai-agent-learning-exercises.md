@@ -39,6 +39,7 @@ order: 90
 前置：Python 函数、列表与 JSON。练习 A 在固定提交的上游 `chapter1/web-search-agent` 目录执行，先按其 README 安装依赖：
 
 ```bash
+# --provider offline-demo 选择离线演示，--output demo.json 保存输出；-X utf8 固定 Python UTF-8 模式
 python -X utf8 main.py --provider offline-demo --output demo.json
 ```
 
@@ -47,6 +48,7 @@ python -X utf8 main.py --provider offline-demo --output demo.json
 练习 B 回到 **k-grove 根目录**，运行标准库脚本：
 
 ```bash
+# 使用当前 Python 解释器运行受控计划实验
 python examples/ai-agent/ch9-11-review/controlled_plan.py
 ```
 
@@ -57,12 +59,17 @@ python examples/ai-agent/ch9-11-review/controlled_plan.py
 前置：第 1 周、集合与排名。采用方案 A，复用 [第3章最小 BM25 实验](/articles/ai-agent-memory-rag.html#最小-bm25-实验-先验证输入、输出与指标)的完整准备命令；使用 `rank-bm25==0.2.2`、`jieba==0.42.1`，不加载向量或重排模型。该步骤从 k-grove 根目录准备环境，再切到固定上游 `chapter3/retrieval-pipeline`；`$corpus`、`$queries` 指向本仓库已有的四文档语料和查询文件。
 
 ```powershell
+# 运行检索评估；--no-dense 禁用稠密检索，--no-rerank 禁用重排（仅在指定时生效）
+# --device cpu 选择 CPU，--top-k 5 保留 5 个候选，--eval-k 5 按前 5 项评估
+# --corpus/--queries 传入语料及问题文件，--output 指定结果 JSON
 python evaluate.py --no-dense --no-rerank --device cpu --top-k 5 --eval-k 5 --corpus "$corpus" --queries "$queries" --output bm25.json
 ```
 
 得到 `bm25.json` 后，在同一目录用以下 Python 代码读取实际排名并逐题计算；可保存为自己的 `inspect_bm25.py` 后运行 `python inspect_bm25.py`：
 
 ```python
+# 逐问题读取 bm25.json 的 sparse 排名，只取前 5 项；从 1 开始编号以计算首次命中位置。
+# 输出每个候选是否相关及 Hit/Recall/RR；gold 为空时 Recall 记为 None，避免把未定义值当成 0。
 import json
 
 with open("bm25.json", encoding="utf-8") as stream:
@@ -89,7 +96,9 @@ for row in report["per_query"]:
 前置：第 1 周、路径和异常。从 k-grove 根目录运行；先按第 4 章安装 pytest／jsonschema：
 
 ```bash
+# 用当前解释器运行指定范围的 pytest；-q 使用简洁输出，非零退出码表示测试未通过
 python -m pytest examples/ai-agent/ch4-tools -q
+# 使用当前 Python 解释器运行工具事件流程演示
 python examples/ai-agent/ch4-tools/event_demo.py
 ```
 
@@ -100,6 +109,7 @@ python examples/ai-agent/ch4-tools/event_demo.py
 前置：第 2～3 周、比例与配对概念。在 k-grove 根目录执行标准库脚本：
 
 ```bash
+# 使用当前 Python 解释器运行评估实验
 python examples/ai-agent/ch6-8-review/evaluation_demo.py
 ```
 
@@ -110,7 +120,9 @@ python examples/ai-agent/ch6-8-review/evaluation_demo.py
 前置：第 4 周、字符串与 UTF-8。在 k-grove 根目录执行：
 
 ```bash
+# 使用当前 Python 解释器运行精确复制评估口径核对；-X utf8 固定 UTF-8 模式
 python -X utf8 examples/ai-agent/ch6-8-review/copy_audit.py
+# 使用当前 Python 解释器运行结构化证据校验演示
 python examples/ai-agent/ch6-8-review/structured_evidence_demo.py
 ```
 
@@ -121,7 +133,9 @@ python examples/ai-agent/ch6-8-review/structured_evidence_demo.py
 前置：前五周与状态机。在 k-grove 根目录执行：
 
 ```bash
+# 使用当前 Python 解释器运行音频交互状态实验
 python examples/ai-agent/ch9-11-review/audio_state.py
+# 使用当前 Python 解释器运行翻译交接契约实验；-X utf8 固定 UTF-8 模式
 python -X utf8 examples/ai-agent/ch9-11-review/translation_contracts.py
 ```
 
@@ -227,6 +241,8 @@ python -X utf8 examples/ai-agent/ch9-11-review/translation_contracts.py
 
 采用以下合成任务，DemoLLM 和 Synthetic Dataset 均为教学名称，不对应实际部署。测量时长按每个并发点 30 秒理解，不含预热和准备；并发集合仅为 1、2、4，不是无限边界搜索：
 
+参数说明：输入/输出 token 数规定合成负载，`concurrency` 是待测并发点，`measurement_seconds_per_point` 是每点测量秒数；`slo` 中 TTFT 使用毫秒，错误率使用比例。
+
 ```json
 {
   "model": "DemoLLM",
@@ -300,6 +316,7 @@ CANDIDATE → APPROVED → QUEUED → RUNNING → COMPLETED → 结果验证
 语音、翻译与批准控制示例的统一测试入口（k-grove 根目录）：
 
 ```bash
+# 发现并运行单元测试；-s 指定目录，-p 指定文件名匹配模式，-v 展示各测试结果
 python -m unittest discover -s examples/ai-agent/ch9-11-review -p "test_*.py" -v
 ```
 

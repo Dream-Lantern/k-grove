@@ -42,9 +42,13 @@ replicas: 4
 strategy:
   type: RollingUpdate
   rollingUpdate:
+    # 滚动更新允许超出期望数量的 Pod 上限；需结合该工作负载类型及 maxUnavailable 一起理解。
     maxSurge: 1
+    # 滚动更新允许不可用的 Pod 上限；0 要求更新过程维持原有可用数量目标。
     maxUnavailable: 0
+# Pod 持续 Ready 达到此秒数后才计为 Available。
 minReadySeconds: 10
+# 发布无进展的判断期限，单位秒；达到期限不等于控制器自动回滚。
 progressDeadlineSeconds: 600
 ```
 
@@ -90,14 +94,29 @@ Ready（就绪）是 Pod 条件；Available（可用）还需满足 Deployment �
 以下为学习模板，查询只读取状态；undo 和 scale 会改变目标状态。将 APP、NAMESPACE 替换为实际值；app=catalog 适用于本章案例：
 
 ```bash
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n NAMESPACE 限定命名空间
 kubectl rollout status deployment/APP -n NAMESPACE
+# 查看指定工作负载保存的修订记录；--revision 可进一步选择某个修订
+# -n NAMESPACE 限定命名空间
 kubectl rollout history deployment/APP -n NAMESPACE
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe deployment APP -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
 kubectl get rs -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
 kubectl get pods -n NAMESPACE -l app=catalog
 
 # 变更示例，未执行
+# 将工作负载回退到保留的旧修订；--to-revision 指定目标修订，会实际更新 Pod 模板
+# -n NAMESPACE 限定命名空间
 kubectl rollout undo deployment/APP -n NAMESPACE --to-revision=2
+# 将指定工作负载的期望副本数设为 4；后续由控制器协调实际 Pod 数量
+# -n NAMESPACE 限定命名空间
 kubectl scale deployment/APP -n NAMESPACE --replicas=4
 ```
 
@@ -128,7 +147,9 @@ JSON Patch 使用操作列表；直接写 `{"spec":{"replicas":3}}` 属于对象
 以下 pause/resume 会修改在线资源。暂停主要阻止模板变更触发新的发布，不停止 RS 补副本或 HPA 扩缩容；暂停状态下不能执行 Deployment 回滚，需要先恢复。GitOps（以 Git 声明源持续同步资源的管理方式）也可能覆盖人工修改，最终须使声明源与在线状态一致。
 
 ```bash
+# 暂停 Deployment 的发布推进，便于合并模板修改；不会停止已经运行的容器
 kubectl rollout pause deployment/catalog -n study
+# 恢复已暂停 Deployment 的发布，使累计的模板修改进入发布流程
 kubectl rollout resume deployment/catalog -n study
 ```
 
@@ -156,6 +177,7 @@ metadata:
   namespace: study
 spec:
   replicas: 4
+  # 保留的旧 ReplicaSet 修订数量，影响可用的历史回退范围。
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -163,15 +185,20 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
+      # 滚动更新允许超出期望数量的 Pod 上限；需结合该工作负载类型及 maxUnavailable 一起理解。
       maxSurge: 1
+      # 滚动更新允许不可用的 Pod 上限；0 要求更新过程维持原有可用数量目标。
       maxUnavailable: 0
+  # Pod 持续 Ready 达到此秒数后才计为 Available。
   minReadySeconds: 10
+  # 发布无进展的判断期限，单位秒；达到期限不等于控制器自动回滚。
   progressDeadlineSeconds: 600
   template:
     metadata:
       labels:
         app: catalog
     spec:
+      # Pod 终止宽限期，单位秒；preStop 执行耗时也计入这一阶段。
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
@@ -188,15 +215,19 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
           readinessProbe:
             httpGet:
               path: /
               port: http
+            # 探针执行间隔，单位秒；不是单次请求的超时时间。
             periodSeconds: 2
           resources:
+            # 声明调度资源需求；CPU 的 m 表示千分之一核，内存 Mi 表示二进制兆字节（按字段单位）。
             requests:
               cpu: 250m
               memory: 256Mi
+            # 声明运行时资源限制或扩展资源需求；资源名和单位须按对应类型及插件核对。
             limits:
               cpu: "1"
               memory: 512Mi
@@ -206,11 +237,23 @@ spec:
 
 ```bash
 # 确认 study 不存在并且专供本实验后创建
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace study
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f catalog-rollout.yaml
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status deployment/catalog -n study --timeout=180s
+# 查看指定工作负载保存的修订记录；--revision 可进一步选择某个修订
+# -n study 限定命名空间
 kubectl rollout history deployment/catalog -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
 kubectl get rs,pods -n study -l app=catalog
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get deployment catalog -n study -o yaml
 ```
 
@@ -221,17 +264,33 @@ kubectl get deployment catalog -n study -o yaml
 只改变 RELEASE 环境变量，镜像仍固定为 busybox:1.36.1。环境变量位于 spec.template 中，会形成新模板修订；页面在进程启动时写成 catalog v2。
 
 ```bash
+# 修改指定工作负载的容器环境变量；Pod 模板变化会触发相应发布流程
+# -n study 限定命名空间
 kubectl set env deployment/catalog -n study RELEASE=v2
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
 kubectl get rs,pods -n study -l app=catalog -w
 ```
 
 观察新旧 RS 和 Pod 数量，按 Ctrl+C 结束只读 watch，再继续：
 
 ```bash
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status deployment/catalog -n study --timeout=180s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get deployment catalog -n study -o jsonpath='{.status.readyReplicas}{" "}{.status.availableReplicas}{" "}{.status.updatedReplicas}{"\n"}'
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec deployment/catalog -n study -c app -- wget -qO- -T 5 http://127.0.0.1:8080/
+# 查看指定工作负载保存的修订记录；--revision 可进一步选择某个修订
+# -n study 限定命名空间
 kubectl rollout history deployment/catalog -n study
+# 用 kubectl 查询对象字段并保存到 CATALOG_GOOD_REVISION；-o jsonpath 只提取表达式指定的值，供后续请求使用
 CATALOG_GOOD_REVISION=$(kubectl get deployment catalog -n study -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}')
 printf 'known good revision=%s\n' "$CATALOG_GOOD_REVISION"
 ```
@@ -243,29 +302,62 @@ printf 'known good revision=%s\n' "$CATALOG_GOOD_REVISION"
 为避免依赖某个镜像标签是否存在，本实验使用确定不存在的静态路径制造 readiness 失败，镜像保持不变。以下战略合并补丁按容器名 app 修改探针，属于在线变更；未在实际集群执行：
 
 ```bash
+# 局部修改指定资源；--type=json 按 JSON Patch 操作列表修改，--type=merge 按对象合并
+# -n study 限定命名空间
 kubectl patch deployment catalog -n study --type=strategic -p '{"spec":{"template":{"spec":{"containers":[{"name":"app","readinessProbe":{"httpGet":{"path":"/not-ready-for-review","port":"http"}}}]}}}}'
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status deployment/catalog -n study --timeout=120s
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe deployment catalog -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
 kubectl get rs,pods -n study -l app=catalog
+# 查看指定工作负载保存的修订记录；--revision 可进一步选择某个修订
+# -n study 限定命名空间
 kubectl rollout history deployment/catalog -n study
 ```
 
 预期新 RS 的 Pod 因该路径返回 404 而未 Ready，旧的健康 v2 通常保留，发布卡住。120 秒是客户端等待超时，不等于服务端 600 秒进度期限，也不自动回滚；如需观察 ProgressDeadlineExceeded，应在专用实验中继续等待相应进度期限并读取 Deployment conditions。选择新失败 Pod 的实际名称替换下列 POD_NAME，查看证据：
 
 ```bash
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod POD_NAME -n study
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n study 限定命名空间
 kubectl logs POD_NAME -n study -c app
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get deployment catalog -n study -o jsonpath='{.status.conditions}{"\n"}'
 ```
 
 确认当前未处于 paused，CATALOG_GOOD_REVISION 非空、仍在 history 中并对应刚才验收的模板，再执行明确目标的回滚；若换了终端，应从历史重新核对并赋值，不能照抄某个固定数字：
 
 ```bash
+# 将工作负载回退到保留的旧修订；--to-revision 指定目标修订，会实际更新 Pod 模板
+# -n study 限定命名空间
 kubectl rollout undo deployment/catalog -n study --to-revision="$CATALOG_GOOD_REVISION"
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status deployment/catalog -n study --timeout=180s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
 kubectl get rs,pods -n study -l app=catalog
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get deployment catalog -n study -o jsonpath='{.status.readyReplicas}{" "}{.status.availableReplicas}{" "}{.status.updatedReplicas}{"\n"}'
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec deployment/catalog -n study -c app -- wget -qO- -T 5 http://127.0.0.1:8080/
+# 查看指定工作负载保存的修订记录；--revision 可进一步选择某个修订
+# -n study 限定命名空间
 kubectl rollout history deployment/catalog -n study
 ```
 
@@ -276,6 +368,7 @@ kubectl rollout history deployment/catalog -n study
 下面只删除由本实验创建的 Deployment。若另外部署了第十四章 PDB，应先确认其来源再清理；直接删除会绕过 PDB，不能据此验证驱逐预算。不删除整个命名空间或使用标签批量删除其他对象。
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete -f catalog-rollout.yaml
 # 仅当该文件对应自己另外创建的教学 PDB 时使用
 # kubectl delete -f catalog-pdb.yaml

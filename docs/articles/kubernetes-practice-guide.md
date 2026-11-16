@@ -68,15 +68,20 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
+      # 滚动更新允许超出期望数量的 Pod 上限；需结合该工作负载类型及 maxUnavailable 一起理解。
       maxSurge: 1
+      # 滚动更新允许不可用的 Pod 上限；0 要求更新过程维持原有可用数量目标。
       maxUnavailable: 0
+  # Pod 持续 Ready 达到此秒数后才计为 Available。
   minReadySeconds: 10
+  # 发布无进展的判断期限，单位秒；达到期限不等于控制器自动回滚。
   progressDeadlineSeconds: 600
   template:
     metadata:
       labels:
         app: catalog
     spec:
+      # Pod 终止宽限期，单位秒；preStop 执行耗时也计入这一阶段。
       terminationGracePeriodSeconds: 30
       containers:
         - name: app
@@ -85,23 +90,30 @@ spec:
             - name: http
               containerPort: 8080
           resources:
+            # 声明调度资源需求；CPU 的 m 表示千分之一核，内存 Mi 表示二进制兆字节（按字段单位）。
             requests:
               cpu: 250m
               memory: 256Mi
+            # 声明运行时资源限制或扩展资源需求；资源名和单位须按对应类型及插件核对。
             limits:
               cpu: "1"
               memory: 512Mi
+          # 启动探针成功前，暂不执行该容器的就绪和存活探针。
           startupProbe:
             httpGet:
               path: /health/startup
               port: http
+            # 探针执行间隔，单位秒；不是单次请求的超时时间。
             periodSeconds: 5
+            # 连续失败达到此次数后，才按该探针的类型处理。
             failureThreshold: 24
+          # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
           readinessProbe:
             httpGet:
               path: /health/ready
               port: http
             periodSeconds: 5
+          # 存活探针连续失败达阈值后触发容器重启，而非只从 Service 后端摘除。
           livenessProbe:
             httpGet:
               path: /health/live
@@ -110,6 +122,7 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/study-config
+              # 在当前挂载层面以只读方式使用；不替代其他客户端或存储端的写权限控制。
               readOnly: true
       volumes:
         - name: config
@@ -127,6 +140,7 @@ spec:
   ports:
     - name: http
       port: 80
+      # 后端容器的端口号或端口名；与面向客户端的 Service port 分开理解。
       targetPort: http
 ```
 
@@ -197,6 +211,7 @@ Startup Probe 成功前，readiness/liveness 暂不执行。readiness 失败通�
 可选 PDB（Pod Disruption Budget，Pod 中断预算）教学清单，未创建：
 
 ```yaml
+# 此 PDB 选择 app=catalog 的 Pod，要求受其保护的健康可用数量至少为 1；约束适用的自愿中断，不保证故障时始终存活 1 个。
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -241,12 +256,27 @@ ceil(4 × 80 / 50) = 7
 只读观察命令；即使只读，结果和日志也需按权限读取并脱敏：
 
 ```bash
+# 查看当前 kubectl 上下文，确认后续命令将连接哪个集群；此命令不切换上下文
 kubectl config current-context
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get deploy,pod,svc -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get configmap catalog-config -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe hpa catalog -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get pdb catalog -n study
 ```
 

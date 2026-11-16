@@ -48,8 +48,11 @@ tid=$pid
 date -Is
 uname -a
 lscpu
+# -L 展示线程，-p 选择进程；-o 自定义 PID、TID、所在 CPU、状态、CPU 使用率及名称列
 ps -L -p "$pid" -o pid,tid,psr,stat,pcpu,comm
+# 读取系统负载均值和任务统计；负载不等同于 CPU 使用率
 cat /proc/loadavg
+# 读取指定进程或线程的 /proc 状态字段；结合 PID/TID 区分进程和线程统计
 cat "/proc/$pid/task/$tid/status"
 ```
 
@@ -89,11 +92,16 @@ cat "/proc/$pid/task/$tid/status"
 [![两个进程的私有驻留与共享页如何分别计入 RSS 和 PSS](/assets/notes/operating-systems/os-rss-pss.svg)](/assets/notes/operating-systems/os-rss-pss.svg)
 
 ```bash
+# 读取指定进程或线程的 /proc 状态字段；结合 PID/TID 区分进程和线程统计
 cat "/proc/$pid/status"
+# 先检查条件或文件可读性，再执行下面的采样；条件不满足时跳过，避免把缺失数据当成零
 if [ -r "/proc/$pid/smaps_rollup" ]; then
+    # 读取进程映射内存汇总，核对 RSS/PSS 等数据；是否可读取取决于内核与权限
     cat "/proc/$pid/smaps_rollup"
 fi
+# 查询整机内存统计；这些字段不是某一个进程的独占内存
 cat /proc/meminfo
+# 每隔 1 秒采样，共输出 5 次；首行通常反映启动以来的统计，后续行反映采样区间
 vmstat 1 5
 ```
 
@@ -108,8 +116,10 @@ status 中部分 RSS 统计有精度限制；smaps_rollup 是否存在、字段�
 压力停顿信息（PSI，Pressure Stall Information）衡量任务因资源不足受到的停顿，不是内存容量或 CPU 利用率：
 
 ```bash
+# 按列表中的模式或资源逐项执行下面的检查；循环内保留各自的采样状态
 for resource in cpu memory io; do
     file="/proc/pressure/$resource"
+    # 先检查条件或文件可读性，再执行下面的采样；条件不满足时跳过，避免把缺失数据当成零
     if [ -r "$file" ]; then
         printf '%s\n' "$file"
         cat "$file"
@@ -129,7 +139,9 @@ done
 先用下列只读命令识别目标成员关系和可见挂载，再确定其 cgroup v2 目录；不能假设所有容器都位于同一固定路径：
 
 ```bash
+# 读取进程所属控制组的相对路径；需结合 cgroup2 挂载点定位真实目录
 cat "/proc/$pid/cgroup"
+# -t cgroup2 只显示 cgroup v2 挂载点，供后续定位进程所在控制组
 findmnt -t cgroup2
 ```
 
@@ -137,8 +149,11 @@ findmnt -t cgroup2
 
 ```bash
 cgdir=''
+# 先检查条件或文件可读性，再执行下面的采样；条件不满足时跳过，避免把缺失数据当成零
 if [ -n "$cgdir" ] && [ -d "$cgdir" ]; then
+    # 按列表中的模式或资源逐项执行下面的检查；循环内保留各自的采样状态
     for field in memory.current memory.max memory.events memory.pressure cpu.max cpu.stat; do
+        # 先检查条件或文件可读性，再执行下面的采样；条件不满足时跳过，避免把缺失数据当成零
         if [ -r "$cgdir/$field" ]; then
             printf '%s\n' "$field"
             cat "$cgdir/$field"

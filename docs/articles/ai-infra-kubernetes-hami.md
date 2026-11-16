@@ -57,7 +57,9 @@ HAMi（Heterogeneous AI Computing Virtualization Middleware，异构 AI 计算�
 以下依据 HAMi v2.10.0 文档，仅为容器资源字段片段，不是完整可部署 Pod；本次没有安装 HAMi，也没有提交资源。
 
 ```yaml
+# HAMi 扩展资源片段：gpu 为设备数量，gpumem 与 gpucores 按本文所述插件配置解释；不是 Kubernetes 通用显存隔离保证。
 resources:
+  # 声明运行时资源限制或扩展资源需求；资源名和单位须按对应类型及插件核对。
   limits:
     nvidia.com/gpu: 1
     nvidia.com/gpumem: 3000
@@ -93,10 +95,20 @@ v2.10.0 Chart 默认节点 binpack、设备 spread。通过 `scheduler.defaultSc
 下表按实际发生的阶段排查。示例变量替换为已获读取权限的目标，不创建或修改集群对象。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n $namespace 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl -n "$namespace" get pod "$pod" -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n $namespace 限定命名空间
 kubectl -n "$namespace" describe pod "$pod"
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -A 跨全部命名空间查询，适合定位资源所在范围
 kubectl get events -A
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
 kubectl describe node "$node"
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# -n $namespace 限定命名空间
 kubectl -n "$namespace" logs "$pod" -c "$container"
 ```
 

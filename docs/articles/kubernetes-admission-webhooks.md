@@ -39,6 +39,8 @@ MutatingWebhookConfiguration 和 ValidatingWebhookConfiguration 是不同的 Kub
 
 下面是 **合成的 AdmissionReview 协议示例，未发送**。AdmissionReview 是 API Server 与 Webhook 交换请求、判定的信封。为突出字段，省略请求中的部分服务端上下文；真实请求的身份信息由 API Server 提供。`dryRun: true` 表示本次模拟写入不持久化，仍可调用匹配的 Webhook。
 
+字段说明：`request.uid` 关联同一次准入请求的回复，`operation` 是 API 操作，`object` 是待准入对象；`dryRun: true` 表示本次请求不持久化对象，仍可能进入适用的准入检查。
+
 ```json
 {
   "apiVersion": "admission.k8s.io/v1",
@@ -64,6 +66,8 @@ MutatingWebhookConfiguration 和 ValidatingWebhookConfiguration 是不同的 Kub
 
 变更 Webhook 的允许响应如下。`response.uid` 必须复制本次 `request.uid`，它是调用关联标识，不是 Pod UID。`patch` 是 JSON Patch 的 Base64 编码，`patchType` 为 `JSONPatch`：
 
+字段说明：`response.uid` 必须与请求 UID 对应；`allowed` 表示允许，`patchType` 声明补丁格式，`patch` 是 JSON Patch 字节经 Base64 编码后的字符串。
+
 ```json
 {
   "apiVersion": "admission.k8s.io/v1",
@@ -78,6 +82,8 @@ MutatingWebhookConfiguration 和 ValidatingWebhookConfiguration 是不同的 Kub
 ```
 
 解码后的补丁如下；示例请求已经有 `metadata.labels: {}`，因此父路径存在。如果真实对象没有 labels，必须先构造父对象，不能直接照搬该路径。
+
+补丁说明：`op: add` 在 JSON Pointer 的 `path` 处写入 `value`；这里依赖对象已有 `metadata.labels`，并不等同于任意缺失父路径都能自动创建。
 
 ```json
 [{ "op": "add", "path": "/metadata/labels/managed-by", "value": "policy-webhook" }]
@@ -94,6 +100,8 @@ metadata:
 相同标签和值已存在时，应返回 `allowed: true` 并省略 patch，避免无意义的重复修改；若已有不同值，策略必须明确选择保留、拒绝或改写。本例选择改写为期望值，再次处理同一结果不产生补丁。这就是幂等：重复处理不会不断增加或改变结果。
 
 验证 Webhook 接收到变更后的对象，但它还要求 team 标签。下例为 **另一次验证调用的拒绝响应**，那次验证请求沿用上面的 Pod 内容并包含已补充的标签，`request.uid` 改为 `review-demo-002`，其余示例字段不变。响应 UID 对应该次验证请求，不复用前一个变更调用的 UID：
+
+拒绝说明：`allowed: false` 拒绝该请求，`status` 补充原因；回复 UID 对应另一次请求，不能与前面的允许回复混配。
 
 ```json
 {
@@ -118,6 +126,7 @@ metadata:
 ```yaml
 rules:
   - operations: ["CREATE"]
+    # 空字符串代表核心 API 组；不是匹配所有 API 组的通配符。
     apiGroups: [""]
     apiVersions: ["v1"]
     resources: ["pods"]
@@ -126,9 +135,13 @@ namespaceSelector:
   matchLabels:
     admission-lab: enabled
 admissionReviewVersions: ["v1"]
+# Fail 表示 Webhook 调用失败按拒绝处理；这是调用失败策略，不是业务拒绝回复。
 failurePolicy: Fail
+# 本次调用/探测的超时秒数，具体对象见所在配置段。
 timeoutSeconds: 10
+# None 声明 Webhook 无副作用，以便 API Server 按其规则处理 dry-run。
 sideEffects: None
+# IfNeeded 允许按准入流程需要再次调用 Mutating Webhook，处理逻辑应适应重复执行。
 reinvocationPolicy: IfNeeded
 ```
 

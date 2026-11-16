@@ -110,8 +110,12 @@ MTU（Maximum Transmission Unit，最大传输单元）描述链路上可传输�
 网络和策略需要明确的来源、后端及端口，故这里使用独立资源，而不修改前面 `web-demo`。先读取节点的 hostname 标签值；**只修改下方 YAML 中的占位符，不修改节点标签**。`k8s-net-demo` 必须是本实验新建的专用空间，若已存在则换名并同步调整全部清单和命令：
 
 ```bash
+# 查看当前 kubectl 上下文，确认后续命令将连接哪个集群；此命令不切换上下文
 kubectl config current-context
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get nodes -L kubernetes.io/hostname
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace k8s-net-demo
 ```
 
@@ -126,6 +130,7 @@ metadata:
   labels:
     app: backend
 spec:
+  # 所有列出的节点标签都要匹配；它限定候选节点，不会自动给节点添加标签。
   nodeSelector:
     kubernetes.io/hostname: NODE_A_HOSTNAME
   containers:
@@ -138,10 +143,12 @@ spec:
           echo backend > /www/index.html
           httpd -f -p 8081 -h /www &
           exec httpd -f -p 8080 -h /www
+      # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
       readinessProbe:
         httpGet:
           path: /
           port: 8080
+        # 探针执行间隔，单位秒；不是单次请求的超时时间。
         periodSeconds: 2
     - name: local-client
       image: busybox:1.36.1
@@ -187,14 +194,22 @@ spec:
     app: backend
   ports:
     - port: 8080
+      # 后端容器的端口号或端口名；与面向客户端的 Service port 分开理解。
       targetPort: 8080
       protocol: TCP
 ```
 
 ```bash
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f network-demo.yaml
+# 等待 --for 指定的资源条件满足；--timeout 限定本次等待时长，不会主动修复资源
+# -n k8s-net-demo 限定命名空间
 kubectl wait --for=condition=Ready pod/backend pod/frontend pod/other-client -n k8s-net-demo --timeout=120s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-net-demo 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n k8s-net-demo -o wide
+# 用 kubectl 查询对象字段并保存到 BACKEND_IP；-o jsonpath 只提取表达式指定的值，供后续请求使用
 BACKEND_IP=$(kubectl get pod backend -n k8s-net-demo -o jsonpath='{.status.podIP}')
 ```
 
@@ -224,6 +239,7 @@ NetworkPolicy 用 API 描述适用的网络访问约束，但需要具备相应�
 以下为新增片段，位于策略 spec 的 ingress 中，仅用于比较来源集合，未部署。标签 team=frontend 是 Namespace 标签，role=client 是 Pod 标签：
 
 ```yaml
+# 同一 from 列表项中的 namespaceSelector 与 podSelector 要同时满足（AND）。
 ingress:
   - from:
       - namespaceSelector:
@@ -237,6 +253,7 @@ ingress:
 同一个 peer 中两个选择器同时成立：只允许 team=frontend 命名空间里的 role=client Pod。若改成两个 peer：
 
 ```yaml
+# 两个独立 from 列表项之间为 OR；只有 podSelector 的项按策略所在命名空间选择 Pod。
 ingress:
   - from:
       - namespaceSelector:
@@ -254,6 +271,7 @@ ingress:
 延续第 5.1 节的三 Pod 实验。先确认网络实现支持并执行标准 NetworkPolicy，且没有其他策略为目标流量增加允许规则或施加额外限制。保存下面内容为 `backend-policy.yaml`：
 
 ```yaml
+# 只选择 app=backend 的后端 Pod；同一 from 项同时要求来自 k8s-net-demo 命名空间且 role=frontend，端口仅允许 TCP 8080。
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -287,10 +305,22 @@ spec:
 先在**没有本节策略**时确认两个来源都能访问后端 8080，并额外确认 8081 也真实监听，保留成功基线：
 
 ```bash
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n k8s-net-demo 限定命名空间
 kubectl exec -n k8s-net-demo frontend -- wget -qO- -T 5 "http://$BACKEND_IP:8080"
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n k8s-net-demo 限定命名空间
 kubectl exec -n k8s-net-demo other-client -- wget -qO- -T 5 "http://$BACKEND_IP:8080"
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n k8s-net-demo 限定命名空间
 kubectl exec -n k8s-net-demo frontend -- wget -qO- -T 5 "http://$BACKEND_IP:8081"
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f backend-policy.yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n k8s-net-demo 限定命名空间
 kubectl describe networkpolicy backend-from-frontend -n k8s-net-demo
 ```
 
@@ -307,9 +337,18 @@ kubectl describe networkpolicy backend-from-frontend -n k8s-net-demo
 在专用测试空间中移除本节策略，再用同样请求确认 `other-client → 8080` 和 `frontend → 8081` 恢复，形成前后对照；最后清理全部实验资源：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n k8s-net-demo 限定命名空间
 kubectl delete networkpolicy backend-from-frontend -n k8s-net-demo
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n k8s-net-demo 限定命名空间
 kubectl exec -n k8s-net-demo other-client -- wget -qO- -T 5 "http://$BACKEND_IP:8080"
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n k8s-net-demo 限定命名空间
 kubectl exec -n k8s-net-demo frontend -- wget -qO- -T 5 "http://$BACKEND_IP:8081"
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete namespace k8s-net-demo
 ```
 
@@ -318,9 +357,18 @@ kubectl delete namespace k8s-net-demo
 下面只是授权环境中的命令模板；名称、命名空间和上下文需要先确认。`kube-system` 只是常见系统组件所在位置，并不是所有网络方案的固定部署目录。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o wide 展示节点、IP 等扩展列
 kubectl get nodes -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -A 跨全部命名空间查询，适合定位资源所在范围
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -A -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
 kubectl get networkpolicy -n NAMESPACE
 ```
 

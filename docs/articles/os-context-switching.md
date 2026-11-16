@@ -86,6 +86,8 @@ A 被唤醒并重新获得调度后，会沿自身等待结束后的路径继续
 `_timer_interrupt` 从保存的 `CS` 中取最低两位，传给 `do_timer(long cpl)`。这里的 cpl 表示**被中断代码**的 CPL（Current Privilege Level，当前特权级），不是说正在执行的 `do_timer` 仍处于用户态。原版 `kernel/sched.c` 中该函数的末尾为：
 
 ```c
+// Linux 0.11 时钟调度片段：递减时间片，耗尽时只有在允许的执行上下文中才调用 schedule。
+// cpl 为 0 的分支直接返回，不能据此推导现代内核的全部抢占规则。
 if ((--current->counter)>0) return;
 current->counter=0;
 if (!cpl) return;
@@ -143,6 +145,7 @@ schedule();
 需具有可读 procfs 的现代 Linux、Python 3、shell 与 grep。先记录 `uname -srmo`、`python3 --version`，把以下程序保存为 `ctx-work.py`：
 
 ```python
+# 运行 6 秒的两种工作负载：cpu 持续计算，sleep 每轮睡眠 0.01 秒，供后续比较线程切换统计。
 import sys
 import time
 
@@ -164,22 +167,27 @@ while time.monotonic() < deadline:
 ```bash
 uname -srmo
 python3 --version
+# 按列表中的模式或资源逐项执行下面的检查；循环内保留各自的采样状态
 for mode in cpu sleep; do
     python3 ctx-work.py "$mode" &
     workload_pid=$!
     workload_tid=$workload_pid
     status_file="/proc/$workload_pid/task/$workload_tid/status"
     sleep 1
+    # 按列表中的模式或资源逐项执行下面的检查；循环内保留各自的采样状态
     for sample in 1 2; do
         printf '%s sample=%s pid=%s\n' "$mode" "$sample" "$workload_pid"
+        # 先检查条件或文件可读性，再执行下面的采样；条件不满足时跳过，避免把缺失数据当成零
         if [ -r "$status_file" ]; then
             grep -E '^(voluntary|nonvoluntary)_ctxt_switches:' "$status_file"
         else
             printf 'task exited or status is inaccessible\n'
             break
         fi
+        # 先检查条件或文件可读性，再执行下面的采样；条件不满足时跳过，避免把缺失数据当成零
         if [ "$sample" = 1 ]; then sleep 2; fi
     done
+    # 等待前面记录 PID 的后台任务退出；用退出码记录各任务是否成功
     wait "$workload_pid"
 done
 ```

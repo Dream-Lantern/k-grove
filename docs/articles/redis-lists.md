@@ -19,18 +19,22 @@ order: 5
 
 # 第五章 List、阻塞读取与可靠任务转移
 
-List（列表）是按顺序保存字节串的序列，支持两端插入与弹出。它既能表达栈，也能表达队列；选哪一端必须前后一致。
+List（列表）是按顺序保存字节串的序列，支持两端插入与弹出。它既能表达栈，也能表达队列。
 
-本章 `redis` 代码块均是 Redis 命令，可在 `redis-cli` 交互环境输入。假定学习键起初不存在，无其他客户端修改，除非另有说明。普通命令按 Redis Open Source 7.2.0 语义讲解，历史版本另行标注。
+本章 `redis` 代码块均是 Redis 命令，可在 `redis-cli` 交互环境输入。普通命令按 Redis Open Source 7.2.0 语义讲解，历史版本另行标注。
 
 ## 1. 先画清左右方向
 
 新增例子：
 
 ```redis
+# 将元素 task-a、task-b 依次追加到 List demo:tasks 的右端；返回追加后的列表长度
 RPUSH demo:tasks task-a task-b
+# 从 List demo:tasks 左端移除并返回 1 个元素；列表不存在或为空返回 nil
 LPOP demo:tasks
+# 读取 List demo:tasks 索引 0～9 的元素，包含两端；索引从 0 开始，本例最多返回 10 个元素，不移除数据
 LRANGE demo:tasks 0 9
+# 查询 List demo:tasks 的元素个数；键不存在返回 0
 LLEN demo:tasks
 ```
 
@@ -40,15 +44,19 @@ LRANGE 的结束下标包含在结果里，0 -1 表示全部。列表很长时�
 
 ## 2. 阻塞的是等待中的客户端
 
-BLPOP、BRPOP 可以在暂时没有元素时等待，时间单位是秒；0 表示不因该等待超时而结束，不代表永久无条件存活。连接、进程或权限异常仍会终止等待。
+BLPOP、BRPOP 可以在暂时没有元素时等待，时间单位是秒；0 表示不因该等待超时而结束。连接、进程或权限异常仍会终止等待。
 
 一个客户端等待空列表，不会让整个 Redis 停止处理其他命令。这与执行一个耗时脚本占用主要执行路径不同。
 
 BLPOP 检查多个键时，先从参数左侧寻找非空列表。以下使用单实例、全新的学习键；两个列表都已就绪时，优先取 a，不比较两边任务的入队时间：
 
 ```redis
+# 将元素 task-a 依次追加到 List demo:queue:a 的右端；返回追加后的列表长度
 RPUSH demo:queue:a task-a
+# 将元素 task-b 依次追加到 List demo:queue:b 的右端；返回追加后的列表长度
 RPUSH demo:queue:b task-b
+# 按参数顺序检查列表 demo:queue:a、demo:queue:b，从第一个非空列表左端弹出元素
+# 10 是最长阻塞秒数；返回键名和元素，超时返回 nil
 BLPOP demo:queue:a demo:queue:b 10
 ```
 
@@ -66,6 +74,8 @@ BLPOP demo:queue:a demo:queue:b 10
 LMOVE、BLMOVE 自 Redis Open Source 6.2.0 起可用。BLMOVE 的 timeout 单位为秒，可用小数，`0` 表示无限等待数据，但不排除连接异常。以下源和目标都不存在，若没有其他连接在两秒内写入源列表，预期超时返回 nil；等待本身不会创建任务：
 
 ```redis
+# 将 demo:{blocking}:ready 左端的 1 个元素原子移到 demo:{blocking}:processing 右端，并返回该元素；LEFT/RIGHT 分别指定源端/目标端
+# 2 是源列表为空时最长阻塞秒数，超时返回 nil（Redis 6.2+）
 BLMOVE demo:{blocking}:ready demo:{blocking}:processing LEFT RIGHT 2
 ```
 
@@ -79,23 +89,27 @@ BLMOVE demo:{blocking}:ready demo:{blocking}:processing LEFT RIGHT 2
 
 ![待处理、处理中与业务确认的分工](/assets/notes/redis/redis-study-list-work.svg)
 
-LMOVE / BLMOVE 的原子性（Atomicity）保证两个 Redis List 的移动操作不会被其他客户端命令插入：不会出现任务已从源移除、却尚未放入目标的可见中间状态。以下正常路径使用 Redis Open Source 6.2.0 起支持的 LMOVE，假定学习键起初不存在、任务 ID（Identifier，标识符）唯一，没有其他消费者：
+LMOVE / BLMOVE 的原子性（Atomicity）保证两个 Redis List 的移动操作不会被其他客户端命令插入：不会出现任务已从源移除、却尚未放入目标的可见中间状态。以下正常路径使用 Redis Open Source 6.2.0 起支持的 LMOVE：
 
 ```redis
+# 将元素 task-a、task-b 依次追加到 List demo:{tasks}:ready 的右端；返回追加后的列表长度
 RPUSH demo:{tasks}:ready task-a task-b
+# 将 demo:{tasks}:ready 左端的 1 个元素原子移到 demo:{tasks}:processing 右端，并返回该元素；LEFT/RIGHT 分别指定源端/目标端；源列表为空返回 nil（Redis 6.2+）
 LMOVE demo:{tasks}:ready demo:{tasks}:processing LEFT RIGHT
+# 读取 List demo:{tasks}:processing 索引 0～9 的元素，包含两端；索引从 0 开始，本例最多返回 10 个元素，不移除数据
 LRANGE demo:{tasks}:processing 0 9
 ```
 
 预期 task-a 从 ready 左侧进入 processing 右侧，而不是消失；task-b 仍待领取。业务成功提交后，按实际领取的唯一 ID 清理该项：
 
 ```redis
+# 从 List demo:{tasks}:processing 左向右删除至多 1 个值为 task-a 的元素；count 为正表示从左端开始，返回实际删除数
 LREM demo:{tasks}:processing 1 task-a
 ```
 
 在上述无竞争前提下，预期删除数为 1。若业务失败或消费者崩溃，不应提前执行这次确认。这段流程只覆盖正常处理时的移动—业务—确认过程，下面的接管协议仍需由应用实现。
 
-两个键使用相同 Hash Tag 是为了满足 Cluster 同槽约束。**LMOVE 将两个 Redis List 之间的移动作为原子操作执行。**数据库扣款等外部业务需要单独处理幂等与事务协调；Redis 数据在故障后的保留取决于持久化和复制策略。[LMOVE 的版本和可靠队列模式](https://redis.io/docs/latest/commands/lmove/)
+两个键使用相同 Hash Tag 是为了满足 Cluster 同槽约束。 **LMOVE 将两个 Redis List 之间的移动作为原子操作执行。** 数据库扣款等外部业务需要单独处理幂等与事务协调；Redis 数据在故障后的保留取决于持久化和复制策略。[LMOVE 的版本和可靠队列模式](https://redis.io/docs/latest/commands/lmove/)
 
 例如：消费者移动任务到 processing → 数据库扣款成功 → 消费者崩溃，尚未 LREM → 应用发现超时后重投 → 新消费者再次扣款。业务实际成功与 Redis 确认完成之间的窗口会产生 Duplicate Processing（重复处理，即同一任务再次执行）。
 
@@ -103,7 +117,7 @@ LREM demo:{tasks}:processing 1 task-a
 
 ## 4. 发现超时任务、重新领取与幂等恢复 {#_4-可靠性仍有应用部分}
 
-应用要记录处理时间、重试次数、任务标识和可接管条件。Lease（租约）是应用授予一次处理尝试的有限有效期，用于决定何时可接管；它不是消费者已死亡的证明。典型竞争如下，属于故障场景推演：
+应用要记录处理时间、重试次数、任务标识和可接管条件。Lease（租约）是应用授予一次处理尝试的有限有效期，用于决定何时可接管；它不是消费者已宕机失效的证明。典型竞争如下，属于故障场景推演：
 
 ```text
 消费者 A 领取任务 → A 长时间暂停 → 租约过期
@@ -159,9 +173,9 @@ K 是批量添加或返回的元素数；LRANGE 中 S 是定位起始位置需�
 | 6.2.0                      | quicklist，紧凑节点使用 ziplist（压缩列表）                                                       |
 | 7.0.0                      | quicklist，紧凑节点改为 listpack（紧凑列表）；大元素可用单独节点                                  |
 | 7.2.0                      | 小 List 可直接用 listpack，超出节点大小或元素数量条件时转为 quicklist；符合条件的缩小路径也可转回 |
-| 7.4.0、8.0.0               | 仍有 listpack / quicklist 及相应转换路径，不概括为所有 List 只有一种编码                          |
+| 7.4.0、8.0.0               | 仍有 listpack / quicklist 及相应转换路径                          |
 
-这里以固定版本为证，不把“6.2 及以前”外推到更早曾使用其他结构的版本。7.2.0 的转换检查使用 `list-max-listpack-size` 对应的节点容量规则，还会检查节点数量与安全余量，不能只看 List 元素总数。具体诊断可用 `OBJECT ENCODING`，但不应把内部阈值当成应用协议。[6.2.0 t_list.c](https://raw.githubusercontent.com/redis/redis/6.2.0/src/t_list.c) · [7.0.0 quicklist.c](https://raw.githubusercontent.com/redis/redis/7.0.0/src/quicklist.c) · [7.2.0 t_list.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_list.c) · [7.4.0 t_list.c](https://raw.githubusercontent.com/redis/redis/7.4.0/src/t_list.c) · [8.0.0 t_list.c](https://raw.githubusercontent.com/redis/redis/8.0.0/src/t_list.c)
+7.2.0 的转换检查使用 `list-max-listpack-size` 对应的节点容量规则，还会检查节点数量与安全余量，不能只看 List 元素总数。具体诊断可用 `OBJECT ENCODING`，但不应把内部阈值当成应用协议。[6.2.0 t_list.c](https://raw.githubusercontent.com/redis/redis/6.2.0/src/t_list.c) · [7.0.0 quicklist.c](https://raw.githubusercontent.com/redis/redis/7.0.0/src/quicklist.c) · [7.2.0 t_list.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_list.c) · [7.4.0 t_list.c](https://raw.githubusercontent.com/redis/redis/7.4.0/src/t_list.c) · [8.0.0 t_list.c](https://raw.githubusercontent.com/redis/redis/8.0.0/src/t_list.c)
 
 持续积压时，关注任务数量、每条尺寸、消费者速率和失败比例。只是不断增大 List 容量，通常不能修复消费者错误或下游瓶颈。
 

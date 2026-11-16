@@ -79,13 +79,17 @@ DUMP 生成序列化值，不自动把原 TTL 作为一个完整业务迁移流�
 例如先在源端读取，命令未执行；前提是存在待迁移的 `demo:source`：
 
 ```redis
+# 序列化键 demo:source 的值并返回二进制载荷；不包含 TTL，不会删除源键，不能直接把终端显示的转义文本当原始载荷
 DUMP demo:source
+# 查询键 demo:source 的剩余 TTL，单位毫秒；-1 表示键存在但无期限，-2 表示键不存在
 PTTL demo:source
 ```
 
 目标端恢复的语法模板如下，`<serialized-value>` 必须由客户端按二进制参数传入实际 DUMP 结果，不能把占位符当成命令参数直接运行：
 
 ```text
+# 将 DUMP 产生的原始二进制载荷恢复到键 demo:target；5000 是 TTL 毫秒数，0 才表示不设置期限
+# <serialized-value> 是载荷占位符，不能把终端转义显示原样粘贴；目标键已存在时默认报错
 RESTORE demo:target 5000 <serialized-value>
 ```
 

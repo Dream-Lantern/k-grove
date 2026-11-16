@@ -173,8 +173,15 @@ CoreDNS Pod Running 只说明生命周期的一部分，`kube-dns` Service 存�
 以下是授权环境中常见的查询模板。`kube-dns` 与标签要以实际部署为准；权限不足也不能被当成 DNS 服务故障。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n kube-system 限定命名空间
 kubectl get service kube-dns -n kube-system
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n kube-system 限定命名空间
+# -l kubernetes.io/service-name=kube-dns 按标签选择对象，不是按名称匹配
 kubectl get endpointslice -n kube-system -l kubernetes.io/service-name=kube-dns
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n kube-system 限定命名空间
 kubectl get pods -n kube-system
 ```
 
@@ -185,10 +192,23 @@ kubectl get pods -n kube-system
 复用[第十二章共用清单](/articles/kubernetes-api-yaml-labels.html#catalog-lab)的 `study/catalog` 和 `dns-debug`，不重复部署。诊断镜像为 `busybox:1.36.1`，包含本例使用的 nslookup、wget 和 cat；需有 exec 权限、诊断容器仍在运行，后端已 Ready。集群域假定为 `cluster.local`，不同配置必须调整名称。以下命令均未在本次修订中执行。
 
 ```bash
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# cat 读取容器内指定文件，用于核对挂载或启动时配置
+# -n study 限定命名空间
 kubectl exec dns-debug -n study -- cat /etc/resolv.conf
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# nslookup 查询后面的名称，用于检查容器内 DNS 解析
+# -n study 限定命名空间
 kubectl exec dns-debug -n study -- nslookup catalog.study.svc.cluster.local
+# 用 kubectl 查询对象字段并保存到 SERVICE_IP；-o jsonpath 只提取表达式指定的值，供后续请求使用
 SERVICE_IP=$(kubectl get svc catalog -n study -o jsonpath='{.spec.clusterIP}')
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec dns-debug -n study -- wget -qO- -T 5 "http://$SERVICE_IP:80"
+# 在指定 Pod 的容器中执行 -- 后面的命令；-c 选择容器，-- 之后的参数传给容器内程序
+# wget -qO- 将 HTTP 响应写到标准输出，-T 5 设置超时秒数；URL 用于对比 Pod、Service 或 DNS 路径
+# -n study 限定命名空间
 kubectl exec dns-debug -n study -- wget -qO- -T 5 http://catalog.study.svc.cluster.local:80
 ```
 

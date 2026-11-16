@@ -274,24 +274,47 @@ spec:
           image: nginx:1.28.0
           ports:
             - containerPort: 80
+          # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
           readinessProbe:
             httpGet:
               path: /
               port: 80
             initialDelaySeconds: 2
+            # 探针执行间隔，单位秒；不是单次请求的超时时间。
             periodSeconds: 5
 ```
 
 `replicas` 设置期望数量；`selector.matchLabels` 必须匹配 Pod 模板中的标签，控制器才能识别管理对象。`template` 描述每个新 Pod 的规格；HTTP 就绪探针用于检查容器内 Web 服务是否能响应。`containerPort` 是端口声明，不会自动创建 Service 或暴露外部入口。示例镜像标签用于固定教程版本，实际部署仍需按安全策略维护镜像。
 
 ```bash
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace k8s-arch-demo
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f deployment.yaml
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n k8s-arch-demo 限定命名空间
 kubectl rollout status deployment/web-demo -n k8s-arch-demo --timeout=120s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
 kubectl get deployments -n k8s-arch-demo
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
 kubectl get replicasets -n k8s-arch-demo -l app=web-demo
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n k8s-arch-demo -l app=web-demo -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get replicasets -n k8s-arch-demo -l app=web-demo -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pods -n k8s-arch-demo -l app=web-demo -o yaml
 ```
 
@@ -300,7 +323,12 @@ kubectl get pods -n k8s-arch-demo -l app=web-demo -o yaml
 **场景 B：删除一个受管理的 Pod。** 从上述列表选一个 Pod，将下面的 `POD_NAME` 替换为实际名称：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n k8s-arch-demo 限定命名空间
 kubectl delete pod POD_NAME -n k8s-arch-demo
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
 kubectl get pods -n k8s-arch-demo -l app=web-demo --watch
 ```
 
@@ -309,9 +337,19 @@ ReplicaSet 的期望仍是三个副本。控制器观察到需要补足时，会
 **场景 C：从三个副本扩到五个。**
 
 ```bash
+# 将指定工作负载的期望副本数设为 5；后续由控制器协调实际 Pod 数量
+# -n k8s-arch-demo 限定命名空间
 kubectl scale deployment/web-demo -n k8s-arch-demo --replicas=5
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n k8s-arch-demo 限定命名空间
 kubectl rollout status deployment/web-demo -n k8s-arch-demo --timeout=120s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
 kubectl get deployment web-demo -n k8s-arch-demo
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-arch-demo 限定命名空间
+# -l app=web-demo 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n k8s-arch-demo -l app=web-demo -o wide
 ```
 
@@ -320,6 +358,7 @@ kubectl get pods -n k8s-arch-demo -l app=web-demo -o wide
 实验结束后清理专用空间及其所有资源：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete namespace k8s-arch-demo
 ```
 

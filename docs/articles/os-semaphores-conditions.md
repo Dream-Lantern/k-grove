@@ -98,6 +98,7 @@ order: 9
 即使没有其他消费者，POSIX 仍允许虚假唤醒（Spurious Wakeup），因此应用也不应省略重检。常见代码片段为：
 
 ```c
+// pthread_cond_wait 原子地释放 mutex 并等待，返回前重新持有 mutex；醒来仍需用 while 检查队列谓词。
 /* 调用前已持有 mutex；实际程序还需处理返回错误和退出条件。 */
 while (queue_empty()) {
     pthread_cond_wait(&cond, &mutex);
@@ -159,6 +160,8 @@ empty/full 管理两类许可，mutex 防止多个执行流同时损坏队列索
 在现代 Linux、GCC/pthread 环境保存完整程序为 `bounded-queue.c`：
 
 ```c
+// 容量 K=2 的有界队列：生产者在满时等 not_full，消费者在空时等 not_empty，状态统一由 mutex 保护。
+// closed 配合 broadcast 让等待线程退出；join 后检查 1～N 每项恰好被消费一次。
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -183,6 +186,7 @@ static void *producer(void *unused) {
     for (int item = 1; item <= N; ++item) {
         check(pthread_mutex_lock(&mutex), "lock");
         while (count == K && !closed)
+            // 调用时持有 mutex；等待会原子地释放锁，返回前重新加锁，醒来后仍要重新检查谓词。
             check(pthread_cond_wait(&not_full, &mutex), "wait not_full");
         if (closed) {
             check(pthread_mutex_unlock(&mutex), "unlock");
@@ -196,6 +200,7 @@ static void *producer(void *unused) {
     }
     check(pthread_mutex_lock(&mutex), "lock close");
     closed = 1;
+    // 通知该条件变量上的所有等待者；它们恢复运行后仍要竞争同一把 mutex 并检查状态。
     check(pthread_cond_broadcast(&not_empty), "broadcast not_empty");
     check(pthread_cond_broadcast(&not_full), "broadcast not_full");
     check(pthread_mutex_unlock(&mutex), "unlock close");
@@ -229,6 +234,7 @@ int main(void) {
     for (int i = 0; i < 2; ++i)
         check(pthread_create(&c[i], NULL, consumer, NULL), "create consumer");
     check(pthread_create(&p, NULL, producer, NULL), "create producer");
+    // 等待指定线程结束，再读取其完成结果或回收相关共享资源。
     check(pthread_join(p, NULL), "join producer");
     for (int i = 0; i < 2; ++i)
         check(pthread_join(c[i], NULL), "join consumer");
@@ -243,7 +249,10 @@ int main(void) {
 ```
 
 ```bash
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# -pthread 同时配置线程编译与链接选项
 gcc -std=c11 -Wall -Wextra -O0 -pthread bounded-queue.c -o bounded-queue
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./bounded-queue
 ```
 

@@ -67,10 +67,25 @@ order: 30
 kubectl 的 STATUS 列是摘要，不能替代 API 字段。readiness 决定是否就绪；liveness 失败可导致容器重启；配置 startup 后，启动检查成功前其余两类探针暂不执行，不能混称为同一检查。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pod POD_NAME -n study -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod POD_NAME -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod POD_NAME -n study -o jsonpath='{.spec.nodeName}{"\n"}{.status.phase}{"\n"}{.status.containerStatuses}{"\n"}'
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# --tail=100 仅取末尾相应行数，--timestamps 为每行附时间戳
+# -n study 限定命名空间
 kubectl logs POD_NAME -n study -c app --timestamps --tail=100
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# --previous 读取该 Pod 内容器上一次终止实例的日志，不是所有历史 Pod 的日志
+# --tail=100 仅取末尾相应行数，--timestamps 为每行附时间戳
+# -n study 限定命名空间
 kubectl logs POD_NAME -n study -c app --previous --timestamps --tail=100
 ```
 
@@ -81,11 +96,28 @@ kubectl logs POD_NAME -n study -c app --previous --timestamps --tail=100
 案例一：study/catalog 的 Pod Ready，从指定集群内客户端访问 Pod IP 和 Service 成功，但外部通过 Ingress 访问失败。给定 Service 端口为 80、targetPort 为 8080，Ingress 主机为 `catalog.example.com`。这些证据先缩小到入口路径；不能证明 Ingress Controller 到后端的路径也健康，因为客户端来源、节点与网络策略可能不同，部分控制器还直接访问端点。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get service catalog -n study -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l kubernetes.io/service-name=catalog 按标签选择对象，不是按名称匹配
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=catalog -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get ingress catalog -n study -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe ingress catalog -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
 kubectl get ingressclass
 ```
 
@@ -102,7 +134,12 @@ kubectl get ingressclass
 在已获准访问的客户端可使用如下 **请求模板**；第二条只绕过 DNS，保留 Host 和 TLS 的服务器名称，不能用 IP URL 替代。INGRESS_IP 需替换为实际入口 IP，本章不发送请求。
 
 ```bash
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
+# --connect-timeout 3 限制建连 3 秒，--max-time 10 限制总请求 10 秒；-v 输出连接诊断
 curl --connect-timeout 3 --max-time 10 -v https://catalog.example.com/
+# 向后面的 URL 发起 HTTP 请求；-f 对 HTTP 错误返回失败，-sS 静默进度但保留错误信息（若指定）
+# --resolve 将指定域名和端口固定到 INGRESS_IP，同时保留 URL 的主机名和 TLS 校验
+# --connect-timeout 3 限制建连 3 秒，--max-time 10 限制总请求 10 秒；-v 输出连接诊断
 curl --connect-timeout 3 --max-time 10 -v --resolve catalog.example.com:443:INGRESS_IP https://catalog.example.com/
 ```
 
@@ -113,12 +150,27 @@ curl --connect-timeout 3 --max-time 10 -v --resolve catalog.example.com:443:INGR
 案例二：catalog 使用 `catalog-data` PVC；PVC 已 Bound，但新 Pod 尚不能启动，事件报告 FailedAttachVolume 或 FailedMount。Bound 只说明 PVC 与 PV 已绑定，不保证节点附加、挂载和应用文件访问成功。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pvc catalog-data -n study -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pvc catalog-data -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pod POD_NAME -n study -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod POD_NAME -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pv PV_NAME -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get storageclass STORAGE_CLASS_NAME -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
 kubectl get volumeattachment
 ```
 
@@ -145,13 +197,39 @@ Pod 能写临时目录不证明持久卷可写。发现数据异常时保护现�
 先观察 Deployment，再按 ownerReferences 与模板版本区分 ReplicaSet 和 Pod；标签查询只是候选集合，不代替归属核对。
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get deployment catalog -n study -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get replicasets -n study -l app=catalog -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=catalog -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get replicaset NEW_RS_NAME -n study -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pod NEW_POD_NAME -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod NEW_POD_NAME -n study -o jsonpath='{.spec.containers}{"\n"}{.status.containerStatuses}{"\n"}'
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# --tail=100 仅取末尾相应行数，--timestamps 为每行附时间戳
+# -n study 限定命名空间
 kubectl logs NEW_POD_NAME -n study -c app --timestamps --tail=100
+# 读取指定 Pod 或工作负载的容器日志；-c 选择容器
+# --previous 读取该 Pod 内容器上一次终止实例的日志，不是所有历史 Pod 的日志
+# --tail=100 仅取末尾相应行数，--timestamps 为每行附时间戳
+# -n study 限定命名空间
 kubectl logs NEW_POD_NAME -n study -c app --previous --timestamps --tail=100
 ```
 

@@ -57,13 +57,20 @@ Linux 只读观察命令如下。日志权限因环境而异，使用已有权�
 ```bash
 lspci | grep -i nvidia
 lsmod | grep '^nvidia'
+# 读取内核或驱动导出的状态文件，核对当前运行环境
 cat /proc/driver/nvidia/version
 ls -l /dev/nvidia*
+# 读取系统日志；-u 指定服务，-k 选择内核，-b 选择本次启动，-n 100 取最近 100 行（按所用选项）
+# --no-pager 直接输出；管道中的 grep 进一步筛选驱动、GPU Xid 或内存错误（如有）
 journalctl -k -b --no-pager | grep -Ei 'NVRM|Xid|oom|out of memory'
+# 查询驱动侧 GPU 状态、显存与进程概况；不等于 CUDA Toolkit 编译器版本
 nvidia-smi
+# 列出可见 GPU 的名称与 UUID，以及适用的 MIG 设备；用于核对设备枚举
 nvidia-smi -L
+# 查看当前 PATH 中 CUDA 编译器的 Toolkit 版本，与驱动版本分别核对
 nvcc --version
 # Docker 示例。CONTAINER 为现有容器名。
+# 查看现有容器元数据；--format 用 Go 模板提取镜像及设备请求等字段，不启动或修改容器
 docker inspect --format '{{.Image}} {{json .HostConfig.DeviceRequests}}' "$CONTAINER"
 ```
 
@@ -72,6 +79,7 @@ docker inspect --format '{{.Image}} {{json .HostConfig.DeviceRequests}}' "$CONTA
 下面只做信息查询。
 
 ```python
+# 分别打印 PyTorch 版本、编译时 CUDA 版本、设备可见性变量及运行时 CUDA 是否可用；四项含义不同。
 import os
 import torch
 print("torch", torch.__version__)
@@ -101,6 +109,7 @@ print("available", torch.cuda.is_available())
 在 PyTorch 2.14 使用以下片段观察已有进程、已初始化设备的分配器统计，放入受控诊断钩子；另起进程无法读取服务进程的统计。返回值以字节计，峰值是自初始化或上次峰值重置以来的记录。
 
 ```python
+# 针对当前 CUDA 设备比较张量已分配字节、缓存分配器保留字节与分配峰值；它们不等于驱动侧全部占用。
 import torch
 
 device = torch.cuda.current_device()

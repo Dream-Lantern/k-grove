@@ -133,11 +133,14 @@ PDE/PTE 保存的是地址信息和属性，不能把整个条目的数值都当
 保存为 `paging.py`，运行 `python3 paging.py`。用字典模拟目录与表，条目用 `(页框号, present, user, writable)` 表示。二级表页框 2 与数据页框 7 是不同对象；映射页框 9 用于边界和只读案例。
 
 ```python
+# 模拟 32 位两级页表和 4 KiB 页：地址拆成 10 位目录索引、10 位页表索引及 12 位页内偏移。
+# 逐级检查存在位与用户/写权限；只有成功时才把物理页框号与页内偏移组合为物理地址。
 def translate(va, directory, tables, write=False, user=True):
     # Each entry is (frame_number, present, user_allowed, writable).
     # Directory frame numbers index tables; leaf frame numbers identify data.
     if not isinstance(va, int) or not 0 <= va < 2**32:
         raise ValueError("not a 32-bit address")
+    # 高 10 位选目录、中间 10 位选页表、低 12 位保留为页内偏移。
     di, ti, offset = va >> 22, (va >> 12) & 0x3ff, va & 0xfff
     pde = directory.get(di)
     if pde is None or not pde[1]:
@@ -145,6 +148,7 @@ def translate(va, directory, tables, write=False, user=True):
     pte = tables[pde[0]].get(ti)
     if pte is None or not pte[1]:
         return (di, ti, offset), "missing-PTE"
+    # 有效权限由目录项与页表项共同限制，任一级不允许就返回 permission。
     if (user and not (pde[2] and pte[2])) or (write and not (pde[3] and pte[3])):
         return (di, ti, offset), "permission"
     return (di, ti, offset), (pte[0] << 12) | offset

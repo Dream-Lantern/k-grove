@@ -33,6 +33,8 @@ order: 24
 
 安全性要求在故障期间也成立。源订单与 Outbox（事务待发表）原子提交，同一扣减操作最多生效一次，库存不为负，旧版本不能覆盖新状态，未完成事件不能被位点跳过。活性要求在依赖恢复、事件仍可取得且业务前置条件满足时，Relay 能重领待发记录，Consumer 能恢复重试。无法自行恢复的事件要进入有记录的隔离与人工修复流程。至少一次投递提供重放机会，永久失败仍需业务处置。
 
+字段说明：`event_id` 是投递身份，`order_id` 是聚合身份，`business_version` 用于业务先后与去重；`quantity` 为扣减量，`schema_version` 用于载荷演进，两种版本不可混为一谈。
+
 ```json
 {
   "event_id": "evt-1001",
@@ -71,6 +73,8 @@ Outbox 将订单与待发事件记录放进同一个本地数据库事务，再�
 在专用源数据库执行建表。真实应用使用绑定参数，核对版本更新及 Outbox 插入各返回一行再提交。
 
 ```sql
+-- 建立订单与 Outbox 表；在同一事务中写业务版本和待发送事件，避免业务提交后没有对应发件记录。
+-- UNIQUE(order_id,business_version) 约束同一业务版本的事件唯一，claim_token/lease_until 支持后续领取。
 CREATE TABLE orders (
     order_id text PRIMARY KEY,
     business_version integer NOT NULL CHECK (business_version > 0)
@@ -110,6 +114,8 @@ COMMIT;
 以下 SQL 是一条短事务内的领取语句。参数 `$1` 绑定本次领取专用 UUID，应用提交领取事务后才发送：
 
 ```sql
+-- 领取一条可重试或租约到期的事件；排除同订单尚未 SENT 的更早业务版本。
+-- FOR UPDATE SKIP LOCKED 跳过被其他发布者锁定的行；$1 是调用方绑定的新 UUID，租约为 30 秒。
 WITH candidate AS (
     SELECT o.event_id
     FROM order_outbox o
@@ -161,6 +167,8 @@ RETURNING o.event_id, o.order_id, o.payload, o.claim_token;
 在独立库存数据库建表。教学规则将库存不足视为可持久化的业务拒绝，拒绝也终结本版本。若业务允许等待补货，则应返回可重试结果并保留该版本，不能沿用此处的拒绝路径。
 
 ```sql
+-- 用订单进度行锁串行化同一订单，并分别约束事件身份和业务版本；参数依次为事件、订单、版本、SKU、数量。
+-- 重复业务返回原结果，版本跳跃或负载冲突报错；库存不足记录 REJECTED_STOCK，不允许扣成负数。
 CREATE TABLE inventory (
     sku_id text PRIMARY KEY,
     available integer NOT NULL CHECK (available >= 0)
@@ -210,6 +218,7 @@ BEGIN
     INSERT INTO inventory_order_progress VALUES (p_order, 0)
     ON CONFLICT (order_id) DO NOTHING;
 
+    -- 锁住订单进度行，使同一订单的并发版本检查与进度更新串行化。
     SELECT last_version INTO STRICT current_version
     FROM inventory_order_progress WHERE order_id = p_order FOR UPDATE;
 
@@ -232,12 +241,14 @@ BEGIN
         RETURN prior.outcome;
     END IF;
 
+    -- 旧版本必须已有匹配账本；新版本必须恰好接续，防止跳过中间业务操作。
     IF p_version <= current_version THEN
         RAISE EXCEPTION 'old version has no matching operation';
     ELSIF p_version <> current_version + 1 THEN
         RAISE EXCEPTION 'business version gap';
     END IF;
 
+    -- 将库存充足条件放在扣减语句内；用 FOUND 区分成功扣减与库存不足。
     UPDATE inventory SET available = available - p_quantity
     WHERE sku_id = p_sku AND available >= p_quantity;
     IF FOUND THEN
@@ -342,6 +353,7 @@ Consumer（串行正常路径）:
 也可先脱离 Kafka 在库存库演练。用两个 `psql` 会话执行：
 
 ```sql
+-- 先处理业务版本 1，再用新事件 ID 重放同一业务版本，最后处理版本 2；查询库存与账本核对只扣一次。
 BEGIN ISOLATION LEVEL READ COMMITTED;
 SELECT deduct_inventory('evt-1001', 'order-001', 1, 'sku-100', 2);
 COMMIT;

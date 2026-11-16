@@ -147,6 +147,8 @@ Linux 6.6 开始引入 EEVDF（Earliest Eligible Virtual Deadline First，最早
 下面是完整 Python 3.8 及以上版本程序，保存为 `schedule.py` 后运行 `python3 schedule.py`。它专门实现本章所有任务到达于 0 的固定模型，不是通用的任意到达/I/O 调度模拟器，也不修改宿主机的调度策略。`Fraction` 保留精确平均值，只在打印时四舍五入。
 
 ```python
+# 以相同的三项 CPU 工作比较 FCFS、SJF 与时间片为 2 的 RR；所有到达时间均为 0。
+# intervals 记录执行区间，metrics 分别计算响应、周转和就绪等待时间；断言核对时间及工作量守恒。
 from collections import deque
 from fractions import Fraction
 
@@ -161,6 +163,7 @@ def serial(order):
         now += jobs[name]
     return intervals
 
+# 从就绪队列头取任务，运行至多一个 quantum；未完成的任务放回队尾。
 def round_robin():
     remaining = jobs.copy()
     ready = deque(jobs)
@@ -175,6 +178,7 @@ def round_robin():
             ready.append(name)
     return intervals
 
+# 从执行区间提取首次运行和最终完成时刻；减去 CPU 总时长得到就绪等待。
 def metrics(intervals):
     first, finish = {}, {}
     for name, start, end in intervals:

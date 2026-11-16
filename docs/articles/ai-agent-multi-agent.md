@@ -59,6 +59,7 @@ Manager（管理者／编排者）只长期保留任务、进度、文件索引�
 任务交接（Handoff）可使用**结构化契约**。以下把第二章翻译交给 Translation（翻译角色）；版本名是教学标记，Hash 字段应由程序填入对应文件的实际 SHA-256：
 
 ```yaml
+# 交接契约把输入版本、权限、输出状态与证据分开；TRANSLATED 只表示产物阶段，跨章节审校仍待完成。
 handoff:
   task_id: translation-ch2
   role: Translation
@@ -144,6 +145,7 @@ IPC（Inter-Process Communication，进程间通信）专指操作系统进程�
 源码节选（上下文依赖见原文件）：[chapter10/book-translation/agents.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter10/book-translation/agents.py#L481-L489)。
 
 ```python
+# 管理者只保存目标、术语指南、计划和产物路径/调用摘要；正文通过文件交接，避免反复塞入上下文。
 manager_context = {
     "task": f"把一本{source_lang}技术小书翻译成流畅{target_lang}，保证术语全书一致。",
     "guide": translation_guide(target_lang),
@@ -208,11 +210,14 @@ Manager 上下文峰值小，只能说明管理者局部上下文更轻；所有
 在获取的上游工作副本中固定到 `dbc046eb896ac4e39aa19c7774c8bf49583b89a6`。从其根目录创建并激活 Python 3.12 独立环境，安装这个项目的依赖；以下是待执行的准备命令，不是本地已运行回执：
 
 ```bash
+# 在指定路径创建独立 Python 虚拟环境；-m venv 调用标准库模块，不自动激活环境
 python -m venv .venv-translation
 # 激活后再执行下列命令；Windows PowerShell 使用 ./.venv-translation/Scripts/Activate.ps1
 # macOS/Linux 使用 source .venv-translation/bin/activate
 cd chapter10/book-translation
+# 在当前解释器环境安装依赖；-r 从指定 requirements 文件读取依赖
 python -m pip install -r requirements.txt
+# 在当前解释器环境安装依赖；包名后的版本约束用于固定或限制可用版本
 python -m pip install pytest
 ```
 
@@ -230,7 +235,9 @@ python -m pip install pytest
 另有本仓库的纯标准库练习，目录在项目根目录下，不需要安装上游 SDK：
 
 ```bash
+# 使用当前 Python 解释器运行翻译交接契约实验
 python examples/ai-agent/ch9-11-review/translation_contracts.py
+# 发现并运行单元测试；-s 指定目录，-p 指定文件名匹配模式，-v 展示各测试结果
 python -m unittest discover -s examples/ai-agent/ch9-11-review -p "test_translation*.py" -v
 ```
 

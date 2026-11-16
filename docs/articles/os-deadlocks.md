@@ -114,6 +114,8 @@ Available = (1,1)，已分配总量为 (2,2)，相加为 (3,3)，资源守恒。
 保存为 `banker.py`，运行 `python3 banker.py`。程序仅模拟整数向量，不创建线程、不锁定系统资源；输入断言检查向量维度与资源约束。
 
 ```python
+# 银行家算法教学模型：available 是可用资源向量，allocation/maximum 是各进程已占用量与最大需求矩阵。
+# safety 寻找可完成序列；request 先检查请求合法性，再在副本上试分配，安全时才返回新状态。
 def safety(available, allocation, maximum):
     # Inputs: nonnegative integer matrices, Allocation <= Max.
     n, m = len(allocation), len(available)
@@ -123,6 +125,7 @@ def safety(available, allocation, maximum):
     assert all(isinstance(a, int) and isinstance(b, int) and 0 <= a <= b
                for row, cap in zip(allocation, maximum)
                for a, b in zip(row, cap))
+    # 剩余需求逐项等于最大需求减已占用量；后续按资源种类逐项比较。
     need = [[b - a for a, b in zip(row, cap)]
             for row, cap in zip(allocation, maximum)]
     work, finished, sequence = list(available), set(), []
@@ -147,6 +150,7 @@ def request(available, allocation, maximum, i, amount):
         return "invalid", None
     if any(x > available[j] for j, x in enumerate(amount)):
         return "wait-available", None
+    # 在副本中预留资源，再做安全性检查；失败不污染调用方状态。
     new_available = [a - x for a, x in zip(available, amount)]
     new_allocation = [list(row) for row in allocation]
     new_allocation[i] = [a + x for a, x in zip(allocation[i], amount)]

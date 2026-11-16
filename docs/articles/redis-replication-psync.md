@@ -76,7 +76,9 @@ backlog 容量可以从“峰值复制字节速率 × 期望可覆盖断线时�
 以下是观察命令示例，不会自动建立复制关系：
 
 ```redis
+# 查询 主从角色、复制链路、偏移量及积压缓冲状态；replication 是 INFO 的信息分区名，不是键名
 INFO replication
+# 查询当前实例的角色及对应复制信息；无额外参数
 ROLE
 ```
 
@@ -123,7 +125,9 @@ WAIT 自 Redis Open Source 3.0.0 提供，可等待当前连接之前的写入�
 以下两行在同一连接、向学习环境的主节点顺序发送：
 
 ```redis
+# 将字符串键 demo:replication:order 写为 paid；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:replication:order paid
+# 等待当前连接此前写入被至少 1 个副本确认；1000 是最长等待毫秒数，返回实际确认副本数，不代表已落盘
 WAIT 1 1000
 ```
 
@@ -134,7 +138,10 @@ Redis Open Source 7.2.0 起的 WAITAOF 进一步针对 AOF（Append Only File，
 以下是另一组独立教学调用，必须在同一连接上向主节点执行，且需要本地与目标副本都启用、正常写入和同步 AOF；副本还需支持相应确认协议。
 
 ```redis
+# 将字符串键 demo:replication:order 写为 paid；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:replication:order paid
+# 等待当前连接此前写入完成 AOF 同步；1 要求本节点确认，1 要求副本数，1000 是超时毫秒数
+# 返回 [本地确认数, 副本确认数]，须检查实际是否达标（Redis 7.2+）
 WAITAOF 1 1 1000
 ```
 

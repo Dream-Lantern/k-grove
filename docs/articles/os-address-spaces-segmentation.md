@@ -117,6 +117,8 @@ order: 13
 保存为 `observe.c`，在 Linux 上运行 `gcc -std=c11 -Wall -Wextra -Werror observe.c -o observe`，再执行 `./observe`。示例显式申请 20 字节并读取自身映射，不直接改写真实页表或修改系统配置：
 
 ```c
+// 打印全局、局部及 malloc 对象的虚拟地址，并读取 /proc/self/maps 对照映射区间。
+// 这些地址不是物理地址；最后关闭文件、释放对象并检查输出错误。
 #include <stdio.h>
 #include <stdlib.h>
 

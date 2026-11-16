@@ -116,6 +116,8 @@ x86 的 INVLPG、INVPCID 或写 CR3 各有模式、标签、全局映射等规�
 保存为 `tlb.py`，运行 `python3 tlb.py`。只用字典模拟页表和两个 CPU 缓存，不读写主机页表。先故意修改页表而不失效，展示两个旧可写条目仍被模型使用；再使两个缓存失效，确认写入被拒绝。
 
 ```python
+# 每个 CPU 有独立的模拟 TLB，以地址空间标识和虚拟页号为键，缓存物理页框及写权限。
+# 先演示页表已撤销写权限但缓存仍可写，再对两个 CPU 逐一失效；此模型不执行真实硬件指令。
 class Fault(Exception):
     pass
 
@@ -148,10 +150,12 @@ assert cpu0.access(tables, "A", 0x5000)[1] == 20 * 4096
 assert cpu0.access(tables, "B", 0x5000)[1] == 80 * 4096
 assert cpu0.access(tables, "A", 0x5000)[0] == "hit"
 cpu1.access(tables, "A", 0x2240, write=True)
+# 只修改页表尚未更新两个 CPU 的缓存，后面的成功写入是刻意演示的旧权限漏洞。
 tables[("A", 2)] = (7, False)
 # Deliberately demonstrate the broken protocol before invalidating BOTH caches.
 assert cpu0.access(tables, "A", 0x2240, write=True)[0] == "hit"
 assert cpu1.access(tables, "A", 0x2240, write=True)[0] == "hit"
+# 分别操作两个 CPU，验证失效传播后旧可写翻译不再可用。
 for cpu in (cpu0, cpu1):
     cpu.invalidate("A", 2)
 for cpu in (cpu0, cpu1):

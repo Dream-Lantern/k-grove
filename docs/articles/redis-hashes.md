@@ -19,9 +19,9 @@ order: 4
 
 # 第四章 Hash、对象字段与字段过期
 
-Hash（哈希）在一个键下保存 field-value（字段—值）映射，适合需要按字段读取、更新的对象。它不要求每个对象拥有完全相同的字段集合，但也不自动提供关系型数据库的约束和关联查询。整份对象存为 String（字符串）与拆成 Hash 的对比，见 [第 2 章：数据建模](/articles/redis-data-modeling.html)。
+Hash（哈希）在一个键下保存 field-value（字段—值）映射，适合需要按字段读取、更新的对象。它不要求每个对象拥有完全相同的字段集合，也不自动提供关系型数据库的约束和关联查询。整份对象存为 String（字符串）与拆成 Hash 的对比，见 [第 2 章：数据建模](/articles/redis-data-modeling.html)。
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，不是 Shell 命令。预期返回与结构图都是教学推演。使用独立学习实例，假定示例键起初不存在、无其他客户端修改，并在所设期限内完成操作；字段过期部分另有最低版本要求。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。
 
 ![Hash 对象、字段与两层过期关系](/assets/notes/redis/redis-study-hash-model.svg)
 
@@ -30,14 +30,20 @@ Hash（哈希）在一个键下保存 field-value（字段—值）映射，适�
 新增示例：
 
 ```redis
+# 在 Hash demo:user:42 中写入字段和值：name=Lin、level=3；返回新增字段数
+# 已有字段会更新，普通 HSET 覆盖字段时会清除该字段原有 TTL
 HSET demo:user:42 name Lin level 3
+# 读取 Hash demo:user:42 的 name 字段；键或字段不存在返回 nil
 HGET demo:user:42 name
+# 按顺序读取 Hash demo:user:42 的字段 name、level、missing；结果逐项对应，不存在的字段为 nil
 HMGET demo:user:42 name level missing
+# 检查 Hash demo:user:42 是否存在字段 level；存在返回 1，不存在返回 0
 HEXISTS demo:user:42 level
+# 查询 Hash demo:user:42 的字段数量；键不存在返回 0
 HLEN demo:user:42
 ```
 
-上述示例预期依次返回新增字段数 `2`、`"Lin"`、`["Lin", "3", nil]`、存在标记 `1`、字段总数 `2`。HSET 返回本次新增的字段数，而不是最终的总字段数；更新已有字段可以成功，但不会因此增加返回值。
+上述示例预期依次返回新增字段数 `2`、`"Lin"`、`["Lin", "3", nil]`、存在标记 `1`、字段总数 `2`。HSET 返回本次新增的字段数，而不是最终的总字段数；更新已有字段不会增加返回值。
 
 HMGET 的结果位置与请求字段一一对应；nil（空值，表示没有对应数据）与空字符串不是同一种结果：
 
@@ -54,6 +60,8 @@ HMGET 的结果位置与请求字段一一对应；nil（空值，表示没有�
 Redis Open Source 4.0.0 起，HSET 支持多组 field-value 参数；HMSET 同时被标记为 deprecated（已弃用，仍保留兼容但不推荐新代码使用）。符合版本要求时优先使用 HSET，例如：
 
 ```redis
+# 在 Hash demo:user:42 中写入字段和值：name=Lin、age=30、city=Beijing；返回新增字段数
+# 已有字段会更新，普通 HSET 覆盖字段时会清除该字段原有 TTL
 HSET demo:user:42 name Lin age 30 city Beijing
 ```
 
@@ -62,7 +70,9 @@ HSET demo:user:42 name Lin age 30 city Beijing
 ## 2. HINCRBY 需要整数表示
 
 ```redis
+# 将 Hash demo:user:42 的整数型字段 score 加上 5；负增量表示减少，字段不存在从 0 开始，返回新值
 HINCRBY demo:user:42 score 5
+# 将 Hash demo:user:42 的整数型字段 score 加上 -2；负增量表示减少，字段不存在从 0 开始，返回新值
 HINCRBY demo:user:42 score -2
 ```
 
@@ -88,10 +98,21 @@ demo:user:42
 Redis Open Source 7.4.0 起提供字段 TTL。以下流程接续本章用户示例，先准备字段，再设置并查询期限：
 
 ```redis
+# 在 Hash demo:user:42 中写入字段和值：session=demo-session；返回新增字段数
+# 已有字段会更新，普通 HSET 覆盖字段时会清除该字段原有 TTL
 HSET demo:user:42 session demo-session
+# 为 Hash demo:user:42 的 session 字段设置 300 秒 TTL；FIELDS 1 表示后面只有 1 个字段（Redis 7.4+）
+# 返回逐字段结果数组，字段存在且设置成功时对应项为 1
 HEXPIRE demo:user:42 300 FIELDS 1 session
+# 查询 Hash demo:user:42 中字段 session 的剩余秒数；FIELDS 1 表示查询 1 个字段
+# 结果按字段顺序组成数组：-1 表示字段无 TTL，-2 表示键或字段不存在（Redis 7.4+）
 HTTL demo:user:42 FIELDS 1 session
+# 在 Hash demo:user:42 中写入字段和值：session=replacement-session；返回新增字段数
+# 已有字段会更新，普通 HSET 覆盖字段时会清除该字段原有 TTL
 HSET demo:user:42 session replacement-session
+# 查询 Hash demo:user:42 中字段 session 的剩余秒数；FIELDS 1 表示查询 1 个字段
+# 结果按字段顺序组成数组：-1 表示字段无 TTL，-2 表示键或字段不存在（Redis 7.4+）
+# 接续上面的 HSET 覆盖后，预期返回 [-1]：字段存在但原字段 TTL 已被清除
 HTTL demo:user:42 FIELDS 1 session
 ```
 
@@ -108,15 +129,22 @@ HTTL 使用秒，HPTTL 使用毫秒。本例按 [Redis Open Source 7.4.0 httlGen
 HPERSIST 可主动清除字段 TTL，同时保留字段和值。以下仍要求 Redis Open Source 7.4.0 或更高版本；必须在期限到达前执行，不能用它找回已经过期的字段：
 
 ```redis
+# 在 Hash demo:user:42 中写入字段和值：session=token-001；返回新增字段数
+# 已有字段会更新，普通 HSET 覆盖字段时会清除该字段原有 TTL
 HSET demo:user:42 session token-001
+# 为 Hash demo:user:42 的 session 字段设置 300 秒 TTL；FIELDS 1 表示后面只有 1 个字段（Redis 7.4+）
+# 返回逐字段结果数组，字段存在且设置成功时对应项为 1
 HEXPIRE demo:user:42 300 FIELDS 1 session
+# 移除 Hash demo:user:42 中 session 字段的 TTL，使该字段不再独立过期；FIELDS 1 表示操作 1 个字段
+# 字段存在且原来有期限时返回 [1]；不会移除整个 Hash 的键级 TTL（Redis 7.4+）
 HPERSIST demo:user:42 FIELDS 1 session
+# 查询 Hash demo:user:42 中字段 session 的剩余秒数；FIELDS 1 表示查询 1 个字段
+# 结果按字段顺序组成数组：-1 表示字段无 TTL，-2 表示键或字段不存在（Redis 7.4+）
+# 接续上面的 HPERSIST，预期返回 [-1]：字段存在且已无独立 TTL，键级 TTL 不受影响
 HTTL demo:user:42 FIELDS 1 session
 ```
 
 接续前面的示例，预期依次为 `0`（更新已有 session）、`[1]`（设置成功）、`[1]`（移除字段期限成功）、`[-1]`（字段存在但没有字段 TTL）。HPERSIST 不会清除或延长整个 Hash 的 Key TTL。普通 HSET 覆盖字段同样会清除该字段原 TTL，不能把它当作“保留期限的更新”。[HPERSIST](https://redis.io/docs/latest/commands/hpersist/) · [HTTL](https://redis.io/docs/latest/commands/httl/) · [7.4.0 字段过期与空 Hash 清理实现](https://raw.githubusercontent.com/redis/redis/7.4.0/src/t_hash.c)
-
-旧实例不支持此命令，不能只更新客户端文档就直接发送。使用字段过期后，复制、备份恢复和回退版本也要验证兼容。
 
 ## 4. 大 Hash 与热点粒度
 
@@ -124,7 +152,7 @@ HTTL demo:user:42 FIELDS 1 session
 
 读取部分字段可用 HMGET；HSCAN 则通过 cursor（游标，即继续遍历的位置标记）分批遍历字段和值。初始传入 `0`，之后使用上次返回的游标，直到返回游标 `0` 才表示本轮结束。COUNT 是工作量提示，不是严格分页大小；一次可能返回空结果而游标仍不为 `0`，不能因此停止。完整遍历可能出现重复字段，数据变化时也不保证快照一致性，它不是传统数据库的 OFFSET/LIMIT（按偏移与条数取页）分页。[HSCAN](https://redis.io/docs/latest/commands/hscan/) · [官方 SCAN 遍历保证](https://raw.githubusercontent.com/redis/redis-doc/master/commands/scan.md)
 
-大量字段和很长值会影响查询、编码转换与删除。
+大量字段会影响查询、编码转换与删除。
 
 若需要对字段独立授权、独立淘汰，或大量单独迁移，单个大 Hash 可能并不合适。按用户、时间或业务分组拆分时，应同时考虑热点与过期范围，而不是机械地按每组 1000 个处理。
 
@@ -134,7 +162,7 @@ HTTL demo:user:42 FIELDS 1 session
 
 内部编码（Internal Encoding）是 Redis 保存对象的具体方式，不会改变 Hash 对外的字段语义。小 Hash 将字段和值紧凑排列，可减少指针和分配开销；hashtable（哈希表）需要更多空间，但适合较大对象的字段查找。ziplist（压缩列表）是旧紧凑结构，listpack（紧凑列表）是后续替代结构。
 
-以下列出已核对的 Redis Open Source 固定版本，不把“6.2 及以前”理解成所有历史版本都完全相同：
+以下列出已核对的 Redis Open Source 固定版本。
 
 | 版本参照     | Hash 相关表示                                                                         |
 | ------------ | ------------------------------------------------------------------------------------- |
@@ -144,7 +172,7 @@ HTTL demo:user:42 FIELDS 1 session
 
 [6.2.0 t_hash.c](https://raw.githubusercontent.com/redis/redis/6.2.0/src/t_hash.c) · [7.0.0 t_hash.c](https://raw.githubusercontent.com/redis/redis/7.0.0/src/t_hash.c) · [7.2.0 t_hash.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_hash.c)
 
-以 Redis Open Source 7.2.0 为例，`hash-max-listpack-entries` 默认 `512`，限制紧凑 Hash 的字段数量；`hash-max-listpack-value` 默认 `64` 字节，限制单个字段名或值的长度。增长超出适用阈值时会转成 hashtable，源码还会检查紧凑结构的容量安全条件。配置名中的 value 不意味着字段名可以无限长。调整阈值不会立即重编码全部已有对象。[7.2.0 配置](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf) · [转换检查](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_hash.c)
+以 Redis Open Source 7.2.0 为例，`hash-max-listpack-entries` 默认 `512`，限制紧凑 Hash 的字段数量；`hash-max-listpack-value` 默认 `64` 字节，限制单个字段名或值的长度。增长超出适用阈值时会转成 hashtable，源码还会检查紧凑结构的容量安全条件。调整阈值不会立即重编码全部已有对象。[7.2.0 配置](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf) · [转换检查](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_hash.c)
 
 Redis Open Source 7.4.0 在紧凑 Hash 上使用字段过期命令时，可转成 listpackex，保存字段、值和过期信息；hashtable 路径也会维护过期元数据和索引。因此新增字段过期并非零内存开销，也不是所有 Hash 一律变成 listpackex。[7.4.0 t_hash.c](https://raw.githubusercontent.com/redis/redis/7.4.0/src/t_hash.c) · [listpackEx 定义](https://raw.githubusercontent.com/redis/redis/7.4.0/src/server.h) · [编码名称](https://raw.githubusercontent.com/redis/redis/7.4.0/src/object.c)
 

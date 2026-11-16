@@ -94,8 +94,11 @@ Arithmetic Intensity（算术强度）定义为 `I = FLOPs / Bytes`，即浮点�
 在装有 NVIDIA 驱动的环境运行：
 
 ```sh
+# --query-gpu 选择名称、总显存和驱动版本等字段；--format=csv 以 CSV 表格返回
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
+# 查询驱动侧 GPU 状态、显存与进程概况；不等于 CUDA Toolkit 编译器版本
 nvidia-smi
+# 查看当前 PATH 中 CUDA 编译器的 Toolkit 版本，与驱动版本分别核对
 nvcc --version
 ```
 

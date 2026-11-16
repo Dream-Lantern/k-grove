@@ -109,9 +109,12 @@ CDI（Container Device Interface，容器设备接口）用命名设备和声明
 在配置好 Docker 与 NVIDIA Container Toolkit 的 Linux GPU 宿主执行。先检查宿主驱动、Docker 和 Toolkit。若 Docker runtime 尚未配置，按对应版本的安装指南使用 `nvidia-ctk runtime configure --runtime=docker`，在维护窗口重启 Docker。Rootless 配置路径与权限要求另查对应版本指南。
 
 ```bash
+# 查询驱动侧 GPU 状态、显存与进程概况；不等于 CUDA Toolkit 编译器版本
 nvidia-smi
+# 查询 Docker 客户端与服务端版本，核对运行环境
 docker version
 nvidia-ctk --version
+# 读取 Docker 已配置的 Runtime；--format 只提取 Runtimes 字段
 docker info --format '{{json .Runtimes}}'
 ```
 
@@ -119,7 +122,9 @@ NVIDIA 发布的 `12.8.1-base-ubuntu22.04` 包含 linux/amd64 与 linux/arm64。
 
 ```bash
 image=nvidia/cuda:12.8.1-base-ubuntu22.04@sha256:001469ea0f3dec85a1ca929aeea3b58ae369d4c11228b10aec1f642bb6ca7a6f
+# 查看现有容器元数据；--format 用 Go 模板提取镜像及设备请求等字段，不启动或修改容器
 docker buildx imagetools inspect "$image"
+# 查询驱动侧 GPU 状态、显存与进程概况；不等于 CUDA Toolkit 编译器版本
 docker run --rm --platform linux/amd64 --gpus '"device=0"' \
   "$image" sh -ec 'nvidia-smi -L; ldconfig -p | grep -F libcuda.so.1; ldconfig -p | grep -F libnvidia-ml.so.1'
 ```
@@ -127,7 +132,13 @@ docker run --rm --platform linux/amd64 --gpus '"device=0"' \
 用与目标容器架构和用户态兼容的 Linux 构建环境安装 CUDA Toolkit 12.8.1，把 [第 4 章](/articles/ai-infra-cuda-memory.html)向量加法保存为 `vector_add.cu`。编译时按目标 GPU 选择适合的 `-arch=sm_XX`（将 XX 换成实际计算能力），再把二进制只读挂载进 base 镜像。若宿主构建产物需要容器内缺少的 C++ 或 glibc 版本，应使用匹配 Ubuntu 22.04 的构建环境。
 
 ```bash
+# 用 nvcc 编译后面的 CUDA 源码；-o 指定可执行文件名，--cudart=shared 动态链接 CUDA Runtime
 nvcc --cudart=shared vector_add.cu -o vector_add
+# 运行 $image 指定的容器镜像；--rm 在容器退出后清理容器
+# --gpus 选择暴露给容器的 GPU；device=0 表示指定设备，all 表示全部设备（按本命令参数）
+# --platform linux/amd64 固定镜像运行平台
+# 挂载参数把宿主文件映射到容器路径，readonly 或 :ro 表示只读
+# sh -ec 在容器内执行脚本；未处理的命令失败会退出，后续检查是否执行取决于前项结果
 docker run --rm --platform linux/amd64 --gpus '"device=0"' \
   -v "$PWD/vector_add:/opt/vector_add:ro" "$image" \
   sh -ec 'ldd /opt/vector_add; /opt/vector_add'

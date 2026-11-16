@@ -111,6 +111,8 @@ TCB（Thread Control Block，线程控制块）是组织线程状态的教学抽
 环境为现代 Linux 的 NPTL/pthread 实现，任意可用架构，需 GCC。把程序保存为 `threads-demo.c`。A 统计单词，B 统计字节；它们只读同一个全局数组，各自使用局部计数器，避免把无保护的共享写入当成正确用法。
 
 ```c
+// 两个线程共享只读 text，但 words/bytes 是各线程的局部变量；打印地址对照共享数据与线程栈。
+// pthread_create 把函数及参数交给新线程，pthread_join 等待线程结束，防止主线程提前退出。
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -151,6 +153,7 @@ int main(void) {
     if (report_error("pthread_create A", error)) return 1;
     error = pthread_create(&b, NULL, count_bytes, NULL);
     if (report_error("pthread_create B", error)) {
+        // 等待指定线程结束，再读取其完成结果或回收相关共享资源。
         report_error("pthread_join A", pthread_join(a, NULL));
         return 1;
     }
@@ -162,8 +165,12 @@ int main(void) {
 
 ```bash
 uname -srmo
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
 gcc --version
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
+# -pthread 同时配置线程编译与链接选项
 gcc -std=c11 -Wall -Wextra -O0 -pthread threads-demo.c -o threads-demo
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./threads-demo
 ```
 

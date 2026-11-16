@@ -89,6 +89,8 @@ Chatbot（聊天机器人）、Workflow（工作流）与 Agent 可以从“下�
 下面的教学伪代码把模型输出分为“调用工具”和“提出最终答案”两类，并将完成检查放在返回答案之前：
 
 ```python
+# 有界 Agent 执行循环的伪代码：最多 MAX_STEPS 步，每步先检查预算，再决定回答或调用工具。
+# 最终回答仍需 completion_check 验证；工具调用依次经过参数校验、授权与超时控制。
 for step in range(MAX_STEPS):
     check_budget()
     decision = llm(messages, tools=tool_catalog)
@@ -240,6 +242,7 @@ NO_HISTORY：规则 + 用户目标                       → 看不到刚找到�
 节选来自 [chapter1/context/agent.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter1/context/agent.py#L678-L692)，其上下文和依赖见原文件。
 
 ```python
+# NO_HISTORY 消融仅保留 system 前缀与最后一条 user 消息；其他模式直接返回完整历史。
 messages = self.conversation_history
 if self.context_mode != ContextMode.NO_HISTORY:
     return messages

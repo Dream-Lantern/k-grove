@@ -89,8 +89,13 @@ Node A 的合计为 `80 × 1 + 30 × 2 = 140`，Node B 为 `60 × 1 + 70 × 2 = 
 先清点标签，要求实验开始时所有节点都没有 `demo.example.com/eligible` 这个键。这样既保证没有节点匹配 `true`，也让清理时能够明确恢复为“键不存在”，无需覆盖已有值：
 
 ```bash
+# 查看当前 kubectl 上下文，确认后续命令将连接哪个集群；此命令不切换上下文
 kubectl config current-context
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get nodes -L demo.example.com/eligible
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -l demo.example.com/eligible 按标签选择对象，不是按名称匹配
 kubectl get nodes -l demo.example.com/eligible -o name
 ```
 
@@ -98,7 +103,10 @@ kubectl get nodes -l demo.example.com/eligible -o name
 
 ```bash
 DEMO_NODE='REPLACE_WITH_TEST_NODE'
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get node "$DEMO_NODE" -o yaml > scheduler-node-before.yaml
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace k8s-scheduler-demo
 ```
 
@@ -111,12 +119,14 @@ metadata:
   name: pending-demo
   namespace: k8s-scheduler-demo
 spec:
+  # 所有列出的节点标签都要匹配；它限定候选节点，不会自动给节点添加标签。
   nodeSelector:
     demo.example.com/eligible: "true"
   containers:
     - name: web
       image: nginx:1.28.0
       resources:
+        # 声明调度资源需求；CPU 的 m 表示千分之一核，内存 Mi 表示二进制兆字节（按字段单位）。
         requests:
           cpu: 100m
           memory: 64Mi
@@ -125,10 +135,21 @@ spec:
 这里标签值是字符串 `"true"`。`nodeSelector` 是硬约束；即使有资源空闲的节点，没有标签匹配也不能选它。镜像标签仅用于固定示例版本，实际环境需维护镜像安全。
 
 ```bash
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f pending-demo.yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-scheduler-demo 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pod pending-demo -n k8s-scheduler-demo -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n k8s-scheduler-demo 限定命名空间
 kubectl describe pod pending-demo -n k8s-scheduler-demo
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-scheduler-demo 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod pending-demo -n k8s-scheduler-demo -o jsonpath='{.spec.nodeName}{"\n"}'
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -n k8s-scheduler-demo 限定命名空间
 kubectl get events -n k8s-scheduler-demo --field-selector involvedObject.kind=Pod,involvedObject.name=pending-demo --sort-by=.metadata.creationTimestamp
 ```
 
@@ -137,9 +158,17 @@ kubectl get events -n k8s-scheduler-demo --field-selector involvedObject.kind=Po
 在未被其他操作修改的测试节点上增加标签；**不使用 `--overwrite`**，若提示键已存在，应停止并核对环境变化：
 
 ```bash
+# 修改指定资源的标签；key=value 设置值，标签名后的 - 表示删除该标签，会影响选择器匹配
 kubectl label node "$DEMO_NODE" demo.example.com/eligible=true
+# 等待 --for 指定的资源条件满足；--timeout 限定本次等待时长，不会主动修复资源
+# -n k8s-scheduler-demo 限定命名空间
 kubectl wait --for=condition=PodScheduled pod/pending-demo -n k8s-scheduler-demo --timeout=120s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n k8s-scheduler-demo 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pod pending-demo -n k8s-scheduler-demo -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n k8s-scheduler-demo 限定命名空间
 kubectl describe pod pending-demo -n k8s-scheduler-demo
 ```
 
@@ -148,10 +177,18 @@ kubectl describe pod pending-demo -n k8s-scheduler-demo
 清理前核对节点标签仍是本实验添加的 `true`，没有他人后续修改。先删除实验 Pod，再移除本次新增的键，最后删除专用空间：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n k8s-scheduler-demo 限定命名空间
 kubectl delete pod pending-demo -n k8s-scheduler-demo --wait=true
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get node "$DEMO_NODE" -L demo.example.com/eligible
+# 修改指定资源的标签；key=value 设置值，标签名后的 - 表示删除该标签，会影响选择器匹配
 kubectl label node "$DEMO_NODE" demo.example.com/eligible-
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get node "$DEMO_NODE" -L demo.example.com/eligible
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete namespace k8s-scheduler-demo
 ```
 
@@ -282,9 +319,19 @@ Scheduler Extender 则是独立接口扩展路径。标准 Extender 使用相应
 下面是笔记中的观察命令整理，未在实际集群执行：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get pod POD_NAME -n NAMESPACE -o wide
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod POD_NAME -n NAMESPACE -o jsonpath='{.spec.nodeName}{"\n"}'
+# 查询事件记录；--field-selector 按对象字段过滤，--sort-by 按指定字段排序，便于梳理时间线
+# -n NAMESPACE 限定命名空间
 kubectl get events -n NAMESPACE --sort-by=.metadata.creationTimestamp
 ```
 

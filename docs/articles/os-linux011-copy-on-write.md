@@ -98,6 +98,7 @@ nr 是任务数组槽号，不是任意进程标识符（PID，Process ID）；6
 原始源码确有以下片段，注释解释当时库会写代码空间，故暂时关闭该检查：
 
 ```c
+// #if 0 使代码段检查在编译时禁用；此处用于阅读历史分支，不表示运行时一定因代码空间写入而退出。
 #if 0
 if (CODE_SPACE(address))
     do_exit(SIGSEGV);
@@ -136,6 +137,8 @@ if (CODE_SPACE(address))
 保存为 `cow.c`，以 `gcc -std=c11 -Wall -Wextra -Werror cow.c -o cow` 编译，运行 `./cow`。单线程程序只申请一个私有匿名页，先写 A 再 fork；子写 B，父在等待子退出后仍看到 A：
 
 ```c
+// 现代 Linux 对照实验：私有匿名页先写 A，fork 后子进程改为 B，父进程等待后仍应读到 A。
+// 用这一可见性结果说明写时复制语义；程序并不直接测量实际复制了多少物理页。
 #define _DEFAULT_SOURCE
 #include <errno.h>
 #include <stdio.h>
@@ -147,6 +150,7 @@ if (CODE_SPACE(address))
 
 int main(void)
 {
+    // 查询运行时页大小，单位字节；不能直接假设所有系统都是 4096 字节。
     long page_size = sysconf(_SC_PAGESIZE);
     if (page_size <= 0) {
         fputs("invalid page size\n", stderr);
@@ -204,9 +208,13 @@ int main(void)
 在上述 0.11 源码根目录阅读以下定位结果所在的完整函数：
 
 ```sh
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'copy_page_tables|LOW_MEM|mem_map|un_wp_page|do_wp_page|CODE_SPACE|invalidate|free_page' mm/memory.c
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'copy_mem|0x4000000|free_page_tables|copy_process' kernel/fork.c
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'inline|fork|pause|stack' init/main.c
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'cr2|testl|do_no_page|do_wp_page|iret' mm/page.s
 ```
 

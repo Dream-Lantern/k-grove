@@ -36,10 +36,15 @@ FPR（False Positive Rate，假阳性率）描述未加入元素被判为“可�
 以下是 Redis 命令，不是 Shell（命令解释环境）或客户端方法；以已包含这些能力的 Redis Open Source 8.0.0 统一发行包为教学基线。旧版需要相应模块，见第 4 节。整数返回按 RESP2（Redis Serialization Protocol 2，Redis 序列化协议第 2 版）说明，客户端封装可能不同。仅用于隔离环境，会创建或修改 `demo:` 示例结构，假定对应键与索引尚不存在：
 
 ```redis
+# 创建 Bloom Filter demo:bloom:items；0.01 为目标误判率，10000 为初始容量（预计元素数），要求已提供 Bloom 命令能力
 BF.RESERVE demo:bloom:items 0.01 10000
+# 将元素 item-42 加入 Bloom Filter demo:bloom:items；返回是否改变过滤器的 0/1，不代表精确的新增成员数
 BF.ADD demo:bloom:items item-42
+# 检查 Bloom Filter demo:bloom:items 是否可能包含 item-42；0 表示确定不存在，1 表示可能存在，允许误判
 BF.EXISTS demo:bloom:items item-42
+# 检查 Bloom Filter demo:bloom:items 是否可能包含 item-99；0 表示确定不存在，1 表示可能存在，允许误判
 BF.EXISTS demo:bloom:items item-99
+# 查询 Bloom Filter demo:bloom:items 的容量、内存、子过滤器及插入等信息
 BF.INFO demo:bloom:items
 ```
 
@@ -111,8 +116,11 @@ JSON（JavaScript Object Notation，JavaScript 对象表示法）描述结构化
 下面创建一件商品、读取根值并给价格加 10：
 
 ```redis
+# 将 JSON 文档写入键 demo:product:1001；$ 表示根路径，后面的 JSON 是完整对象值，根路径已有文档会被替换
 JSON.SET demo:product:1001 $ '{"name":"Redis Guide","category":"database","price":99}'
+# 读取 JSON 键 demo:product:1001；$ 选择根文档，结果按 JSONPath 匹配数组返回
 JSON.GET demo:product:1001 $
+# 将 JSON 键 demo:product:1001 中 $.price 匹配到的数值加上 10；$.price 表示根对象的 price 字段，返回更新后的数值结果
 JSON.NUMINCRBY demo:product:1001 $.price 10
 ```
 
@@ -121,15 +129,23 @@ JSON.NUMINCRBY demo:product:1001 $.price 10
 Search Index（搜索索引）根据选定字段建立辅助查询结构，避免每次查询遍历全部原始商品。继续写入第二件商品，再定义索引；下面 FT.CREATE 必须作为一条完整 Redis 命令发送，没有 Shell 的反斜线续行：
 
 ```redis
+# 将 JSON 文档写入键 demo:product:1002；$ 表示根路径，后面的 JSON 是完整对象值，根路径已有文档会被替换
 JSON.SET demo:product:1002 $ '{"name":"Python Guide","category":"programming","price":79}'
+# 创建索引 demo:idx:products；ON JSON 指定 JSON 文档，PREFIX 1 demo:product: 表示只匹配 1 个键前缀
+# SCHEMA 定义索引字段；$.name AS name TEXT 为全文字段，$.category AS category TAG 为标签字段，$.price AS price NUMERIC 为数值字段
 FT.CREATE demo:idx:products ON JSON PREFIX 1 demo:product: SCHEMA $.name AS name TEXT $.category AS category TAG $.price AS price NUMERIC
+# 查询索引 demo:idx:products 的配置、文档数及构建状态；索引名不是被索引的文档键
 FT.INFO demo:idx:products
 ```
 
 JSON 存储原文，FT.CREATE 为 `demo:product:` 前缀下的 JSON 定义字段：`AS` 指定查询别名，Search 构建辅助索引。创建成功预期为 OK，但已有数据的后台初始扫描可能尚未结束；先用 FT.INFO 检查索引进度、文档数量与索引错误，再验证结果。假定只有上述两件商品且索引已完成、无错误：
 
 ```redis
+# 搜索索引 demo:idx:products；@category:{database} 匹配 category 标签 database
+# NOCONTENT 只返回命中数量和文档 ID，不返回文档内容
 FT.SEARCH demo:idx:products '@category:{database}' NOCONTENT
+# 搜索索引 demo:idx:products；@price:[100 120] 匹配 price 在 100～120 闭区间内的文档
+# NOCONTENT 只返回命中数量和文档 ID，不返回文档内容
 FT.SEARCH demo:idx:products '@price:[100 120]' NOCONTENT
 ```
 
@@ -172,8 +188,11 @@ Redis Search 中的向量字段与 Vector Set（向量集合）也不是同一�
 统一发行不等于模块扩展机制消失，也不意味着所有托管环境同步开放相同命令。可先进行命令发现：
 
 ```redis
+# 查询命令 BF.RESERVE 的元信息；INFO 不执行目标命令，返回 nil 项表示当前实例未提供该命令
 COMMAND INFO BF.RESERVE
+# 查询命令 JSON.SET 的元信息；INFO 不执行目标命令，返回 nil 项表示当前实例未提供该命令
 COMMAND INFO JSON.SET
+# 查询命令 FT.CREATE 的元信息；INFO 不执行目标命令，返回 nil 项表示当前实例未提供该命令
 COMMAND INFO FT.CREATE
 ```
 

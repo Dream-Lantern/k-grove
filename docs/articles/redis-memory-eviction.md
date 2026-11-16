@@ -120,13 +120,21 @@ Redis Open Source 7.2.0 支持 `allkeys-lru` / `volatile-lru` 和 `allkeys-lfu` 
 以下为 Redis Open Source 7.2.0 可用的只读检查示例；MEMORY 系列这些子命令均从 4.0.0 提供：
 
 ```redis
+# 读取配置 maxmemory：淘汰判断使用的内存上限，值以字节表示；0 表示不设置此上限；GET 只查询，不修改配置
 CONFIG GET maxmemory
+# 读取配置 maxmemory-policy：达到内存上限时采用的淘汰或拒写策略；GET 只查询，不修改配置
 CONFIG GET maxmemory-policy
+# 查询 内存使用、峰值、碎片及分配器指标；memory 是 INFO 的信息分区名，不是键名
 INFO memory
+# 查询 累计命令数、命中/未命中、过期及淘汰等统计；stats 是 INFO 的信息分区名，不是键名
 INFO stats
+# 查询 RDB/AOF 状态、后台任务及最近持久化结果；persistence 是 INFO 的信息分区名，不是键名
 INFO persistence
+# 查询实例级内存分配与开销明细；无额外参数
 MEMORY STATS
+# 根据当前内存统计生成诊断建议；无额外参数，不会自动修复内存问题
 MEMORY DOCTOR
+# 估算键 demo:object 及其结构的内存占用，返回字节数；不存在返回 nil
 MEMORY USAGE demo:object
 ```
 

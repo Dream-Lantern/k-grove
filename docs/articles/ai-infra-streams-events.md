@@ -40,6 +40,7 @@ Legacy Default Stream（传统默认流）与同一 Context 中的 blocking stre
 下面是教学片段；假定 stream 和 event 已创建、对象生命周期覆盖所有异步工作，所有调用均须检查错误。
 
 ```cpp
+// 用事件建立两个流之间的依赖：ready 记录在生产流，消费流等待该事件后才启动 consume。
 // s_producer 上的工作必须先完成，消费者才能读它的输出。
 produce<<<grid, block, 0, s_producer>>>(buffer);
 cudaEventRecord(ready, s_producer);
@@ -78,6 +79,8 @@ CPU 在提交前后读时钟，通常测到的是提交开销，而不是 GPU �
 生产流先拷入整数 7，再加 1。消费流等待 Event，将中间值乘 2 后拷回主机，预期得到 16。此例验证依赖顺序。相互依赖的两次计算应当先后执行。
 
 ```cpp
+// 先在 producer 流把 7 传入设备并加 1，再通过事件通知 consumer 流乘 2，最终取回应为 16。
+// 主机缓冲用 cudaMallocHost 分配；复制与依赖排队后，须同步消费流才能读取 output 并释放资源。
 #include <cuda_runtime.h>
 #include <cstdio>
 #include <cstdlib>
@@ -113,6 +116,7 @@ int main() {
                         cudaMemcpyHostToDevice, producer));
   produce<<<1, 1, 0, producer>>>(device);
   CHECK(cudaGetLastError());
+  // 在生产流记录完成点，再让消费流等待；不会把所有流都做全局同步。
   CHECK(cudaEventRecord(ready, producer));
   CHECK(cudaStreamWaitEvent(consumer, ready, 0));
   consume<<<1, 1, 0, consumer>>>(device);
@@ -120,6 +124,7 @@ int main() {
   CHECK(cudaMemcpyAsync(output, device, sizeof(int),
                         cudaMemcpyDeviceToHost, consumer));
 
+  // 等待消费流的计算及回传完成后，才读取主机输出并销毁关联资源。
   CHECK(cudaStreamSynchronize(consumer));
   const bool ok = *output == 16;
   CHECK(cudaEventDestroy(ready));
@@ -139,8 +144,11 @@ int main() {
 将代码保存为 `stream_event.cu`。在 Linux、兼容 NVIDIA 驱动和 CUDA Toolkit 12.8.1 环境中运行：
 
 ```bash
+# 用 nvcc 编译后面的 CUDA 源码；-o 指定可执行文件名
 nvcc stream_event.cu -o stream_event
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./stream_event
+# --tool memcheck 检查 CUDA 访存错误；--error-exitcode 1 让检测到的错误反映为非零退出码
 compute-sanitizer --tool memcheck --error-exitcode 1 ./stream_event
 ```
 

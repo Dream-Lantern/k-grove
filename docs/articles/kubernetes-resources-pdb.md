@@ -49,9 +49,11 @@ request 为调度提供资源分配承诺，低实时用量不抹去已有请求
 
 ```yaml
 resources:
+  # 声明调度资源需求；CPU 的 m 表示千分之一核，内存 Mi 表示二进制兆字节（按字段单位）。
   requests:
     cpu: "250m"
     memory: "256Mi"
+  # 声明运行时资源限制或扩展资源需求；资源名和单位须按对应类型及插件核对。
   limits:
     cpu: "1"
     memory: "512Mi"
@@ -109,8 +111,16 @@ QoS 可参与节点压力下的处理，但不是 CPU 性能排名或业务优�
 以下只读命令对照最终保存的配置与状态：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get pod POD_NAME -n NAMESPACE -o jsonpath='{.status.qosClass}{"\n"}'
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pod POD_NAME -n NAMESPACE -o yaml
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
 ```
 
@@ -129,6 +139,7 @@ PDB 的 `minAvailable` 或 `maxUnavailable` 与 Deployment 滚动更新策略中
 假设 study 中 catalog Deployment 期望 4 个副本，均带 app=catalog，初始全部 Ready。本例与[第十五章发布练习](/articles/kubernetes-deployment.html#_7-隔离环境中的发布与回滚练习)对应；附录 B 原始两副本不能直接代入。以下保存为 `catalog-pdb.yaml`，是完整 PDB 清单；仅定义预算，不会创建 Deployment 或替代 Pod。本章只作结构阅读和纸面推演，不执行驱逐。
 
 ```yaml
+# minAvailable=3 要求选择器匹配的 Pod 至少保持 3 个健康可用，影响驱逐许可；不是固定创建 3 个副本。
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -158,9 +169,19 @@ currentHealthy 是当前健康计数，desiredHealthy 是所需健康下限，di
 以下只读观察仅在该 PDB 已由实验者部署后适用：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get pdb catalog-pdb -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe pdb catalog-pdb -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get pdb catalog-pdb -n study -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l app=catalog
 ```
 
@@ -190,8 +211,13 @@ kubectl get pods -n study -l app=catalog
 初次学习可以先读事件和实际对象，不必先改数值：
 
 ```bash
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
 kubectl describe node NODE_NAME
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
 kubectl get resourcequota,limitrange -n NAMESPACE
 ```
 

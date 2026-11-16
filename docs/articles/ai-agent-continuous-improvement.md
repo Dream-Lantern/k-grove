@@ -80,6 +80,7 @@ Agent 的持续改进（Continual Improvement）是一条工程流程：**轨迹
 可提取如下简洁经验，来源轨迹及验证版本另与该条目的 ID 关联保存：
 
 ```yaml
+# 经验规则在 AUTH_DENIED 且不可重试时停止相同参数重试；validation 指定仍需覆盖临时故障分支。
 experience_id: auth-denied-no-retry
 trigger: AUTH_DENIED
 condition: retryable == false
@@ -165,6 +166,8 @@ Prompt Optimization（提示优化）把提示或示范当作搜索对象，以�
 
 每条经验保存 `experience_id`、来源轨迹 ID 及 Hash、归纳器/Prompt 版本、适用条件、反例和验证记录；每次运行记录实际检索了哪些经验，而不只是“开启经验”这个开关。如下 JSON 是待填写的教学记录模板，`null` 表示尚未采集，不是零值或运行结果：
 
+记录说明：哈希字段用于绑定配置、初始状态及来源轨迹；`UNKNOWN` 与 `null` 表示尚无结果或测量值，不能当作失败、零成本或零消耗。
+
 ```json
 {
   "task_id": "holdout-01",
@@ -221,6 +224,7 @@ Prompt Optimization（提示优化）把提示或示范当作搜索对象，以�
 源码节选（上下文依赖见原文件）：[chapter9/self-modifying-agent/evolution.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter9/self-modifying-agent/evolution.py#L276-L278)。
 
 ```python
+# 只有候选确有改动、检查集非空且每项通过才接受；failed 收集失败项，contract 读取诊断中的变更契约。
 accepted = candidate.get("changed", False) and bool(checks) and all(checks.values())
 failed = [name for name, passed in checks.items() if not passed]
 contract = diagnosis.get("change_contract", {})
@@ -275,6 +279,8 @@ contract = diagnosis.get("change_contract", {})
 
 以下进一步展开结构化契约。表中 `obs-1` 须由适配器的独立可信记录提供，不能直接采信模型提交的同名对象。所有案例均为合成数据，声明统一为“调用 `call-1` 创建的任务已完成”：
 
+核验说明：`claim` 是待证结论，`adapter_record` 是工具证据；需匹配调用、步骤、键和值，并检查 `present/complete`，仅凭文本中出现 done 不足以通过。
+
 ```json
 {
   "claim": {
@@ -315,7 +321,9 @@ contract = diagnosis.get("change_contract", {})
 在本项目根目录运行以下命令，观察四个结果依次为 `PASS、FAIL、UNKNOWN、UNKNOWN`，并由测试检查缺失、冲突、身份和时序：
 
 ```bash
+# 使用当前 Python 解释器运行结构化证据校验演示
 python examples/ai-agent/ch6-8-review/structured_evidence_demo.py
+# 发现并运行单元测试；-s 指定目录，-p 指定文件名匹配模式，-v 展示各测试结果
 python -m unittest discover -s examples/ai-agent/ch6-8-review -p "test_*.py" -v
 ```
 

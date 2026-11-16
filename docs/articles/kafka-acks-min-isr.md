@@ -150,18 +150,26 @@ Page Cache 缓存文件数据，将应用追加与设备写入解耦；操作系
 在独立目录保存该文件，以固定实验项目名运行；需要已可用的 Docker Compose、镜像和足够内存。本轮不安装、不启动它，不执行停止真实 Broker 的命令：
 
 ```bash
+# 在 -p 指定的独立 Compose 项目中，按 -f 指定清单后台启动服务；up -d 实际创建或启动实验容器
 docker compose -p kafka-r2-lab -f rf3-minisr2.compose.yaml up -d
 
 # 等服务就绪后，只在该实验项目创建全新 Topic；固定副本顺序 1:2:3。
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --replica-assignment 直接指定副本所在 Broker ID 及顺序，本例为 1:2:3
+# min.insync.replicas 是 acks=all 写入所需的最小 ISR 数；false 禁止非同步副本参与相应不洁选举
 docker compose -p kafka-r2-lab -f rf3-minisr2.compose.yaml exec -T broker-a \
   /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker-a:9092 \
   --create --topic orders-r2-lab --replica-assignment 1:2:3 \
   --config min.insync.replicas=2 --config unclean.leader.election.enable=false
 
+# 管理 --topic 指定的 Topic；--bootstrap-server 是用于发现集群的 Broker 地址
+# --describe 查询分区、Leader、Replica 与 ISR，不修改 Topic
 docker compose -p kafka-r2-lab -f rf3-minisr2.compose.yaml exec -T broker-a \
   /opt/kafka/bin/kafka-topics.sh --bootstrap-server broker-a:9092 \
   --describe --topic orders-r2-lab
 
+# 向 --topic 指定的 Topic 生产标准输入中的记录；--bootstrap-server 是 Broker 入口
+# acks=all 按 ISR 确认规则等待；enable.idempotence=true 启用生产端幂等（若指定）
 printf '%s\n' 'evt-r2-1' | \
   docker compose -p kafka-r2-lab -f rf3-minisr2.compose.yaml exec -T broker-a \
   /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server broker-a:9092 \

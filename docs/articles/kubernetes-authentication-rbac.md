@@ -54,7 +54,9 @@ ServiceAccount 是命名空间内的工作负载身份资源，其标准身份�
 
 ```yaml
 spec:
+  # 为 Pod 选择同一命名空间的 ServiceAccount；实际权限仍由 RBAC 等授权规则决定。
   serviceAccountName: reader
+  # 控制是否自动挂载 ServiceAccount 凭据；设为 false 不等于取消 Pod 的 ServiceAccount 身份。
   automountServiceAccountToken: false
 ```
 
@@ -96,8 +98,10 @@ metadata:
   name: pod-reader
   namespace: study
 rules:
+  # 空字符串代表核心 API 组；不是匹配所有 API 组的通配符。
   - apiGroups: [""]
     resources: ["pods"]
+    # 允许的 API 动词；get/list/watch 只有读取权限，不允许创建或删除。
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -109,6 +113,7 @@ subjects:
   - kind: ServiceAccount
     name: reader
     namespace: study
+# 绑定引用的角色；下方 subjects 是获得该角色权限的主体，两者作用不同。
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -129,7 +134,11 @@ Pod 模板使用 `serviceAccountName: reader` 引用账号。`pods/log`、`pods/
 ## 5. 权限验收与危险的间接能力
 
 ```bash
+# 检查当前或 --as 指定身份是否获准执行后面的动词与资源操作；结果是授权判断，不实际执行该操作
+# -n study 限定命名空间
 kubectl auth can-i get pods -n study
+# 检查当前或 --as 指定身份是否获准执行后面的动词与资源操作；结果是授权判断，不实际执行该操作
+# -n study 限定命名空间
 kubectl auth can-i get pods --subresource=log -n study
 ```
 
@@ -138,7 +147,11 @@ kubectl auth can-i get pods --subresource=log -n study
 如获准模拟服务账户，可以另外检查：
 
 ```bash
+# 检查当前或 --as 指定身份是否获准执行后面的动词与资源操作；结果是授权判断，不实际执行该操作
+# -n study 限定命名空间
 kubectl auth can-i get pods -n study --as=system:serviceaccount:study:reader
+# 检查当前或 --as 指定身份是否获准执行后面的动词与资源操作；结果是授权判断，不实际执行该操作
+# -n study 限定命名空间
 kubectl auth can-i get pods --subresource=log -n study --as=system:serviceaccount:study:reader
 ```
 

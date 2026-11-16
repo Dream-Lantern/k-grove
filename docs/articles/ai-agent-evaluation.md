@@ -260,6 +260,8 @@ MRR（Mean Reciprocal Rank，平均倒数排名）是多条查询 RR 的平均�
 源码节选（上下文依赖见原文件）：[chapter7/user-memory-system-evaluation/experiment.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter7/user-memory-system-evaluation/experiment.py#L824-L833)。
 
 ```python
+# 取 retrieved 前 5 个 chunk_id，与 relevant_ids 的集合比较；返回顺序为 Hit@5、Recall@5、RR@5。
+# 命中位置从 1 开始；Recall 按相关文档去重计数，RR 为首次命中排名的倒数。
 def retrieval_metrics(retrieved: Sequence[Chunk], relevant_ids: Sequence[str]) -> Tuple[float, float, float]:
     relevant = set(relevant_ids)
     ids = [chunk.chunk_id for chunk in retrieved[:5]]

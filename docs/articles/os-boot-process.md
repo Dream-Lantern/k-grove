@@ -97,6 +97,7 @@ BIOS（Basic Input/Output System，基本输入输出系统）是此历史 PC �
 接下来的源码控制流如下；为便于阅读省略初始化代码，保留原有关键语句：
 
 ```c
+// Linux 0.11 启动片段：切到用户态，fork 的子进程运行 init，父进程循环 pause；不是现代用户程序模板。
 move_to_user_mode();
 if (!fork()) {
     init();

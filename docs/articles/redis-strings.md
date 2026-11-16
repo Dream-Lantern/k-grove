@@ -21,15 +21,20 @@ order: 3
 
 String（字符串）保存字节序列，可以是文本、序列化对象、整数表示或二进制。Redis 不会因为里面看起来是 JSON（JavaScript Object Notation，JavaScript 对象表示法），就自动知道其字段结构；修改其中一个属性可能仍需要整体读写。
 
-本章的原子性（Atomicity）指一次操作执行时，其他客户端命令不能插入其执行过程、看到中间状态；它不等于数据已经落盘。单条 Redis 命令的原子性，也不意味着连续发送多条命令就自动组成一个原子操作。
+本章的原子性（Atomicity）指一次操作执行时，其他客户端命令不能插入其执行过程、看到中间状态；它不等于数据已经落盘。单条 Redis 命令的原子性，但是连续发送多条命令不会自动组成一个原子操作。
 
 ## 1. SET 与 GET 的基本语义
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，不是 Shell 命令或客户端 API（Application Programming Interface，应用程序编程接口）。以下按 Redis Open Source 7.2.0 语义教学，假定示例键起初不存在、无其他客户端修改，且在过期前完成读取。`text` 代码块是预期返回示意。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，不是 Shell 命令或客户端 API（Application Programming Interface，应用程序编程接口）。以下按 Redis Open Source 7.2.0 语义教学。
 
 ```redis
+# 将字符串键 demo:profile:42 写为 {"name":"Lin"}；键已存在时覆盖原值
+# EX 120 设置键的 TTL，单位秒
 SET demo:profile:42 "{\"name\":\"Lin\"}" EX 120
+# 读取字符串键 demo:profile:42 的完整值；键不存在返回 nil，非字符串类型会报错
 GET demo:profile:42
+# 仅当键 demo:token:42 不存在时写入 temporary-value；NX 不满足时返回 nil，成功返回 OK
+# EX 30 设置键的 TTL，单位秒
 SET demo:token:42 temporary-value NX EX 30
 ```
 
@@ -41,7 +46,7 @@ OK
 OK
 ```
 
-EX 的单位是秒，PX 的单位是毫秒。NX 要求键不存在时才写入，XX 要求键存在时才写入。需要区分条件未满足时的返回结果和网络错误。
+EX 的单位是秒，PX 的单位是毫秒。NX 要求键不存在时才写入，需要区分条件未满足时的返回结果和网络错误。
 
 把写入和期限放在同一 SET 中，可以消除“先写入成功，来不及 EXPIRE 就崩溃”的窗口。分开两条命令放进 Pipeline 仍不等于获得同样的原子保证。[SET 的参数与返回](https://redis.io/docs/latest/commands/set/)
 
@@ -49,7 +54,7 @@ Pipeline（流水线）是客户端连续发送多条命令，不逐条等待回
 
 ## 2. 覆盖写入、保留期限与读取续期 {#_2-覆盖值会怎样影响-ttl}
 
-TTL（Time to Live，生存时间）表示距离过期还有多久。不带过期选项的普通 `SET` 成功覆盖后，会清除原 TTL，使键变成不过期；`SET ... EX/PX` 设置新期限，`SET ... KEEPTTL` 则保留原期限。条件不满足、没有写入时，不会因此清除 TTL。给一个不存在的键 EXPIRE，不会替你创建值。
+TTL（Time to Live，生存时间）表示距离过期还有多久。不带过期选项的普通 `SET` 成功覆盖后，会清除原 TTL，使键变成不过期；`SET ... EX/PX` 设置新期限，`SET ... KEEPTTL` 则保留原期限。条件不满足、没有写入时，不会因此清除 TTL。给一个不存在的键 EXPIRE，不会创建这个值。
 
 普通 `SET` 还会覆盖已有的非 String 类型键，例如把 Hash 整体替换成 String，而不是返回 WRONGTYPE（类型不匹配错误）。但使用 `SET ... GET` 时，需要读取旧 String；若旧值不是 String，会返回类型错误并中止写入。[SET 行为](https://redis.io/docs/latest/commands/set/)
 
@@ -68,8 +73,12 @@ GETSET 是历史常见读旧值再替换方式，符合版本要求时可用 `SE
 以下示例在过期前连续执行，预期最后的 `TTL` 返回 `-1`，表示键存在但没有过期时间：
 
 ```redis
+# 将字符串键 demo:ttl-reset 写为 value；键已存在时覆盖原值
+# EX 120 设置键的 TTL，单位秒
 SET demo:ttl-reset value EX 120
+# 将字符串键 demo:ttl-reset 写为 replacement；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:ttl-reset replacement
+# 查询键 demo:ttl-reset 的剩余 TTL，单位秒；-1 表示键存在但无期限，-2 表示键不存在
 TTL demo:ttl-reset
 ```
 
@@ -84,12 +93,15 @@ OK
 ## 3. 计数先用原生命令
 
 ```redis
+# 将整数计数键 demo:counter 增加 1；键不存在从 0 开始，返回计算后的值
 INCR demo:counter
+# 将整数计数键 demo:counter 增加 5；键不存在从 0 开始，返回计算后的值
 INCRBY demo:counter 5
+# 将整数计数键 demo:counter 减少 2；键不存在从 0 开始，返回计算后的值
 DECRBY demo:counter 2
 ```
 
-不存在的计数键从 0 开始参与运算；非整数内容、格式不合法或超出范围可能报错。Redis 的整数计数有范围，不能当作任意精度金额系统。
+不存在的计数键从 0 开始参与运算；非整数内容、格式不合法或超出范围会报错。Redis 的整数计数有范围，不适合当作任意精度金额系统。
 
 INCR 的单命令原子性，避免了先 GET、再在本地加一、最后 SET 所造成的典型丢更新问题，但无法解决“客户端不知道第一次是否成功，重试又加一次”的情况。后者仍需要业务事件标识与去重。
 
@@ -101,19 +113,24 @@ INCR 的单命令原子性，避免了先 GET、再在本地加一、最后 SET 
 
 Redis Lua 服务端脚本是交给 Redis 内嵌 Lua 解释器执行的一段逻辑，可在服务器内完成判断与多步更新，避免其他客户端命令穿插。但脚本执行期间会阻塞其他命令，必须控制工作量，不能把长耗时任务直接搬进去。脚本的使用与错误边界见 [第 18 章：事务、Lua 与 Functions](/articles/redis-transactions-lua-functions.html)。[官方 Lua 说明](https://redis.io/docs/latest/develop/programmability/eval-intro/)
 
-应先明确窗口规则，再选择单命令、Lua 或其他协调方式。[第 28 章：锁、限流与业务幂等](/articles/redis-locks-rate-limits.html) 会进一步讨论；本章只分析分开计数和设置期限的问题，SET NX 例子也不是完整的防刷方案。
+应先明确窗口规则，再选择单命令、Lua 或其他协调方式。[第 28 章：锁、限流与业务幂等](/articles/redis-locks-rate-limits.html) 会进一步讨论。
 
 ## 5. MGET、MSET 与数据规模
 
 MGET、MSET 减少了命令数量，但请求和回复仍有字节成本。MGET 涉及的键很多或值很大，依然可能造成排队与带宽压力。
 
-MGET 有一个值得单独记住的返回例外：不存在的键、以及存在但不是 String 的键，都在对应结果位置返回 nil。GET 读取非 String 键时的 WRONGTYPE，不能原样套到 MGET。
+MGET 有一个返回的特殊情况：不存在的键、以及存在但不是 String 的键，都在对应结果位置返回 nil。
+而GET 读取非 String 键时的 WRONGTYPE，不能原样套到 MGET。
 
 下面三条命令假定 missing 键不存在；键名中的 `{42}` 是 Hash Tag（哈希标签），使这些键在 Cluster 中落到同一槽：
 
 ```redis
+# 将字符串键 demo:{42}:name 写为 Lin；键已存在时覆盖原值；普通 SET 会清除原有键 TTL
 SET demo:{42}:name Lin
+# 在 Hash demo:{42}:profile 中写入字段和值：city=Hangzhou；返回新增字段数
+# 已有字段会更新，普通 HSET 覆盖字段时会清除该字段原有 TTL
 HSET demo:{42}:profile city Hangzhou
+# 按参数顺序批量读取字符串键 demo:{42}:name、demo:{42}:profile、demo:{42}:missing；每个结果与键对应，不存在或非字符串键返回 nil
 MGET demo:{42}:name demo:{42}:profile demo:{42}:missing
 ```
 
@@ -133,7 +150,7 @@ Redis Open Source 7.2.0 默认限制单个 String 最大为 512 MB（512 × 1024
 
 ## 6. 编码只作为诊断线索
 
-String 紧凑编码的阈值属于版本实现细节。以 Redis Open Source 7.2.0 为参照，`createStringObject` 的 embstr（Embedded String，嵌入式字符串）创建阈值为 44 字节，长度小于等于该值走适用的紧凑创建路径；整数编码、更新和其他创建路径还需分别考虑。它不是业务协议，也不保证所有长度相同的值最终编码都一样。[Redis 7.2.0 对象实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/object.c)
+String 紧凑编码的阈值属于版本实现细节。以 Redis Open Source 7.2.0 为参照，`createStringObject` 的 embstr（Embedded String，嵌入式字符串）创建阈值为 44 字节，长度小于等于该值走适用的紧凑创建路径；整数编码、更新和其他创建路径还需分别考虑。它不是业务协议，需要根据实际业务场景选择合适的编码方式。[Redis 7.2.0 对象实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/object.c)
 
 先观察实际对象与读写模式，再决定是否压缩或拆分；压缩节省的内存还要付出 CPU、编解码和调试成本。
 

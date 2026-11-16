@@ -202,7 +202,9 @@ RR 最后两个时间片都运行 A，片边界不必切到另一任务。
 按[第二十章 C 实验](/articles/os-mmap-page-cache.html)保存代码后运行：
 
 ```bash
+# 编译后面的 C 源文件；-o 指定输出文件，-Wall/-Wextra 开启告警，-std=c11 选择 C11（若指定）
 gcc -std=c11 -Wall -Wextra -Werror mmap-demo.c -o mmap-demo
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./mmap-demo
 ```
 
@@ -223,13 +225,20 @@ gcc -std=c11 -Wall -Wextra -Werror mmap-demo.c -o mmap-demo
 ```bash
 pid=$$
 date -Is
+# -L 展示线程，-p 选择进程；-o 自定义 PID、TID、所在 CPU、状态、CPU 使用率及名称列
 ps -L -p "$pid" -o pid,tid,psr,stat,pcpu,comm
+# 读取指定进程或线程的 /proc 状态字段；结合 PID/TID 区分进程和线程统计
 cat "/proc/$pid/status"
+# 读取进程所属控制组的相对路径；需结合 cgroup2 挂载点定位真实目录
 cat "/proc/$pid/cgroup"
+# 每隔 1 秒采样，共输出 5 次；首行通常反映启动以来的统计，后续行反映采样区间
 vmstat 1 5
+# 先检查条件或文件可读性，再执行下面的采样；条件不满足时跳过，避免把缺失数据当成零
 if [ -r /proc/pressure/memory ]; then
+    # 读取内核或驱动导出的状态文件，核对当前运行环境
     cat /proc/pressure/memory
 fi
+# -t cgroup2 只显示 cgroup v2 挂载点，供后续定位进程所在控制组
 findmnt -t cgroup2
 ```
 

@@ -51,9 +51,13 @@ Slowlog（Slow Log，慢命令日志）只看请求的一部分。端到端（En
 以下 `redis` 代码块是 Redis 命令，观察示例以 Redis Open Source 7.2.0 为基线，版本例外另标。
 
 ```redis
+# 查询当前保留的慢日志记录数；无额外参数
 SLOWLOG LEN
+# 读取最近至多 10 条慢日志；10 是条数，不是耗时阈值
 SLOWLOG GET 10
+# 读取配置 slowlog-log-slower-than：慢日志执行耗时阈值，单位微秒；0 记录所有命令，负值关闭记录；GET 只查询，不修改配置
 CONFIG GET slowlog-log-slower-than
+# 读取配置 slowlog-max-len：慢日志最多保留的记录条数；GET 只查询，不修改配置
 CONFIG GET slowlog-max-len
 ```
 
@@ -71,9 +75,13 @@ SLOWLOG LEN 查看保留记录数，GET 10 最多取最近 10 条；`slowlog-log
 | LATENCY 事件监控  | command、fork 等服务端事件尖峰                      | 看事件历史与关联，不覆盖所有请求阶段     |
 
 ```redis
+# 查询 各命令的调用次数、累计耗时及错误统计；commandstats 是 INFO 的信息分区名，不是键名
 INFO commandstats
+# 查询 已启用延迟跟踪的命令耗时百分位；latencystats 是 INFO 的信息分区名，不是键名
 INFO latencystats
+# 读取配置 latency-tracking：是否启用命令延迟百分位跟踪；GET 只查询，不修改配置
 CONFIG GET latency-tracking
+# 读取配置 latency-tracking-info-percentiles：INFO latencystats 所展示的百分位列表；GET 只查询，不修改配置
 CONFIG GET latency-tracking-info-percentiles
 ```
 
@@ -82,10 +90,15 @@ INFO latencystats 自 Redis Open Source 7.0.0 提供，需要启用 `latency-tra
 LATENCY 事件监控自 Redis Open Source 2.8.13 引入，与上面的命令延迟跟踪是不同机制：
 
 ```redis
+# 读取配置 latency-monitor-threshold：延迟监控事件的记录阈值，单位毫秒；0 表示关闭；GET 只查询，不修改配置
 CONFIG GET latency-monitor-threshold
+# 查询各已记录延迟事件的最近样本及峰值；无额外参数
 LATENCY LATEST
+# 读取 command 延迟事件的历史样本；command 是事件名称，不是任意 Redis 命令占位符
 LATENCY HISTORY command
+# 根据延迟监控样本生成诊断建议；无额外参数
 LATENCY DOCTOR
+# 以文本图展示 command 事件的延迟变化；command 是延迟事件名称
 LATENCY GRAPH command
 ```
 
@@ -100,8 +113,14 @@ LATENCY GRAPH command
 以下是 Shell（命令解释环境）中执行的 redis-cli 工具命令，不是 Redis 服务端命令。以 Redis Open Source 7.2.0 配套 CLI（Command Line Interface，命令行界面）为依据，连接地址、认证与加密参数需按实际环境配置，不在命令行暴露真实密码：
 
 ```bash
+# --bigkeys：按类型的长度/元素数查找大键，不等同于内存字节排序
+# -i 0.1 在本章采用的 7.2.0 CLI 中表示每 100 次 SCAN 暂停 0.1 秒，用于节流
 redis-cli --bigkeys -i 0.1
+# --memkeys：通过 MEMORY USAGE 估算键内存，查找内存占用大的键
+# -i 0.1 在本章采用的 7.2.0 CLI 中表示每 100 次 SCAN 暂停 0.1 秒，用于节流
 redis-cli --memkeys -i 0.1
+# --hotkeys：按 LFU 频率计数查找热键，要求已启用 LFU 淘汰策略
+# -i 0.1 在本章采用的 7.2.0 CLI 中表示每 100 次 SCAN 暂停 0.1 秒，用于节流
 redis-cli --hotkeys -i 0.1
 ```
 
@@ -112,6 +131,7 @@ redis-cli --hotkeys -i 0.1
 需要查看单键时可用：
 
 ```redis
+# 估算键 archive:demo 及其结构的内存占用，返回字节数；不存在返回 nil；SAMPLES 5 表示嵌套类型按 5 个元素采样估算，并非读取 5 字节
 MEMORY USAGE archive:demo SAMPLES 5
 ```
 

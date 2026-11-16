@@ -67,10 +67,12 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
           readinessProbe:
             httpGet:
               path: /
               port: http
+            # 探针执行间隔，单位秒；不是单次请求的超时时间。
             periodSeconds: 2
 ```
 
@@ -81,6 +83,7 @@ spec:
 `|` 表示保留换行的块标量，内容仍是一段字符串。比如 ConfigMap 中的一份应用配置：
 
 ```yaml
+# app.conf 的 | 将缩进内容保留为多行字符串；listen 与 log_level 是应用配置，不是 Kubernetes 资源字段。
 data:
   app.conf: |
     listen=8080
@@ -107,6 +110,7 @@ spec:
   ports:
     - name: http
       port: 80
+      # 后端容器的端口号或端口名；与面向客户端的 Service port 分开理解。
       targetPort: 8080
       protocol: TCP
 ---
@@ -124,11 +128,20 @@ spec:
 ```
 
 ```bash
+# 查看当前 kubectl 上下文，确认后续命令将连接哪个集群；此命令不切换上下文
 kubectl config current-context
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace study
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f deployment.yaml -f catalog-access.yaml
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status deployment/catalog -n study --timeout=120s
+# 等待 --for 指定的资源条件满足；--timeout 限定本次等待时长，不会主动修复资源
+# -n study 限定命名空间
 kubectl wait --for=condition=Ready pod/dns-debug -n study --timeout=120s
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get deployment,service,pods -n study
 ```
 
@@ -137,6 +150,7 @@ kubectl get deployment,service,pods -n study
 接着完成[第十章三条访问路径](/articles/kubernetes-kube-proxy.html#catalog-access-test)及[第十一章 DNS 对照](/articles/kubernetes-coredns.html#catalog-dns-test)。三章共用同一套资源，不重复创建；全部实验结束后删除专用空间及其资源：
 
 ```bash
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
 kubectl delete namespace study
 ```
 
@@ -159,6 +173,7 @@ Service 的 selector 通常匹配同一命名空间中的 Pod 标签，而不是
 下面只是错误的 Deployment `spec` 片段，不是可执行资源：
 
 ```yaml
+# 故意不匹配的示例：selector 要求 app=catalog，但模板写 app=order；不能当成有效 Deployment 配置。
 selector:
   matchLabels:
     app: catalog
@@ -200,11 +215,28 @@ template:
 下面的只读查询示例，结果取决于实际 Pod 标签；共用实验只设置了 `app=catalog`，没有设置 `tier/env`，不能期待它自动产生虚构 A、B、C 的筛选结果：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get pods -n study --show-labels
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l app=catalog
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog,tier=api 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l app=catalog,tier=api
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l tier in (api,worker) 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l 'tier in (api,worker)'
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=catalog,env=dev 按标签选择对象，不是按名称匹配
 kubectl get pods -n study -l app=catalog,env=dev
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# --show-labels 显示全部标签，-L 则把指定标签展示为列（按本命令所用选项）
 kubectl get nodes --show-labels
 ```
 
@@ -215,8 +247,11 @@ kubectl get nodes --show-labels
 目标环境的 API 和资源文档可用于确认字段类型、位置与说明：
 
 ```bash
+# 查询当前 API Server 提供的资源类型、简称和作用域，确认目标版本实际支持哪些资源
 kubectl api-resources
+# 查询后面字段路径的 API 结构和说明；deployment.spec.template 是 Pod 模板，pod.spec.containers 是容器定义
 kubectl explain deployment.spec.template
+# 查询后面字段路径的 API 结构和说明；deployment.spec.template 是 Pod 模板，pod.spec.containers 是容器定义
 kubectl explain pod.spec.containers
 ```
 
@@ -225,6 +260,8 @@ kubectl explain pod.spec.containers
 对保存好的 `deployment.yaml`，可在有权限的测试 API Server 上请求服务端 Dry-run（试运行）：
 
 ```bash
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
+# --dry-run=server 请求服务端校验与默认化，但不持久化资源
 kubectl apply --dry-run=server -f deployment.yaml
 ```
 

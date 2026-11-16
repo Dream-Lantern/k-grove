@@ -64,6 +64,8 @@ order: 11
 下面保留 `bread()` 主体的原始控制顺序，省去声明与防御性 `panic()`：
 
 ```c
+// 先取得缓存块；若内容尚无效则发起磁盘读取并等待，完成后再次检查 b_uptodate。
+// 读取失败时 brelse 释放引用；返回 bh 的成功分支仍将引用交给调用方。
 bh = getblk(dev, block);
 if (bh->b_uptodate)
     return bh;
@@ -94,6 +96,7 @@ return NULL;
 `fs/buffer.c` 的原版代码是：
 
 ```c
+// Linux 0.11 片段：在关中断保护下检查缓冲锁，未解锁则睡眠；醒来后必须循环重新判断。
 cli();
 while (bh->b_lock)
     sleep_on(&bh->b_wait);
@@ -111,6 +114,8 @@ Linux 0.11 时钟路径不会直接抢占正在内核态执行的任务，但 `s
 `kernel/sched.c` 中的不可中断等待版本如下；任务 0 不允许进入这段睡眠路径：
 
 ```c
+// Linux 0.11 睡眠队列片段：把当前任务挂入等待链，设为不可中断睡眠并调度。
+// 恢复后唤醒此前保存的等待任务；不能把该历史队列实现直接当作现代内核 API。
 void sleep_on(struct task_struct **p)
 {
     struct task_struct *tmp;
@@ -163,11 +168,17 @@ void sleep_on(struct task_struct **p)
 取得上述固定 0.11 压缩包，解压后进入 `linux/` 源码根目录，执行以下只读查询；压缩包中的目录名以实际解压结果为准：
 
 ```sh
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'struct buffer_head|b_count|b_lock|b_uptodate|b_dirt' include/linux/fs.h
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'get_hash_table|getblk|bread|wait_on_buffer|brelse|repeat:' fs/buffer.c
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'sleep_on|wake_up|tmp =|TASK_UNINTERRUPTIBLE' kernel/sched.c
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'make_request|add_request|unlock_buffer|wait_for_request' kernel/blk_drv/ll_rw_blk.c
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'end_request|b_uptodate|wake_up' kernel/blk_drv/blk.h
+# -n 显示源码行号，-E 使用扩展正则；竖线分隔待查函数或字段，不执行这些内核代码
 grep -nE 'read_intr|bad_rw_intr|end_request' kernel/blk_drv/hd.c
 ```
 

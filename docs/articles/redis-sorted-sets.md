@@ -21,7 +21,7 @@ order: 7
 
 排行榜既要按用户找分数，也要按分数找名次。Sorted Set（有序集合，常写作 Zset）同时维护唯一 member（成员）与 score（分数），解决这两种查询需求。成员不能重复，分数可以相同；同一个成员更新分数不会变成另一名成员。与普通集合的区别见 [第 6 章：Set](/articles/redis-sets.html)。
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。假定不同示例使用的新键起初不存在，无并发修改。同一节标明“接续”的命令沿用前面的数据。以 Redis Open Source 7.2.0 为教学基准，新增参数另标最低版本。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。以 Redis Open Source 7.2.0 为教学基准。
 
 ![成员、分数与查询维度](/assets/notes/redis/redis-study-zset.svg)
 
@@ -30,14 +30,22 @@ order: 7
 以下采用 Redis Open Source 6.2.0 起支持的统一 ZRANGE 写法：
 
 ```redis
+# 向 Zset demo:rank 写入分数/成员：user-a→10、user-b→15、user-c→15
+# 默认返回新增成员数；只更新已有成员的分数时可能返回 0
 ZADD demo:rank 10 user-a 15 user-b 15 user-c
+# 读取 Zset demo:rank 的索引范围 0～9，包含两端；索引从 0 开始，-1 表示最后一项
+# REV 按逆序返回；WITHSCORES 同时返回每个成员的分数
 ZRANGE demo:rank 0 9 REV WITHSCORES
+# 读取 Zset demo:rank 分数在 10～20 范围内的成员；BYSCORE 按分数筛选，边界默认包含
+# 默认按正序返回；WITHSCORES 同时返回每个成员的分数
 ZRANGE demo:rank 10 20 BYSCORE WITHSCORES
+# 查询成员 user-a 在 Zset demo:rank 中的升序排名；从 0 开始，成员不存在返回 nil
 ZRANK demo:rank user-a
+# 查询成员 user-a 在 Zset demo:rank 中的降序排名；从 0 开始，成员不存在返回 nil
 ZREVRANK demo:rank user-a
 ```
 
-ZADD 预期新增 `3` 个成员。两次范围查询按顺序分别得到 `[(user-c,15), (user-b,15), (user-a,10)]`、`[(user-a,10), (user-b,15), (user-c,15)]`；这里用二元组简写“成员、分数”，不是逐字的客户端输出。ZRANK 和 ZREVRANK 对 user-a 分别预期返回 `0`、`2`。
+ZADD 预期新增 `3` 个成员。两次范围查询按顺序分别得到 `[(user-c,15), (user-b,15), (user-a,10)]`、`[(user-a,10), (user-b,15), (user-c,15)]`；这里用二元组简写“成员、分数”。ZRANK 和 ZREVRANK 对 user-a 分别预期返回 `0`、`2`。
 
 rank（排名索引）从 `0` 开始；score 是业务值，不一定等于名次。三种查询方式的区别如下，BY RANK 是说明用语，命令中不写这个参数：
 
@@ -50,8 +58,14 @@ rank（排名索引）从 `0` 开始；score 是业务值，不一定等于名�
 WITHSCORES 表示同时返回分数。接续本节数据，可以直接比较正反向查询：
 
 ```redis
+# 读取 Zset demo:rank 的索引范围 0～-1，包含两端；索引从 0 开始，-1 表示最后一项
+# 默认按正序返回；WITHSCORES 同时返回每个成员的分数
 ZRANGE demo:rank 0 -1 WITHSCORES
+# 读取 Zset demo:rank 的索引范围 0～-1，包含两端；索引从 0 开始，-1 表示最后一项
+# REV 按逆序返回；WITHSCORES 同时返回每个成员的分数
 ZRANGE demo:rank 0 -1 REV WITHSCORES
+# 读取 Zset demo:rank 分数在 20～10 范围内的成员；BYSCORE 按分数筛选，边界默认包含
+# REV 按逆序返回，分数边界按上界、下界书写；WITHSCORES 同时返回每个成员的分数
 ZRANGE demo:rank 20 10 BYSCORE REV WITHSCORES
 ```
 
@@ -60,13 +74,21 @@ ZRANGE demo:rank 20 10 BYSCORE REV WITHSCORES
 同分不等于成员相同，也不按插入时间排序。以下每个成员都必须带一个 score，不能把多个名字直接接在单个 `100` 后面：
 
 ```redis
+# 向 Zset demo:rank:ties 写入分数/成员：carol→100、bob→100、alice→100
+# 默认返回新增成员数；只更新已有成员的分数时可能返回 0
 ZADD demo:rank:ties 100 carol 100 bob 100 alice
+# 读取 Zset demo:rank:ties 的索引范围 0～-1，包含两端；索引从 0 开始，-1 表示最后一项
+# 默认按正序返回；WITHSCORES 同时返回每个成员的分数
 ZRANGE demo:rank:ties 0 -1 WITHSCORES
+# 读取 Zset demo:rank:ties 的索引范围 0～-1，包含两端；索引从 0 开始，-1 表示最后一项
+# REV 按逆序返回；WITHSCORES 同时返回每个成员的分数
 ZRANGE demo:rank:ties 0 -1 REV WITHSCORES
+# 读取 Zset demo:rank:ties 的字典序范围；BYLEX 按成员字节序筛选，- 和 + 分别表示无下界和无上界，示例要求成员同分
+# 默认按正序返回
 ZRANGE demo:rank:ties - + BYLEX
 ```
 
-预期新增 `3` 个成员，正向为 alice、bob、carol，反向为 carol、bob、alice，分数均为 `100`；BYLEX 返回 alice、bob、carol。字节字典序比较的是成员的二进制字节，不是语言学排序。**BYLEX 需要成员具有相同 score 才能得到预期字典序；不同 score 下回复未规定，不能当作全局字典序查询。**Redis 不记录谁先达到该分数；业务若要求先到先排，需额外设计模型。
+预期新增 `3` 个成员，正向为 alice、bob、carol，反向为 carol、bob、alice，分数均为 `100`；BYLEX 返回 alice、bob、carol。字节字典序比较的是成员的二进制字节，不是语言学排序。 **BYLEX 需要成员具有相同 score 才能得到预期字典序；不同 score 下回复未规定，不能当作全局字典序查询。** Redis 不记录谁先达到该分数；业务若要求先到先排，需额外设计模型。
 
 ## 2. 更新条件与计数返回
 
@@ -86,9 +108,16 @@ GT、LT 不阻止新增成员；只允许更新已有成员时可与 XX 组合�
 下面使用新学习键，演示“只更新更高分”：
 
 ```redis
+# 向 Zset demo:rank:update 写入分数/成员：user-a→100
+# 默认返回新增成员数；只更新已有成员的分数时可能返回 0
 ZADD demo:rank:update 100 user-a
+# 向 Zset demo:rank:update 写入分数/成员：user-a→90；GT 表示已有成员仅在新分数更大时更新
+# 默认返回新增成员数；只更新已有成员的分数时可能返回 0
 ZADD demo:rank:update GT 90 user-a
+# 向 Zset demo:rank:update 写入分数/成员：user-a→120；GT 表示已有成员仅在新分数更大时更新
+# 默认返回新增成员数；只更新已有成员的分数时可能返回 0
 ZADD demo:rank:update GT 120 user-a
+# 查询 Zset demo:rank:update 中成员 user-a 的分数；成员不存在返回 nil
 ZSCORE demo:rank:update user-a
 ```
 
@@ -126,7 +155,11 @@ ZRANGE 的 LIMIT 用于 BYSCORE/BYLEX 范围，不能用于默认的索引查询
 例如以下是简化时间轴，不是真实 Unix 时间戳或已运行结果：任务 A、B、C 的计划时间分别是 `100`、`120`、`150`，当前时间是 `110`。可在新键上演示：
 
 ```redis
+# 向 Zset demo:delayed 写入分数/成员：task-a→100、task-b→120、task-c→150
+# 默认返回新增成员数；只更新已有成员的分数时可能返回 0
 ZADD demo:delayed 100 task-a 120 task-b 150 task-c
+# 读取 Zset demo:delayed 分数在 -inf～110 范围内的成员；-inf 表示负无穷，110 为包含在内的上界
+# 默认按正序返回
 ZRANGE demo:delayed -inf 110 BYSCORE
 ```
 
@@ -141,8 +174,11 @@ ZUNIONSTORE、ZINTERSTORE 等聚合可结合权重与 SUM/MIN/MAX 处理分数�
 Redis Cluster（Redis 集群）按 Hash Slot（哈希槽）分配键，同一节点可承载多个槽，所以同节点不等于同槽。以下只在启用了 Cluster 的学习节点执行，无需先创建这些键；预期三个槽编号相同：
 
 ```redis
+# 计算键 demo:{rank}:day1 所属的槽号；花括号内的 hash tag 用于确定槽，相同 tag 的键会落在同一槽
 CLUSTER KEYSLOT demo:{rank}:day1
+# 计算键 demo:{rank}:day2 所属的槽号；花括号内的 hash tag 用于确定槽，相同 tag 的键会落在同一槽
 CLUSTER KEYSLOT demo:{rank}:day2
+# 计算键 demo:{rank}:result 所属的槽号；花括号内的 hash tag 用于确定槽，相同 tag 的键会落在同一槽
 CLUSTER KEYSLOT demo:{rank}:result
 ```
 

@@ -55,6 +55,7 @@ Tool 发起操作或查询，MCP 标准化能力的发现与调用，Worker 独�
 这是**示意契约，不能直接作为 MCP Tool 配置执行**：其中的自然语言占位符不是真正的参数 Schema，授权和幂等则需要服务端实现。
 
 ```yaml
+# 工具契约分别声明参数、前置条件、授权、幂等键与副作用；结构校验通过不代表写入已获授权。
 name: create_benchmark_task
 intent: "在授权条件下创建一项测试任务"
 input_schema: "严格类型、枚举、范围、互斥项"
@@ -80,6 +81,8 @@ errors: ["INVALID_INPUT", "CONFLICT", "FORBIDDEN"]
 
 Schema（结构定义）约束输入形状，服务端授权则判断调用者是否有权操作具体对象。用只读的 `get_task_status` 举例，下面是可以交给 JSON Schema 验证器的定义；它可以作为 MCP 工具定义的 `inputSchema`：
 
+约束说明：`required` 只要求 `task_id`，`pattern` 限定其格式；`enum` 限定详情级别，`minimum/maximum` 限定日志条数，`additionalProperties: false` 拒绝未声明字段。
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -99,6 +102,7 @@ Schema（结构定义）约束输入形状，服务端授权则判断调用者�
 本仓库的 `examples/ai-agent/ch4-tools/` 提供小型可运行示例，核心顺序如下：
 
 ```python
+# 先按 VALIDATOR 校验参数结构，再按 principal.allowed_task_ids 校验访问权限；两关通过后才读取任务。
 def get_task_status(arguments, principal):
     VALIDATOR.validate(arguments)
     task_id = arguments["task_id"]
@@ -171,6 +175,8 @@ MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内
 
 第 6、7 步的正常消息可以是：
 
+字段说明：`id` 用于关联本次请求与回复，`method: tools/call` 表示调用工具；具体工具名和输入分别放在 `params.name` 与 `params.arguments`，不能把任务 ID 当作请求 ID。
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -179,6 +185,8 @@ MCP Host 是承载用户交互、模型和权限决策的宿主应用；Host 内
   "params": {"name": "get_task_status", "arguments": {"task_id": "task-42", "detail": "summary"}}
 }
 ```
+
+字段说明：回复 `id` 对应上面的请求；`content` 是工具返回内容，`isError` 表示工具层结果。任务处于 RUNNING 与工具调用成功是不同状态。
 
 ```json
 {
@@ -243,6 +251,8 @@ Worker 完成后保存结果并产生 `TaskCompleted`。事件处理器检查事
 ### 先读懂最小事件身份
 
 Consumer 收到的不是一句“完成了”，而是一条可关联到任务的记录：
+
+字段说明：`event_id` 标识事件，`task_id` 标识任务，`target_generation` 标识任务代次；消费者需按任务和代次判断事件是否仍适用。
 
 ```json
 {
@@ -327,6 +337,7 @@ MCP 的 `tools/list` 解决“Server 提供哪些工具”；Host 的检索和�
 在项目根目录用 Python 3.10 或更高版本建立共用实验环境。下面的命令都从项目根目录执行：
 
 ```sh
+# 在指定路径创建独立 Python 虚拟环境；-m venv 调用标准库模块，不自动激活环境
 python -m venv .tmp/ch4-venv
 ```
 
@@ -335,6 +346,8 @@ python -m venv .tmp/ch4-venv
 源码节选（上下文依赖见原文件）：[chapter4/execution-tools/file_tools.py](https://github.com/bojieli/ai-agent-book/blob/dbc046eb896ac4e39aa19c7774c8bf49583b89a6/chapter4/execution-tools/file_tools.py#L26-L33)。
 
 ```python
+# resolve 先解析规范路径；relative_to 要求目标位于 workspace_dir 之内，否则 ValueError 表示越界。
+# 这里只是路径检查片段，不保证检查后文件系统不会再变化。
 def _is_safe_path(self, path: Path) -> bool:
     """Check if path is within workspace."""
     try:
@@ -366,14 +379,18 @@ def _is_safe_path(self, path: Path) -> bool:
 安装与 `examples/ai-agent/requirements.txt` 一致的两项依赖范围后执行。Windows PowerShell：
 
 ```powershell
+# 在当前解释器环境安装依赖；包名后的版本约束用于固定或限制可用版本
 .\.tmp\ch4-venv\Scripts\python.exe -m pip install 'pytest>=8,<9' 'jsonschema>=4.23,<5'
+# 用当前解释器运行指定范围的 pytest；-q 使用简洁输出，非零退出码表示测试未通过
 .\.tmp\ch4-venv\Scripts\python.exe -m pytest -q examples/ai-agent/ch4-tools
 ```
 
 macOS / Linux：
 
 ```sh
+# 在当前解释器环境安装依赖；包名后的版本约束用于固定或限制可用版本
 .tmp/ch4-venv/bin/python -m pip install 'pytest>=8,<9' 'jsonschema>=4.23,<5'
+# 用当前解释器运行指定范围的 pytest；-q 使用简洁输出，非零退出码表示测试未通过
 .tmp/ch4-venv/bin/python -m pytest -q examples/ai-agent/ch4-tools
 ```
 
@@ -394,14 +411,18 @@ macOS / Linux：
 Windows PowerShell：
 
 ```powershell
+# 在当前解释器环境安装依赖；-r 从指定 requirements 文件读取依赖
 .\.tmp\ch4-venv\Scripts\python.exe -m pip install -r examples/ai-agent/ch4-tools/requirements-mcp.txt
+# 使用当前 Python 解释器运行MCP 工具调用演示
 .\.tmp\ch4-venv\Scripts\python.exe examples/ai-agent/ch4-tools/mcp_demo.py
 ```
 
 macOS / Linux：
 
 ```sh
+# 在当前解释器环境安装依赖；-r 从指定 requirements 文件读取依赖
 .tmp/ch4-venv/bin/python -m pip install -r examples/ai-agent/ch4-tools/requirements-mcp.txt
+# 使用当前 Python 解释器运行MCP 工具调用演示
 .tmp/ch4-venv/bin/python examples/ai-agent/ch4-tools/mcp_demo.py
 ```
 
@@ -421,6 +442,7 @@ task-99: isError=true
 `event_demo.py` 依赖 Python 标准库，使用临时 SQLite 数据库。生产者在同一事务保存任务完成状态与 `TaskCompleted`；消费者检查事件身份与当前代次，在另一事务中保存一条后续分析请求和消费结果。这里的后续请求只是本地记录，没有调用模型或发送通知。
 
 ```sh
+# 使用当前 Python 解释器运行工具事件流程演示
 python examples/ai-agent/ch4-tools/event_demo.py
 ```
 
@@ -459,6 +481,8 @@ verified: followups=1 after recovery and duplicate delivery
 | effect             | APPLIED / NOT_APPLIED / UNKNOWN | 环境是否已经产生副作用；超时并不等于未发生           |
 | validation         | PASSED / FAILED / UNKNOWN       | 独立检查是否证明用户目标达成                         |
 
+字段说明：`execution`、`business`、`effect`、`validation` 分别描述执行、业务、副作用和验证状态；调用流程正常结束也可能对应业务失败与未产生效果。
+
 ```json
 {
   "execution": "SUCCEEDED",
@@ -492,6 +516,8 @@ verified: followups=1 after recovery and duplicate delivery
 ### 先读懂一条完成事件
 
 Worker 已观察到 `task-42` 的第二轮执行完成，产生以下业务事件。类型名和字段是本章约定，不是 MCP 消息格式。
+
+字段说明：`event_id` 用于事件去重，`correlation_id` 串联请求，`schema_version` 标识载荷版本；`occurred_at/received_at` 分别是发生与接收时间，不能混用。
 
 ```json
 {

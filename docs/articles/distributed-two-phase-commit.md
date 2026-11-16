@@ -162,6 +162,7 @@ Skeen 1981 原论文明确假设正常站点之间能通信、网络不发生故
 以下是单个数据库作为参与者的教学 SQL，假设 `accounts` 表及账户 id=1 已存在，并由应用验证余额、更新行数等业务条件。服务端还须为 `max_prepared_transactions` 配置非零容量，默认 0 会禁用准备事务，此参数需要按官方说明配置并重启生效。[PostgreSQL 17 资源参数](https://www.postgresql.org/docs/17/runtime-config-resource.html#GUC-MAX-PREPARED-TRANSACTIONS)
 
 ```sql
+-- PostgreSQL 两阶段事务：先扣减账户余额，再以 transfer-1001 标识准备事务；PREPARE 还不是最终提交。
 BEGIN;
 
 UPDATE accounts
@@ -174,6 +175,7 @@ PREPARE TRANSACTION 'transfer-1001';
 PREPARE 不是最终 COMMIT。成功后，本地事务脱离原连接，保留准备状态及适用锁；原会话不再处于这笔活动事务中。可以查询准备事务视图：
 
 ```sql
+-- 按 gid 查询已准备事务；prepared 为准备时间，owner/database 标识事务归属，查询不会结束事务。
 SELECT gid, prepared, owner, database
 FROM pg_prepared_xacts
 WHERE gid = 'transfer-1001';
@@ -182,12 +184,14 @@ WHERE gid = 'transfer-1001';
 外部事务管理器根据全局权威决定，选择以下**其中一条**，在同一数据库内以具备权限的会话、在事务块外执行：
 
 ```sql
+-- 按全局事务标识提交已经准备好的事务；它与下面的回滚是两种互斥决定，不能依次执行。
 COMMIT PREPARED 'transfer-1001';
 ```
 
 或者，在全局决定为中止时：
 
 ```sql
+-- 按全局事务标识回滚已经准备好的事务；只有决定回滚的分支才执行，不接在 COMMIT PREPARED 后运行。
 ROLLBACK PREPARED 'transfer-1001';
 ```
 

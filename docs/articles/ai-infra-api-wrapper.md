@@ -51,6 +51,8 @@ GNU ld 的 `--wrap=symbol` 重定向参与该链接过程的相应未定义引�
 包装函数需要保持原接口的返回值与有效输出语义：`size_t` 用 `%zu`，成功后再读取相应输出，失败时保留错误供调用方处理。
 
 ```cpp
+// GNU ld 包装函数：链接器把 cudaMalloc 引用导向 __wrap_cudaMalloc；__real_cudaMalloc 调用原实现。
+// out 是输出指针地址，bytes 是分配字节数；只在调用成功时读取 *out，并原样返回错误码。
 #include <cuda_runtime_api.h>
 #include <cstdio>
 extern "C" cudaError_t __real_cudaMalloc(void**, size_t);
@@ -64,6 +66,7 @@ extern "C" cudaError_t __wrap_cudaMalloc(void** out, size_t bytes) {
 ```
 
 ```cmake
+# 仅给 app 的主机链接步骤传 --wrap=cudaMalloc；PRIVATE 不把选项传播给依赖它的目标。
 target_link_options(app PRIVATE
   "$<HOST_LINK:LINKER:--wrap=cudaMalloc>"
 )
@@ -76,6 +79,7 @@ target_link_options(app PRIVATE
 Linux ELF、GNU ld、CMake 3.18+ 和 CUDA Toolkit 12.8.1。将上面的 wrapper 保存为 `wrap.cpp`。以下保存为 `main.cpp`，显式使用 `void**` 入口。
 
 ```cpp
+// 分配 4096 字节设备内存，成功后释放；此程序配合包装/普通两种链接方式对比日志。
 #include <cuda_runtime_api.h>
 #include <cstdio>
 
@@ -93,6 +97,8 @@ int main() {
 ```
 
 ```cmake
+# 同一 main.cpp 构建 app 和 plain：app 额外链接 wrap.cpp 并启用 --wrap；plain 作为无包装对照。
+# CUDA::cudart 提供 CUDA Runtime 链接依赖，CUDAToolkit 12.8 是所要求的 Toolkit 版本入口。
 cmake_minimum_required(VERSION 3.18)
 project(cuda_wrap LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
@@ -110,10 +116,15 @@ target_link_libraries(plain PRIVATE CUDA::cudart)
 这两个目标都是普通 C++ 宿主链接，`HOST_LINK` 将该选项限制在宿主阶段，`LINKER:` 由 CMake 转交链接器，例如 GCC 驱动下传为 `-Wl,--wrap=cudaMalloc`。在 Linux 上，`extern "C"` 使 `__wrap_cudaMalloc` 与 `__real_cudaMalloc` 使用无 C++ 名字修饰的符号，参数、返回值和调用约定必须匹配头文件 ABI。链接器将应用的未定义 `cudaMalloc` 引用改为 `__wrap_cudaMalloc`，再把包装内的 `__real_cudaMalloc` 引用解析回原符号。
 
 ```bash
+# -S . 指定源码目录，-B build 指定构建目录；-DCUDAToolkit_ROOT 选择 CUDA Toolkit 安装路径
 cmake -S . -B build -DCUDAToolkit_ROOT=/usr/local/cuda-12.8
+# 编译 build 目录中的已配置工程；--verbose 显示实际编译与链接命令
 cmake --build build --verbose
+# 读取可执行文件的符号表；-C 还原 C++ 符号名，管道筛选 cudaMalloc 相关符号
 nm -C build/app | grep cudaMalloc
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./build/app
+# 运行前面编译生成的本地示例；观察输出和退出码，核对程序中的断言或 PASS/FAIL
 ./build/plain
 ```
 

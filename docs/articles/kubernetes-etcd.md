@@ -161,6 +161,7 @@ Snapshot（快照）保存某个时间点的键值数据库状态，提供恢复
 前提：已有合法取得的 `snapshot.db` 文件，当前用户有读取权限；已安装与快照及目标 etcd 版本兼容的 `etcdutl`，并核对对应 3.5 补丁版本的帮助。以下只读取本地快照，不连接在线集群，不启动或恢复 etcd。命令是教学示例。
 
 ```bash
+# 离线检查 snapshot.db 的快照元信息；-w table 以表格输出，不向正在运行的 etcd 恢复数据
 etcdutl snapshot status snapshot.db -w table
 ```
 

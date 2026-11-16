@@ -60,6 +60,8 @@ Redis Open Source 8.8.0 的 [正式发布记录](https://github.com/redis/redis/
 INCREX（Increment with Expiration，带过期控制的原子递增）解决传统 INCR 后、EXPIRE 前进程失败可能留下无期限计数键的问题。原子性（Atomicity）指该命令内部更新不被其他客户端命令插入，不等于跨系统提交保证。旧版本可用有限 Lua 脚本组合，8.8.0 起有原生命令：
 
 ```redis
+# 原子增加整数计数键 demo:rate:user:1001:minute:123；BYINT 1 加 1，UBOUND 10 限制结果不超过 10（Redis 8.8+）
+# EX 120 指定秒数，ENX 仅在键无 TTL 时设置期限；返回 [新值, 实际增量]，超界默认返回 [当前值, 0]
 INCREX demo:rate:user:1001:minute:123 BYINT 1 UBOUND 10 EX 120 ENX
 ```
 
@@ -101,9 +103,13 @@ Compact Hash（紧凑哈希）让相同字段布局的多个 Hash 复用字段�
 以下为 Redis Open Source 8.10.0 Redis 命令，必须在同一物理连接依次执行；假定这些 demo 键尚不存在：
 
 ```redis
+# 在当前连接准备名为 demo:user-fields 的字段集，字段顺序为 name、email、age；它不是 Redis 数据键（8.10+）
 HIMPORT PREPARE demo:user-fields name email age
+# 使用本连接准备的 demo:user-fields 创建或整体覆盖 Hash demo:user:1；三个值依次对应 name、email、age
 HIMPORT SET demo:user:1 demo:user-fields alice alice@example.com 30
+# 使用同一字段集创建或整体覆盖 Hash demo:user:2；bob、bob@example.com、25 按准备时的字段顺序写入
 HIMPORT SET demo:user:2 demo:user-fields bob bob@example.com 25
+# 读取 Hash demo:user:1 的 age 字段；键或字段不存在返回 nil
 HGET demo:user:1 age
 ```
 

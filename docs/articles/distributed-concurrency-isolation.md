@@ -83,6 +83,7 @@ order: 20
 对这个特定的单行库存问题，可将检查和扣减放进一条语句：
 
 ```sql
+-- 将 id=1 的库存减 1，WHERE stock>0 使检查与扣减在同一条 UPDATE 内进行；调用方仍须检查影响行数。
 UPDATE inventory
 SET stock = stock - 1
 WHERE id = 1 AND stock > 0;

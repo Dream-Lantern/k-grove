@@ -94,11 +94,17 @@ Redis Open Source 7.0.0 起的多部分 AOF 由 BASE（基础文件）、INCR（
 以下是适用于 Redis Open Source 7.2.0、有相应查询权限时的只读 Redis 命令示例。实例已停机时应从保存的配置和日志确认，不能为查询而反复启动唯一现场：
 
 ```redis
+# 读取配置 appendonly：是否启用 AOF 持久化；GET 只查询，不修改配置
 CONFIG GET appendonly
+# 读取配置 appendfsync：AOF 的磁盘同步策略；GET 只查询，不修改配置
 CONFIG GET appendfsync
+# 读取配置 appenddirname：多部分 AOF 所在目录名；GET 只查询，不修改配置
 CONFIG GET appenddirname
+# 读取配置 dir：持久化文件使用的工作目录；GET 只查询，不修改配置
 CONFIG GET dir
+# 查询 RDB/AOF 状态、后台任务及最近持久化结果；persistence 是 INFO 的信息分区名，不是键名
 INFO persistence
+# 查询最近一次成功保存 RDB 的 Unix 时间戳，单位秒；无额外参数
 LASTSAVE
 ```
 

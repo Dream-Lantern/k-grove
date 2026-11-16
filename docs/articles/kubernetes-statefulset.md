@@ -56,12 +56,14 @@ metadata:
   name: ledger-headless
   namespace: study
 spec:
+  # None 创建 Headless Service，不分配普通虚拟 ClusterIP；通过 DNS 等方式发现后端。
   clusterIP: None
   selector:
     app: ledger
   ports:
     - name: http
       port: 8080
+      # 后端容器的端口号或端口名；与面向客户端的 Service port 分开理解。
       targetPort: http
 ---
 apiVersion: apps/v1
@@ -72,11 +74,14 @@ metadata:
 spec:
   serviceName: ledger-headless
   replicas: 3
+  # OrderedReady 按序创建并等待就绪；不应与滚动更新的分区控制混为一谈。
   podManagementPolicy: OrderedReady
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
+      # StatefulSet 滚动更新只作用于序号不小于此值的 Pod，可用于分批推进版本。
       partition: 0
+  # 分别控制删除 StatefulSet 和缩容时的 PVC 保留/删除行为，注意与 PV 回收策略不同。
   persistentVolumeClaimRetentionPolicy:
     whenDeleted: Retain
     whenScaled: Retain
@@ -100,21 +105,27 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          # 就绪探针控制是否作为就绪后端参与服务发现；失败本身不会重启容器。
           readinessProbe:
             httpGet:
               path: /
               port: http
+            # 探针执行间隔，单位秒；不是单次请求的超时时间。
             periodSeconds: 2
           volumeMounts:
             - name: data
               mountPath: /data
+  # 为每个 StatefulSet Pod 派生独立 PVC，而不是让所有副本共用同一个申领。
   volumeClaimTemplates:
     - metadata:
         name: data
       spec:
+        # 卷访问模式由存储实现支持；ReadWriteOnce 限定单节点读写，不等于只能一个 Pod 使用。
         accessModes: ["ReadWriteOnce"]
+        # 选择存储类；动态供给还需要集群中存在该类及其可用的存储控制器。
         storageClassName: study-storage
         resources:
+          # 声明调度资源需求；CPU 的 m 表示千分之一核，内存 Mi 表示二进制兆字节（按字段单位）。
           requests:
             storage: 10Gi
 ```
@@ -126,10 +137,15 @@ volumeClaimTemplates 中的 data 分别生成 data-ledger-0、data-ledger-1、da
 以下仅是复现步骤，create/apply 会修改实验资源；study 已被其他实验使用时应另选名称并同步修改所有清单和命令：
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
 kubectl get storageclass study-storage
 # 仅当 study 不存在且专供本实验时创建
+# 创建命令中指定的实验命名空间；它是后续资源的作用范围
 kubectl create namespace study
+# 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
 kubectl apply -f ledger.yaml
+# 等待指定工作负载的发布状态达到完成条件；--timeout 是最长等待时间
+# -n study 限定命名空间
 kubectl rollout status statefulset/ledger -n study --timeout=180s
 ```
 
@@ -137,8 +153,14 @@ kubectl rollout status statefulset/ledger -n study --timeout=180s
 
 ```bash
 # 仅删除本实验创建的工作负载和服务，保留 PVC
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n study 限定命名空间
 kubectl delete statefulset ledger -n study
+# 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查
+# -n study 限定命名空间
 kubectl delete service ledger-headless -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get pvc -n study
 ```
 
@@ -161,6 +183,7 @@ Parallel 不是“RollingUpdate 同时更新全部成员”的开关。Ready 也
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
+    # StatefulSet 滚动更新只作用于序号不小于此值的 Pod，可用于分批推进版本。
     partition: 2
 ```
 
@@ -197,6 +220,7 @@ v1.28.0 的 StatefulSetAutoDeletePVC 为 Beta，上游默认开启；管理员�
 新增字段片段，位于 StatefulSet spec，不是通用推荐：
 
 ```yaml
+# 分别控制删除 StatefulSet 和缩容时的 PVC 保留/删除行为，注意与 PV 回收策略不同。
 persistentVolumeClaimRetentionPolicy:
   whenDeleted: Retain
   whenScaled: Delete
@@ -213,13 +237,34 @@ PVC 删除后，PV 与后端数据是否删除还取决于回收策略、驱动�
 ## 6. 查询时先看成员关系
 
 ```bash
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o wide 展示节点、IP 等扩展列
 kubectl get sts ledger -n study -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -l app=ledger 按标签选择对象，不是按名称匹配
+# -o wide 展示节点、IP 等扩展列
 kubectl get pods -n study -l app=ledger -o wide
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
 kubectl get pvc -n study
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n study 限定命名空间
 kubectl describe sts ledger -n study
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n study 限定命名空间
+# -o jsonpath 仅输出指定字段；大括号内为字段路径，range 用于遍历列表（如有）
 kubectl get sts ledger -n study -o jsonpath='{.status.currentRevision}{" "}{.status.updateRevision}{" "}{.status.replicas}{" "}{.status.readyReplicas}{"\n"}'
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
+# -o yaml 输出完整对象字段，便于核对 spec 与 status
 kubectl get statefulset APP -n NAMESPACE -o yaml
+# 查询命令中指定的资源及对象名；只读返回当前状态
+# -n NAMESPACE 限定命名空间
 kubectl get pods,pvc -n NAMESPACE
+# 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
+# -n NAMESPACE 限定命名空间
 kubectl describe pod POD_NAME -n NAMESPACE
 ```
 
