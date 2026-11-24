@@ -28,7 +28,7 @@ order: 22
 | 流水线并行 PP | 不同模型阶段           | 调度气泡、激活传递     |
 | 专家并行 EP   | 不同专家及其 token     | 分发、负载不均、回收   |
 
-这些维度可以组合，不能把四张 TP 卡当作四个 DP 副本重复计算全局 batch。并行方式还会影响每卡权重、KV 和通信缓冲区的预算，不能只把总显存除以卡数。
+这些维度可以组合。四张卡做 TP 时，它们合起来算的是同一批输入的一次前向；把这四张卡当成四个 DP 副本、各算一份全局 batch，batch 就被重复计了四遍。并行方式还会影响每卡权重、KV 和通信缓冲区的预算，总显存除以卡数只是其中一项。
 
 [![多 GPU：集合通信的匹配契约](/assets/notes/ai-infra/parallel-collectives.svg)](/assets/notes/ai-infra/parallel-collectives.svg)
 
@@ -45,9 +45,9 @@ order: 22
 
 ## 2. NCCL 集合操作与 Rank 的匹配契约 {#_2-nccl-提供什么}
 
-NCCL 为 GPU 间通信提供集合操作等能力。AllReduce 将归约结果返回给各 rank；AllGather 汇集各 rank 数据；ReduceScatter 将归约结果按 rank 分发。rank 是通信组中的编号，不等于永远固定的物理 GPU 索引。
+NCCL 为 GPU 间通信提供集合操作等能力。归约是把各 rank 手上的同类数据按指定运算（例如求和）合并成一份。AllReduce 把归约结果发给每个 rank；AllGather 把各 rank 的数据拼成一份、人人都有；ReduceScatter 先归约，再把结果按 rank 切成几段分别发回。rank 是通信组中的编号，与物理 GPU 索引是两套标识。
 
-参与同一集合操作的各 rank 必须遵守匹配的调用与数据契约。某 rank 提前报错或使用不匹配的 count、datatype、操作顺序，其他 rank 可能等待，并不说明网络一定坏了。[NCCL Collective Operations](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html)
+参与同一集合操作的各 rank 必须遵守匹配的调用与数据契约。某 rank 提前报错或使用不匹配的 count、datatype、操作顺序，其他 rank 可能等待，此时网络未必有问题。[NCCL Collective Operations](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html)
 
 NCCL（NVIDIA Collective Communications Library，集合通信库）以 Communicator（通信器）定义成员与顺序。World Size 是该组成员数，Rank 是组内从零开始的逻辑编号；Local Rank 通常由启动器赋予节点内进程。子通信组的 rank 可与全局 rank 不同。下表为两节点、一进程一卡的逻辑示意，UUID 用别名代替。
 
@@ -58,7 +58,7 @@ NCCL（NVIDIA Collective Communications Library，集合通信库）以 Communic
 | B    | B0      |           2 |          0 | GPU-B0   |
 | B    | B1      |           3 |          1 | GPU-B1   |
 
-每进程按可见设备表选择 CUDA Device，CUDA Context 持有该设备的运行状态，CUDA Stream（流）组织 GPU 工作及依赖。跨流消费结果需要事件或相应同步。NCCL 常规集合调用将工作提交到指定流，Host 返回只表示提交阶段推进。用流完成状态判断结果可用，并用 `ncclCommGetAsyncError` 等检查异步通信错误。2.32.3 的线程安全指南要求避免多线程并发操作同一通信器，也应避免多个线程并发操作同设备上的独立通信器。单线程驱动多设备时，相关调用用 `ncclGroupStart/End` 成组提交，避免首个 rank 等待其余尚未提交的 rank。[通信器与异步错误](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/usage/communicators.html) · [线程安全](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/usage/threadsafety.html) · [Group Calls](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/usage/groups.html)
+每进程按可见设备表选择 CUDA Device，CUDA Context 持有该设备的运行状态，CUDA Stream（流）组织 GPU 工作及依赖。跨流消费结果需要事件或相应同步。NCCL 常规集合调用只是把工作排进指定流：Host 端调用返回，说明任务已提交，不代表数据已经交换完。用流完成状态判断结果可用，并用 `ncclCommGetAsyncError` 等检查异步通信错误。2.32.3 的线程安全指南要求避免多线程并发操作同一通信器，也应避免多个线程并发操作同设备上的独立通信器。单线程驱动多设备时，相关调用用 `ncclGroupStart/End` 成组提交，避免首个 rank 等待其余尚未提交的 rank。[通信器与异步错误](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/usage/communicators.html) · [线程安全](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/usage/threadsafety.html) · [Group Calls](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/usage/groups.html)
 
 ### 三 Rank 的数值推演
 
@@ -72,7 +72,7 @@ Count 以元素计，所有参与者应匹配集合调用的类型、数据类�
 
 ## 3. 互连与可达性
 
-同节点卡可能经 PCIe、NVLink/NVSwitch 等路径通信；跨节点还涉及 NIC、网络和可能的 RDMA。拓扑和亲和性会影响性能，但不能由“机箱里有 NVLink”推断每个设备对都直接互连。
+同节点卡可能经 PCIe、NVLink/NVSwitch 等路径通信；跨节点还涉及 NIC、网络和可能的 RDMA。拓扑和亲和性会影响性能；卡上有 NVLink 端口，不等于任意两张卡之间都能走 NVLink：没有 NVSwitch 时只有直连的那几对能走，其余两两之间要绕 PCIe。
 
 MIG、虚拟机和容器还可能限制可用通信路径。
 
@@ -91,13 +91,13 @@ nvidia-smi topo -m
 
 应先保留所有 rank 的日志，找到最先出错或未进入集合调用的进程，再核对 world size、rank 映射、调用顺序、网络接口和设备可见性。只检查最后仍在等待的进程，会将根因错判为“通信库卡住”。
 
-`NCCL_DEBUG=INFO` 等诊断变量可以增加日志，但也会影响日志量与运行开销，应按目标版本验证，并在定位后恢复。关闭某种传输路径的临时 workaround，不应成为面向所有生产环境的推荐配置。[NCCL 环境变量](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/env.html)
+`NCCL_DEBUG=INFO` 等诊断变量可以增加日志，但也会影响日志量与运行开销，应按目标版本验证，并在定位后恢复。关闭某种传输路径的临时 workaround 只适用于定位阶段，不适合直接写进生产配置。[NCCL 环境变量](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/env.html)
 
 例如第 17 次 AllReduce 中 Rank 0–2 已进入，Rank 3 的上一项 CUDA kernel 报错后未进入。前三个 rank 因缺少参与者而等待；异步 CUDA 错误可能到后续 API 才显现。按节点时间和调用序号合并所有 rank 日志，先核对 Rank 3 的首条异常，再比对 communicator、World Size、Rank→UUID、操作序列、Count 和 Datatype。契约无异常时，核对 Xid、链路或 NIC 错误、节点连通性和所选传输。对照 NCCL 2.32.3，短时使用 `NCCL_DEBUG=INFO`、`NCCL_DEBUG_SUBSYS=INIT,COLL,NET`。应用需区分框架超时与 NCCL 异步错误，失败后按应用策略协调中止受影响通信器并回收，避免单个 rank 在旧通信器上继续。[NCCL 2.32.3 环境变量](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/env.html)
 
 ## 5. MIG 场景的通信库支持范围 {#_5-回链-mig-支持状态-而非只验证链路可达}
 
-NCCL 2.31 之前缺少 MIG communicator 支持。自 2.31 起支持多个不同 MIG 实例组成通信器，2.31.2 与 2.32.3 归档均标为实验性。每个 rank 要选不同的 MIG Device，CUDA Driver 所提供的 CUDA 能力至少为 13.0，设置 `NCCL_MNNVL_ENABLE=0`，MIG 路径不使用 NVLink SHARP（NVLS）。Toolkit 版本不能替代驱动能力判断。2.31 文档记录的验证范围为最多 8 GPU、每 GPU 7 个 MIG 实例和典型 nccl-tests 集合操作。具体 GPU、实例及节点拓扑要按实际路径验证，尤其是多节点和大规模部署。通信器能工作与某一 MIG P2P 路径可用属于两项验证。[第 13 章 MIG 通信支持矩阵](/articles/ai-infra-mig-isolation.html) · [NCCL 2.31.2](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2312/user-guide/docs/usage/communicators.html#using-mig-instances) · [NCCL 2.32.3](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/usage/communicators.html#using-mig-instances)
+NCCL 2.31 之前缺少 MIG communicator 支持。自 2.31 起支持多个不同 MIG 实例组成通信器，2.31.2 与 2.32.3 归档均标为实验性。每个 rank 要选不同的 MIG Device，CUDA Driver 所提供的 CUDA 能力至少为 13.0，设置 `NCCL_MNNVL_ENABLE=0`，MIG 路径不使用 NVLink SHARP（NVLS）。驱动能力要按驱动版本判断，Toolkit 版本是另一个量。2.31 文档记录的验证范围为最多 8 GPU、每 GPU 7 个 MIG 实例和典型 nccl-tests 集合操作。具体 GPU、实例及节点拓扑要按实际路径验证，尤其是多节点和大规模部署。通信器能建起来、集合操作能跑通，不等于任意两个 MIG 实例之间都能直接 P2P：前者验证整体能否协作，后者要按具体的实例对单独测。[第 13 章 MIG 通信支持矩阵](/articles/ai-infra-mig-isolation.html) · [NCCL 2.31.2](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2312/user-guide/docs/usage/communicators.html#using-mig-instances) · [NCCL 2.32.3](https://docs.nvidia.com/deeplearning/nccl/archives/nccl_2323/user-guide/docs/usage/communicators.html#using-mig-instances)
 
 ## 6. 最小通信验收方案
 

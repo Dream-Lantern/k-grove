@@ -25,15 +25,15 @@ order: 18
 
 长期服务通常希望持续运行；一次数据处理任务则可能执行完成后正常退出。若把它当作需要持续 Running 的服务，正常结束反而可能被错误地重启。
 
-Job（任务）跟踪相应的完成条件，并管理 Pod 的执行尝试；CronJob（定时任务）则按计划创建 Job。两者都无法自动判断外部数据库是否已提交全部预期结果，程序需要明确约定退出码与业务成功的关系。
+Job（任务）认的是一个条件：“成功跑满 N 次”。它记着已经成功几次、还差几次，某次尝试失败就再起一个 Pod，直到条件满足。CronJob（定时任务）则按计划到点创建 Job，一次计划创建一个。两者都无法自动判断外部数据库是否已提交全部预期结果，程序需要明确约定退出码与业务成功的关系。
 
 [![Job 与 CronJob：按可能重复执行设计](/assets/notes/kubernetes/k8s-job-idempotency.svg)](/assets/notes/kubernetes/k8s-job-idempotency.svg)
 
 ## 2. completions、parallelism 与失败预算
 
-`completions` 描述目标完成数量，`parallelism` 控制期望并行度；两者不是“容器里启动多少线程”的配置。实际并行还受节点容量、配额和调度等限制。
+`completions` 是“总共要成功几次”，`parallelism` 是“最多同时跑几个”；两者都不是“容器里启动多少线程”的配置。实际并行还受节点容量、配额和调度等限制。
 
-`backoffLimit` 与失败重试相关，`activeDeadlineSeconds` 限制适用任务活跃时间。容器重启和新的 Pod 尝试也不是同一个层级，应一起观察。
+`backoffLimit` 决定失败后还允许重试几次，`activeDeadlineSeconds` 限制这个 Job 一共能活多久。还要分清两种重试：容器重启是 kubelet 在同一个 Pod 里把容器重新拉起来，新的 Pod 尝试是 Job 控制器另建一个 Pod。两者落在不同对象上，排查时要一起看。
 
 ### 2.1 三次完成、并行度二的推演
 
@@ -61,7 +61,7 @@ backoffLimit 的判定会考虑失败 Pod；OnFailure 还会考虑适用 Pending
 
 activeDeadlineSeconds 是 Job 层活跃时间约束，覆盖整个任务，而不是给每个新 Pod 重新发一份完整预算；达到截止条件时，即便失败预算还没耗尽，也会终止适用的运行尝试并将 Job 标为失败。普通未暂停 Job 可结合 status.startTime 判断；若使用 Job suspend，恢复时起始时间与截止计时存在重置规则，不能套用为无限跨暂停的墙钟预算。
 
-纸面失败例：Never、completions=1、parallelism=1、backoffLimit=2。第一次非零退出后，若未达截止条件，可退避并创建新 Pod；第二次成功则完成。若每次都失败，在无其他失败策略的简单情形下，最初一次加最多两次重试仍失败后报告 BackoffLimitExceeded；若更早达到 Job 的 activeDeadlineSeconds，则可能先因 DeadlineExceeded 失败。不要据此推断任何复杂场景都恰有三个 Pod。[v1.28.0 Job 失败判定源码](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/controller/job/job_controller.go)
+纸面失败例：Never、completions=1、parallelism=1、backoffLimit=2。第一次非零退出后，若未达截止条件，可退避并创建新 Pod；第二次成功则完成。若每次都失败，在无其他失败策略的简单情形下，最初一次加最多两次重试仍失败后报告 BackoffLimitExceeded；若更早达到 Job 的 activeDeadlineSeconds，则可能先因 DeadlineExceeded 失败。这个数字只对应本例，复杂场景的 Pod 数要另算。[v1.28.0 Job 失败判定源码](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/controller/job/job_controller.go)
 
 ### 2.3 完整的一次性 Job
 
@@ -105,7 +105,7 @@ kubectl apply -f report-demo.yaml
 kubectl get job report-demo -n study -w
 ```
 
-观察后按 Ctrl+C 退出 watch，再查询；预期最终 Complete=True、Succeeded=3，不要求恰好捕捉到表中的每个瞬间：
+观察后按 Ctrl+C 退出 watch，再查询；预期最终 Complete=True、Succeeded=3，watch 的采样未必覆盖表中每个瞬间：
 
 ```bash
 # 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
@@ -123,7 +123,7 @@ kubectl logs job/report-demo -n study
 kubectl delete -f report-demo.yaml
 ```
 
-logs job/report-demo 只选取某个 Pod 的日志；检查三次尝试时，应列出 Pod 后按实际名称逐个读取。batch.kubernetes.io/job-name 是 v1.28 使用的自动标签，旧的无前缀 job-name 为兼容仍被识别；不要自行指定或复制 Job UID 选择器。[v1.28.0 batch 标签和 API](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/batch/v1/types.go)
+logs job/report-demo 只选取某个 Pod 的日志；检查三次尝试时，应列出 Pod 后按实际名称逐个读取。batch.kubernetes.io/job-name 是 v1.28 使用的自动标签，旧的无前缀 job-name 为兼容仍被识别；自行指定或复制 Job UID 选择器会破坏控制器对 Pod 的归属。[v1.28.0 batch 标签和 API](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/batch/v1/types.go)
 
 ### 2.4 无业务副作用的受控失败
 
@@ -180,19 +180,19 @@ kubectl delete -f report-fail.yaml
 
 ## 3. 重复尝试与业务幂等 {#_3-至少按可能重复执行来设计}
 
-节点故障、控制器重试或人工再次提交，都可能让任务重复尝试。即使 completions 是 1、parallelism 是 1，也不能把调度和重试机制当作业务 Exactly-Once（恰好一次效果语义）。
+节点故障、控制器重试或人工再次提交，都可能让任务重复尝试。即使 completions 是 1、parallelism 是 1，Kubernetes 保证的也只是“这个 Job 最终成功”，不是“这段业务代码只执行过一次”；Exactly-Once（恰好一次效果语义）要靠业务自己实现幂等。
 
 例如，任务发送账单后，还未可靠记录完成状态就失败，再次尝试便可能重复发送。对此，需要业务幂等键、事务、去重或可恢复的分阶段记录，不能只依赖 Pod 名字。
 
-每日结算报告也有相同窗口：读取某日数据 → 报告已写入外部存储 → 容器尚未可靠记录完成便异常退出 → 重试再次生成同一天报告。可用结算日期与报表类型组成稳定幂等键，以唯一约束或事务防止重复提交；也可先写临时输出，验证后再原子发布。是否实现恰好一次效果取决于业务存储和提交协议，不由 Job 完成计数提供。将重试预算设为零既不能消除“提交后状态未知”的窗口，也不能代替幂等设计。
+每日结算报告也有相同窗口：读取某日数据 → 报告已写入外部存储 → 容器尚未可靠记录完成便异常退出 → 重试再次生成同一天报告。可用结算日期与报表类型组成稳定幂等键，以唯一约束或事务防止重复提交；也可先写临时输出，验证后再原子发布。是否实现恰好一次效果取决于业务存储和提交协议，不由 Job 完成计数提供。重试预算设为零，提交后状态未知的窗口仍在，幂等设计也不能省。
 
 任务使用共享文件或输出路径时，也要避免多次尝试互相覆盖。成功后再清理临时文件，失败现场则应按保留策略留出诊断窗口。
 
 ## 4. CronJob 的计划、并发与截止条件 {#_4-cronjob-是计划器-不是可靠外部事务}
 
-CronJob 的 `schedule` 使用 Cron Expression（Cron 时间表达式）表达计划，`concurrencyPolicy` 可以选择 Allow、Forbid 或 Replace 来约束同一个 CronJob 所创建任务的重叠行为。它不协调所有其他 CronJob，也不保证每个计划点都准时执行一次。
+CronJob 的 `schedule` 用 Cron Expression（Cron 时间表达式）写明什么时候跑。`concurrencyPolicy` 决定上一次还没跑完时，下一个计划点到了怎么办：Allow 照常再起一个，Forbid 跳过这一次，Replace 删掉旧的、换成新的。它只管同一个 CronJob 自己创建的任务，不协调别的 CronJob，也不保证每个计划点都准时执行一次。
 
-`startingDeadlineSeconds` 影响 Missed Schedule（错过的计划触发）之后允许创建 Job 的窗口，不是 Job 运行时长限制。`suspend` 暂停后续调度，不等于终止所有已经运行的 Job。Time Zone（时区）也应明确，timeZone 在 v1.27 已稳定，1.28 可使用合法 IANA 时区名称；未指定时按 kube-controller-manager 的本地时区解释，不能猜读者电脑的时间。
+`startingDeadlineSeconds` 给补跑设了期限：某个计划点到了却没建出 Job（Missed Schedule，错过的计划触发），超过这个秒数就不再补。它不是 Job 运行时长的限制。`suspend` 只暂停后续调度，已经运行的 Pod 不受影响。Time Zone（时区）也应明确，timeZone 在 v1.27 已稳定，1.28 可使用合法 IANA 时区名称；未指定时按 kube-controller-manager 的本地时区解释，不能猜读者电脑的时间。
 
 ### 4.1 两分钟计划与三分钟任务
 
@@ -204,7 +204,7 @@ CronJob 的 `schedule` 使用 Cron Expression（Cron 时间表达式）表达计
 | 10:02    | 启动 B，至 10:05，与 A 重叠 | A 活跃，跳过当前计划；本例不会在 10:03 补跑 | 请求删除活跃 A，并创建 B   |
 | 10:04    | 启动 C，至 10:07，与 B 重叠 | A 已结束，可启动 C，至 10:07                | 请求替换仍活跃的 B，创建 C |
 
-Replace 是控制器尝试删除旧 Job 并创建新 Job，不是“旧进程已彻底退出”的全局互斥屏障，更不会回滚旧任务已经写入的业务结果。并发策略只针对同一 CronJob 的 Job，不同 CronJob 之间仍需业务锁或事务协议。
+Replace 只是控制器发出“删掉旧 Job、新建一个”的请求；旧 Pod 可能还在收尾，两个任务写下的业务结果可以同时存在，也不会被回滚。并发策略只针对同一 CronJob 的 Job，不同 CronJob 之间仍需业务锁或事务协议。
 
 若 Forbid 没有上述短截止窗口，先前跳过的计划属于 missed schedule，在前一个任务结束后仍可能于允许窗口内补调度；不能机械断言“10:02 跳过就永不再执行”。时间表是有明确条件的教学模型，不是实际调度保证。[v1.28.0 CronJob 并发处理源码](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/controller/cronjob/cronjob_controllerv2.go)
 
@@ -251,9 +251,9 @@ spec:
 
 CronJob 不是严格实时定时器。120 秒表示错过计划后允许创建的窗口，不承诺必定补齐所有错过任务。从 suspend=true 恢复时，错过的计划可能重新进入调度判断，仍受窗口和并发策略约束；较短窗口会限制考虑的时间范围。小于 10 秒的 startingDeadlineSeconds 还可能因控制器检查节奏而错过创建。[1.28 CronJob 时区与计划说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/workloads/controllers/cron-jobs.md)
 
-大量 missed schedules 的处理应进一步核对固定版本源码：v1.28.0 在超过 100 次时记录 TooManyMissedTimes 告警，仍返回最近的适用计划，后续继续检查截止与并发条件；不是逐条补齐积压任务，也不能无条件写成“超过 100 次就不再创建 Job”。历史文档对此的简化描述与该版本实现存在差异，这里以固定版本实现为准。[v1.28.0 CronJob 计划计算](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/controller/cronjob/utils.go)
+大量 missed schedules 的处理应进一步核对固定版本源码：v1.28.0 在超过 100 次时记录 TooManyMissedTimes 告警，仍返回最近的适用计划，后续继续检查截止与并发条件；它不会逐条补齐积压任务；超过 100 次也不是“不再创建 Job”。历史文档对此的简化描述与该版本实现存在差异，这里以固定版本实现为准。[v1.28.0 CronJob 计划计算](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/controller/cronjob/utils.go)
 
-本例不依赖后续版本增加的计划时间 annotation；不要把新版本观测字段反推为 1.28 默认行为。Job 名称与 ownerReferences 才是本章跟踪资源归属的依据。
+本例不依赖后续版本增加的计划时间 annotation；新版本的观测字段不能反推为 1.28 的默认行为。Job 名称与 ownerReferences 才是本章跟踪资源归属的依据。
 
 ```bash
 # 根据 -f 指定的 YAML 清单创建或更新资源；清单中的 namespace 与当前上下文都需要对应本实验
@@ -292,7 +292,7 @@ kubectl delete -f report-schedule.yaml
 
 ## 5. 保留结果，也要控制残留资源
 
-CronJob 的成功与失败历史保留，和 Job 的 TTL（Time to Live，生存时间）清理机制解决相关但不同的问题。保留太少会失去诊断材料，保留太多会积累对象与日志。
+两套机制清理的不是同一批对象：CronJob 的历史保留（successfulJobsHistoryLimit、failedJobsHistoryLimit）决定留几个旧 Job 记录；Job 的 TTL（Time to Live，生存时间）决定一个 Job 结束多久后把对象删掉。保留太少会失去诊断材料，保留太多会积累对象与日志。
 
 | 配置                       | 所属位置                                 | 作用                                                            |
 | -------------------------- | ---------------------------------------- | --------------------------------------------------------------- |
@@ -300,9 +300,9 @@ CronJob 的成功与失败历史保留，和 Job 的 TTL（Time to Live，生存
 | failedJobsHistoryLimit     | CronJob spec                             | 失败 Job 的历史数量上限，本例 1                                 |
 | ttlSecondsAfterFinished    | Job spec，或 CronJob 的 jobTemplate.spec | Job 成功或失败结束后，经过适用 TTL 可由控制器清理，本例 3600 秒 |
 
-数量上限与 TTL 可同时生效；不能据此保证恰好保存两份成功日志一小时。TTL 清理适用 Job 及其依赖对象，不撤销外部操作。清理前应把需要的日志、审计和业务结果送到独立保留系统，Job 历史不是结果备份。
+数量上限与 TTL 可同时生效；两个上限同时生效，实际保留量与时长远比这复杂。TTL 清理适用 Job 及其依赖对象，不撤销外部操作。清理前应把需要的日志、审计和业务结果送到独立保留系统，Job 历史不是结果备份。
 
-清理对象不会同时清理外部结果，也不能代替结果审计和持久存储备份。查询时应先确认 CronJob → Job → Pod 的拥有关系，避免混淆不同次计划的日志。
+清理对象只删 Kubernetes 资源，外部结果仍在；结果审计和持久存储备份要另做。查询时应先确认 CronJob → Job → Pod 的拥有关系，避免混淆不同次计划的日志。
 
 ```bash
 # 查询命令中指定的资源及对象名；只读返回当前状态

@@ -23,15 +23,15 @@ order: 33
 
 ## 1. 为什么把云接口单独抽出来
 
-Kubernetes 描述 Node、Service 等期望对象，但实际云主机、路由和负载均衡由云平台管理。Cloud Controller Manager（云控制器管理器，CCM）把适用的云厂商集成职责与核心控制循环分开。
+Kubernetes 描述 Node、Service 等期望对象，但实际云主机、路由和负载均衡由云平台管理。Cloud Controller Manager（云控制器管理器，CCM）把“和云厂商打交道”这部分工作从核心控制循环里拆出来，单独交给一个组件去做。
 
-CCM 观察相关对象，按云提供者实现和权限调用云接口，再更新相应状态。它不是业务数据包逐次经过的代理，也不等于每种环境都必须安装的通用组件。裸机集群可以采用其他网络与入口实现。
+CCM 观察相关对象，按云提供者实现和权限调用云接口，再更新相应状态。它不参与业务数据包转发，是否安装取决于云环境。裸机集群可以采用其他网络与入口实现。
 
 [![云集成：网络与存储分别协调](/assets/notes/kubernetes/k8s-cloud-boundaries.svg)](/assets/notes/kubernetes/k8s-cloud-boundaries.svg)
 
 ### 外部 CCM 如何初始化新 Node
 
-本节是假设已有匹配云提供者的 **1.28 外部 CCM 模式**，不是所有环境通用的启动参数。官方部署说明要求结合该模式核对 kubelet、kube-apiserver、kube-controller-manager 的 `--cloud-provider=external` 配置；不要在使用内置云控制循环或无云提供者的环境无条件复制。
+本节是假设已有匹配云提供者的 **1.28 外部 CCM 模式**，不是所有环境通用的启动参数。官方部署说明要求结合该模式核对 kubelet、kube-apiserver、kube-controller-manager 的 `--cloud-provider=external` 配置；使用内置云控制循环或无云提供者的环境，无条件复制这些配置会破坏现有行为。
 
 | 组件                    | 外部模式中的配置含义                                                           |
 | ----------------------- | ------------------------------------------------------------------------------ |
@@ -51,7 +51,7 @@ CCM 观察相关对象，按云提供者实现和权限调用云接口，再更�
   → 满足 Ready、其他污点和资源等条件后，可正常调度普通工作负载
 ```
 
-污点 Key 为 `node.cloudprovider.kubernetes.io/uninitialized`，效果为 NoSchedule，kubelet 实现还设置值 true。没有对应容忍的普通工作负载会受阻；CCM 等引导组件需要适当容忍与部署设计。CCM 不可用或云 API 失败时，新节点可能一直停在这里，但这不是所有 Node 故障的统一原因。
+污点 Key 为 `node.cloudprovider.kubernetes.io/uninitialized`，效果为 NoSchedule，kubelet 实现还设置值 true。容忍（toleration）是 Pod 上声明“我愿意接受这个污点”的字段；没有对应容忍的普通工作负载会受阻，CCM 等引导组件需要适当容忍与部署设计。CCM 不可用或云 API 失败时，新节点可能一直停在这里，但这不是所有 Node 故障的统一原因。
 
 流程按职责概括，不承诺所有元数据字段在同一个 API 写入中完成。v1.28.0 实现将 ProviderID/标签变更与移除污点协调，再更新节点地址；不能把“污点消失”当作所有地址和业务网络都已验证完成。[1.28 外部 CCM 部署说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/administer-cluster/running-cloud-controller.md)、[kubelet 注册状态](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/kubelet/kubelet_node_status.go)、[云 Node Controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/cloud-provider/controllers/node/node_controller.go)。
 
@@ -67,7 +67,7 @@ kubectl describe node node-b
 
 ## 2. 三类常见职责
 
-节点相关控制用于把适用的云侧信息与 Node 状态协调；路由相关控制按网络方案处理所需云路由；服务相关控制可为 LoadBalancer Service 协调云侧负载均衡。
+三类控制器各管一件事：Node Controller 把云上查到的区域、实例类型、地址写回 Node 对象；Route Controller 按网络方案在云上补齐节点间 Pod 路由；Service Controller 为 LoadBalancer 类型的 Service 创建云负载均衡。
 
 这些能力取决于提供者和部署方式，不能认为每个 CCM 都以同样方式完成全部任务。云接口限额、权限和异步资源创建也会影响协调结果。
 
@@ -77,7 +77,7 @@ kubectl describe node node-b
 | Route Controller   | 按云网络方案协调路由                        | 适用的节点间 Pod 网络路由                         |
 | Service Controller | 观察 LoadBalancer Service，调用云提供者接口 | 云负载均衡资源及 Service 的适用外部地址状态       |
 
-节点职责还包括检查云实例是否存在；在确认云端已删除实例的适用情况下，可删除对应 Kubernetes Node 对象。有些实现将这部分拆为 Cloud Node Lifecycle Controller，不应把 Node NotReady 直接等同于云主机已删除。[1.28 职责说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/architecture/cloud-controller.md)、[v1.28.0 节点生命周期实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/cloud-provider/controllers/nodelifecycle/node_lifecycle_controller.go)。
+节点职责还包括检查云实例是否存在；在确认云端已删除实例的适用情况下，可删除对应 Kubernetes Node 对象。有些实现将这部分拆为 Cloud Node Lifecycle Controller，Node NotReady 与云主机是否删除是两件事。[1.28 职责说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/architecture/cloud-controller.md)、[v1.28.0 节点生命周期实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/cloud-provider/controllers/nodelifecycle/node_lifecycle_controller.go)。
 
 ### 路由管理与数据平面的分工
 
@@ -88,7 +88,7 @@ kubectl describe node node-b
 | kube-proxy                                       | 按实现设置 Service 流量转发规则；部分网络实现有替代数据平面 |
 | 云负载均衡器                                     | 云侧入口流量分发与适用健康检查                              |
 
-某些云网络通过云路由实现跨节点 Pod 通信；覆盖网络等 CNI 方案未必需要相同的云路由机制。是否启用 Route Controller 取决于云提供者与网络方案。CCM 不等于 CNI，也不是每个业务数据包经过的代理。
+某些云网络通过云路由实现跨节点 Pod 通信；覆盖网络等 CNI 方案未必需要相同的云路由机制。是否启用 Route Controller 取决于云提供者与网络方案。CCM 与 CNI 是两套组件，业务数据包也不经过 CCM。
 
 ### LoadBalancer Service 的完整链路
 
@@ -117,7 +117,7 @@ spec:
 5. 提供者返回适用状态，控制器更新 `status.loadBalancer`，可能包含外部 IP 或主机名。
 6. 云负载均衡器按实现向节点或后端转发；后端选择、健康检查、网络策略和应用响应仍需单独验证。
 
-Service 对象存在不代表云负载均衡器已创建；有外部地址也不证明业务健康。默认共享控制器只处理适用的 LoadBalancer Service，例如设置了 `loadBalancerClass` 时应由对应实现负责，不能假定本例 CCM 一定接管。[v1.28.0 Service Controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/cloud-provider/controllers/service/controller.go)
+Service 对象存在只说明声明已提交，云负载均衡器可能还没创建；有外部地址也只说明入口通了，业务健康要另测。默认共享控制器只处理适用的 LoadBalancer Service，例如设置了 `loadBalancerClass` 时应由对应实现负责，不能假定本例 CCM 一定接管。[v1.28.0 Service Controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/cloud-provider/controllers/service/controller.go)
 
 EndpointSlice 的生成与云负载均衡管理是独立职责。对本例带 selector 的 Service，kube-controller-manager 中的 EndpointSlice Controller 跟踪匹配 Pod 并协调端点；CCM Service Controller 管理的是云侧负载均衡与相关状态，不把两者合成一个控制器。[v1.28.0 EndpointSlice Controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/controller/endpointslice/endpointslice_controller.go)
 
@@ -139,13 +139,13 @@ kubectl get events -n study --sort-by=.lastTimestamp
 kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog
 ```
 
-先按 Service UID 和时间关联事件，检查是否有负责它的控制器、CCM 运行与日志，再核对云 API 身份权限、配额、子网/网络配置、厂商注解及云端创建错误。CCM 的命名空间和 Pod 名取决于安装方式，应确认后再查询日志。不要打印云凭据，也不要把“无外部地址”直接归因于 kube-proxy；若已创建但业务不通，再检查入口、端点与后端健康。
+先按 Service UID 和时间关联事件，检查是否有负责它的控制器、CCM 运行与日志，再核对云 API 身份权限、配额、子网/网络配置、厂商注解及云端创建错误。CCM 的命名空间和 Pod 名取决于安装方式，应确认后再查询日志。打印云凭据会泄露账号权限；“无外部地址”也未必是 kube-proxy 的问题；若已创建但业务不通，再检查入口、端点与后端健康。
 
 ## 3. 云存储与 CSI 的独立集成路径 {#_3-原架构图中的存储要拆出来}
 
 集群依赖的云网络与云存储各有集成路径。CCM 主要承担适用的云控制职责，卷供应与挂载需要结合存储机制分析。
 
-CSI（Container Storage Interface，容器存储接口）把存储操作交给匹配的驱动。CSI Controller 服务与节点插件分别承担控制面和节点侧职责，并由相应控制器、sidecar 与 kubelet 协调，不是 CCM 直接调用 CSI 的固定链路。
+CSI（Container Storage Interface，容器存储接口）把存储操作交给匹配的驱动。同一个驱动分两半：CSI Controller 跑在控制面，负责在云上创建、附加卷；节点插件跑在每台机器上，负责把卷挂载到容器。两边由对应控制器、sidecar 与 kubelet 分别协调，不是 CCM 直接调用 CSI 的固定链路。
 
 以下是采用动态供给云盘的职责示意，省略重试和厂商细节；静态 PV 或不需附加的存储不会完整走同一条链：
 
@@ -158,9 +158,9 @@ PVC 引用 StorageClass → 到达适用供给时机（可能等待首个消费�
   → 容器访问预期挂载路径 → 应用读写与数据一致性另行验收
 ```
 
-云盘创建不是 CCM 的统一职责。驱动使用的云凭据、资源权限和回收策略应独立核对。PV/PVC 正常、挂载成功、应用能读写是不同验收层次；备份、一致性与数据保留也需要独立设计。
+云盘创建不是 CCM 的统一职责。驱动使用的云凭据、资源权限和回收策略应独立核对。PV/PVC 绑定成功只说明对象对上了，挂载成功说明节点把卷接上了，应用能读写才是数据真的通了——三件事要分开验收。备份、一致性与数据保留也需要独立设计。
 
-同理，外部 DNS 的记录管理不总由 CCM 自动处理。入口 DNS、负载均衡、Service 后端和证书属于多个边界，某个对象已创建不代表整条路径已经完成。
+同理，外部 DNS 的记录管理不总由 CCM 自动处理。入口 DNS、负载均衡、Service 后端和证书属于多个边界，某个对象已创建只是路径上的一环，整条链路仍要逐段验证。
 
 职责链与本册[持久卷章节](/articles/kubernetes-persistent-volumes.html)衔接；可对照 [1.28 PV 文档](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/storage/persistent-volumes.md)及 [1.28 CSI 介绍](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/storage/volumes.md)理解供给与挂载边界。
 
@@ -201,7 +201,7 @@ kubectl delete svc catalog -n study
 
 对象声明期望，控制器与节点组件持续推进，外部系统承担各自实际能力。云集成也遵循这个分工，诊断时应分别观察 API 状态、云端资源和实际数据路径。
 
-阅读具体教程时，先确认版本、实现与依赖，再看命令。是否运行成功、业务是否正确、数据能否恢复、权限是否合适，都需要分别验证，不能仅凭一张绿色状态截图完成验收。
+阅读具体教程时，先确认版本、实现与依赖，再看命令。是否运行成功、业务是否正确、数据能否恢复、权限是否合适，都需要分别验证；一张绿色状态截图只覆盖界面显示。
 
 这三章从设备发现、复杂申领到外部云协作，最终都要回到具体责任边界：
 

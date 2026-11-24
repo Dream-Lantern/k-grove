@@ -23,7 +23,7 @@ order: 32
 
 ## 1. 先确定讨论的是哪一代模型
 
-DRA（Dynamic Resource Allocation，动态资源分配）尝试通过资源申领与驱动协作来表达更复杂的设备需求。安装一个插件，并不会让所有硬件自动具备相同的分区和共享能力。
+DRA（Dynamic Resource Allocation，动态资源分配）换了一种表达方式：Pod 不再只写“我要 2 个 GPU”这样的数量，而是先提交一份申领（Claim），写明需要什么条件的设备，再由驱动配合完成分配。安装一个插件，并不会让所有硬件自动具备相同的分区和共享能力。
 
 1.28 的官方说明将 DRA 标为默认关闭的 Alpha，使用时需显式启用相关能力，并具备匹配的 API 与资源驱动。
 
@@ -38,7 +38,7 @@ DRA（Dynamic Resource Allocation，动态资源分配）尝试通过资源申�
 | 启用要求      | DRA 门控、对应 API、匹配驱动与调度插件                                    | 对应版本门控、API、驱动；不能照搬旧版安装参数                        |
 | 调度协作      | 借助 PodSchedulingContext 与驱动交互                                      | 根据 ResourceSlice 和结构化选择条件，不沿用旧协商链                  |
 
-资源 API 的版本号、特性门控成熟度和节点 gRPC 协议版本是不同维度。`v1beta1` 不能单独证明某类型已经 Beta、GA 或默认启用。
+这里有三条彼此独立的版本线：资源 API 的版本号（如 v1alpha2、v1beta1）、特性门控的成熟度（Alpha、Beta、默认开还是关）、节点 gRPC 协议的版本。三者不联动，所以看到 `v1beta1`，推不出某个类型已经 Beta、GA 或默认启用。
 
 ## 2. 1.28：ResourceClass 与早期协调模型
 
@@ -60,7 +60,7 @@ DRA（Dynamic Resource Allocation，动态资源分配）尝试通过资源申�
 3. 安装匹配的资源驱动，包括相应控制面分配逻辑与节点服务。
 4. 默认 v1 Scheduler 配置会在门控启用时加入 DynamicResources 插件；自定义调度配置还要检查是否禁用了它，以及相关扩展点是否保留。
 
-这些是配置核对项，不是让读者直接修改现有集群的操作指令。仅打开 API 不代表调度、分配和节点准备已可用。[1.28 启用条件](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/dynamic-resource-allocation.md)、[默认调度插件](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/scheduler/apis/config/v1/default_plugins.go)。
+这些是配置核对项，不是让读者直接修改现有集群的操作指令。打开 API 只是第一步，调度、分配和节点准备还要逐项确认。[1.28 启用条件](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/dynamic-resource-allocation.md)、[默认调度插件](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/scheduler/apis/config/v1/default_plugins.go)。
 
 ```bash
 # 查询命令中指定的资源及对象名；只读返回当前状态
@@ -73,11 +73,11 @@ kubectl get resourceclaims -n study
 kubectl get podschedulingcontexts -n study
 ```
 
-API 存在但没有对象时，可能返回 `No resources found`；未服务该资源类型时，可能提示 `the server doesn't have a resource type`。403 则先检查查询权限，不能把所有报错都当成 API 未启用。查询成功也不能证明驱动正常。
+API 存在但没有对象时，可能返回 `No resources found`；未服务该资源类型时，可能提示 `the server doesn't have a resource type`。403 则先检查查询权限；不同报错对应不同原因。查询成功只说明 API 可读，驱动是否正常要另查。
 
 ### Claim 与容器的引用关系
 
-以下是 **1.28 合成结构示例，未提交**，假定 study 已存在、虚构驱动 `resource-driver.example.com` 已正确安装；未包含驱动部署或自定义参数配置，不代表可用的 GPU 安装方案。
+以下是 **1.28 合成结构示例，未提交**，假定 study 已存在、虚构驱动 `resource-driver.example.com` 已正确安装；未包含驱动部署或自定义参数配置，只是一个结构示例，不是可用的 GPU 安装方案。
 
 ```yaml
 # 历史 DRA alpha 配置：ResourceClass、WaitForFirstConsumer 与 resourceClaims.source 属于这里注明的版本模型。
@@ -132,7 +132,7 @@ Immediate 表示 Claim 创建后即可启动分配，不等待具体 Pod；WaitF
 5. 驱动为 B 完成 Claim 分配，记录 `status.allocation`；协调过程中还要为 Pod 保留 Claim 的使用资格。
 6. 所有所需 Claim 分配并为该 Pod 保留后，正常调度才继续完成 Pod 绑定；随后 kubelet 准备节点设备和容器配置。
 
-图示是成功分支的主要关系，实际是多轮异步协调，可能失败、重试或换候选节点。PodSchedulingContext 不是一次函数返回，也不能因为 Claim 分配成功就承诺节点准备一定成功。手动设置 `spec.nodeName` 会绕过 Scheduler，不是这条正常路径。[1.28 分配说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/dynamic-resource-allocation.md)、[v1.28.0 对象字段](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/api/resource/v1alpha2/types.go)、[DynamicResources 实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/scheduler/framework/plugins/dynamicresources/dynamicresources.go)。
+图示是成功分支的主要关系，实际是多轮异步协调，可能失败、重试或换候选节点。PodSchedulingContext 是跨多次协调维护的状态，不是一次函数返回；Claim 分配成功也只完成前半程，节点准备仍可能失败。手动设置 `spec.nodeName` 会绕过 Scheduler，不是这条正常路径。[1.28 分配说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/dynamic-resource-allocation.md)、[v1.28.0 对象字段](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/api/resource/v1alpha2/types.go)、[DynamicResources 实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/scheduler/framework/plugins/dynamicresources/dynamicresources.go)。
 
 ## 3. 后续对照：DeviceClass 与 ResourceSlice
 
@@ -148,7 +148,7 @@ Immediate 表示 Claim 创建后即可启动分配，不等待具体 Pod；WaitF
 必须同时记录三类证据：
 
 - [v1.32.0 resource/v1beta1/types.go](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.32.0/staging/src/k8s.io/api/resource/v1beta1/types.go)中，DeviceClass、ResourceSlice 等类型的 `introduced=1.32` 标记表示该 API 版本中的引入版本；类型注释仍明确写着 Alpha 并要求 DRA 门控，不能擅自把注释改称 GA。
-- [v1.32.0 versioned_kube_features.go](https://github.com/kubernetes/kubernetes/blob/v1.32.0/pkg/features/versioned_kube_features.go)将整体 DynamicResourceAllocation 门控标为 Beta、默认 false。它与上述类型注释存在标记差异，应分别陈述，不能仅凭包名判断成熟度，也不能反过来把整体门控说成 Alpha。
+- [v1.32.0 versioned_kube_features.go](https://github.com/kubernetes/kubernetes/blob/v1.32.0/pkg/features/versioned_kube_features.go)将整体 DynamicResourceAllocation 门控标为 Beta、默认 false。它与上述类型注释存在标记差异，应分别陈述；成熟度要看具体类型，包名不足以判断，整体门控也不能一概称为 Alpha。
 - [1.32 官方文档](https://raw.githubusercontent.com/kubernetes/website/release-1.32/content/en/docs/concepts/scheduling-eviction/dynamic-resource-allocation.md)仍要求显式启用门控与 `resource.k8s.io/v1beta1`；[API 默认配置](https://github.com/kubernetes/kubernetes/blob/v1.32.0/pkg/controlplane/instance.go)也将该版本放入默认关闭列表。AdminAccess、Claim 设备状态等附加能力还有各自 Alpha 门控，不能一并当作稳定能力。
 
 ### 80GB 与 48GB GPU 的选择推演
@@ -197,13 +197,13 @@ spec:
               expression: 'device.attributes["vendor.example.com"].memoryGB >= 70'
 ```
 
-CEL（Common Expression Language，通用表达式语言）用于表达选择条件。只有实际 ResourceSlice 按约定发布属性、设备尚可分配且其他条件满足时，本例才可选 A、排除 B。驱动没发布的属性不能假定 Kubernetes 会从硬件自动推断；缺少属性也不能当作已匹配。
+CEL（Common Expression Language，通用表达式语言）用于表达选择条件。只有实际 ResourceSlice 按约定发布属性、设备尚可分配且其他条件满足时，本例才可选 A、排除 B。驱动没发布的属性，Kubernetes 不会从硬件自动推断；缺少属性就是未匹配。
 
-结构化模型由 Scheduler 读取设备信息与现有分配、计算选择并记录 Claim 状态，不再用 1.28 的 PodSchedulingContext 与驱动逐轮协商。驱动继续负责发布信息、解释配置并准备设备。属性表达需求不等于自动完成 GPU 分区或隔离。
+结构化模型由 Scheduler 读取设备信息与现有分配、计算选择并记录 Claim 状态，不再用 1.28 的 PodSchedulingContext 与驱动逐轮协商。驱动继续负责发布信息、解释配置并准备设备。属性只表达需求，GPU 分区或隔离仍由驱动完成。
 
 ## 4. 分配决定与节点准备
 
-资源分配、节点准备和运行时设备配置是三个阶段。还要区分“资源对象 API 版本”与“kubelet 节点插件 RPC 版本”：
+一次设备分配要先后做完三件事：调度阶段先定下用哪个设备，kubelet 再在节点上把它准备好，最后由容器运行时把设备接进容器。除此之外，还要区分“资源对象 API 版本”与“kubelet 节点插件 RPC 版本”：
 
 | 版本与证据                                | 节点接口                                                            |
 | ----------------------------------------- | ------------------------------------------------------------------- |
@@ -211,7 +211,7 @@ CEL（Common Expression Language，通用表达式语言）用于表达选择条
 | v1.28.0 同时存在的 dra/v1alpha3/api.proto | 复数 NodePrepareResources / NodeUnprepareResources，支持批量 Claim  |
 | v1.32.0 的 dra/v1beta1/api.proto          | 复数接口，准备结果包含请求关联、设备名、池名及 CDI 标识等结构化信息 |
 
-**复数接口不是 1.32 才出现。** v1.28.0 kubelet 的 DRA Manager 已按 v1alpha3 调用复数接口；其插件客户端遇到 Unimplemented 时，会转换为旧 v1alpha2 的逐 Claim 单数调用。不能因为资源对象使用 v1alpha2，就认定节点侧只有单数协议；也不能把 1.32 响应字段全部反推到 1.28。
+**复数接口不是 1.32 才出现。** v1.28.0 kubelet 的 DRA Manager 已按 v1alpha3 调用复数接口；其插件客户端遇到 Unimplemented 时，会转换为旧 v1alpha2 的逐 Claim 单数调用。资源对象使用 v1alpha2，与节点侧协议版本是两套版本线；1.32 的响应字段也不能反推到 1.28。
 
 依据：[1.28 单数 proto](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubelet/pkg/apis/dra/v1alpha2/api.proto)、[1.28 批量 proto](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubelet/pkg/apis/dra/v1alpha3/api.proto)、[1.28 兼容客户端](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/kubelet/cm/dra/plugin/client.go)、[1.32 proto](https://github.com/kubernetes/kubernetes/blob/v1.32.0/staging/src/k8s.io/kubelet/pkg/apis/dra/v1beta1/api.proto)。
 
@@ -224,7 +224,7 @@ CEL（Common Expression Language，通用表达式语言）用于表达选择条
 
 申领已分配仍可能因节点准备失败而无法启动。驱动要处理重复调用、部分失败、异常退出和节点恢复；清理失败也需要重试和状态恢复，不能只在内存中假定成功。kubelet 会记录准备与引用状态；共享 Claim 还有其他 Pod 使用时，不能无条件清理。[1.28 DRA Manager](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/kubelet/cm/dra/manager.go)、[1.32 DRA Manager](https://github.com/kubernetes/kubernetes/blob/v1.32.0/pkg/kubelet/cm/dra/manager.go)。
 
-CDI（Container Device Interface，容器设备接口）描述设备配置的交付，DRA 处理申领与分配协作，两者不等同。CDI 设备名采用类似 `vendor.example.com/gpu=device0` 的完整命名，不是统称 UUID；实际配置由驱动生成，并要求运行时支持。1.28 的节点协议也可返回 CDI 设备字符串，但这不代表所有运行时天然具备对应支持。
+CDI（Container Device Interface，容器设备接口）管的是最后一公里：驱动把“这个设备怎么接进容器”写成运行时能读的配置。设备分给谁由 DRA 的申领与分配决定，分到之后怎么接进去由 CDI 描述，两者不是一回事。CDI 设备名采用类似 `vendor.example.com/gpu=device0` 的完整命名，不是统称 UUID；实际配置由驱动生成，并要求运行时支持。1.28 的节点协议也可返回 CDI 设备字符串，但运行时要真正消费 CDI 设备，还需要自身支持。
 
 ## 5. 共享、分区与性能不能靠抽象名字推断
 

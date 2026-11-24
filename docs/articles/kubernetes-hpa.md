@@ -23,19 +23,19 @@ order: 25
 
 ## 1. HPA 改变什么
 
-HPA（Horizontal Pod Autoscaler，水平 Pod 自动扩缩容）根据指标与目标，通过目标资源的 Scale 子资源（扩缩容接口）调整期望副本数。Deployment、StatefulSet 是常见目标，但能力边界不是“只支持这两个名字”。
+HPA（Horizontal Pod Autoscaler，水平 Pod 自动扩缩容）只做一件事：看指标算出一个新的副本数，再通过目标对象的 Scale 子资源（扩缩容接口）把这个数字写回去。它写的是“我要几个副本”，不是自己动手增删 Pod。Deployment、StatefulSet 是常见目标；能不能当目标不看名字，而看这个对象有没有提供 Scale 子资源。
 
-HPA 不直接增加节点，也不能解决数据库响应慢的问题。新增的 Pod 仍需经过控制器创建、调度和启动；节点容量不足时，扩容决定可能只会增加 Pending 状态的数量。
+HPA 只调整副本数，节点扩容要靠 Cluster Autoscaler；数据库响应慢也不在它的处理范围。新增的 Pod 仍需经过控制器创建、调度和启动；节点容量不足时，扩容决定可能只会增加 Pending 状态的数量。
 
-典型反馈链是 HPA Controller 周期协调 → 读取目标 Scale 与对应 Pod 指标 → 计算基础建议并处理缺失指标、未就绪、容忍区间 → 应用上下限及行为约束 → 写回期望副本。随后由 Deployment 等控制器创建/删除 Pod，Scheduler 调度，kubelet 启动容器，Pod Ready 后再进入适用服务路径；下一轮重新采样。
+一轮协调按顺序走五步：HPA Controller 先读目标对象当前的副本数和各个 Pod 的指标；再用指标和目标值算出基础建议副本；然后处理缺失指标、未就绪 Pod、容忍区间这些例外；接着套上 min/max、稳定窗口和扩缩速率约束；最后把结果写回目标对象的期望副本。写回之后才轮到别人干活：Deployment 等控制器按新副本数创建或删除 Pod，Scheduler 把新 Pod 分到节点上，kubelet 拉起容器，Pod 变成 Ready 后才接流量；到下一轮协调再重新采样。
 
-HPA 不直接创建 Pod。采样、协调、调度和就绪各有延迟，期望副本增加不等于 Ready 立即增加，也不会自动消除数据库、网络或第三方服务瓶颈。
+HPA 不直接创建 Pod。采样、协调、调度和就绪各有延迟，期望副本增加后，Ready 副本还要等调度与启动；数据库、网络或第三方服务的瓶颈也不会因此消失。
 
 [![HPA 反馈：更多副本还需要资源和依赖](/assets/notes/kubernetes/k8s-hpa-feedback.svg)](/assets/notes/kubernetes/k8s-hpa-feedback.svg)
 
 ## 2. 指标从哪里来
 
-资源指标、自定义指标与外部指标通过相应 API 和适配器提供，不能把所有来源都等同于 Metrics Server。它提供的资源观测也不代替完整的长期监控系统。
+指标有三类来源，走的接口不一样：资源指标（CPU、内存这类）由 Metrics Server 这类组件采集后经 metrics.k8s.io 提供；自定义指标和外部指标要先有一个适配器，由它把对应系统的数据转成 HPA 能读的指标 API。所以不能把所有来源都等同于 Metrics Server。它提供的资源观测也不代替完整的长期监控系统。
 
 Metrics API（指标 API）提供控制循环所需的观测；Resource Request（资源请求）则是 Pod 声明的请求基线，不是实时用量。autoscaling/v2 支持以下不同输入，目标为 Utilization、Value 或 AverageValue 时计算也有区别：
 
@@ -47,9 +47,9 @@ Metrics API（指标 API）提供控制循环所需的观测；Resource Request�
 | Object            | 与特定 Kubernetes 对象关联的指标                                              |
 | External          | 外部系统指标，通过对应指标 API/适配器提供                                     |
 
-不要求所有 HPA 都部署 Prometheus；自定义/外部指标需要适用提供方，指标可获取性还受发现、权限与采集配置影响。Metrics Server 也不等于长期监控数据库。[1.28 HPA 指标与算法](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/run-application/horizontal-pod-autoscale.md)与[v1.28.0 特性门控](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/features/kube_features.go)
+HPA 的指标来源可以是 Metrics Server、Prometheus 或外部提供方；指标能否取到还受发现、权限与采集配置影响。Metrics Server 只提供资源指标，长期监控要另接系统。[1.28 HPA 指标与算法](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/run-application/horizontal-pod-autoscale.md)与[v1.28.0 特性门控](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/features/kube_features.go)
 
-排查时，先确认指标是否可用、时间是否合适、目标是否支持 scale，再检查算法，不要一开始就调低目标利用率。
+排查时，先确认指标是否可用、时间是否合适、目标是否支持 scale，再检查算法；一开始就调低目标利用率，往往只是掩盖指标问题。
 
 指标组件访问 kubelet 时也需要正确的证书和信任配置。`--kubelet-insecure-tls` 会跳过相应验证，不能代替对证书问题的定位与修复。
 
@@ -71,7 +71,7 @@ Metrics API（指标 API）提供控制循环所需的观测；Resource Request�
 
 ### 3.1 异构 Request 按总量聚合
 
-已核对 v1.28.0 GetResourceUtilizationRatio：函数遍历有效指标集合，仅聚合存在对应 request 的条目，以总使用量除以总请求量，不是对每个 Pod 的百分比直接求算术平均。控制器在进入此计算前还会筛选 Pod 和构造请求集合，缺少必要 CPU request 可能导致无法计算，不能理解为一律自动按零。
+已核对 v1.28.0 GetResourceUtilizationRatio：这个函数把所有 Pod 的使用量加成一个总数，再把各自对应的 request 加成一个总数，两个总数相除；它不是先算出每个 Pod 的百分比、再把百分比求平均。只有带 request 的条目才进入这两个总数。控制器调用它之前还会先筛选 Pod、拼出 request 集合，所以缺少必要的 CPU request 可能直接算不出来，不能理解为一律自动按零。
 
 ```text
 基础聚合利用率 = sum(纳入计算的 CPU usage)
@@ -129,9 +129,9 @@ spec:
       stabilizationWindowSeconds: 300
 ```
 
-这份清单不包含应用资源设置，也不能说明 50% 就是合适的目标。目标太低可能浪费资源，太高可能无法为突发负载留出余量；是否合适，需要结合启动时间、延迟目标和负载性质验证。
+这份清单只覆盖 HPA 对象，应用资源设置要另配；50% 也只是示例目标。目标太低可能浪费资源，太高可能无法为突发负载留出余量；是否合适，需要结合启动时间、延迟目标和负载性质验证。
 
-所依赖的资源设置位于 Deployment 的 spec.template.spec.containers，下列是局部片段，不是完整 Deployment；不要把它直接覆盖到现有生产对象：
+所依赖的资源设置位于 Deployment 的 spec.template.spec.containers，下列是局部片段，不是完整 Deployment；直接覆盖到现有生产对象会丢字段：
 
 ```yaml
 containers:
@@ -169,7 +169,7 @@ v1.28 的资源利用率路径会忽略正在终止、已 Failed 的 Pod；Pendi
 
 重新计算若落入容忍区间、方向反转或出现不一致的副本建议，可保持当前副本。指标完全不可用也不同于“部分缺失”，应读取 HPA conditions 和事件。[v1.28.0 ReplicaCalculator](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/controller/podautoscaler/replica_calculator.go)
 
-控制器参数 horizontal-pod-autoscaler-initial-readiness-delay 默认 30 秒，horizontal-pod-autoscaler-cpu-initialization-period 默认 5 分钟；它们用于解释启动/就绪阶段 CPU 样本，与 Pod 的 Readiness Probe 不是同一配置层，也不表示每个新 Pod 一律禁止采样五分钟。1.28 默认容忍比例为 0.1，仍以实际控制器设置为准。[v1.28.0 HPA 默认配置](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/controller/podautoscaler/config/v1alpha1/defaults.go)
+控制器参数 horizontal-pod-autoscaler-initial-readiness-delay 默认 30 秒，horizontal-pod-autoscaler-cpu-initialization-period 默认 5 分钟；这两个参数是 HPA 控制器自己的设置，用来决定刚启动、还没就绪的 Pod 的 CPU 样本算不算数；它们不是 Pod 上的 Readiness Probe 配置，也不表示每个新 Pod 一律禁止采样五分钟。1.28 默认容忍比例为 0.1，仍以实际控制器设置为准。[v1.28.0 HPA 默认配置](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/controller/podautoscaler/config/v1alpha1/defaults.go)
 
 ### 5.3 缩容稳定窗口
 
@@ -182,7 +182,7 @@ v1.28 的资源利用率路径会忽略正在终止、已 Failed 的 Pod；Pendi
 | 当前 6，一个指标失败，另一个建议 8            | 仍可能扩容，再检查其他限制   |
 | 窗口内曾建议 8，当前短暂建议 3                | 不因一次下降就立即按 3 缩容  |
 
-这些规则对照 [1.28 HPA 算法与稳定窗口](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/run-application/horizontal-pod-autoscale.md)。稳定窗口、速率限制与指标错误属于不同环节，不应混成一个“等待五分钟”的解释。
+这些规则对照 [1.28 HPA 算法与稳定窗口](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/run-application/horizontal-pod-autoscale.md)。这三件事管的是不同问题：稳定窗口决定要不要采用窗口内更高的历史建议，速率限制决定一段时间内副本数最多变多少，指标获取失败决定这一轮要不要跳过某个方向。“等待五分钟”只对应第一件。
 
 再假设当前为 8 副本，300 秒缩容窗口内的原始建议如下，忽略其他限制：
 

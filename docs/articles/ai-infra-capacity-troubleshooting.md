@@ -23,13 +23,13 @@ order: 24
 
 ## 1. 先记录环境、设备与错误现场 {#_1-第一原则-先保存现场}
 
-记录时间、驱动和框架版本、容器 digest、设备 UUID、环境变量、错误码及相关日志。重启、升级驱动或批量杀进程可能破坏现场；在生产系统中，必须先评估影响并确认维护授权，不能将这些操作作为诊断的第一步。
+记录时间、驱动和框架版本、容器 digest、设备 UUID、环境变量、错误码及相关日志。重启、升级驱动或批量杀进程会把这些信息冲掉；在生产系统中，要先评估影响并确认维护授权，等现场保存完再动。
 
 [![GPU 排障：逐层通过、逐层定位](/assets/notes/ai-infra/gpu-troubleshoot.svg)](/assets/notes/ai-infra/gpu-troubleshoot.svg)
 
 ## 2. 按失败层次逐步缩小
 
-| 现象                             | 优先证据                           | 不应立即推断             |
+| 现象                             | 优先证据                           | 常见误判                 |
 | -------------------------------- | ---------------------------------- | ------------------------ |
 | 宿主无法发现 GPU                 | 驱动、设备枚举、系统日志           | Python 版本造成          |
 | nvidia-smi 可用，CUDA 初始化失败 | 设备权限、库加载、最小 CUDA 错误   | 小版本数字不一致必然冲突 |
@@ -88,15 +88,15 @@ print("visible", os.environ.get("CUDA_VISIBLE_DEVICES", "<unset>"))
 print("available", torch.cuda.is_available())
 ```
 
-在 PyTorch 2.14，默认检测路径通过 CUDA Runtime 的 `cudaGetDeviceCount` 获取设备数，该路径会经 `cuInit` 初始化 CUDA Driver。启用 `PYTORCH_NVML_BASED_CUDA_CHECK=1` 时先尝试基于 NVML 的计数，失败时可能回退默认检测。NVML 成功的路径可避免该检查先初始化 CUDA 而影响后续 fork 子进程；NVML 成功只说明较弱的可发现性，CUDA 上下文初始化或算子执行仍可能失败。在诊断进程启动前设置变量，分别记录两个独立进程的结果与错误。未运行框架的 GPU 探针标为 NOT RUN。[PyTorch 2.14 CUDA 语义](https://docs.pytorch.org/docs/2.14/notes/cuda.html) · [环境变量](https://docs.pytorch.org/docs/2.14/cuda_environment_variables.html)
+在 PyTorch 2.14，默认检测路径通过 CUDA Runtime 的 `cudaGetDeviceCount` 获取设备数，该路径会经 `cuInit` 初始化 CUDA Driver。启用 `PYTORCH_NVML_BASED_CUDA_CHECK=1` 时先尝试基于 NVML 的计数，失败时可能回退默认检测。NVML 这条路不初始化 CUDA，因此不会影响之后 fork 出的子进程；但它只证明“能数到设备”，CUDA 上下文能否建立、算子能否执行，仍要另外验证。在诊断进程启动前设置变量，分别记录两个独立进程的结果与错误。未运行框架的 GPU 探针标为 NOT RUN。[PyTorch 2.14 CUDA 语义](https://docs.pytorch.org/docs/2.14/notes/cuda.html) · [环境变量](https://docs.pytorch.org/docs/2.14/cuda_environment_variables.html)
 
 `nvidia-smi` 的 Driver Version 是 NVIDIA 驱动版本，CUDA Version 是驱动报告的 CUDA 支持版本。`nvcc --version` 对应 PATH 选中的 Toolkit 编译器，`torch.version.cuda` 是 PyTorch 构建使用的 CUDA 版本，CPU 构建通常为 `None`。CUDA Runtime 提供应用侧 API，底层通过 CUDA Driver 访问设备。几个版本可以不同，应查兼容表和原始错误，重启后恢复只能证明服务当时恢复。[CUDA 兼容性指南](https://docs.nvidia.com/deploy/cuda-compatibility/index.html)
 
 ## 4. 按加载、Prefill 与 Decode 区分 OOM {#_4-oom-要先确认发生阶段}
 
-加载时 OOM，先看权重、并行布局和加载峰值；prefill OOM，检查输入长度、chunk 和激活；decode OOM，检查并发、KV 增长与内存池。还应区分 CUDA 分配失败与主机 OOM killer。
+先分清 OOM 发生在哪个阶段：加载时 OOM，先看权重、并行布局和加载峰值；prefill（一次性把整段输入算完）OOM，检查输入长度、chunk 和激活；decode（逐个 token 生成输出）OOM，检查并发、KV 增长与内存池。还要区分是 CUDA 分配失败，还是主机内存被 OOM killer 杀掉。
 
-释放缓存并不能解决所有问题。仍由张量或图引用的内存，不会因为“清缓存”就安全释放；盲目缩短上下文或降低精度，也可能影响用户功能和质量。
+释放缓存只回收未被引用的空闲块。仍由张量或图引用的内存，不会因为“清缓存”就安全释放；盲目缩短上下文或降低精度，也可能影响用户功能和质量。
 
 | 阶段            | 关键证据                                                     | 最小对照                                                           |
 | --------------- | ------------------------------------------------------------ | ------------------------------------------------------------------ |
@@ -119,13 +119,13 @@ print("peak allocated", torch.cuda.max_memory_allocated(device))
 print(torch.cuda.memory_summary(device=device))
 ```
 
-Allocated 表示分配器中活跃张量占用，Reserved 包括分配器已保留的内存及可复用空闲块。GPU Used 来自设备视角，可能包含 CUDA Context、NCCL 或其他进程。KV Pool 是引擎预留的空间，可能已计入框架或设备统计。避免把包含关系相加。 `torch.cuda.empty_cache()` 释放分配器未占用的缓存，不能释放活跃张量或仍被引用的图内存，也不属于这个只读检查。[PyTorch 2.14 CUDA 显存管理](https://docs.pytorch.org/docs/2.14/notes/cuda.html#memory-management)
+Allocated 表示分配器中活跃张量占用，Reserved 包括分配器已保留的内存及可复用空闲块。GPU Used 来自设备视角，可能包含 CUDA Context、NCCL 或其他进程。KV Pool 是引擎预留的空间，可能已计入框架或设备统计。这些统计互相包含，直接相加会重复计数。 `torch.cuda.empty_cache()` 释放分配器未占用的缓存，活跃张量与仍被引用的图内存不在其作用范围内，这项调用也不属于只读检查。[PyTorch 2.14 CUDA 显存管理](https://docs.pytorch.org/docs/2.14/notes/cuda.html#memory-management)
 
 多卡故障先保存所有 rank 的日志、调用序号、通信器规模与成员、Rank→GPU UUID 和 GPU/NIC 拓扑，按时间及序号寻找最早 CUDA 或网络错误。再区分集合操作不匹配、设备失效和框架超时。通信契约与挂起案例见[第 22 章](/articles/ai-infra-multi-gpu-nccl.html)。
 
 ## 5. 最终验收是一组约束
 
-正确性和任务质量 → 代表性负载 → 稳态性能 → 最坏形状与峰值显存 → 并发公平性 → 排空、失败和重启恢复。每项都应注明测试条件、预期、结果和证据，不用“能聊天”代替容量验证。
+验收按顺序做完六件事：先确认正确性和任务质量；再用代表性负载跑一遍；然后看稳态性能；接着压最坏形状、记录峰值显存；再查并发下是否公平；最后测排空、失败和重启恢复。每项都注明测试条件、预期、结果和证据，不用“能聊天”代替容量验证。
 
 ### 容量与恢复验收
 
@@ -138,7 +138,7 @@ Allocated 表示分配器中活跃张量占用，Reserved 包括分配器已保�
 | 短输入长输出 | Decode、ITL、TPOT 与 KV       |
 | 混合并发     | 稳态吞吐、P99、排队积压和失败 |
 
-各组记录 TTFT/ITL/TPOT/E2E 的 P50/P95/P99、Output Token/s、Request/s、OOM、失败、超时、设备峰值和质量。容量上界取同时满足正确性、质量、时延 SLO、错误率与显存余量，且队列稳定的最大已验证到达率。例如教学门槛可设 P99 TTFT≤500 ms、失败率≤1%、设备峰值后至少余 10% 显存。如果 12 req/s 组虽有 12 req/s 完成速率，但 P99 TTFT 达 650 ms，该组未通过。真实门槛由业务预先确定。
+各组记录 TTFT/ITL/TPOT/E2E 的 P50/P95/P99、Output Token/s、Request/s、OOM、失败、超时、设备峰值和质量。容量上界是一个已经验证过的请求速率：在这个速率下，正确性、质量、时延 SLO、错误率和显存余量都还达标，队列也不再持续堆积；再加就至少破一项，所以取通过的最高一档。例如教学门槛可设 P99 TTFT≤500 ms、失败率≤1%、设备峰值后至少余 10% 显存。如果 12 req/s 组虽有 12 req/s 完成速率，但 P99 TTFT 达 650 ms，该组未通过。真实门槛由业务预先确定。
 
 故障恢复顺序为观察 → 保存现场 → 分层定位 → 提出可证伪的假设 → 最小验证 → 授权修复 → 恢复业务 → 复测容量与正确性 → 归档。重启会清除进程状态和部分时间线，驱动升级可能同时改变多层变量，GPU Reset 会影响设备上的任务，因此均应纳入授权和影响评估。恢复后先验证最小功能，再逐级复测混合负载、峰值与 SLO。若只确认恢复，根因标为待证，并记录还需哪些证据。
 

@@ -27,15 +27,15 @@ Redis 用键及其对应的数据类型组织数据，通过命令完成读取�
 
 客户端先获取服务端地址，建立连接，按 RESP（Redis Serialization Protocol，Redis 序列化协议）将命令编码后发送。服务端读取请求、解析协议，处理命令，再将回复发回客户端。客户端只有收到并正确解析结果，才能知道这次调用返回了什么。[RESP 规范](https://redis.io/docs/latest/develop/reference/protocol-spec/)
 
-Redis 的事件循环（Event Loop）会持续监听网络连接的 I/O 就绪通知，进而处理可读、可写事件及定时任务。非阻塞 I/O（Non-blocking I/O）机制意味着，当单次读写无法立即完成时便会立刻返回，留待后续处理，从而避免因某个慢连接而长时间阻塞主线程。然而需要注意的是，如果具体的业务命令本身执行耗时较长，依然会阻塞并占用处理其他命令的时间。
+Redis 的事件循环（Event Loop）就是一个不停转的循环：向操作系统问“现在哪些连接有数据可读、哪些可以写”，有就处理，没有就等下一轮，顺带跑定时任务。非阻塞 I/O（Non-blocking I/O）意味着单次读写做不完时调用立刻返回，而不是原地卡住，这条连接留到下一轮再处理，慢连接因此不会拖住主线程。不过业务命令本身执行耗时较长时，主线程同样会被占用。
 
-端到端延迟包含连接池等待、网络、排队、执行和回复处理。以 Redis Open Source 7.2.0 为准，SLOWLOG（Slow Log，慢日志）统计**服务端实际执行命令**的耗时，不包含客户端通信、读取请求和发送回复等网络 I/O，也不包含连接池等待和命令开始前的排队。因此“服务器没有慢日志”和“用户没有超时”不是一回事。[7.2.0 慢日志说明](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf#L1679-L1700)
+一次调用的端到端延迟可以按时间拆开：先从连接池里等到一个空闲连接，再把请求发过网络，然后在服务端排队并执行，最后把回复读回来并解析。以 Redis Open Source 7.2.0 为准，SLOWLOG（Slow Log，慢日志）统计**服务端实际执行命令**的耗时，不包含客户端通信、读取请求和发送回复等网络 I/O，也不包含连接池等待和命令开始前的排队。因此“服务器没有慢日志”和“用户没有超时”不是一回事。[7.2.0 慢日志说明](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf#L1679-L1700)
 
 超时尤其要谨慎：连接断了或客户端不再等待，不会自动撤销已经送达的写命令。重试一个 INCR，可能把业务计数加两次。这个边界会贯穿后面的客户端与幂等章节。
 
 ## 2. 普通命令执行与后台、I/O 工作的分工 {#_2-单线程到底指什么}
 
-以 Redis Open Source 7.2.0 为参照，普通命令的数据操作主要由主线程串行执行。但 Redis 还有后台线程、可选的 I/O 线程，以及用于持久化的子进程，所以不要把“单线程”外推到所有工作。
+以 Redis Open Source 7.2.0 为参照，普通命令的数据操作主要由主线程串行执行：一条命令处理完，才轮到下一条，两条命令不会同时改同一份数据。但 Redis 还有后台线程、可选的 I/O 线程，以及用于持久化的子进程，所以“单线程”只描述普通命令的数据操作。
 
 `io-threads` 默认是 `1`，表示只使用主线程，不启用额外的 I/O 工作线程。配置为大于 `1` 时，可将适用的网络写出工作分给 I/O 线程；`io-threads-do-reads` 默认是 `no`（源码布尔值为 `0`，即 false），读取和协议解析仍由主线程处理。只有在启用多个 I/O 线程并设为 `yes` 时，适用的网络读取和协议解析才交给 I/O 线程。**它们没有把普通命令执行改成多核并行**；实际是否分派还受运行条件影响。[7.2.0 配置说明](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf#L1192-L1234) · [默认值注册](https://raw.githubusercontent.com/redis/redis/7.2.0/src/config.c#L2794-L2892) · [I/O 分派实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/networking.c)
 
@@ -47,17 +47,17 @@ Redis 的事件循环（Event Loop）会持续监听网络连接的 I/O 就绪�
 
 普通写命令在主线程更新内存后，按配置传播给副本并写入 AOF 缓冲区。AOF 追加写文件由主线程推进；`appendfsync always` 在主线程执行同步，`everysec` 通常由后台线程约每秒同步，`no` 则交由操作系统决定刷盘时机。回复成功不自动等于副本已确认或数据已落盘。[7.2.0 AOF 实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/aof.c)
 
-RDB 后台快照由 `BGSAVE` 或配置的 `save` 条件等触发；AOF 重写由 `BGREWRITEAOF` 或满足自动重写阈值等触发。在支持 fork 的系统上，这两类后台任务由独立子进程生成文件，后台线程则与主线程处在同一进程，二者不能混称。fork 的停顿、COW 增加的内存以及磁盘竞争仍可能影响前台。同步 `SAVE` 会阻塞主线程，不属于图中的后台快照路径。[7.2.0 配置与触发条件](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf) · [RDB 后台实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/rdb.c)
+RDB 后台快照由 `BGSAVE` 或配置的 `save` 条件等触发；AOF 重写由 `BGREWRITEAOF` 或满足自动重写阈值等触发。在支持 fork 的系统上，这两类后台任务由独立子进程生成文件，后台线程则与主线程处在同一进程。差别在于内存：子进程拿到的是 fork 那一刻的地址空间快照，之后主线程改的数据它看不到；主线程一写入，COW 就复制出新页，父子各用各的。后台线程和主线程读写的是同一批内存。fork 的停顿、COW 增加的内存以及磁盘竞争仍可能影响前台。同步 `SAVE` 会阻塞主线程，不属于图中的后台快照路径。[7.2.0 配置与触发条件](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf) · [RDB 后台实现](https://raw.githubusercontent.com/redis/redis/7.2.0/src/rdb.c)
 
 ## 3. 快的原因，也给出了边界
 
-数据通常驻留内存，命令由相应的数据结构实现，连接可以复用，网络处理则采用事件驱动方式。这些因素都有助于降低常见调用的成本，但不能据此推断“所有操作都是微秒级”“瓶颈永远是网络”或“内存访问时延就是一次 Redis 请求时延”。
+数据通常驻留内存，命令由相应的数据结构实现，连接可以复用，网络处理则采用事件驱动方式。这些因素都有助于降低常见调用的成本，但具体耗时仍取决于命令与数据规模，“所有操作都是微秒级”“瓶颈永远是网络”“内存访问时延就是一次 Redis 请求时延”都超出了这个范围。
 
 一个遍历几十万元素的命令，即使全部读内存，也可能占用明显的 CPU（Central Processing Unit，中央处理器）和回复带宽；一个小 GET 也可能因为前面的大命令排队而超时。QPS（Queries Per Second，每秒查询数）是吞吐量指标；后续会结合返回量、算法与环境解释成本。
 
 ## 4. 数据类型与内部编码
 
-对外类型决定可执行的命令，例如 String（字符串）、Hash（哈希）、List（列表）、Set（集合）、Sorted Set（有序集合）；内部编码决定某个版本怎样表示该对象，例如 int（整数编码）、embstr（Embedded String，嵌入式字符串）、listpack（紧凑列表）、quicklist（快速列表）。
+对外类型决定你能对它执行哪些命令，例如 String（字符串）、Hash（哈希）、List（列表）、Set（集合）、Sorted Set（有序集合）；内部编码决定这个值在内存里怎么摆，例如 int（整数编码）、embstr（Embedded String，嵌入式字符串）、listpack（紧凑列表）、quicklist（快速列表）。同一个类型的数据量变大后可能换一种编码，但客户端用的命令不变。
 
 `TYPE` 看类型，`OBJECT ENCODING` 看该对象当前编码。
 
@@ -85,9 +85,9 @@ INFO server
 
 Sentinel（哨兵）监控非 Cluster 部署，发现主节点并协调副本晋升。自动故障转移需要达到配置的 quorum（故障判定所需的哨兵数量），还要获得多数哨兵授权；若 quorum 更高，也必须满足它，并且要有可晋升的副本。[Sentinel 故障判定与授权](https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/#quorum)
 
-Cluster（集群）负责按哈希槽分片和集群内故障转移，不需要 Sentinel。正常自动故障转移要求主节点被标记为 `FAIL`、存在满足数据新鲜度等条件且允许自动晋升的副本，并由该副本取得有投票权主节点的多数授权。只有主节点、没有副本，或少数分区无法取得多数授权时，那么不能恢复故障主节点的服务。两种部署都依赖异步复制，切换仍有丢失已确认写入的风险。[Cluster 故障检测与选举规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#replica-election-and-promotion)
+Cluster（集群）负责按哈希槽分片和集群内故障转移，不需要 Sentinel。正常自动故障转移要求主节点被标记为 `FAIL`、存在满足数据新鲜度等条件且允许自动晋升的副本，并由该副本取得有投票权主节点的多数授权。只有主节点、没有副本，或少数分区无法取得多数授权时，那么故障主节点的服务无法恢复。两种部署都依赖异步复制，切换仍有丢失已确认写入的风险。[Cluster 故障检测与选举规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#replica-election-and-promotion)
 
-多进程放在同一台主机上，不会自动产生独立故障域。多个逻辑 DB（Database，数据库）不提供 CPU、内存或安全隔离。
+同一台主机上跑多个 Redis 进程，它们共享这台机器的 CPU、内存和电源，机器一停全都停，不会自动形成独立故障域。多个逻辑 DB（Database，数据库）更只是同一个进程内的键空间划分，CPU、内存和安全隔离都没有隔开。
 
 ## 6. 怎样阅读本册的版本说明
 

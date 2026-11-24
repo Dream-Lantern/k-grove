@@ -31,17 +31,17 @@ Pod 有一个 IP、Service 有一个地址、应用能通过服务名访问，�
 | 一个稳定入口怎样选后端？ | Service、EndpointSlice、服务数据平面 | 后端集合正确不等于应用端口正常 |
 | 服务名怎样变成地址？     | Pod DNS 配置、集群 DNS               | 解析成功不代表业务连接成功     |
 
-CNI（Container Network Interface，容器网络接口）定义网络配置和插件调用约定。它可以用于 Kubernetes 之外的容器场景；选择具体网络方案后，还要确认采用哪种数据路径和地址管理方式。
+CNI（Container Network Interface，容器网络接口）规定的是一套调用约定：容器要联网时，运行时按什么参数去调网络插件、插件要返回什么结果。它不规定网络怎么实现，所以可以用于 Kubernetes 之外的容器场景；选好具体网络方案后，还要确认这套方案的数据包怎么走、地址由谁分配。
 
 普通 Pod 在集群网络中获得 Pod IP，同一 Pod 的容器通常共享 Network Namespace（网络命名空间），即接口、地址、路由和端口空间等网络视图，因此可以通过 `localhost` 通信。不同 Pod 通常有各自的网络环境，不能用自己的 localhost 访问另一个 Pod。
 
-在没有有意隔离的情况下，Pod-to-Pod 连通性应满足 Kubernetes 网络模型；不同节点上的普通 Pod 也可以通过 Pod IP 通信，不必先经过 Service。实际连接还受 NetworkPolicy、防火墙、路由和网络实现影响。**Pod 网络与 Service 网络解决不同问题，获得 IP 也不能证明跨节点通信已通。** [Kubernetes 网络模型](https://kubernetes.io/docs/concepts/services-networking/)
+在没有有意隔离的情况下，Pod-to-Pod 连通性应满足 Kubernetes 网络模型；不同节点上的普通 Pod 也可以通过 Pod IP 通信，不必先经过 Service。实际连接还受 NetworkPolicy、防火墙、路由和网络实现影响。**Pod 网络与 Service 网络解决不同问题，获得 IP 只是第一步。** [Kubernetes 网络模型](https://kubernetes.io/docs/concepts/services-networking/)
 
 ## 2. CNI 在 Pod 创建过程的什么位置
 
-在常见 containerd CRI 集成中，kubelet 发起运行时请求，运行时的网络集成依据配置调用 CNI 插件，为 Pod 级网络环境配置连接。不要把它简化成“调度器直接给容器分配网卡”。
+在常见 containerd CRI 集成中，kubelet 发起运行时请求，运行时的网络集成依据配置调用 CNI 插件，为 Pod 级网络环境配置连接。把它简化成“调度器直接给容器分配网卡”会漏掉 CNI 与运行时的协作。
 
-主要关心四类事情：网络接口如何建立、地址如何分配、路由或转发表如何配置、失败时如何清理。IPAM（IP Address Management，IP 地址管理）负责地址分配、跟踪和回收等，可由独立插件、网络方案自身或云平台能力实现。CNI 约定调用和结果，不要求所有方案都用同一种 IPAM。
+主要关心四类事情：网络接口如何建立、地址如何分配、路由或转发表如何配置、失败时如何清理。IPAM（IP Address Management，IP 地址管理）负责地址分配、跟踪和回收等，可由独立插件、网络方案自身或云平台能力实现。CNI 约定调用和结果，各方案可以使用不同的 IPAM。
 
 以普通 Linux Pod 的 Sandbox 准备为例，可按以下职责理解：
 
@@ -81,7 +81,7 @@ MTU（Maximum Transmission Unit，最大传输单元）描述链路上可传输�
 2. 节点、Pod 和 Service 地址分别规划，图中以角色表示。
 3. CNI ADD 在网络准备阶段配置连接，后续业务数据包沿已建立的数据路径传输。
 
-图中省略的 veth、网桥、隧道或云网卡，不代表它们永远不存在；只是不能在一张通用图里把其中一种结构写成规范要求。
+图中的 veth、网桥、隧道或云网卡只是被省略；一张通用图也不能把其中一种结构写成规范要求。
 
 ## 4. 地址段、IPAM 与可达性
 
@@ -89,7 +89,7 @@ MTU（Maximum Transmission Unit，最大传输单元）描述链路上可传输�
 
 一些配置会使用 Node 的 PodCIDR，其他方案可能通过自身 IPAM 或云侧分配机制管理地址。分析环境时应核对实际网络方案，而不是只看初始化命令里出现过一个 `--pod-network-cidr` 就认定所有地址都由它控制。
 
-地址规划至少要区分节点网络、Pod 网络和 Service 地址范围。它们承担的角色不同，冲突可能导致路由歧义；但不能把任意三个看起来不同的网段就直接判定为可用，还要考虑所在网络、VPN、云路由以及其他实际地址。
+地址规划至少要区分三种网段：节点网络是主机自己的地址，Pod 网络是容器地址，Service 地址是留给 Service 的那一组。三者用途不同，网段重叠会让路由分不清该把包送到哪；但也不能看到三个网段长得不一样就判定可用，还要考虑所在网络、VPN、云路由以及其他实际地址。
 
 拿到 Pod IP 只说明地址分配相关步骤有了结果。跨节点通信还需要合适的底层连通、转发路径和回程；策略也可能有意阻断访问。对于采用封装的网络，MTU 不合适可能导致小请求正常、大报文异常。这里列的是定位方向，不是对你的环境已确认的根因。
 
@@ -97,7 +97,7 @@ MTU（Maximum Transmission Unit，最大传输单元）描述链路上可传输�
 
 普通 Pod 内共享网络环境的容器通常可以通过 localhost 通信；两个不同 Pod 则不能把对方当成自己的 localhost。
 
-同节点 Pod 之间的连接，不一定经过与跨节点相同的路径。因此“本机 Pod 能互通”只能缩小范围，不能证明跨节点网络正常。反过来，“ping 不通”也不能单独证明 TCP 业务端口不可用：ICMP 可能被限制，应用也可能根本不依赖 ICMP。
+同节点 Pod 之间的连接，不一定经过与跨节点相同的路径。因此“本机 Pod 能互通”只能缩小范围，不能证明跨节点网络正常。反过来，“ping 不通”只说明 ICMP 没通，TCP 业务端口仍要单独测：ICMP 可能被限制，应用也可能根本不依赖 ICMP。
 
 新增教学推理例子：假设 Pod A 可以访问同节点的 Pod B，却无法访问另一节点的 Pod C。下一步应对比目的端口、策略、源和目标节点及路由条件，而不是立即更换 CNI。若只有某个目标应用失败，还要回到应用监听与后端状态。
 
@@ -226,9 +226,9 @@ BACKEND_IP=$(kubectl get pod backend -n k8s-net-demo -o jsonpath='{.status.podIP
 
 ## 6. NetworkPolicy 是另一层契约
 
-NetworkPolicy 用 API 描述适用的网络访问约束，但需要具备相应能力的网络实现执行。创建对象成功，不等于策略已经被所有数据路径执行。
+NetworkPolicy 只是一份写在 API 里的访问规则，真正拦不拦包要看网络实现有没有这个能力。创建对象成功只说明规则写进去了，策略是否在每个数据路径上都执行，要另外验证。
 
-没有适用隔离策略与存在允许规则不是同一种状态。分析策略时还要分别看 ingress 和 egress、源和目标选择器及协议端口。不能用“集群有 CNI”推导出“已经按默认拒绝保护”，也不能把网络策略当成 HTTP 路径级授权。基础边界参见 [Kubernetes 1.28 NetworkPolicy](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/network-policies.md)；权限章节会继续区分 API 权限与网络访问权限。
+一个 Pod 完全没被任何策略选中时，所有流量默认放行；被策略选中之后，只有规则里写明的流量才放行。这两种状态不一样，分析策略时还要分别看 ingress 和 egress、源和目标选择器及协议端口。“集群有 CNI”只说明网络可用，默认拒绝要自己配置；网络策略也只到 L3/L4，不是 HTTP 路径级授权。基础边界参见 [Kubernetes 1.28 NetworkPolicy](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/network-policies.md)；权限章节会继续区分 API 权限与网络访问权限。
 
 ### 6.1 按什么顺序判断一次连接
 
@@ -264,7 +264,7 @@ ingress:
             role: client
 ```
 
-现在是两组来源的并集：team=frontend 命名空间中的全部 Pod，或者策略所在命名空间里的 role=client Pod。第二个 podSelector 单独出现时，不是选择所有命名空间。两个例子没有限制 ports，表示这条规则没有另加端口筛选，不应误读为只开放某个业务端口。
+现在是两组来源的并集：team=frontend 命名空间中的全部 Pod，或者策略所在命名空间里的 role=client Pod。第二个 podSelector 单独出现时，不是选择所有命名空间。两个例子没有限制 ports，表示这条规则没有另加端口筛选，所有端口都匹配。
 
 ### 6.3 完整策略：只允许 frontend 访问后端 TCP 8080
 
@@ -332,7 +332,7 @@ kubectl describe networkpolicy backend-from-frontend -n k8s-net-demo
 | 其他来源、相同端口 | `kubectl exec -n k8s-net-demo other-client -- wget -qO- -T 5 "http://$BACKEND_IP:8080"` | 请求失败，例如超时；具体形式依赖实现 |
 | 允许来源、其他端口 | `kubectl exec -n k8s-net-demo frontend -- wget -qO- -T 5 "http://$BACKEND_IP:8081"`     | 请求失败，即使该端口在策略前能访问   |
 
-不将某一次超时直接归因为策略。对照 Pod 健康、监听、IP、策略选择器和网络组件证据；若拒绝组仍成功，应检查插件支持、策略传播和其他允许规则，不能仅凭对象存在宣布策略生效。非支持实现上的这些测试不能作为策略验收。
+不将某一次超时直接归因为策略。对照 Pod 健康、监听、IP、策略选择器和网络组件证据；若拒绝组仍成功，应检查插件支持、策略传播和其他允许规则，对象存在只说明声明已提交，是否生效要看数据路径证据。非支持实现上的这些测试不能作为策略验收。
 
 在专用测试空间中移除本节策略，再用同样请求确认 `other-client → 8080` 和 `frontend → 8081` 恢复，形成前后对照；最后清理全部实验资源：
 
@@ -385,7 +385,7 @@ kubectl get networkpolicy -n NAMESPACE
 | 现象                               | 优先排查方向                                                                  |
 | ---------------------------------- | ----------------------------------------------------------------------------- |
 | `FailedCreatePodSandBox`           | 先读具体错误，检查运行时、CNI 配置、IPAM 地址资源及节点条件；并非都由网络引起 |
-| 已有 Pod IP，同节点通信失败        | 应用端口监听、接口、路由和策略；有地址不等于接口与路径全部正常                |
+| 已有 Pod IP，同节点通信失败        | 应用端口监听、接口、路由和策略；有地址只说明分配完成，接口与路径仍要查        |
 | 同节点正常，跨节点失败             | 底层路由、封装、回程、防火墙及源目标节点差异                                  |
 | 小报文正常，大报文异常             | MTU、路径 MTU、分片与重传证据；也要排除应用层限制                             |
 | Pod IP 可访问，Service IP 不可访问 | Service 选择器、EndpointSlice 和服务数据平面，避免直接重装 CNI                |

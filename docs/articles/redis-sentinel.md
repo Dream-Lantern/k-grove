@@ -21,9 +21,9 @@ order: 22
 
 [返回本册目录](/collections/redis/)
 
-Sentinel 为非 Cluster 复制组提供监控、故障转移与主节点发现。它先观察节点状态并形成下线判断，再取得转移授权、选择副本和传播新主地址。业务数据仍由 Redis 数据节点处理，客户端根据发现结果建立连接。
+Sentinel 为非 Cluster 复制组提供监控、故障转移与主节点发现，这里的“复制组”就是一个主节点带若干副本、不分片的 Redis 部署。它先观察节点状态并形成下线判断，再取得转移授权、选择副本和传播新主地址。业务数据仍由 Redis 数据节点处理，客户端根据发现结果建立连接。
 
-本章以 Redis Open Source 7.2.0 的自动故障转移为核对基线；复制的数据安全边界见[第二十一章](/articles/redis-replication-psync.html)。需要分片时，应另看[第二十三章 Cluster](/articles/redis-cluster-routing.html)，不要把两套故障处理机制混用。
+本章以 Redis Open Source 7.2.0 的自动故障转移为核对基线；复制的数据安全边界见[第二十一章](/articles/redis-replication-psync.html)。需要分片时，应另看[第二十三章 Cluster](/articles/redis-cluster-routing.html)；Sentinel 与 Cluster 的故障处理机制不同，混用会得到错误结论。
 
 ![Sentinel 与业务连接的关系](/assets/notes/redis/redis-study-sentinel.svg)
 
@@ -47,7 +47,7 @@ Sentinel 自身也可能不可达，因此客户端要配置多个入口，并�
 
 ## 2. SDOWN、ODOWN 与选举是不同判断
 
-SDOWN（Subjectively Down，主观下线）是单个 Sentinel 的本地故障判断。ODOWN（Objectively Down，客观下线）针对主节点，需要该 Sentinel 自己认为主节点下线，并收集到足够故障报告，达到 quorum（法定数量，即故障意见门槛）。后续还要选出 Leader（领导者，即执行此次故障转移的 Sentinel）；同一轮的授权票数必须同时达到已知 Sentinel 的多数和配置 quorum。
+SDOWN（Subjectively Down，主观下线）是单个 Sentinel 的本地故障判断。ODOWN（Objectively Down，客观下线）只针对主节点，要同时满足两件事：这个 Sentinel 自己认为主节点下线，并且收到足够多其他 Sentinel 也这么说的报告，达到 quorum（法定数量，即故障意见门槛）。后续还要选出 Leader（领导者，即执行此次故障转移的 Sentinel）；同一轮的授权票数必须同时达到已知 Sentinel 的多数和配置 quorum。
 
 ![两类门槛不能合并](/assets/notes/redis/redis-study-sentinel-votes.svg)
 
@@ -67,7 +67,7 @@ Sentinel A          Sentinel B          Sentinel C          Redis 主节点
     | → 传播新主地址 → 客户端重新发现并连接新主                   |
 ```
 
-C 没有报告主节点下线，不代表 A、B 永远不能形成 ODOWN；关键是意见数量和授权条件。Sentinel 不代理任何业务请求。
+C 没有报告主节点下线，A、B 仍可能形成 ODOWN；关键是意见数量和授权条件。Sentinel 不代理任何业务请求。
 
 | 阶段       | 主要问题                          | 结果                                |
 | ---------- | --------------------------------- | ----------------------------------- |
@@ -89,7 +89,7 @@ C 没有报告主节点下线，不代表 A、B 永远不能形成 ODOWN；关�
 | 4           | 3        | 4                        |
 | 5           | 3        | 5                        |
 
-票数门槛可记为 `max(floor(N/2)+1, quorum)`，但它不是全部切换条件。还要考虑当前轮次、网络视图和副本资格；表中总数不代表实际部署已被验证。[Sentinel quorum 与授权](https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/#quorum)
+票数门槛可记为 `max(floor(N/2)+1, quorum)`，但它不是全部切换条件。还要考虑当前轮次、网络视图和副本资格；表中总数只是示例，实际部署要另行验证。[Sentinel quorum 与授权](https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/#quorum)
 
 quorum 不会被自动“修正成多数”。它过高可能导致无法达到客观下线门槛；过低也不取消授权约束。[Redis 7.2.0 Sentinel 配置注释](https://raw.githubusercontent.com/redis/redis/7.2.0/sentinel.conf)
 
@@ -105,7 +105,7 @@ N 不是此刻在线的进程数，而是该 Sentinel 当前已知的本组 Sent
 
 ## 3. 按副本资格、优先级与进度选择候选 {#_3-提升候选不是只看谁的数字最大}
 
-先过滤，再排序，才能避免选中优先级高但数据过旧的副本。按 Redis Open Source 7.2.0 的 `sentinelSelectSlave`，下线、Sentinel 到副本连接已断、最近可接受响应或 INFO 信息过旧、优先级为 0 的副本会被排除。还要检查副本报告的主从链路断开时长：
+先过滤，再排序，才能避免选中优先级高但数据过旧的副本。按 Redis Open Source 7.2.0 的 `sentinelSelectSlave`，以下副本在过滤阶段就被排除：本身已被标记下线的；Sentinel 到它的连接已断的；很久没有可接受响应、或 INFO 信息过旧的；`replica-priority` 配成 0 的。还要检查副本报告的主从链路断开时长：
 
 ```text
 允许的最大断开时长 = 10 × 主节点 down-after-milliseconds
@@ -127,9 +127,9 @@ N 不是此刻在线的进程数，而是该 Sentinel 当前已知的本组 Sent
 | C    |       50 |              10500 | 是           |
 | D    |        0 |              12000 | 否           |
 
-D 被排除；B、C 的优先级高于 A；C 的偏移量高于 B，因此选 C。本例不需要比较 Run ID，不能据此认为每次都只选偏移量最大的副本。
+D 被排除；B、C 的优先级高于 A；C 的偏移量高于 B，因此选 C。本例不需要比较 Run ID；这次的结果由当轮条件决定，不能推广成“总选偏移量最大的副本”。
 
-转移大致包括确认下线、取得授权、选择并提升副本、让其他副本跟随新主、传播新地址。每一步都可能受到网络、权限和节点状态影响，因此不能把探测阈值直接当成总恢复时间。
+一次转移按顺序做这些事：先确认主节点确实下线；再选出执行者并取得授权；然后把某个合格副本提升为新主；接着让其他副本改跟随新主；最后把新地址传播出去，客户端重新发现并连接。每一步都可能受网络、权限和节点状态影响，因此不能把探测阈值直接当成总恢复时间。
 
 ## 4. 在独立故障域部署并管理通信身份 {#_4-三个进程不等于三个故障域}
 
@@ -165,7 +165,7 @@ SENTINEL GET-MASTER-ADDR-BY-NAME demo-primary
 SENTINEL CKQUORUM demo-primary
 ```
 
-`demo-primary` 是教学组名，不代表现有部署。先确认各节点视图、互相发现和仲裁条件，再审查客户端重连行为。FAILOVER、RESET 等会改变状态，不能作为默认诊断步骤。
+`demo-primary` 是教学组名，与实际部署无关。先确认各节点视图、互相发现和仲裁条件，再审查客户端重连行为。FAILOVER、RESET 等会改变状态，不能作为默认诊断步骤。
 
 | 命令                                   | 用途                                                             |
 | -------------------------------------- | ---------------------------------------------------------------- |
@@ -175,7 +175,7 @@ SENTINEL CKQUORUM demo-primary
 | `GET-MASTER-ADDR-BY-NAME demo-primary` | 查询当前视图中的主节点地址                                       |
 | `CKQUORUM demo-primary`                | 检查当前已知视图下，可用 Sentinel 是否足以满足 quorum 和多数授权 |
 
-CKQUORUM 检查的是可行性，不代表已经选出 Leader、存在合格副本或故障转移已经完成。[Sentinel 官方接口与机制](https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/)
+CKQUORUM 只检查可行性；Leader 是否选出、是否有合格副本、故障转移是否完成都要另看。[Sentinel 官方接口与机制](https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/)
 
 ## 6. 自动切换不保证零数据损失
 

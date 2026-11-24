@@ -85,18 +85,18 @@ SJF 在这组同时到达、运行时间已知的任务中让短任务尽早结�
 
 现实中 SJF 需要估计未来工作量；持续有短任务到达时，长任务可能饥饿，本例的有限任务集合则都会完成。RR 时间片太短会增加调度和切换等开销；时间片很长、足以让任务一次完成时，在这种队列条件下趋近 FCFS。本例把这些开销设为 0，不能拿表中收益直接抵消真实切换成本。
 
-是否抢占、到达时间和 I/O 行为都会改变结果。不能由 RR 的名称推出所有请求的硬实时响应界，也不能说 SJF 天然等于公平。
+是否抢占、到达时间和 I/O 行为都会改变结果。RR 的名称只说明轮转，推不出硬实时响应界；SJF 也不天然公平。
 
 ## 3. Linux 0.11 的 counter 与任务选择 {#_3-0-11-的-counter-怎样使用}
 
-原版 [Linux 0.11 源码包](https://www.kernel.org/pub/linux/kernel/Historic/old-versions/linux-0.11.tar.gz)的 `kernel/sched.c:schedule()` 不是直接套用上面的三种算法。`counter` 是按时钟消耗的剩余预算计数，`priority` 参与补充预算；后者的数值越大，在该公式中补充越多，不要与其他系统的优先级编号方向混用。
+原版 [Linux 0.11 源码包](https://www.kernel.org/pub/linux/kernel/Historic/old-versions/linux-0.11.tar.gz)的 `kernel/sched.c:schedule()` 不是直接套用上面的三种算法。`counter` 是按时钟消耗的剩余预算计数，`priority` 参与补充预算；后者的数值越大，在该公式中补充越多；其他系统的优先级编号方向可能相反，换算时要确认。
 
 `include/linux/sched.h` 定义 `NR_TASKS = 64`、`TASK_RUNNING = 0`。结合源码看完整选择链：
 
 1. 先检查普通任务的 alarm、信号等条件，适用的可中断等待任务可转为 `TASK_RUNNING`。其他 I/O 唤醒路径也可能改变任务状态。
 2. 每轮选择先设 `c = -1`、`next = 0`。从 `task[63]` 向 `task[1]` 扫描，跳过空槽，只比较 `state == TASK_RUNNING` 的 `counter`；用严格大于号更新最佳候选，因此相同计数时保留本轮先扫描到的候选。
 3. 最大值 `c > 0` 时结束选择；若根本没有普通可运行任务，`c` 仍为 `-1`，也会结束选择，保留 `next = 0` 走特殊空闲任务。
-4. **只有扫描得到的最大值为 0 时**，才对 `task[1]`～`task[63]` 中所有存在的任务重算 `counter = (counter >> 1) + priority`，然后再次扫描。这个更新不要求任务正处于 `TASK_RUNNING`，因此也会覆盖等待任务。
+4. **只有扫描得到的最大值为 0 时**，才对 `task[1]`～`task[63]` 中所有存在的任务重算 `counter = (counter >> 1) + priority`，然后再次扫描。这个更新对非 `TASK_RUNNING` 的任务同样生效，因此也会覆盖等待任务。
 5. 调用 `switch_to(next)`。若目标就是当前任务，该宏可跳过实际任务切换；任务 0 没有参与上述普通任务的选择与预算重算。
 
 这里 `if (c) break` 同时覆盖正数和 `-1`，不能误写成“只要没有可运行任务就立即重算”。任务 0 的特殊空闲行为与 TSS 切换详见[第六章](/articles/os-context-switching.html)。
@@ -113,7 +113,7 @@ SJF 在这组同时到达、运行时间已知的任务中让短任务尽早结�
 
 首次扫描最大可运行预算为 0，因而重算。再次扫描选择 A 的 4；C 即使有 5，也因仍在等待而不能被这轮普通选择选中。更新预算不会代替唤醒；若 C 后续被唤醒，还需重新参与调度。
 
-`counter` 带有剩余预算与历史调整的含义，不是每次 I/O 完成就直接执行固定加分。等待任务可在重算时保留部分旧预算，有助于解释某些交互倾向，但不保证其必然优先于所有 CPU 密集任务。
+`counter` 既是剩余预算，也带着上一轮留下的余量，不是每次 I/O 完成就直接执行固定加分。等待任务在重算时仍保留部分旧预算，于是醒来后不必从 priority 重新开始；这让它有机会比纯 CPU 任务更早被选中，但不保证一定排在所有 CPU 密集任务前面。
 
 配合 `do_timer(long cpl)` 看三种路径：用户态被中断且 counter 耗尽时，该时钟末尾调用 schedule；内核态被中断且耗尽时，`if (!cpl) return` 使它不在该处直接调度；内核等待 I/O 时仍可沿 `sleep_on()` 等显式阻塞路径调度。这里 CPL（Current Privilege Level，当前特权级）来自被中断现场，不是 `do_timer` 自己在用户态执行。因此预算耗尽与实际更换任务不是在所有上下文中同一个瞬间。
 
@@ -132,13 +132,13 @@ SJF 在这组同时到达、运行时间已知的任务中让短任务尽早结�
 switch_to(next)
 ```
 
-这是教学伪代码，不可当 C 程序编译；省略指针移动、具体信号判断及切换实现。真实实现定位到 `kernel/sched.c` 的 `schedule()`、`do_timer()` 和 `include/linux/sched.h` 的状态常量、`switch_to(n)`，不要把省略部分当作不存在。
+这是教学伪代码，不可当 C 程序编译；省略指针移动、具体信号判断及切换实现。真实实现定位到 `kernel/sched.c` 的 `schedule()`、`do_timer()` 和 `include/linux/sched.h` 的状态常量、`switch_to(n)`，省略的部分仍需按源码补全。
 
 ## 5. 从历史调度器到现代 Linux {#_5-现代-linux-不再沿用这一个公式}
 
-现代内核有多个调度类别、多核负载与资源控制。CFS（Completely Fair Scheduler，完全公平调度器）是 Linux 公平调度历史的重要机制，使用按权重折算的虚拟运行时间，直观上追踪任务已经得到多少 CPU 份额。它不是按静态 CPU Burst 排序的 SJF。[Linux 6.12 的 CFS 设计说明](https://docs.kernel.org/6.12/scheduler/sched-design-CFS.html)
+现代内核有多个调度类别、多核负载与资源控制。CFS（Completely Fair Scheduler，完全公平调度器）是 Linux 公平调度历史的重要机制，使用按权重折算的虚拟运行时间。这个量回答的是“按权重折算后，这个任务已经用掉了多少 CPU”，调度器靠它比较谁更该被补偿。它不是按静态 CPU Burst 排序的 SJF。[Linux 6.12 的 CFS 设计说明](https://docs.kernel.org/6.12/scheduler/sched-design-CFS.html)
 
-Linux 6.6 开始引入 EEVDF（Earliest Eligible Virtual Deadline First，最早合格虚拟截止期优先）相关变化：先用获得服务的欠账等条件判断资格，再用虚拟截止期选择合格任务。这里的“截止期”是公平调度内部的虚拟量，不等于应用获得硬实时期限保证。[Linux 6.12 的 EEVDF 说明](https://docs.kernel.org/6.12/scheduler/sched-eevdf.html)
+Linux 6.6 开始引入 EEVDF（Earliest Eligible Virtual Deadline First，最早合格虚拟截止期优先）相关变化，选择分两步：先看这个任务是不是到了该补服务的时候，够格才算候选；再在这些候选里挑虚拟截止期最早的那个。这里的“截止期”是公平调度内部算出来的一个虚拟时间点，与应用的硬实时期限无关。[Linux 6.12 的 EEVDF 说明](https://docs.kernel.org/6.12/scheduler/sched-eevdf.html)
 
 新机制关注 eligibility、虚拟截止期等条件，但本册不把滚动文档的每个实现细节反推为用户当前内核参数。研究性能先记录实际版本、调度策略、核数、亲和性和负载，再解释运行队列与等待。
 
@@ -213,17 +213,17 @@ for algorithm, intervals in algorithms.items():
           ", ".join(f"{float(value):.2f}" for value in means))
 ```
 
-输出包含上文的执行区间、逐任务指标和三组平均值。断言检查每个任务的指标、CPU 工作量以及区间连续性；不要用 `python3 -O` 跳过断言。本轮已在 Ubuntu 22.04.5 / WSL2、x86-64、Python 3.10.12 下执行，所有断言通过，三组均值与表格一致。模拟结果不证明真实 Linux 采用同一调度次序，也没有运行 Linux 0.11 内核。
+输出包含上文的执行区间、逐任务指标和三组平均值。断言检查每个任务的指标、CPU 工作量以及区间连续性；`python3 -O` 会跳过断言，实验就失去检查。本轮已在 Ubuntu 22.04.5 / WSL2、x86-64、Python 3.10.12 下执行，所有断言通过，三组均值与表格一致。模拟结果不证明真实 Linux 采用同一调度次序，也没有运行 Linux 0.11 内核。
 
 ## 本章小结
 
 - 先明确指标与负载条件，再比较算法；有 I/O 时不能直接把周转减 CPU 时间全部算成就绪等待。
 - 同一组输入下，SJF 与 RR 在完成速度和首次响应方面表现不同，没有脱离条件的统一胜者。
-- 0.11 区分 c=-1 的空闲路径与 c=0 的重算路径，预算更新不等于唤醒任务。
+- 0.11 区分 c=-1 的空闲路径与 c=0 的重算路径，预算更新只改计数，唤醒走另一条路径。
 
 ## 常见误区
 
-时间片结束不必换到另一个任务；有预算的等待任务也不能直接运行。教学 RR、原版 0.11 和现代公平调度需要分别理解。
+时间片结束未必换到另一个任务；有预算的等待任务仍要先被唤醒。教学 RR、原版 0.11 和现代公平调度是三套不同的规则：RR 只讲轮流发时间片，0.11 用 counter 扫描挑预算最大的任务，现代公平调度按虚拟运行时间补偿，不能互相套用。
 
 ## 下一章衔接
 

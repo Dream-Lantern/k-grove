@@ -23,7 +23,7 @@ GPU 环境包含驱动、Toolkit、运行库和框架构建等组件，各自报
 
 ## 1. 四个版本来自四个位置
 
-| 信息                       | 表示什么                        | 不能据此推断什么         |
+| 信息                       | 表示什么                        | 边界                     |
 | -------------------------- | ------------------------------- | ------------------------ |
 | Driver Version             | 当前驱动版本                    | 所有 CUDA 功能均可用     |
 | nvidia-smi 的 CUDA Version | 驱动报告的 CUDA 支持版本        | 本机已安装同版本 Toolkit |
@@ -32,7 +32,7 @@ GPU 环境包含驱动、Toolkit、运行库和框架构建等组件，各自报
 
 新驱动通常可以运行面向较旧 CUDA 的应用；同一大版本内的 minor compatibility 也有前提和功能限制，PTX JIT、新 API 等可能提出更高要求。因此，不能只看两个小版本号是否相等。[CUDA Compatibility](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)
 
-NVIDIA Driver 由内核驱动和配套用户态组件组成。Driver API 提供 Context、模块和设备执行控制。CUDA Runtime 提供 `cuda*` 接口并处理较多隐式管理。CUDA Toolkit 是构建与开发工具集合，包含 CUDA Compiler（编译器驱动 `nvcc`）、头文件和库。PyTorch CUDA Build 是针对某个 CUDA 版本构建的框架包，其运行库可能由包或其依赖提供。
+这四样东西装在不同位置，管的事也不同。NVIDIA Driver 分两半：内核里那半直接跟硬件打交道，用户态那半（`libcuda.so` 等）给应用提供 Driver API，包括 Context、模块加载和设备执行控制。CUDA Runtime 是架在 Driver API 上的一层 `cuda*` 接口，很多初始化、上下文管理它替你做了。CUDA Toolkit 是编译和开发用的工具箱，里面有编译器驱动 `nvcc`、头文件和库。PyTorch CUDA Build 则是已经对着某个 CUDA 版本编好的框架包，它用到的运行库可能由这个包自带，也可能来自它的依赖。
 
 例如驱动报告 CUDA 12.4，`torch.version.cuda` 为 12.1，PATH 中没有 `nvcc`。只要框架构建、依赖、驱动和设备受支持，预编译 PyTorch 仍可运行 CUDA 运算。编译自定义扩展则可能另需匹配的 Toolkit 和宿主编译器。可执行一次设备张量运算并同步，再回读结果验证。
 
@@ -42,7 +42,7 @@ NVIDIA Driver 由内核驱动和配套用户态组件组成。Driver API 提供 
 | Minor Version Compatibility（次版本兼容） | 同一 CUDA 大版本中，在达到最低驱动版本时运行由较新次版本构建的应用       | 新功能可能要求更新驱动。旧驱动不能保证 JIT 较新的 PTX，可为目标设备提供兼容 cubin |
 | Forward Compatibility（前向兼容）         | 受支持的 Linux GPU 与驱动组合通过 `cuda-compat-*` 使用较新用户态驱动组件 | 必须核对支持矩阵、正确加载兼容库。包不替换宿主内核驱动                            |
 
-Compute Capability（计算能力）是 GPU 架构能力，决定可用指令和可运行的设备代码。它与软件版本是不同维度。排查时分别核对实际加载的驱动库、PTX JIT 所需驱动能力、API 功能要求以及构建产物覆盖的目标架构。[NVIDIA CUDA 次版本兼容](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) · [前向兼容支持矩阵](https://docs.nvidia.com/deploy/cuda-compatibility/forward-compatibility.html)
+Compute Capability（计算能力）描述的是这块 GPU 的硬件架构支持哪些指令、能跑哪些编译产物，编号写成 `sm_XX`，编译时的 `-arch` 就是按它选。CUDA 版本、驱动版本是软件侧的编号。所以两者不能互推：软件版本对不对是一关，编译产物有没有覆盖这张卡的架构是另一关。排查时两关都要过，还要分别核对实际加载的驱动库、PTX JIT 所需驱动能力以及 API 功能要求。[NVIDIA CUDA 次版本兼容](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) · [前向兼容支持矩阵](https://docs.nvidia.com/deploy/cuda-compatibility/forward-compatibility.html)
 
 ## 2. 宿主驱动与镜像用户态组件的分工 {#_2-容器里应该放什么}
 
@@ -50,9 +50,9 @@ Compute Capability（计算能力）是 GPU 架构能力，决定可用指令和
 
 通常由宿主提供内核驱动，Container Toolkit 在运行时按配置暴露设备与相应驱动用户态能力；镜像携带应用所需的 CUDA 用户态运行库、数学库和框架。`base`、`runtime`、`devel` 等镜像变体内容不同，不能写成“官方 CUDA 镜像没有 NVIDIA 库”。
 
-容器工具不是把宿主整个 `/usr/local/cuda` 自动复制进镜像。也不应把一套宿主驱动文件随意打包覆盖到容器，以免绕过明确的兼容机制。
+容器工具不是把宿主整个 `/usr/local/cuda` 自动复制进镜像。把一套宿主驱动文件随意打包覆盖到容器，会绕过明确的兼容机制。
 
-OCI（Open Container Initiative，开放容器倡议）运行时根据容器配置设置进程环境、挂载和设备访问。Container Image（容器镜像）提供应用文件和用户态依赖。NVIDIA Container Toolkit 按运行时配置把选定设备及驱动能力暴露给容器，应用通过可见的驱动用户态接口与宿主内核驱动交互。图中的“驱动调用”代表典型 Runtime 路径，应用也可直接调用 Driver API。
+三样东西分工不同。Container Image（容器镜像）是一份文件系统，里面装应用和它需要的用户态库。容器启动时，OCI（Open Container Initiative，开放容器倡议）运行时按容器配置准备好进程环境、挂载和设备访问。NVIDIA Container Toolkit 就在这个时刻把宿主上选定的 GPU 设备与驱动用户态文件放进容器，容器里的程序才调得到它们。程序最终调用的是宿主内核里那份驱动，图中“驱动调用”画的就是这条典型 Runtime 路径，应用也可以绕过 Runtime 直接调 Driver API。
 
 | 库                  | 职责                                                              | 常见来源                           |
 | ------------------- | ----------------------------------------------------------------- | ---------------------------------- |
@@ -72,13 +72,13 @@ CDI（Container Device Interface，容器设备接口）用命名设备和声明
 
 ## 3. 分别配置可见设备与驱动能力 {#_3-可见设备与驱动能力是两个维度}
 
-`NVIDIA_VISIBLE_DEVICES` 决定可暴露的设备；`NVIDIA_DRIVER_CAPABILITIES` 决定相应驱动功能。按标准 NVIDIA runtime 配置，`none` 与空字符串/`void` 语义不同：前者可启用驱动能力但不暴露 GPU；后者通常相当于普通 runc 行为。不要把空字符串写成通用的“GPU 虚拟化模式”。[Docker 专项配置](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html)
+`NVIDIA_VISIBLE_DEVICES` 决定可暴露的设备；`NVIDIA_DRIVER_CAPABILITIES` 决定相应驱动功能。按标准 NVIDIA runtime 配置，`none` 与空字符串/`void` 语义不同：前者可启用驱动能力但不暴露 GPU；后者通常相当于普通 runc 行为。空字符串不是通用的“GPU 虚拟化模式”。[Docker 专项配置](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html)
 
-不要仅为运行 `nvidia-smi`，就默认添加 `--privileged` 或暴露全部设备。性能分析所需的权限应另行评估，不能以“能跑就行”为由忽略安全边界。
+只为运行 `nvidia-smi` 就添加 `--privileged` 或暴露全部设备，会把容器权限放大到不需要的范围。性能分析所需的权限应另行评估，不能以“能跑就行”为由忽略安全边界。
 
 假设宿主有 GPU 0–3，Docker 只暴露宿主 GPU 2。应用看到的 CUDA 设备通常重新编号为 `cuda:0`。`CUDA_VISIBLE_DEVICES` 只在 CUDA 进程内部过滤或重排其可访问集合，无法把未注入的设备加回来。数字索引取决于枚举环境，跨容器记录宜用 `nvidia-smi -L` 取得的 GPU UUID。传统 NVIDIA runtime 环境变量中，`NVIDIA_VISIBLE_DEVICES=all` 请求所有 GPU，`none` 保留驱动能力但不暴露 GPU，`void`、空字符串或未设置按普通运行时处理。镜像本身可能预设 `all`。Capability 中 `compute` 用于 CUDA/OpenCL，`utility` 用于 NVML 和 `nvidia-smi`。
 
-设备权限按应用需要最小化。一般 CUDA 程序无需 `--privileged`，它会扩大设备与宿主权限。设备可见性和 driver capabilities 控制访问及驱动功能，无法据此推导算力或显存配额。MIG 关注支持设备上的硬件分区，MPS 关注多进程执行共享，二者与容器权限分别配置。
+设备权限按应用需要最小化。一般 CUDA 程序无需 `--privileged`，它会扩大设备与宿主权限。设备可见性和 driver capabilities 只控制访问与驱动功能，算力或显存配额要另设。MIG 关注支持设备上的硬件分区，MPS 关注多进程执行共享，二者与容器权限分别配置。
 
 ## 4. 核对顺序
 
@@ -102,7 +102,7 @@ CDI（Container Device Interface，容器设备接口）用命名设备和声明
 | `libcudart`、cuBLAS 等    | 镜像、框架依赖或明确挂载 | 镜像包清单与库路径       |
 | `nvcc`                    | 选定 Toolkit/devel 环境  | PATH、版本、构建日志     |
 
-表格描述通常路径，兼容包、显式挂载及特殊平台可能改变提供方，需记录例外。设备端 `malloc` 不等于 host `cudaMalloc`。
+表格描述通常路径，兼容包、显式挂载及特殊平台可能改变提供方，需记录例外。设备端 `malloc` 与 host `cudaMalloc` 是两套分配路径。
 
 ## 6. 固定镜像并验证一次实际计算
 
@@ -144,6 +144,6 @@ docker run --rm --platform linux/amd64 --gpus '"device=0"' \
   sh -ec 'ldd /opt/vector_add; /opt/vector_add'
 ```
 
-容器启动验证进程与镜像环境。NVML 成功说明管理路径可用。`cudaMalloc` 成功才验证了示例中的 Runtime 初始化及分配。同步、回拷和逐元素检查均成功后，`PASS` 才能验证 kernel 路径。若部署 PyTorch，另在实际框架镜像运行一次设备张量计算并回读，base 并不预装框架。
+这几行输出各自只证明一层。容器里能列出设备、`ldd` 能找到 `libcuda.so.1`，说明镜像里的用户态库和驱动路径是通的，NVML 这条管理路径可用；程序里 `cudaMalloc` 成功，才说明 CUDA Runtime 能初始化并申请到显存。只有同步、回拷和逐元素比对都通过、打印出 `PASS`，才算验证了 kernel 真的算对。若部署 PyTorch，还要在实际框架镜像里跑一次设备张量计算并回读，base 镜像并不预装框架。
 
 记录宿主 OS、CPU 架构、GPU 型号及计算能力、驱动、Docker、Container Toolkit、注入模式、镜像 tag 与 digest、Toolkit、框架构建和实际运行命令与结果。[NVIDIA Container Toolkit 1.18.0 安装与运行时配置](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/1.18.0/install-guide.html)

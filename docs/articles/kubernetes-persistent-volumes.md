@@ -25,7 +25,7 @@ order: 23
 
 Pod 需要存储，但不适合把某台服务器的所有实现细节都写进应用模板。
 
-PV（PersistentVolume，持久卷）、PVC（PersistentVolumeClaim，持久卷申领）和 StorageClass（存储类）分开表达后端、需求与供应策略：
+PV（PersistentVolume，持久卷）、PVC（PersistentVolumeClaim，持久卷申领）和 StorageClass（存储类）各管一件事：PV 说“集群里有哪些已经可用的卷”，PVC 说“我的应用需要多大的、能怎么读写的卷”，StorageClass 说“这类需求该交给谁去后端真正划一块出来”。
 
 | 对象         | 作用                                 | 范围       |
 | ------------ | ------------------------------------ | ---------- |
@@ -37,13 +37,13 @@ PV（PersistentVolume，持久卷）、PVC（PersistentVolumeClaim，持久卷�
 
 PV 不是磁盘分区本身，StorageClass 也不会凭空提供磁盘。动态供应依赖可用的驱动或 provisioner，以及所需的后端权限。存储驱动与 CRI 运行时处于不同层次，不能把原示意图中的 CRI 当作通用存储供应接口。
 
-典型动态供应关系可理解为 PVC → 引用 StorageClass → Provisioner（供应器）/CSI 驱动准备后端 → 创建 PV 并形成 PVC Bound → Pod 挂载 → 应用访问。CSI（Container Storage Interface，容器存储接口）不同于 CRI（Container Runtime Interface，容器运行时接口）。这是职责关系，具体顺序受绑定模式与驱动实现影响，不能画成所有存储都完全相同的固定调用链。
+动态供应的过程可以按顺序理解：先由 PVC 指明要用哪个 StorageClass；StorageClass 背后的 Provisioner（供应器）或 CSI 驱动去后端真正划出存储；系统再据此创建 PV，把 PVC 与它绑定（Bound）；Pod 调度到节点后把卷挂载进容器；最后应用才在挂载路径上读写。CSI（Container Storage Interface，容器存储接口）不同于 CRI（Container Runtime Interface，容器运行时接口）。这是职责上的分工，具体顺序受绑定模式与驱动实现影响，不能画成所有存储都完全相同的固定调用链。
 
 ## 2. 静态匹配与动态供应
 
 静态供应由管理员预先提供 PV，再根据 PVC 的要求匹配。动态供应则按适用的 StorageClass 与 provisioner 为申领创建相应资源。
 
-匹配需要考虑容量、class、accessModes、volumeMode、选择器和绑定约束等条件，并非“同一个 class 名就必定绑定”。卷需要满足 PVC 的容量需求，但访问模式匹配并不要求两侧列表的文本完全相同。
+绑定要逐项核对：容量够不够、class 名对不对、volumeMode 是否一致、所需的 accessModes 后端支不支持，还要看 PVC 的选择器和绑定约束。类名相同只是其中一项，并不足以完成绑定。卷需要满足 PVC 的容量需求，但访问模式匹配看的是能力是否覆盖，不要求两侧列表文本相同。
 
 假设两个静态 PV 均为 Available、Filesystem，且其他条件满足。PVC 请求 10Gi、RWO、class=fast：
 
@@ -56,7 +56,7 @@ PV 不是磁盘分区本身，StorageClass 也不会凭空提供磁盘。动态�
 
 storageClassName 省略与显式 `storageClassName: ""` 不等价：省略可能受默认 StorageClass 的准入或后续默认化处理影响，空字符串表示不请求某个存储类，不能当成选择默认类。PVC 的 spec.volumeName 可指向预期 PV，但仍需满足容量、class、访问模式等适用校验，也不免除挂载时的拓扑限制；不能用它绕过所有绑定规则。[1.28 PV/PVC 绑定与预绑定](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/storage/persistent-volumes.md)
 
-`WaitForFirstConsumer` 会让供应或绑定与使用该 PVC 的 Pod 调度协同，因此 PVC Pending 不一定立即表示故障；要先看 class 的绑定模式和事件。
+`WaitForFirstConsumer`（等到第一个要用这个 PVC 的 Pod 出现，再决定卷放在哪个区、哪台节点上）会让供应或绑定与这个 Pod 的调度一起考虑，因此 PVC Pending 不一定立即表示故障；要先看 class 的绑定模式和事件。
 
 ### 2.1 两个可用区的绑定推演
 
@@ -90,7 +90,7 @@ WFFC（WaitForFirstConsumer，等待首个消费者）期间 PVC Pending 可能�
 
 ## 3. PVC 字段与 Pod 引用方式 {#_3-先纠正字段-再理解模式}
 
-下面是完整 PVC 与 Pod，可保存为 `catalog-storage.yaml` 进行结构核对。假设管理员已提供真实可用的 study-storage；名称本身不代表任何集群都有它。运行需专用 Linux 1.28 测试集群、全新 study 测试 PVC、足够后端容量、供应器与节点插件、存储权限及可拉取的固定版本 busybox:1.36.1。不要把清单指向已有业务数据，本次不创建、删除或扩容实际 PVC/PV。
+下面是完整 PVC 与 Pod，可保存为 `catalog-storage.yaml` 进行结构核对。假设管理员已提供真实可用的 study-storage；名称只是示例，实际集群要先确认该存储类与后端存在。运行需专用 Linux 1.28 测试集群、全新 study 测试 PVC、足够后端容量、供应器与节点插件、存储权限及可拉取的固定版本 busybox:1.36.1。清单指向已有业务数据会带来误删风险；本次不创建、删除或扩容实际 PVC/PV。
 
 ```yaml
 apiVersion: v1
@@ -181,7 +181,7 @@ RWO（ReadWriteOnce）通常指单节点读写挂载，同节点多个 Pod 的�
 
 RWOP（ReadWriteOncePod）限制单 Pod 读写使用，在 1.28 属于 Beta，且有 CSI 与相关组件条件。不能只改一个字符串就假设任意 NFS 或旧驱动支持它。
 
-| 模式                   | 典型含义           | 不能据此推出                              |
+| 模式                   | 典型含义           | 边界                                      |
 | ---------------------- | ------------------ | ----------------------------------------- |
 | RWO：ReadWriteOnce     | 单节点读写挂载     | 只能由一个 Pod 使用；同节点可能有多个 Pod |
 | RWX：ReadWriteMany     | 多节点读写挂载     | 自动保证多写事务一致性                    |
@@ -190,7 +190,7 @@ RWOP（ReadWriteOncePod）限制单 Pod 读写使用，在 1.28 属于 Beta，�
 
 v1.28.0 的 ReadWriteOncePod 门控为默认开启的 Beta，管理员可能覆盖。RWOP 只支持适用 CSI 卷，驱动需支持对应访问语义；官方 Beta 说明要求相应 CSI sidecar 至少为 csi-provisioner v3.0.0、csi-attacher v3.3.0、csi-resizer v1.3.0，仍需按实际组件和驱动核对，不能当成安装了 Kubernetes 就自动满足。[1.27 RWOP Beta 官方说明](https://kubernetes.io/blog/2023/04/20/read-write-once-pod-access-mode-beta/)与[v1.28.0 门控](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/features/kube_features.go)
 
-访问模式描述可用的挂载能力及匹配条件，不代替文件系统权限、应用锁和一致性协议。RWX 也不等于多个数据库进程能安全共写同一数据目录。
+访问模式描述可用的挂载能力及匹配条件，不代替文件系统权限、应用锁和一致性协议。RWX 只说明多个节点可挂载，数据库进程共写同一目录仍要应用层协调。
 
 上述模式与生命周期定义参见 [1.28 PV/PVC 文档](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/storage/persistent-volumes.md)。
 
@@ -227,15 +227,15 @@ kubectl get pv PV_NAME -o yaml
 kubectl describe pod POD_NAME -n NAMESPACE
 ```
 
-先看事件，再区分 Pending、Attach、Mount 与 Permission denied 等不同阶段。不要因为“PV 看起来正常”就直接删除 PVC 重试。
+先看事件，再区分 Pending、Attach、Mount 与 Permission denied 等不同阶段。“PV 看起来正常”不足以作为删除 PVC 重试的理由。
 
-PVC Pending 可能在等待供应或消费者；Bound 但挂载失败应看 Pod Events、CSI 驱动/节点插件和后端状态；已挂载却 Permission denied 则继续检查容器 UID/GID、目录权限和文件系统。不要通过删除申领来掩盖不同阶段的问题。
+PVC Pending 可能在等待供应或消费者；Bound 但挂载失败应看 Pod Events、CSI 驱动/节点插件和后端状态；已挂载却 Permission denied 则继续检查容器 UID/GID、目录权限和文件系统。删除申领会掩盖不同阶段的问题，先定位再处理。
 
 ## 6. 回收策略决定数据风险
 
-PV 使用 `persistentVolumeReclaimPolicy`；StorageClass 的相关字段是 `reclaimPolicy`。Retain 让后续回收需要人工管理，Delete 则可能由适用实现删除 PV 和后端存储。不能把 Delete 写成所有场景无条件的默认值。
+PV 使用 `persistentVolumeReclaimPolicy`；StorageClass 的相关字段是 `reclaimPolicy`。Retain 表示 PVC 删掉后卷和里面的数据都留着，要人来决定怎么处理；Delete 表示由适用实现删掉 PV，并可能连后端那块存储一起删。不能把 Delete 写成所有场景无条件的默认值。
 
-Released 不等于安全可供另一个 PVC 自动重用。Recycle 是历史机制，不作为新实践建议。动态 provisioner 的 `archiveOnDelete` 等参数是实现特定行为，不能当作所有 StorageClass 的标准备份开关。
+Released 只表示原申领已删除，里面的数据仍可能属于旧业务，不能自动重用。Recycle 是历史机制，不作为新实践建议。动态 provisioner 的 `archiveOnDelete` 等参数是实现特定行为，不能当作所有 StorageClass 的标准备份开关。
 
 假设 catalog-data 已绑定 pv-001，下面只作风险推演，不执行任何存储删除：
 
@@ -247,7 +247,7 @@ Released 不等于安全可供另一个 PVC 自动重用。Recycle 是历史机�
 | 删除 StatefulSet       | 还需独立核对其 PVC Retention Policy，不能只看 PV 的回收策略                                                   |
 | 删除 PV 对象           | 可能受 in-use protection/finalizer 阻止或延迟；后端处理依对象状态、驱动与回收实现，不能当作安全解绑或擦除工具 |
 
-PVC 使用中的删除保护不等于取消删除请求，后续条件满足仍可能继续回收。StorageClass 的策略影响新供应 PV，实际排查应读取已绑定 PV 的 persistentVolumeReclaimPolicy。Retain 也可能保留误删或损坏后的数据，快照、备份和应用一致性恢复必须单独验证。
+PVC 使用中的删除保护只是推迟删除，条件满足后回收仍会继续。StorageClass 的策略影响新供应 PV，实际排查应读取已绑定 PV 的 persistentVolumeReclaimPolicy。Retain 也可能保留误删或损坏后的数据，快照、备份和应用一致性恢复必须单独验证。
 
 删除 PVC 前，至少应核对绑定的 PV、回收策略、驱动参数、后端对象与可用备份；扩容则还需确认 class、驱动、卷类型和文件系统是否支持。持久卷、快照与备份各有边界，仍须验证恢复后的应用数据是否一致。
 

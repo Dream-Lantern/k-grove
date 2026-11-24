@@ -21,7 +21,7 @@ order: 7
 
 ## 1. 通过定义与执行分离复用提交工作 {#_1-它主要减少什么开销}
 
-大量短 kernel 每次由 CPU 单独提交时，主机开销可能占比较高。CUDA Graphs 把工作定义与执行分开，允许重用已实例化的执行图。它不等于 kernel 融合：图内仍可以保留多个 kernel，也不能保证单个长 kernel 本身因此变快。
+大量短 kernel 每次由 CPU 单独提交时，主机开销可能占比较高。CUDA Graphs 把“这活怎么干”和“现在就干”分开：先把一串 kernel 和它们的依赖录成一张图，之后每轮只发一条“回放这张图”的命令。它和 kernel 融合不是一回事——图里照样是多个独立 kernel，省下的是提交次数；反过来，把一个 kernel 写得更长也不会因为用了图而变快。
 
 [![CUDA Graphs：构建、回放与更新](/assets/notes/ai-infra/graph-lifecycle.svg)](/assets/notes/ai-infra/graph-lifecycle.svg)
 
@@ -36,7 +36,7 @@ order: 7
 | 每轮 GPU | 按流顺序运行 A、B、C | 按图依赖重新执行三个 kernel              |
 | 消费结果 | 等相应工作完成       | 等相应图执行完成                         |
 
-实例化检查定义、准备可复用的执行状态，存在一次性时间和资源开销。回放使用当前可访问的输入和已配置参数，三个 kernel 仍各自执行。若 B 后有两个独立分支，依赖解除后可被调度，能否重叠还取决于 SM、带宽等资源。
+实例化是拿图定义去生成一份 GPU 能直接照着执行的状态，属于一次性开销：花一次时间，之后每轮回放就不用再解析依赖关系。回放使用当前可访问的输入和已配置参数，三个 kernel 仍各自执行。若 B 后有两个独立分支，依赖解除后可被调度，能否重叠还取决于 SM、带宽等资源。
 
 ## 2. Graph 与 GraphExec 的区别
 
@@ -50,7 +50,7 @@ CUDA 12.8.1 还提供事件节点和条件节点等能力。选择节点与更�
 | `cudaGraphExecKernelNodeSetParams()` | 已实例化 GraphExec 中对应的 kernel 节点 | 少数节点参数变动，使用实例化来源图中的节点句柄 |
 | `cudaGraphExecUpdate()`              | 用新 Graph 尝试更新既有 GraphExec       | 多处变化且图拓扑、节点匹配及参数满足约束       |
 
-例如 B 使用同一 kernel、Context 和有效的缓冲区，只把乘数从 2 改成 3，可尝试对 B 执行实例节点更新，检查返回后再提交。参数改成指针时还要验证可访问性、分配寿命与 API 约束。若新增第四个节点并改变依赖，整体更新的拓扑契约不再满足，应检查返回及 `cudaGraphExecUpdateResultInfo`，实例化新图并在旧工作完成后清理旧资源。更新只影响后续 launch。多个宿主线程共享图对象时应串行化访问；同一个 GraphExec 的重复执行彼此有序，即使提交到不同流也不会并行运行同一个实例。需要并行尝试时使用不同实例和互不冲突的数据。
+例如 B 使用同一 kernel、Context 和有效的缓冲区，只把乘数从 2 改成 3，可尝试对 B 执行实例节点更新，检查返回后再提交。参数改成指针时还要验证可访问性、分配寿命与 API 约束。若新增第四个节点并改变依赖，图的节点与连线结构已经变了，超出整体更新允许的范围，这时应检查返回及 `cudaGraphExecUpdateResultInfo`，实例化新图并在旧工作完成后清理旧资源。更新只影响后续 launch。多个宿主线程共享图对象时应串行化访问；同一个 GraphExec 的重复执行彼此有序，即使提交到不同流也不会并行运行同一个实例。需要并行尝试时使用不同实例和互不冲突的数据。
 
 ## 3. 一个可核对的使用框架
 
@@ -71,14 +71,14 @@ CUDA 12.8.1 还提供事件节点和条件节点等能力。选择节点与更�
 ### 捕获的三种路径
 
 - **单流**。用显式流调用 `cudaStreamBeginCapture()`，提交支持捕获的 kernel 或拷贝，再在发起流上调用 `cudaStreamEndCapture()` 取得 Graph。捕获期间记录节点与依赖，设备执行发生在实例化和 launch 之后。
-- **非法同步**。捕获中调用 `cudaStreamSynchronize()` 等待该流会失败，捕获可能失效。捕获范围内还要避免涵盖被捕获流的设备同步或查询，以及受模式约束的潜在不安全 API，例如普通 `cudaMalloc()`。预先准备缓冲区。若中途出错，仍在发起流结束捕获并检查结果，丢弃失败或空图，恢复到非捕获状态后重试或走普通提交。
+- **非法同步**。捕获期间只要调用 `cudaStreamSynchronize()` 去等这条流，捕获就会失败，整张图可能作废。同样要避开的还有：对被捕获流做设备同步或查询，以及普通 `cudaMalloc()` 这类受模式约束的调用，所以缓冲区要提前分配好。若中途出错，仍在发起流上结束捕获并检查结果，丢弃失败或空图，恢复到非捕获状态后重试或走普通提交。
 - **跨流**。发起流 A 捕获并记录 Event E1，流 B 等 E1 后加入同一捕获图。B 提交任务并记录 E2，A 等 E2，把 B 汇回发起流后再结束捕获。未汇回的分支可导致结束失败。
 
-Legacy 默认流不能发起捕获，捕获涉及 blocking 流时也应避免隐式触发 legacy 同步。Global 模式对潜在不安全调用的限制涉及其他线程，ThreadLocal 将这类限制限于发起线程，Relaxed 放宽此类限制，但仍禁止与捕获直接冲突的操作。除 Relaxed 外，结束捕获须由发起线程调用。[CUDA 12.8.1 Stream Capture](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html#stream-capture) · [Stream API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__STREAM.html)
+legacy 默认流（不指定流时程序使用的那个默认流）不能发起捕获，捕获涉及 blocking 流时也应避免隐式触发 legacy 同步。Global 模式对潜在不安全调用的限制涉及其他线程，ThreadLocal 将这类限制限于发起线程，Relaxed 放宽此类限制，但仍禁止与捕获直接冲突的操作。除 Relaxed 外，结束捕获须由发起线程调用。[CUDA 12.8.1 Stream Capture](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html#stream-capture) · [Stream API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__STREAM.html)
 
 ## 4. Graph 回放与普通 launch 的观测覆盖 {#_4-为什么只-hook-culaunchkernel-会漏数据}
 
-执行图回放时，不保证经过应用拦截的普通 kernel launch 入口。因此，“hook 没命中”不能说明 kernel 没执行；也不能通过让图相关函数直接返回成功来绕过调用，这可能破坏输出句柄、依赖和应用正确性。
+执行图回放时，不保证经过应用拦截的普通 kernel launch 入口。因此，“hook 没命中”只说明没有拦截到，kernel 仍可能执行；让图相关函数直接返回成功会破坏输出句柄、依赖和应用正确性。
 
 图节点遍历可以帮助读取定义态的 kernel 参数，但真实运行时间需要 profiler/activity 证据。节点数也取决于模型、形状、后端及版本。
 
@@ -97,7 +97,7 @@ CUPTI（CUDA Profiling Tools Interface，CUDA 性能分析工具接口）可记�
 | 显式 H2D copy 时间   | 数据搬运活动       | 与 kernel launch 不是同一活动    |
 | kernel 执行时间      | 设备活动 start/end | 受并发和 profiler 扰动影响       |
 
-Graph 复用不意味着输入数据无需传输；只有实现确实复用或避免了某次搬运，才能从账本中去掉它。图里有多少节点也不等于回放了多少工作：子图需要相应遍历，条件节点和回放次数还会改变实际活动数量。判断覆盖与耗时应以真实 activity 为证据，而不是由静态节点数乘一个经验值。
+Graph 复用不意味着输入数据无需传输；只有实现确实复用或避免了某次搬运，才能从账本中去掉它。节点数量不等于回放的工作量：子图需要相应遍历，条件节点和回放次数还会改变实际活动数量。判断覆盖与耗时应以真实 activity 为证据，而不是由静态节点数乘一个经验值。
 
 ## 7. 对照实验：同一组三个短 kernel
 

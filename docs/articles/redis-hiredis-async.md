@@ -21,17 +21,17 @@ order: 16
 
 [返回本册目录](/collections/redis/)
 
-hiredis 异步接口通过事件循环推进网络连接与命令读写，让应用在等待期间处理其他事件。理解调用过程时，可以依次跟踪连接开始、命令排队、回调取得结果和对象收尾；事件循环的并发机会与服务端处理能力分别评价。
+hiredis 异步接口通过事件循环推进网络连接与命令读写，让应用在等待期间处理其他事件。理解调用过程时，可以依次跟踪连接开始、命令排队、回调取得结果和对象收尾。要分清两件事：事件循环让客户端在等网络时能去干别的；Redis 服务端执行命令的速度并不会因此变快。
 
-本章固定采用 **hiredis v1.2.0**。Event Loop（事件循环）等待网络可读、可写等事件，再调用相应处理函数；Callback（回调）是事件就绪后被调用的应用函数。异步把网络就绪等待交给事件循环，不代表为每个请求创建线程。同步连接基础见 [第 15 章](/articles/redis-hiredis.html)。[v1.2.0 官方说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
+本章固定采用 **hiredis v1.2.0**。Event Loop（事件循环）等待网络可读、可写等事件，再调用相应处理函数；Callback（回调）是事件就绪后被调用的应用函数。异步把网络就绪等待交给事件循环，请求并不各自占用线程。同步连接基础见 [第 15 章](/articles/redis-hiredis.html)。[v1.2.0 官方说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
 
 [![hiredis 异步回复：对象所有权](/assets/notes/redis/redis-study-async.svg)](/assets/notes/redis/redis-study-async.svg)
 
 ## 1. 从创建连接到命令回调 {#_1-四个时刻不要混在一起}
 
-调用 `redisAsyncConnect` 并取得上下文，只是连接过程的起点，并不等于连接成功。应先检查立即可见的错误，再通过连接回调获取后续结果。
+调用 `redisAsyncConnect` 取得的上下文只表示连接过程开始，此时连接尚未建立。应先检查立即可见的错误，再通过连接回调获取最终结果。
 
-`redisAsyncCommand` 返回成功，表示命令被客户端接受并排队，而不是 Redis 已经执行。网络事件由 libevent、libev 等适配器绑定的事件循环推进；应用最终在命令回调里检查回复或连接失败。
+`redisAsyncCommand` 返回成功，表示命令被客户端接受并排进了本地发送缓冲，而不是 Redis 已经执行。hiredis 自己不跑事件循环，它靠适配器把这条连接的 socket 事件接到 libevent、libev 这类事件循环库上，由后者在 socket 可读可写时回头调用 hiredis。应用最终在命令回调里检查回复或连接失败。
 
 下面是结构示意，不是可以直接编译的完整程序：
 
@@ -69,7 +69,7 @@ REDIS_OK            <------ 本地提交成功
 | redisAsyncCommand 返回 REDIS_OK        | 命令被本地客户端接受                       | 服务端是否收到、执行   |
 | 命令回调得到正常回复                   | 已收到可解析结果，仍需核对类型和值         | 外部业务是否完成       |
 
-本地提交成功、网络连接成功、Redis 命令成功是三个不同状态。[v1.2.0 异步实现](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/async.c)
+上表四行其实是三个不同层面的“成功”：`redisAsyncCommand` 返回 REDIS_OK 只说明命令进了本地缓冲；连接回调成功只说明网络连上了；只有命令回调拿到回复，才说明 Redis 执行过这条命令。[v1.2.0 异步实现](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/async.c)
 
 下面是一份完整的教学程序文本，可另存为 `async-demo.c`，示例未经编译或运行验证。前提是 Linux 等开发环境安装匹配的 hiredis v1.2.0、libevent 2.x 开发库及 pkg-config，测试实例位于 127.0.0.1:6379。它只演示默认所有权模式下的 PING，不包括认证和重连：
 
@@ -167,9 +167,9 @@ cc -std=c11 -Wall -Wextra async-demo.c \
 
 ## 2. 回调可能拿不到回复
 
-连接中断时，待处理回调可能收到 NULL reply。这不代表正常的 Redis NIL 回复：NIL 是一个有类型的回复对象，而 NULL 表示没有可供解析的回复。处理代码必须先判空，再检查类型和业务字段。
+连接中断时，待处理回调可能收到 NULL reply。这与 Redis 的 NIL 回复不同：NIL 是有类型的回复对象，NULL 表示没有可供解析的回复。处理代码必须先判空，再检查类型和业务字段。
 
-默认情况下，异步 redisReply（回复对象）由 hiredis 在命令回调返回后释放，应用不应再次手工释放，也不能保存裸指针供以后使用。若需要长期保留数据，应复制所需字段；非默认选项另见下文。API（Application Programming Interface，应用程序编程接口）的所有权约定见 [v1.2.0 官方说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)。
+默认情况下，异步 redisReply（回复对象）由 hiredis 在命令回调返回后释放；应用再次手工释放会造成重复释放，保存裸指针也会在回调返回后失效。若需要长期保留数据，应复制所需字段；非默认选项另见下文。API（Application Programming Interface，应用程序编程接口）的所有权约定见 [v1.2.0 官方说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)。
 
 下面用命令回调片段说明回复处理：
 
@@ -185,7 +185,7 @@ void on_reply(redisAsyncContext *ac, void *reply, void *privdata) {
 }
 ```
 
-NULL 不等于 NIL（空值回复）：前者没有回复对象，不能据此认定键不存在；后者如 GET 缺失键时的合法结果。ERROR 是服务端错误回复，仍要按具体命令判断结果。
+NULL 与 NIL（空值回复）不同：前者没有回复对象，不能用来判断键是否存在；后者是 GET 缺失键时的合法结果。ERROR 是服务端错误回复，仍要按具体命令判断结果。
 
 | 对象                | 默认归属                                               | 生命周期边界                                        |
 | ------------------- | ------------------------------------------------------ | --------------------------------------------------- |
@@ -203,15 +203,15 @@ NULL 不等于 NIL（空值回复）：前者没有回复对象，不能据此�
 | 后续连接回调报告失败                                     | 库在适用失败回调之后自动释放；不要再次释放或长期保存其地址      |
 | 正常请求异步断开或通信异常断开                           | 默认由库按断开流程收尾，外部状态和事件循环资源仍需应用管理      |
 
-`REDIS_OPT_NOAUTOFREE` 阻止连接/通信失败时自动释放上下文，应用需显式安排收尾；v1.2.0 中显式 `redisAsyncDisconnect` 会清除此限制并进入正常断开释放流程。`REDIS_OPT_NOAUTOFREEREPLIES` 则禁止库在已调用的命令回调返回后自动释放回复，应用必须承担相应回复的释放责任。一个管上下文，一个管回复，不能互相替代；也不要与 RESP（Redis Serialization Protocol，Redis 序列化协议）第 3 版 PUSH（主动推送）回复的独立选项混用。[v1.2.0 所有权选项](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
+`REDIS_OPT_NOAUTOFREE` 阻止连接/通信失败时自动释放上下文，应用需显式安排收尾；v1.2.0 中显式 `redisAsyncDisconnect` 会清除此限制并进入正常断开释放流程。`REDIS_OPT_NOAUTOFREEREPLIES` 则禁止库在已调用的命令回调返回后自动释放回复，应用必须承担相应回复的释放责任。两者一个管上下文、一个管回复，适用范围不同；RESP（Redis Serialization Protocol，Redis 序列化协议）第 3 版 PUSH（主动推送）回复另有独立选项。[v1.2.0 所有权选项](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
 
-`redisAsyncDisconnect` 停止新命令提交，尝试发送剩余缓冲并处理在途回复后正常断开；`redisAsyncFree` 不等待它们成功完成，清理时会对适用的待处理回调传入 NULL。回调中调用 Free 时，库先标记释放，在回调返回后的安全位置收尾。因此请求释放后不要继续提交，也不要在另一处重复 Free；释放回调资源和 App 时，还要考虑这些 NULL 回调。[v1.2.0 断开、延迟释放与回调源码](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/async.c)
+`redisAsyncDisconnect` 停止新命令提交，尝试发送剩余缓冲并处理在途回复后正常断开；`redisAsyncFree` 不等待它们成功完成，清理时会对适用的待处理回调传入 NULL。回调中调用 Free 时，库先标记释放，在回调返回后的安全位置收尾。因此释放请求发出后不能再提交命令，同一上下文也不要在另一处重复 Free；释放回调资源和 App 时，还要考虑这些 NULL 回调。[v1.2.0 断开、延迟释放与回调源码](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/async.c)
 
 `privdata` 的归属也要写清楚：谁创建，哪些回调还可能访问，何时释放。把已经离开作用域的栈变量地址留给未来回调，或者断开时提前释放共享状态，都会形成悬空引用；上例中的 App 则始终保留到全部收尾完成。
 
 ## 3. 回调与工作队列的职责分工 {#_3-不要让回调堵住事件循环}
 
-如果消息回调里进行长时间数据库查询、磁盘写入或等待另一把锁，其他网络事件也可能得不到处理。异步并不意味着回调可以无限耗时。
+如果消息回调里进行长时间数据库查询、磁盘写入或等待另一把锁，同一线程上其他连接的网络事件也会排在这后面，得不到处理。异步换掉的只是“等网络”那一段，回调自己花的时间照样占着事件循环。
 
 常见做法是让回调只负责校验、复制必要数据，并将任务投递到有界队列，耗时工作交给合适的工作线程。跨线程结果返回连接所属的事件循环时，也应通过安全机制投递，不能直接并发操作同一个 async context。
 
@@ -229,7 +229,7 @@ hiredis v1.2.0 的 redisAsyncContext 不是线程安全对象，工作线程不�
 
 ## 4. 订阅、重连和背压
 
-PubSub 回调会多次触发，包括订阅确认与消息内容，不能按“一条命令只有一个业务消息”解析。断线后重新连接，还要重新认证并恢复订阅；断线期间的普通 PubSub 消息不会自动补发。
+PubSub 回调会多次触发：订阅成功时服务端先回一条确认，之后每来一条消息再触发一次，所以不能按“一条命令只有一个业务消息”解析。断线后重新连接，还要重新认证并恢复订阅；断线期间的普通 PubSub 消息不会自动补发。
 
 PubSub（Publish/Subscribe，发布订阅）的恢复边界见 [第 11 章](/articles/redis-pubsub.html)。恢复流程应先区分状态：
 

@@ -23,20 +23,20 @@ order: 16
 
 ## 1. 哪些应用需要稳定身份
 
-Deployment 中的副本通常可互换；有些应用还需要固定成员名、独立数据目录或受控的成员启动顺序。StatefulSet（有状态副本集）提供序号、稳定命名及卷申领等机制。
+Deployment 中的副本通常可互换；有些应用还需要固定成员名、独立数据目录或受控的成员启动顺序。StatefulSet（有状态副本集）的做法是：给每个副本编一个固定序号（0、1、2…），把序号写进 Pod 名字，并可用卷申领模板为每个副本单独申请一份存储。
 
 例如一组名为 ledger 的副本，可以采用 ledger-0、ledger-1 等逻辑名字。某个实例替换后能沿用相应身份和存储引用，但替代 Pod 的 UID、节点和 IP 仍可能改变。应用不能把稳定名字误当成永不变动的进程或地址。
 
 [![StatefulSet：身份与存储分开管理](/assets/notes/kubernetes/k8s-stateful-identity.svg)](/assets/notes/kubernetes/k8s-stateful-identity.svg)
 
-StatefulSet 不会自动将普通数据库变成多副本数据库。复制协议、选主、仲裁和备份仍需由应用及相应的运维方案实现。
+StatefulSet 不会自动把普通数据库变成多副本数据库。哪个节点是主、其他副本怎么同步数据、多少副本确认才算写入成功、备份怎么做，这些它都不管，仍要由数据库自身和相应的运维方案实现。
 
 StatefulSet 维护的是成员逻辑身份。PVC（PersistentVolumeClaim，持久卷申领）引用 PV（PersistentVolume，持久卷）。以 study 中的 ledger 为例：
 
 | 成员     | 独立 PVC      | 重建后保持与可能变化的内容                          |
 | -------- | ------------- | --------------------------------------------------- |
 | ledger-0 | data-ledger-0 | 名称与对应存储引用可沿用，Pod UID、IP、节点可能变化 |
-| ledger-1 | data-ledger-1 | 同上，不代表原容器进程一直存活                      |
+| ledger-1 | data-ledger-1 | 同上；Pod 名称保持不变，容器进程可能已经重启        |
 | ledger-2 | data-ledger-2 | 同上，不表示三成员共享同一数据目录                  |
 
 跨节点重新挂载还受 PV 拓扑、CSI（Container Storage Interface，容器存储接口）驱动、访问模式及后端能力约束，稳定名称不能消除存储限制。
@@ -132,7 +132,7 @@ spec:
 
 volumeClaimTemplates 中的 data 分别生成 data-ledger-0、data-ledger-1、data-ledger-2，挂载到对应成员的 /data。ReadWriteOnce 表达单节点读写访问模式，并不是通用的“一个 Pod 独占”保证。
 
-集群域假设为 cluster.local 时，成员名为 `ledger-0.ledger-headless.study.svc.cluster.local`：依次是 Pod 名、Service 名、命名空间、服务域标识和集群域。cluster.local 只是常见示例。Service 必须存在，解析还受端点 Ready、CoreDNS 配置和 DNS 缓存影响；稳定名称不保证始终可解析或可达。这里没有设置 publishNotReadyAddresses，因此未就绪成员不应被当作已正常发布的就绪端点。
+集群域假设为 cluster.local 时，成员名为 `ledger-0.ledger-headless.study.svc.cluster.local`：依次是 Pod 名、Service 名、命名空间、服务域标识和集群域。cluster.local 只是常见示例。Service 必须存在，解析还受端点 Ready、CoreDNS 配置和 DNS 缓存影响；稳定名称不保证始终可解析或可达。这里没有设置 publishNotReadyAddresses，因此未就绪成员不会出现在就绪端点中。
 
 以下仅是复现步骤，create/apply 会修改实验资源；study 已被其他实验使用时应另选名称并同步修改所有清单和命令：
 
@@ -166,14 +166,14 @@ kubectl get pvc -n study
 
 ## 3. 顺序管理与更新策略
 
-默认 OrderedReady 管理方式要求按序推进适用的创建、扩缩容过程。Parallel 改变的是 Pod 管理行为，不能因此推导成滚动更新也必然完全并发。
+默认的 OrderedReady 要求一个一个来：上一个成员没有就绪，就不创建或删除下一个。Parallel 改的只是这件事——创建和缩容时不必等前一个就绪；滚动更新一次动几个成员，仍由更新策略决定。
 
 | 三副本从零创建                 | 可能的管理过程                                                                       |
 | ------------------------------ | ------------------------------------------------------------------------------------ |
 | OrderedReady（默认，有序就绪） | 创建 ledger-0，等其 Running 且 Ready，再创建 ledger-1；等其满足条件，再创建 ledger-2 |
 | Parallel（并行管理）           | 创建与扩缩容时不必等待前序成员 Ready 才继续处理其他成员，但仍受容量、存储等条件限制  |
 
-Parallel 不是“RollingUpdate 同时更新全部成员”的开关。Ready 也不等于数据库已经完成日志追赶、复制或选主；如应用要求这些条件，应设计真实的就绪契约与成员管理。
+Parallel 不是“RollingUpdate 同时更新全部成员”的开关。Ready 只反映探针结果，数据库是否完成日志追赶、复制或选主是另一回事；如应用要求这些条件，应设计真实的就绪契约与成员管理。
 
 在常见 RollingUpdate 路径里，更新通常从较大序号向较小序号推进，并等待相应就绪条件。`partition` 用来限定哪些序号进入更新范围，是按序号分界，不是按流量百分比划分灰度。
 
@@ -197,9 +197,9 @@ updateStrategy:
 
 [![StatefulSet 三成员：partition 从 2 降到 1 再降到 0](/assets/notes/kubernetes/k8s-stateful-partition.svg)](/assets/notes/kubernetes/k8s-stateful-partition.svg)
 
-OnDelete 保留已有 Pod，之后在受控删除与重建时采用新的模板；字段值使用 `OnDelete`。
+OnDelete 不会主动替换任何 Pod：模板改了之后，已有成员照旧运行，只有你手动删掉某个 Pod，它重建时才会用上新模板。字段值写作 `OnDelete`。
 
-不能照搬 Deployment 的 `maxSurge`。1.28 中 StatefulSet 的 `maxUnavailable` 也有 Alpha 特性门控条件，不应写成无条件通用字段，更不能沿用 Deployment 的 25% 默认值。[1.28 StatefulSet 的更新与门控说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/workloads/controllers/statefulset.md)
+不能照搬 Deployment 的 `maxSurge`。1.28 中 StatefulSet 的 `maxUnavailable` 仍是 Alpha，要打开对应的特性门控才能用，也没有 Deployment 那样的 25% 默认值。[1.28 StatefulSet 的更新与门控说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/workloads/controllers/statefulset.md)
 
 ## 4. 滚动失败后的模板回退与实例恢复 {#_4-滚动失败后-回退为何可能仍然卡住}
 
@@ -215,7 +215,7 @@ OnDelete 保留已有 Pod，之后在受控删除与重建时采用新的模板�
 
 ## 5. 删除资源与删除数据分开决定
 
-v1.28.0 的 StatefulSetAutoDeletePVC 为 Beta，上游默认开启；管理员仍可能覆盖门控。`persistentVolumeClaimRetentionPolicy` 有两个独立策略轴，默认均为 Retain：whenDeleted 控制删除 StatefulSet 时由模板创建的 PVC，whenScaled 控制缩容所对应的 PVC。
+v1.28.0 的 StatefulSetAutoDeletePVC 为 Beta，上游默认开启；管理员仍可能覆盖门控。`persistentVolumeClaimRetentionPolicy` 下有两个互不影响的开关，默认都是 Retain：whenDeleted 管删除整个 StatefulSet 时，由模板创建的那些 PVC 留不留；whenScaled 管缩容时，被缩掉的副本对应 PVC 留不留。
 
 新增字段片段，位于 StatefulSet spec，不是通用推荐：
 
@@ -226,7 +226,7 @@ persistentVolumeClaimRetentionPolicy:
   whenScaled: Delete
 ```
 
-该例表示删除整个 StatefulSet 时保留相应 PVC，但缩容时删除缩掉副本对应的 PVC。普通故障 Pod 的替换不等于缩容，不应因此删除其原有 PVC。
+该例表示删除整个 StatefulSet 时保留相应 PVC，但缩容时删除缩掉副本对应的 PVC。普通故障 Pod 的替换不是缩容，原有 PVC 要保留。
 
 仅作纸面推演：三副本缩为两副本后，ledger-0、ledger-1 及 data-ledger-0、data-ledger-1 保留；ledger-2 被缩容，在上述 whenScaled=Delete 条件下，控制器为 data-ledger-2 设置适用的所有者关系，由垃圾回收执行相应删除流程。whenDeleted=Retain 不能覆盖缩容轴；普通 Pod 故障替换也不是缩容。前面完整实验特意使用 Retain/Retain，不能与这里的删除策略片段混用。
 
@@ -270,7 +270,7 @@ kubectl describe pod POD_NAME -n NAMESPACE
 
 关注当前模板、更新修订、成员序号、就绪、PVC 绑定和应用复制状态；Kubernetes 资源正常只覆盖其中一部分。
 
-currentRevision、updateRevision 分别用于观察当前与目标更新修订，配合各 Pod 的 controller-revision-hash 标签判断版本；分区发布时两者可以不同。status.replicas 是观察到的成员数，readyReplicas 是其中 Ready 数，不能代替应用一致性检查。PVC 为 Bound 也不代表应用数据已正确恢复。
+修订（revision）是控制器每改一次模板就记下的一个版本号。currentRevision 是当前已经完成的那个修订，updateRevision 是正在推过去的那个，配合各 Pod 的 controller-revision-hash 标签就能判断某个成员处在哪个版本；分区发布时两者可以不同。status.replicas 是观察到的成员数，readyReplicas 是其中 Ready 数，不能代替应用一致性检查。PVC 为 Bound 只说明绑定完成，应用数据是否恢复要另验。
 
 下一章的[DaemonSet](/articles/kubernetes-daemonset.html)关注节点覆盖，和 StatefulSet 的稳定成员身份解决不同问题。
 

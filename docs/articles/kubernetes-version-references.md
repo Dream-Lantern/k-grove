@@ -25,7 +25,7 @@ order: 90
 
 ## 1. 怎样阅读版本证据
 
-`v1.28.0` 等 tag 固定了本册核对的源码版本，不等于真实集群必然运行该补丁版本；需要更严格归档时，还可记录解析后的 commit。`release-1.28` 是历史文档分支，仍可能修订，不等于当年的不可变快照。当前概念文档只用于明确注明的稳定机制，不用于证明后来新增字段在 1.28 可用。
+`v1.28.0` 等 tag 固定了本册核对的源码版本；真实集群运行的补丁版本可能不同，需要更严格归档时还可记录解析后的 commit。`release-1.28` 是一条还在更新的文档分支，今天读到的内容可能和当年发布时不一样，所以不能把它当成那个版本的不可变快照。当前概念文档只用于明确注明的稳定机制，不用于证明后来新增字段在 1.28 可用。
 
 ## 2. 章节的版本与前提
 
@@ -48,7 +48,7 @@ order: 90
 
 ### 补充源码入口与已完成核对
 
-- 控制平面：[kube-apiserver 路由安装](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/apiserver/pkg/endpoints/installer.go)、[kubeadm 常量与依赖版本](https://github.com/kubernetes/kubernetes/blob/v1.28.0/cmd/kubeadm/app/constants/constants.go)、[Deployment 协调](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/controller/deployment/deployment_controller.go)。组件配置、REST 资源、CRI 和 etcd 协议不是同一个 API 分类。
+- 控制平面：[kube-apiserver 路由安装](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/apiserver/pkg/endpoints/installer.go)、[kubeadm 常量与依赖版本](https://github.com/kubernetes/kubernetes/blob/v1.28.0/cmd/kubeadm/app/constants/constants.go)、[Deployment 协调](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/controller/deployment/deployment_controller.go)。组件配置是各进程自己的启动参数，REST 资源是 apiserver 暴露的对象，CRI 是 kubelet 与容器运行时之间的接口，etcd 协议又是另一套；找资料时不能把这四样当成同一个「API」去查。
 - etcd 独立核对 [v3.5.9 API 定义与读取一致性选项](https://github.com/etcd-io/etcd/blob/v3.5.9/api/etcdserverpb/rpc.proto)，不把 Kubernetes tag 当作所有外部依赖的版本证明。
 - 第 25 章已补齐异构 CPU request 聚合：对纳入样本求 `sum(usage)/sum(request)`，不是平均各 Pod 百分比；函数还存在整数截断。该源码结论已核对，真实 HPA 运行效果仍未测试，不能继续标记为“算法待补证”。
 - 第 32 章同时保留 1.32 类型注释 Alpha 与整体门控 Beta、默认关闭的差异；1.28 节点端已包含批量 v1alpha3 RPC 及旧单数调用兼容，不能用资源 API 的 v1alpha2 推断节点协议。
@@ -68,13 +68,13 @@ order: 90
 
 本轮重新读取两份资料，冲突仍存在：固定 `v1.28.0` 的 `pkg/features/kube_features.go` 将 StatefulSetAutoDeletePVC 设为 Beta、默认 **true**；[release-1.28 Feature Gates 文档表格](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/command-line-tools-reference/feature-gates.md)仍列 Beta、默认 **false**。
 
-证明 **v1.28.0 上游源码编译默认配置**时，固定 tag 中的注册值更直接；不能用可修订历史表格覆盖该实现，也不能声称两份资料一致。真实集群还应检查发行版、厂商补丁与组件启动时的门控覆盖。门控默认开启也不代表 PVC 默认删除：未指定保留策略时 whenDeleted/whenScaled 仍是 Retain。
+要证明 **v1.28.0 上游源码编译时的默认配置**，应按固定 tag 里的注册值——那段代码就是编译进去的那一份；文档表格会随分支更新，没法反推某个 tag 的编译默认值，两份资料也未必一致。真实集群还应检查发行版、厂商补丁与组件启动时的门控覆盖。门控默认开启与 PVC 是否默认删除是两件事：未指定保留策略时 whenDeleted/whenScaled 仍是 Retain。
 
-门控默认值、实际组件启用状态、API 是否服务、驱动及功能链是否完整，是四个检查层次。例如 DRA 仅开启门控而未开放 API 或安装驱动，并不能完成设备分配。
+这类问题要依次问四件事：门控的默认值是什么；实际组件有没有打开它；API 有没有在提供服务；驱动和后续功能链是否齐全。比如 DRA 只开了门控，但 API 没开放或驱动没装，设备照样分配不出来。
 
 ## 4. 从版本依据到实际环境验证 {#_4-本册没有替代哪些验证}
 
-版本表用于定位文档、源码和门控条件。复现时还需记录实际发行版、内核、containerd、CNI、CoreDNS、存储与设备驱动，再依次验证服务端 schema、调度、运行和故障恢复。各章教学数字为纸面算例，实际性能需要单独测量。
+版本表用于定位文档、源码和门控条件。复现时还需记录实际发行版、内核、containerd、CNI、CoreDNS、存储与设备驱动，然后按顺序验证四件事：apiserver 认不认提交上去的对象 schema、调度器能不能把 Pod 安排到节点、容器能不能跑起来、故障之后能不能恢复。各章教学数字为纸面算例，实际性能需要单独测量。
 
 ### 证据类型与验证状态
 

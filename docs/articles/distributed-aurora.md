@@ -19,9 +19,9 @@ order: 23
 
 # 第二十三章 Aurora 计算存储分离与日志下沉
 
-> 阅读标签：Aurora2017论文，不代表今日全部实现。
+> 阅读标签：依据 Aurora 2017 论文，今日实现可能已有差异。
 
-Aurora 2017 年论文将事务计算与分布式存储分开：计算实例执行数据库工作，存储侧处理适用的 redo、页面状态与修复。本章先看两层的职责，再区分正常读取和恢复读取，理解日志下沉与网络写放大的关系。讨论范围限于该论文。
+Aurora 2017 年论文把数据库的计算和存储拆成两部分：计算实例负责跑 SQL、执行事务，存储侧接收它发下来的 redo（记录“哪一页改了什么”的日志），负责落盘、维护页面并修复副本。本章先看两边的分工，再区分正常读取和恢复读取，理解日志下沉与网络写放大的关系。讨论范围限于该论文。
 
 ## 1. 分开管理计算实例与数据卷 {#_1-为什么计算与存储分开}
 
@@ -33,7 +33,7 @@ Aurora 2017 年论文将事务计算与分布式存储分开：计算实例执�
 
 [![Aurora：计算与持久化存储分离](/assets/notes/distributed-systems/dist-aurora.svg)](/assets/notes/distributed-systems/dist-aurora.svg)
 
-论文以保护组为粒度在三个 AZ 放置六份存储副本，每 AZ 两份；数据库计算实例下发 redo，并按相应持久化边界判断写入。图里的六份不是六个独立接受业务 SQL 写入的主库。[Aurora 2017 论文 §2—3](https://cdn.amazon.science/dc/2b/4ef2b89649f9a393d37d3e042f4e/amazon-aurora-design-considerations-for-high-throughput-cloud-native-relational-databases.pdf)
+论文以保护组（把同一批数据页的副本放在一起管理的单位）为粒度，在三个可用区（AZ）各放两份、共六份存储副本；计算实例只把 redo 发下来，再根据这些副本确认到什么位置来判断写入是否持久。图里的六份不是六个能独立接受业务 SQL 写入的主库。[Aurora 2017 论文 §2—3](https://cdn.amazon.science/dc/2b/4ef2b89649f9a393d37d3e042f4e/amazon-aurora-design-considerations-for-high-throughput-cloud-native-relational-databases.pdf)
 
 写 quorum 为 4/6，恢复读 quorum 为 3/6。一个 AZ 丢失两份，数量上仍可满足写 quorum；再失去一份会只剩三份，不能继续把它描述成仍满足四份写确认。真实服务能力还依赖实例、网络和恢复协议。
 
@@ -52,7 +52,7 @@ V_r + V_w > V, \qquad V_w > \frac{V}{2}
 | 一个 AZ 再加一个节点故障 |        3 | 否               | 是                   |
 | 两个独立节点故障         |        4 | 是               | 是                   |
 
-这是六副本保护组的故障推演；副本必须可达且处于可用协议状态。论文描述的数据卷按 10 GB 粒度划分，六份对应 segment 组成 PG；这个大小属于 **2017 年设计**，不作为今日产品规格。
+这是六副本保护组的故障推演；副本必须可达且处于可用协议状态。论文把数据卷按 10 GB 切成一个个 segment（分片），同一个分片的六份副本组成一个 PG；这个大小属于 **2017 年设计**，不作为今日产品规格。
 
 ### 先读懂五个日志位置
 
@@ -66,13 +66,13 @@ V_r + V_w > V, \qquad V_w > \frac{V}{2}
 | CPL  | Consistency Point LSN | 一致性点日志位置；数据库标记的、允许存储恢复截断的边界          |
 | VDL  | Volume Durable LSN    | 卷持久化日志位置；不超过 VCL 的最高 CPL                         |
 
-每个 PG 只接收修改本组页面的日志，LSN 不要求在某个 segment 内数字连续；日志中的反向链接指向该 PG 的前一条记录，用它检测真正的缺口。SCL 不是“看到的最大 LSN”，VCL 也不能只取任意单节点的最大值。
+每个 PG 只接收修改本组页面的日志，LSN 在 segment 内可以跳号；日志中的反向链接指向该 PG 的前一条记录，用它检测真正的缺口。SCL 与“看到的最大 LSN”不同；VCL 也不能取任意单节点的最大值。
 
 \[
 VDL = \max\{CPL \mid CPL \leq VCL\}
 \]
 
-沿用论文的边界例子：若 CPL 只有 900、1000、1100，VCL 已到 1007，则 VDL 仍为 1000。1001～1007 的日志虽然齐全，却尚未构成下一个可安全保留的完整分组；恢复必须按 VDL 处理尾部。VDL 表示存储的一致持久化边界，不表示这个位置之前的所有 SQL 事务都已提交。
+沿用论文的边界例子：若 CPL 只有 900、1000、1100，VCL 已到 1007，则 VDL 仍为 1000。1001～1007 的日志虽然都到了，但下一个以 1100 为 CPL 的完整分组还没凑齐，所以 VDL 停在 1000，恢复只能按它处理尾部。VDL 表示存储的一致持久化边界，不表示这个位置之前的所有 SQL 事务都已提交。
 
 ### MTR 是内部原子分组
 
@@ -85,7 +85,7 @@ SQL Transaction T1
   ……其余操作与事务提交记录
 ```
 
-若第二个 MTR 只完整到 1005，就不能把它的一部分当作已完成的内部操作对外提供。MTR 完成也不等于 T1 提交；SQL 隔离、提交状态与 Undo 仍由数据库引擎管理。[日志边界与 MTR：Aurora 2017 §4.1—4.2](https://cdn.amazon.science/dc/2b/4ef2b89649f9a393d37d3e042f4e/amazon-aurora-design-considerations-for-high-throughput-cloud-native-relational-databases.pdf)
+若第二个 MTR 只完整到 1005，就不能把它的一部分当作已完成的内部操作对外提供。MTR 完成只说明页面写入到位，T1 是否提交仍由引擎决定；SQL 隔离、提交状态与 Undo 仍由数据库引擎管理。[日志边界与 MTR：Aurora 2017 §4.1—4.2](https://cdn.amazon.science/dc/2b/4ef2b89649f9a393d37d3e042f4e/amazon-aurora-design-considerations-for-high-throughput-cloud-native-relational-databases.pdf)
 
 ## 3. 正常读取与恢复读取的不同路径 {#_3-正常读不一定向三份存储都取数据}
 
@@ -128,9 +128,9 @@ Buffer Cache（缓冲缓存）命中时，计算实例直接使用缓存页面�
 
 ## 5. 细粒度修复与相关故障
 
-将大卷拆成较小保护单元，使损坏后的修复可以从多节点并行进行，降低重建窗口。容错不仅看副本总数，还看副本跨 AZ 的安排、同时修复的单元、剩余容量与带宽。
+把一个大卷拆成很多小的保护单元后，哪一块坏了就只修那一块，而且几块可以分给不同节点同时修，恢复要等的时间因此变短。容错不仅看副本总数，还看副本跨 AZ 的安排、同时修复的单元、剩余容量与带宽。
 
-不能把论文里的分片大小、恢复秒数和容量上限直接搬成今日产品规格，也不能把日志持久化等同业务事务已完整提交；事务提交仍需其完整的记录与边界规则。
+论文里的分片大小、恢复秒数和容量上限不是今日产品规格；日志持久化也不等于业务事务已完整提交；事务提交仍需其完整的记录与边界规则。
 
 ### 存储层恢复：重建边界并处理尾部
 
@@ -141,7 +141,7 @@ Buffer Cache（缓冲缓存）命中时，计算实例直接使用缓存页面�
 3. 生成截断范围，使新 VDL 之后、直到可证明覆盖全部潜在在途日志的上界之间的日志失效。这个上界与数据库的 LSN 分配限制有关，不仅是某个节点此刻已见的最大值。
 4. 截断范围带有 epoch（恢复代际）并持久化到存储服务。若恢复中再次崩溃，重启后仍能分辨截断的版本和持久化状态，避免把旧尾部重新当作有效日志。
 
-这里的截断是按协议使日志失效，不要求把分布式节点上的尾部一次性物理删除完再开始下一步。
+这里的截断是按协议使日志失效，尾部可以在后续步骤中逐步物理删除。
 
 ![Aurora 日志边界与恢复分层](/assets/notes/distributed-systems/dist-aurora-recovery.svg)
 
@@ -155,6 +155,6 @@ Buffer Cache（缓冲缓存）命中时，计算实例直接使用缓存页面�
 
 学习时，可以在纸面上分别推演计算实例故障、一个 AZ 故障，以及额外失去一个存储副本的情况，列出各场景中仍可依赖的状态。文中依据论文解释设计，实际产品能力和性能需按目标环境另行验证。
 
-前一章的[Saga、TCC 与 Outbox](/articles/distributed-saga-tcc-outbox.html)处理业务流程和消息边界；本章的 VDL 处理存储日志边界。下一章的[Frangipani](/articles/distributed-frangipani.html)则把共享磁盘上的锁、缓存和恢复串起来，三者不要混作同一个层次的事务协议。
+前一章的[Saga、TCC 与 Outbox](/articles/distributed-saga-tcc-outbox.html)管的是业务流程怎么拆、消息怎么不丢；本章的 VDL 管的是存储层日志记到哪一步才算落盘；下一章的[Frangipani](/articles/distributed-frangipani.html)则解决多台机器共用一块磁盘时怎么加锁、怎么缓存、崩了怎么恢复。三者回答的不是同一个问题，不能当成同一个事务协议。
 
 [返回本册目录](/collections/distributed-systems/)

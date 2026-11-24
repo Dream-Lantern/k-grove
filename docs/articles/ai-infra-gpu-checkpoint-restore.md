@@ -29,16 +29,16 @@ order: 25
 >
 > **证据约定**：**[论文]** 表示论文的设计或实验结论；**[代码]** 表示 GPU-CR 公开仓库可定位的实现；**[工程分析]** 表示对机制的解释、设计建议或风险推断。不能把论文中的研究能力直接当成当前仓库已经完整实现、经过自己复现的能力。
 
-**整体流程**：用 CUDA VMM 分离 GPU 虚拟地址与物理显存，先将 GPU 数据高带宽转移到 Host，再释放物理显存并保留地址语义；恢复时重建物理映射和内容；GPU 控制状态交给驱动级 C/R；多 GPU 再额外修复跨进程 cuMem IPC 关系。论文还研究了通过 CPU Shadow Execution 识别 Dirty Buffer 的增量 Checkpoint。
+**整体流程**：平时 CUDA 分配的地址和物理显存是绑死的，两者不能单独换。GCR 先用 CUDA VMM 把这两件事拆开：checkpoint 时把 GPU 数据以高带宽拷到 Host，再释放物理显存，但保留原来的地址；restore 时重新申请物理显存、把地址映射回去，再把数据拷回来。GPU 的控制状态不自己存，交给驱动级的 C/R 接口处理。多 GPU 场景还要额外修复跨进程的 cuMem IPC 关系。论文另外研究了增量 Checkpoint：用 CPU Shadow Execution 算出哪些缓冲被改过，只备份改动的部分。
 
-理解恢复范围时，分别观察三个层次：VMM 维护指针与物理分配的关系，驱动 C/R 处理 CUDA 状态，应用层补齐 CPU 进程状态、外部依赖和业务校验。下面先讲地址与数据的恢复，再沿单卡、多卡的阶段顺序展开。
+恢复范围要分三层看，每层回答一个不同的问题：VMM 层回答“应用手里的指针还能不能指回同一块显存”，驱动 C/R 层回答“CUDA 自己的运行状态还在不在”，应用层回答“CPU 侧的内存、外部依赖和业务数据是否对得上”。下面先讲地址与数据怎么恢复，再按单卡、多卡的顺序展开。
 
 ## 0. 恢复对象、应用场景与设计目标 {#_0-为什么值得研究-问题、目标和边界}
 
 GPU Checkpoint/Restore（C/R，检查点与恢复）需要保存并重建两个相互关联的状态：
 
 - **数据状态 Data State**：模型权重、KV Cache、Activation、工作区、通信缓冲等内容及其所属地址。
-- **控制状态 Control State**：CUDA Context、Streams、Events、Module/Kernel 等驱动维护的执行和资源状态。CPU 进程内存、线程与文件描述符属于更广泛的进程状态，不等同于 CUDA 控制状态。
+- **控制状态 Control State**：驱动内存里记的那笔账——这个进程建了哪些 CUDA Context，Stream 上排了哪些任务，加载了哪些 Module/Kernel，有哪些 Event，以及它们之间的依赖。这些都不在显存内容里，所以只拷显存数据恢复不了它。CPU 进程内存、线程与文件描述符属于更广泛的进程状态，不等同于 CUDA 控制状态。
 
 应用场景包括 GPU 作业切换、弹性推理实例、故障恢复、训练任务抢占和 GPU 多租户。在这些场景中，“能够恢复”只是正确性要求；还需要较低的 checkpoint 延迟、restore 延迟和正常执行开销，并让其他任务能够使用释放的显存。
 
@@ -50,7 +50,7 @@ GPU Checkpoint/Restore（C/R，检查点与恢复）需要保存并重建两个�
 | API 拦截，如 interception-based C/R   | 可以自行使用异步 GPU→Host 拷贝优化数据面   | 拦截大量 API、资源句柄重建复杂，正常运行有额外开销                  |
 | GCR 混合方案                          | **数据面自主拷贝；控制面利用驱动集成 C/R** | 需要确保指针地址、IPC、执行同步、外部资源正确恢复                   |
 
-[论文 §3–§4](https://www.usenix.org/system/files/fast26-zeng.pdf) 的核心价值是让两种方案各管自己擅长的部分。**数据/控制分离不等于“CPU/GPU 状态分离”**，后者容易误解。
+[论文 §3–§4](https://www.usenix.org/system/files/fast26-zeng.pdf) 的核心价值是让两种方案各管自己擅长的部分。**数据/控制分离与“CPU/GPU 状态分离”是两回事**，后者容易误解。
 
 ## 1. VMM 的核心：虚拟地址（VA）与物理显存解绑
 
@@ -92,11 +92,11 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 
 **[代码]** `src/GPUs/NVIDIA/nv.cpp` 的 `cudaMalloc` Hook 使用 VMM，`releasePhysicalMemory()` 实施 `cuMemUnmap` + `cuMemRelease` 而不调用 `cuMemAddressFree`，`remapPhysicalMemory()` 重建映射。代码按 2 MiB 向上取整，是项目实现选择；不宜将此推广成所有 CUDA VMM 分配均强制 2 MiB。
 
-**API 语义与实现选择要分开**：通用代码应通过 `cuMemGetAllocationGranularity` 查询相应分配属性的粒度，并满足各接口的对齐限制。`cuMemCreate` 属性中的 `CU_MEM_ALLOCATION_TYPE_PINNED` 也不能直接读成“Host staging 已被锁页”；还要看 `location.type`，本文设备分配使用 `CU_MEM_LOCATION_TYPE_DEVICE`。依据：[CUDA 12.8.1 VMM API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__VA.html)。
+**API 语义与实现选择要分开**：通用代码应通过 `cuMemGetAllocationGranularity` 查询相应分配属性的粒度，并满足各接口的对齐限制。`cuMemCreate` 属性中的 `CU_MEM_ALLOCATION_TYPE_PINNED` 描述的是分配类型，是否锁页还要看 `location.type`；本文设备分配使用 `CU_MEM_LOCATION_TYPE_DEVICE`。依据：[CUDA 12.8.1 VMM API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__VA.html)。
 
 ### 1.3 UVA、UVM、VMM 是三个不同概念
 
-- **UVA（Unified Virtual Addressing）**：统一虚拟寻址模型，让 Host/Device 指针具有可区分的地址语义，并不意味着 CPU/GPU 必然共享一份物理内存。
+- **UVA（Unified Virtual Addressing）**：CPU 和 GPU 的指针被放进同一套地址编号里，看一个指针的值就能分清它指向主机内存还是显存；但这只解决“怎么编号”，同一份数据仍可能在两边各存一份物理副本。
 - **UVM/Unified Memory**：更关注统一内存访问及迁移能力，如 `cudaMallocManaged`；不是此处 `cuMemCreate`/`cuMemMap` 的同义词。
 - **VMM（Virtual Memory Management）**：显式管理预留 VA、物理分配、映射与权限，是本项目保持指针稳定的直接机制。
 
@@ -114,7 +114,7 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 | ---------------------------------------------- | -------------------------------------------------------------------------- |
 | `src/vGPU.cpp`                                 | 初始化、信号入口、`ckpt()`、`restore_ptr_and_content()`、多 GPU IPC 状态机 |
 | `src/GPUs/NVIDIA/nv.cpp`                       | CUDA Runtime Hook、VMM 释放/重建、CUDA 数据传输                            |
-| `src/GPUs/AMD/`                                | ROCm 后端；不要照搬 NVIDIA 的 `cuda-checkpoint` 假设                       |
+| `src/GPUs/AMD/`                                | ROCm 后端；这里的机制与 NVIDIA 的 `cuda-checkpoint` 不同                   |
 | `src/backend/`、`src/comm/`                    | Host staging、内存映射、进程控制通信                                       |
 | `src/ipc_hooks.cpp`、`src/ipc_fd_exchange.cpp` | cuMem IPC 动态 Hook、跨进程 FD 交换                                        |
 | `src/nccl_hooks.cpp`                           | NCCL 符号发现、兼容层                                                      |
@@ -156,7 +156,7 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 
 这里还需区分两种“锁”：`ckpt()` 内部的 `fs_mutex` 保护快照结构，并不锁住应用的所有 CUDA 调用；驱动的 `lock` 则属于另一层协议，见 §3.4。不能简单地将驱动 `lock` 移到数据拷贝之前，就认为问题已经解决，因为本进程用于数据搬运的 CUDA API 也可能被阻塞，需要专门设计可行的协作协议。
 
-**[工程分析]** `cuMemRelease` 是引用释放，不代表无条件将该 GPU 的 _全部_ 可见 VRAM 使用量清零。未拦截的分配、其他进程映射、外部 IPC handle 和框架内部状态都可能影响实际占用；必须以 nvidia-smi / NVML 和测试场景实测。
+**[工程分析]** `cuMemRelease` 只释放引用，该 GPU 的 _全部_ 可见 VRAM 使用量不会因此清零。未拦截的分配、其他进程映射、外部 IPC handle 和框架内部状态都可能影响实际占用；必须以 nvidia-smi / NVML 和测试场景实测。
 
 ### 3.2 Restore
 
@@ -170,9 +170,9 @@ Restore： Create(New Physical) → Map(Original VA, New Physical)
 - `hugetlbfs`、`tmpfs` 主要是内存支持的文件系统，吞吐较高，但需占用较大 Host 内存，崩溃/断电恢复语义要单独确认。
 - 普通磁盘文件可提供更强的数据持久性，但需要考虑写入、`fsync`、空间、带宽以及失败恢复策略。
 
-**[代码]** [`mmap_backend.cpp`](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/backend/mmap_backend.cpp) 通过 `EXPORT_FILE_PATH` 选择文件所在目录，否则使用 `/mnt/huge-ckpt`；`mmap` 均为 `MAP_SHARED`。仅有目录名不能证明实际挂载的是 hugetlbfs；设置 `EXPORT_FILE_PATH` 也不能证明它一定落在物理磁盘。该实现没有给出完整的原子提交、持久性确认与崩溃恢复协议，且初始化会重置快照头，不能直接把遗留 `.data` 文件当成可独立重启恢复的完整镜像。
+**[代码]** [`mmap_backend.cpp`](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/backend/mmap_backend.cpp) 通过 `EXPORT_FILE_PATH` 选择文件所在目录，否则使用 `/mnt/huge-ckpt`；`mmap` 均为 `MAP_SHARED`。目录名不足以说明实际挂载的是 hugetlbfs；`EXPORT_FILE_PATH` 指向的位置也未必落在物理磁盘。该实现没有给出完整的原子提交、持久性确认与崩溃恢复协议，且初始化会重置快照头，不能直接把遗留 `.data` 文件当成可独立重启恢复的完整镜像。
 
-**[工程分析]** GPU-CR 当前的高性能 Host staging 和“进程仍存活的换入换出”，不应直接等同于“一台机器断电后可以恢复完整 CUDA 应用”。
+**[工程分析]** GPU-CR 当前的高性能 Host staging 与“进程仍存活的换入换出”，覆盖不了“一台机器断电后恢复完整 CUDA 应用”这一场景。
 
 ### 3.4 驱动状态机：锁定、保存、恢复与解锁 {#_3-4-驱动状态机-lock-不等于-checkpoint}
 
@@ -183,9 +183,9 @@ RUNNING --lock--> LOCKED --checkpoint--> CHECKPOINTED
 RUNNING <--unlock-- LOCKED <--restore----- CHECKPOINTED
 ```
 
-`lock` 阻止进一步 CUDA API 调用；`checkpoint` 从 LOCKED 保存并释放驱动所管 GPU 状态；`restore` 成功后仍处于 LOCKED，之后才 `unlock`。它们不是 CPU 线程 suspend/resume 的同义词。
+`lock` 先把门锁上，应用再发起 CUDA 调用会被挡住；`checkpoint` 在锁着的状态下把驱动管的 GPU 状态存走并释放；`restore` 把状态装回去，装完仍然锁着，确认没问题才 `unlock` 让业务继续跑。它管的是 CUDA 调用能不能进来，和 CPU 线程的 suspend/resume 不是一回事。
 
-**[代码]** 单卡 `cr_client` 使用 `--toggle`。多卡协调器可使用 `--action lock/checkpoint` 和 `--action restore/unlock`，但锁定阶段位于自管数据 dump **之后**，恢复时又在自管数据恢复**之前** unlock。因此这两种路径都不能据此推导出“整个数据面阶段自动禁止业务提交”。源码把 action 路径注释为“580 mode”，但仓库随附工具 README 已在 570 特性与帮助中列出独立 lock/action；不要把源码的分支命名当成官方功能首次引入版本。
+**[代码]** 单卡 `cr_client` 使用 `--toggle`。多卡协调器可使用 `--action lock/checkpoint` 和 `--action restore/unlock`，但锁定阶段位于自管数据 dump **之后**，恢复时又在自管数据恢复**之前** unlock。因此这两种路径都推不出“整个数据面阶段自动禁止业务提交”。源码把 action 路径注释为“580 mode”，但仓库随附工具 README 已在 570 特性与帮助中列出独立 lock/action；源码的分支命名只是内部实现，不能当作官方功能的首次引入版本。
 
 ## 4. 多 GPU 的新增困难：NCCL、IPC、P2P
 
@@ -196,11 +196,11 @@ RUNNING <--unlock-- LOCKED <--restore----- CHECKPOINTED
 - 导出方通过 `cuMemExportToShareableHandle` 暴露某个物理分配；
 - 导入方用 `cuMemImportFromShareableHandle` 得到本地 handle，再映射到自己的 VA；
 - 不同 Rank 通过 NCCL/P2P、IPC Events 协作；
-- 完整释放原对象并创建新物理分配后，要把跨进程关系接到**新对象**；原来的 VA 数值相同，并不意味着原来的共享对象仍可用。
+- 完整释放原对象并创建新物理分配后，要把跨进程关系接到**新对象**；VA 数值相同，原来的共享对象却可能已经不可用。
 
 因此，除了“每卡各自 dump 数据”，还必须恢复**跨 Rank 的关联拓扑和资源所有权关系**。
 
-本文描述的是**同一 Linux 主机上的多进程路径**。共享内存、PID 与 Unix Domain Socket 不构成跨机器传输协议；不能把它直接推广成多机 NCCL/RDMA 作业可透明恢复。
+本文描述的是**同一 Linux 主机上的多进程路径**。共享内存、PID 与 Unix Domain Socket 只在本机有效，不是跨机器传输协议；多机 NCCL/RDMA 作业也无法据此透明恢复。
 
 ### 4.2 关键 IPC Hook
 
@@ -243,11 +243,11 @@ Coordinator: broadcast message/signals to ALL ranks → wait ALL ranks finish
 3b. IPC Re-import: each rank receives peer FDs, import+map+access, validate and reenable P2P
 ```
 
-**新分配需要重新建立 Handle 与跨进程引用。** 首先，FD 是进程自己的描述符编号，把导出进程的整数 `fd=17` 写给另一个进程，并不等于传递了该对象。其次，`cuMemRelease` 不会使所有旧引用立即失效：只要还有映射、导入引用或共享引用，旧对象就可能尚未真正回收。此实现先拆引用，再为新物理分配重新导出，由导入方接收新的本地 FD、导入并映射到原 VA。**“旧 FD 未必立即失效”和“旧 FD 不能代表新分配”是两件不同的事。** 依据：[VMM 的释放语义](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__VA.html)。
+**新分配需要重新建立 Handle 与跨进程引用。** 首先，FD 是进程自己的描述符编号，把导出进程的整数 `fd=17` 写给另一个进程，传过去的只是编号，对象本身没有过去。其次，`cuMemRelease` 不会使所有旧引用立即失效：只要还有映射、导入引用或共享引用，旧对象就可能尚未真正回收。此实现先拆引用，再为新物理分配重新导出，由导入方接收新的本地 FD、导入并映射到原 VA。**“旧 FD 未必立即失效”和“旧 FD 不能代表新分配”是两件不同的事。** 依据：[VMM 的释放语义](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__VA.html)。
 
 **UDS 与 SCM_RIGHTS 传递共享对象引用。** `src/ipc_fd_exchange.cpp` 明确采用 Unix Domain Socket 传递 FD（`sendmsg/recvmsg` 附带 SCM_RIGHTS）。源码注释指出从 `/proc/<pid>/fd` 重新打开或通过某些替代路径不能完整保留该 CUDA 共享句柄的语义。**这并不是普通文件路径共享问题，而是内核 FD 所承载的 GPU 对象权限/引用问题。**
 
-Linux 的 `SCM_RIGHTS` 传递的是可在接收进程中安装的对象引用，接收方得到的 FD 数字通常不同；它不负责复制 GPU 数据。源码对 `pidfd_getfd` 的兼容性注释只代表该项目路径的判断，不应推广为 Linux 所有 FD 都“只能通过 SCM_RIGHTS 传递”。另有一处文档陷阱：`ipc_hooks.h` 顶部注释还写着 teardown 会 `cuMemAddressFree`、import 使用 `pidfd_getfd`；当前 `.cpp` 的导入/导出/本地分配拆除实际保留 VA，FD 主路径也已改用 UDS。读源码时应检查实现，而不能只摘取旧注释。依据：[ipc_hooks.cpp](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/ipc_hooks.cpp)、[ipc_fd_exchange.cpp](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/ipc_fd_exchange.cpp)、[Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)。
+Linux 的 `SCM_RIGHTS` 传递的是可在接收进程中安装的对象引用，接收方得到的 FD 数字通常不同；它不负责复制 GPU 数据。源码对 `pidfd_getfd` 的兼容性注释只针对该项目路径；Linux 的 FD 传递方式不止 SCM_RIGHTS。另有一处文档陷阱：`ipc_hooks.h` 顶部注释还写着 teardown 会 `cuMemAddressFree`、import 使用 `pidfd_getfd`；当前 `.cpp` 的导入/导出/本地分配拆除实际保留 VA，FD 主路径也已改用 UDS。读源码时应检查实现，而不能只摘取旧注释。依据：[ipc_hooks.cpp](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/ipc_hooks.cpp)、[ipc_fd_exchange.cpp](https://github.com/gpu-os/GPU-CR/blob/e9bbb52e1f52986587fc631217c0f2b50b46245a/src/ipc_fd_exchange.cpp)、[Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)。
 
 ## 5. NCCL Adapter：与信号路径相互区分
 
@@ -274,7 +274,7 @@ Application calls ncclCommCheckpointPrepare
 - `NCCL_CUMEM_ENABLE=1`：让 NCCL 使用可由此 Hook 覆盖的 cuMem 分配/IPC 路径；否则旧式 `cudaIpcGetMemHandle` 可能绕过管理。
 - `NCCL_CUMEM_HOST_ENABLE=1`：在相应部署里使用 cuMem 的 Host 通信缓冲。
 - `NCCL_P2P_DISABLE=1`：某些 vLLM 配置启用，**但不能对所有 NCCL 测试默认启用**；项目的 two-process AllReduce 案例需要 P2P 路径来验证 export/import。
-- 关闭 vLLM custom all-reduce：应核对实际版本的正式配置，例如 vLLM 0.14.1 的 `--disable-custom-all-reduce` 或 Python `LLM(..., disable_custom_all_reduce=True)`；若其旧式 IPC 不兼容，再选择 NCCL 路径或另行适配。项目脚本虽设置了 `VLLM_DISABLE_CUSTOM_ALL_REDUCE=1`，但 vLLM 0.14.1 官方 `envs.py` 未定义这个开关，不能仅凭 `export` 就认为已生效；同脚本的 `VLLM_DISABLED_KERNELS=custom_all_reduce` 也不能据此当成通用关闭方式，该版本的变量说明用于量化线性 kernel 选择。应检查最终配置和运行日志。依据：[vLLM 0.14.1 CLI](https://docs.vllm.ai/en/v0.14.1/cli/serve/#--disable-custom-all-reduce)、[LLM 源码](https://github.com/vllm-project/vllm/blob/v0.14.1/vllm/entrypoints/llm.py)、[环境变量源码](https://github.com/vllm-project/vllm/blob/v0.14.1/vllm/envs.py)。
+- 关闭 vLLM custom all-reduce：应核对实际版本的正式配置，例如 vLLM 0.14.1 的 `--disable-custom-all-reduce` 或 Python `LLM(..., disable_custom_all_reduce=True)`；若其旧式 IPC 不兼容，再选择 NCCL 路径或另行适配。项目脚本虽设置了 `VLLM_DISABLE_CUSTOM_ALL_REDUCE=1`，但 vLLM 0.14.1 官方 `envs.py` 未定义这个开关，只在脚本里 `export` 并不足以让它生效；同脚本的 `VLLM_DISABLED_KERNELS=custom_all_reduce` 也不是通用的关闭方式，该版本的变量说明用于量化线性 kernel 选择。应检查最终配置和运行日志。依据：[vLLM 0.14.1 CLI](https://docs.vllm.ai/en/v0.14.1/cli/serve/#--disable-custom-all-reduce)、[LLM 源码](https://github.com/vllm-project/vllm/blob/v0.14.1/vllm/entrypoints/llm.py)、[环境变量源码](https://github.com/vllm-project/vllm/blob/v0.14.1/vllm/envs.py)。
 - `CUDARTLIB=cudart`：使用适合动态拦截的 CUDA Runtime 构建；NCCL 默认的静态 cudart 可能绕开 `LD_PRELOAD` Hook。
 
 ## 6. 论文的重要补充：增量 Checkpoint 与 Shadow Execution
@@ -296,7 +296,7 @@ Full：每次拷全部 S 字节
 Incremental：在已有基线之后，只拷变更的 D 字节（D << S 时有效）
 ```
 
-GPU 上并没有对所有应用透明且可直接使用的、足够精细的脏页位图供该论文依赖。只凭 Kernel 的非 `const` 参数判断“整个缓冲 dirty”也会产生 Checkpoint Amplification。
+GPU 上没有现成的、粒度足够细的“哪些页被改过”记录可以直接拿来用。退一步只按 Kernel 的哪些非 `const` 参数可能被写，就把整个缓冲算成 dirty，备份量会被放大（Checkpoint Amplification）：只改了一小块，却要重拷一大片。
 
 ### 6.2 Dirty Template 的思想
 
@@ -322,7 +322,7 @@ DirtyTemplate(kernel_args, gridDim, blockDim)
 5. CPU 与 GPU Kernel 并行执行 Dirty Template，产生 dirty address ranges；
 6. 增量 Checkpoint 只备份必要的变化范围，并与之前的 Full Checkpoint 合并。
 
-论文 §5 的 vLLM 实现还利用工作负载知识：初始化时标记权重和 KV Cache 的地址/长度，只对 KV 更新使用模板，其他缓冲保守包含；并非完全不感知应用的通用自动分析。按论文描述，增量结果在保存时合并到已有完整快照，而不是要求恢复时必然回放很长的增量文件链。**[工程分析]** 脏区识别不得漏记；模板、参数视图与 GPU 写入必须对应同一轮快照，不能因 CPU/GPU 并行就省略完成确认。
+论文 §5 的 vLLM 实现还利用工作负载知识：初始化时标记权重和 KV Cache 的地址/长度，只对 KV 更新使用模板，其他缓冲保守包含；并非完全不感知应用的通用自动分析。按论文描述，增量结果在保存时合并到已有完整快照，而不是要求恢复时必然回放很长的增量文件链。**[工程分析]** 脏区识别不得漏记；模板、参数视图与 GPU 写入必须对应同一轮快照，CPU/GPU 并行时，完成确认仍不能省略。
 
 这样就不需要在 GPU 的主计算热路径里插入大量脏地址记录指令。
 
@@ -358,7 +358,7 @@ FAST '26 论文的实验结论（原论文对其所选模型/硬件/对照系统
 | 增量 Checkpoint 延迟下降                  | 同一比较口径下平均下降 43.8%                                             |
 | Shadow Execution 的例示计算/记录空间      | 示例约 14 µs；每轮记录脏地址与长度的 CPU 内存小于 1 MB，不是整个系统内存 |
 
-论文 §6 的平台为 2 张 A100-40GB、NVLink、PCIe 4.0、CUDA 12.6；涉及 PyTorch 2.7.1、vLLM 0.9.1 等，对 PhOS 支持的工作负载另用 Transformers 4.30.0。增量实验在两次 checkpoint 间处理 5 个请求，每个输入 1,155 token、输出 211 token。该环境与仓库 README 后来的 580 驱动/vLLM 0.14.1 演示不是同一组实验。表内低于 1% 指正常执行开销，**不等于 checkpoint 停顿时间低于 1%**；延迟降低百分比也不是吞吐提升倍数。
+论文 §6 的平台为 2 张 A100-40GB、NVLink、PCIe 4.0、CUDA 12.6；涉及 PyTorch 2.7.1、vLLM 0.9.1 等，对 PhOS 支持的工作负载另用 Transformers 4.30.0。增量实验在两次 checkpoint 间处理 5 个请求，每个输入 1,155 token、输出 211 token。该环境与仓库 README 后来的 580 驱动/vLLM 0.14.1 演示不是同一组实验。表内低于 1% 指正常执行开销，**checkpoint 停顿时间不受这个数字约束**；延迟降低百分比也不是吞吐提升倍数。
 
 [论文 PDF](https://www.usenix.org/system/files/fast26-zeng.pdf) 的适用条件和实验基线不可省略；不能拿这些百分比直接预测自己 H20/H100、vLLM/SGLang 模型的换出耗时。
 
@@ -379,11 +379,11 @@ Restore wall time ≈ driver CUDA-control restore
     + validation / resume
 ```
 
-如果测量表明，几十 GiB 的参数/KV 拷贝占据了主要时间，再重点优化 GPU↔Host 链路、Host 内存带宽与后端。不能仅因模型较大就认定瓶颈在拷贝；对于小快照、较多分配、复杂 IPC 或慢驱动路径，固定开销可能占主导。上式列出的是成本组成，并非源码的严格执行顺序；多 Rank 的同一阶段更接近“最慢 Rank + 协调开销”，也不应重复累加已重叠的阶段。
+如果测量表明，几十 GiB 的参数/KV 拷贝占据了主要时间，再重点优化 GPU↔Host 链路、Host 内存带宽与后端。不能仅因模型较大就认定瓶颈在拷贝；对于小快照、较多分配、复杂 IPC 或慢驱动路径，固定开销可能占主导。上式列出的是成本组成，并非源码的严格执行顺序；多 Rank 的同一阶段更接近“最慢 Rank + 协调开销”；已重叠的阶段重复累加会高估成本。
 
 双缓冲流水线的直觉：`GPU→staging A` 与 `staging B→mmap` 并行，理论流水线吞吐受最慢阶段支配，而不是简单把两个拷贝时间相加。但启动、收尾、CUDA stream/event、CPU 线程调度以及内存容量都会形成额外成本。
 
-**不要只看 VRAM 是否降为 0**：还应测 Host 额外内存、冻结时间、恢复时间、通信恢复、请求失败率、应用恢复后 TTFT/TPOT，以及恢复后一段时间的吞吐抖动。
+**VRAM 降为 0 只是必要条件**：还应测 Host 额外内存、冻结时间、恢复时间、通信恢复、请求失败率、应用恢复后 TTFT/TPOT，以及恢复后一段时间的吞吐抖动。
 
 ## 8. 已知限制和工程风险（区分事实与推断）
 
@@ -393,14 +393,14 @@ Restore wall time ≈ driver CUDA-control restore
 | CUDA 指针       | 项目转换被拦截分配为 VMM，使用 2MiB 向上取整，可能出现内存放大和碎片损失                                                                                                                                                                                                 |
 | IPC             | 导出方、导入方、事件、Peer Access 必须联合恢复；不能只 dump 自有显存                                                                                                                                                                                                     |
 | 信号安全        | 实现的 signal-handler 链路调用较复杂的 CUDA、拷贝与分配行为，不属于简单异步信号安全操作；多线程时序、重入性是潜在风险                                                                                                                                                    |
-| Host 容量       | 信号路径每 Worker 默认主映射 25 GiB + staging 2 GiB，另有 IPC/本地 cuMem 备份；映射长度不等于任何时刻的 RSS。约 36 GiB dump 超过默认上限，需修改编译容量并按所选后端配足资源                                                                                             |
+| Host 容量       | 信号路径每 Worker 默认主映射 25 GiB + staging 2 GiB，另有 IPC/本地 cuMem 备份；映射长度是上限，RSS 随实际驻留页变化。约 36 GiB dump 超过默认上限，需修改编译容量并按所选后端配足资源                                                                                     |
 | 指标“0 VRAM”    | 记录项目支持路径上的 VRAM 占用变化                                                                                                                                                                                                                                       |
 | 多卡后端        | 当前 README 的多 GPU C/R 主要是 NVIDIA，不能推广成 AMD 多卡已支持                                                                                                                                                                                                        |
 | 恢复范围        | CUDA Control C/R、GPU Data C/R、CPU 进程 C/R 是不同层次；跨故障重启需要额外持久性及进程恢复机制                                                                                                                                                                          |
 | 增量 Checkpoint | 论文有 Shadow Execution 与 Dirty Template；不能在未核实源码/示例时宣称当前仓库已覆盖该完整能力                                                                                                                                                                           |
 | 静态上限        | `MAX_FILE_NUM=4096` 是主快照元数据数组容量，不是“4096 个 IPC 连接”；当前检查在递增后遇到该值即退出，不能把 4096 当成已验证可保存条目数。另有 `MAX_MULTI_GPU_PROCS=32`、`IPC_MAX_EXPORTS_PER_PROC=64`；后者也限制交换时汇总到 peer block 的条目数，不是总可支持规模的保证 |
 | 单进程多设备    | `nv.cpp` 的 cudaMalloc Hook 缓存首次设备/上下文，账本不是完整的按设备隔离实现                                                                                                                                                                                            |
-| 恢复后验收      | 内存映射校验不等于 NCCL 集合通信和业务输出正确；还需实测通信、数据与服务状态                                                                                                                                                                                             |
+| 恢复后验收      | 内存映射校验只覆盖映射本身；NCCL 集合通信、数据与服务状态仍需实测                                                                                                                                                                                                        |
 
 信号安全的判断依据是 [Linux signal-safety(7)](https://man7.org/linux/man-pages/man7/signal-safety.7.html)；这里只指出复杂处理不具备一般异步信号安全保证，未声称已经复现某个死锁。
 
@@ -429,7 +429,7 @@ Restore wall time ≈ driver CUDA-control restore
 6. **可观测性**：区分 API checkpoint 返回成功、GPU 资源已释放、推理服务重新 Ready、首次请求成功这几个不同终点。
 7. **失败注入**：Host staging 不足、某 Rank 超时、旧式 IPC、UDS FD 交换失败、驱动不匹配；观察是否有安全回退与资源泄露。
 
-建议报告新增只与 C/R 相关的指标，而不要把普通推理 SLO 和切换过程混成一个数：
+建议把 C/R 相关指标单独报告，普通推理 SLO 与切换过程分开计量：
 
 | 指标                            | 含义                                                                 |
 | ------------------------------- | -------------------------------------------------------------------- |

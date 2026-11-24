@@ -21,7 +21,7 @@ order: 3
 
 String（字符串）保存字节序列，可以是文本、序列化对象、整数表示或二进制。Redis 不会因为里面看起来是 JSON（JavaScript Object Notation，JavaScript 对象表示法），就自动知道其字段结构；修改其中一个属性可能仍需要整体读写。
 
-本章的原子性（Atomicity）指一次操作执行时，其他客户端命令不能插入其执行过程、看到中间状态；它不等于数据已经落盘。单条 Redis 命令的原子性，但是连续发送多条命令不会自动组成一个原子操作。
+本章的原子性（Atomicity）指一次操作执行时，其他客户端命令不能插进来、也看不到中间状态；它只管命令执行这一段，数据有没有落盘要另外看。单条 Redis 命令本身是原子的，但连着发多条命令，不会自动拼成一个原子操作。
 
 ## 1. SET 与 GET 的基本语义
 
@@ -48,7 +48,7 @@ OK
 
 EX 的单位是秒，PX 的单位是毫秒。NX 要求键不存在时才写入，需要区分条件未满足时的返回结果和网络错误。
 
-把写入和期限放在同一 SET 中，可以消除“先写入成功，来不及 EXPIRE 就崩溃”的窗口。分开两条命令放进 Pipeline 仍不等于获得同样的原子保证。[SET 的参数与返回](https://redis.io/docs/latest/commands/set/)
+把写入和期限放在同一 SET 中，可以消除“先写入成功，来不及 EXPIRE 就崩溃”的窗口。两条命令放进 Pipeline 只减少往返，仍然没有同样的原子保证。[SET 的参数与返回](https://redis.io/docs/latest/commands/set/)
 
 Pipeline（流水线）是客户端连续发送多条命令，不逐条等待回复，再批量读取结果的方式，可减少网络往返等待。服务端仍逐条执行，没有把这些命令包成不可分割的操作；其他客户端的命令可能穿插，连接中断也可能只执行了其中一部分。因此需要组合原子性时，不能只使用 Pipeline。[官方 Pipeline 说明](https://redis.io/docs/latest/develop/using-commands/pipelining/)
 
@@ -68,7 +68,7 @@ TTL（Time to Live，生存时间）表示距离过期还有多久。不带过�
 
 [7.2.0 SET 历史记录](https://raw.githubusercontent.com/redis/redis/7.2.0/src/commands/set.json) · [6.2.0 Release Notes](https://raw.githubusercontent.com/redis/redis/6.2.0/00-RELEASENOTES) · [GETEX 版本与语义](https://redis.io/docs/latest/commands/getex/)
 
-GETSET 是历史常见读旧值再替换方式，符合版本要求时可用 `SET ... GET` 表达适用需求。GETEX 把读取与修改期限组合起来，因此它是可能改变状态的命令，不应当成普通 GET 的无副作用替代。
+GETSET 是过去“读旧值顺便换新值”的常用写法；版本满足时，同样的需求可以用 `SET ... GET` 表达。GETEX 把读取与修改期限组合起来，因此它可能改变状态，与普通 GET 的无副作用语义不同。
 
 以下示例在过期前连续执行，预期最后的 `TTL` 返回 `-1`，表示键存在但没有过期时间：
 
@@ -88,7 +88,7 @@ OK
 (integer) -1
 ```
 
-滑动过期会让热键长时间存活，是否符合隐私、库存或会话规则需要由业务决定，不能只因为访问频繁就不断延长。
+每次访问都续期（滑动过期）会让热键长时间存活；这符不符合隐私、库存或会话规则要由业务决定，不能只因访问频繁就不断延长。
 
 ## 3. 计数先用原生命令
 
@@ -105,11 +105,11 @@ DECRBY demo:counter 2
 
 INCR 的单命令原子性，避免了先 GET、再在本地加一、最后 SET 所造成的典型丢更新问题，但无法解决“客户端不知道第一次是否成功，重试又加一次”的情况。后者仍需要业务事件标识与去重。
 
-浮点命令也不应直接承担对精确十进制有严格要求的金额计算。可以按业务单位编码为整数，但仍需核对溢出、舍入与交易语义。
+浮点命令有精度误差，金额计算要用定点或十进制方案。可以按业务单位编码为整数，但仍需核对溢出、舍入与交易语义。
 
 ## 4. 固定时间窗计数的原子边界 {#_4-固定时间窗的计数不是两条命令随手拼}
 
-限流常需要“窗口首次创建时设置期限，后续只增加计数”。若把 INCR 和 EXPIRE 分开，崩溃会留下无期限计数；每次都刷新过期又可能变成另一种窗口规则。
+固定时间窗限流通常是“一段窗口一个计数键”：这个键第一次被创建时设好期限，之后只往上加计数。若把 INCR 和 EXPIRE 分成两条命令，中间崩溃就会留下一个没有期限的计数键；反过来每次访问都刷新过期时间，规则就变成滑动窗口，不再是固定窗口。
 
 Redis Lua 服务端脚本是交给 Redis 内嵌 Lua 解释器执行的一段逻辑，可在服务器内完成判断与多步更新，避免其他客户端命令穿插。但脚本执行期间会阻塞其他命令，必须控制工作量，不能把长耗时任务直接搬进去。脚本的使用与错误边界见 [第 18 章：事务、Lua 与 Functions](/articles/redis-transactions-lua-functions.html)。[官方 Lua 说明](https://redis.io/docs/latest/develop/programmability/eval-intro/)
 
@@ -119,8 +119,8 @@ Redis Lua 服务端脚本是交给 Redis 内嵌 Lua 解释器执行的一段逻�
 
 MGET、MSET 减少了命令数量，但请求和回复仍有字节成本。MGET 涉及的键很多或值很大，依然可能造成排队与带宽压力。
 
-MGET 有一个返回的特殊情况：不存在的键、以及存在但不是 String 的键，都在对应结果位置返回 nil。
-而GET 读取非 String 键时的 WRONGTYPE，不能原样套到 MGET。
+MGET 有一个特殊的返回情况：不存在的键、以及存在但不是 String 的键，都在对应结果位置返回 nil。
+`GET` 读取非 String 键会报 WRONGTYPE，这条规则不能照搬到 MGET 上。
 
 下面三条命令假定 missing 键不存在；键名中的 `{42}` 是 Hash Tag（哈希标签），使这些键在 Cluster 中落到同一槽：
 
@@ -142,11 +142,11 @@ OK
 3) (nil)
 ```
 
-后两个 nil 的原因不同。因此 nil 不足以证明键不存在，也可能提示键模型冲突。此处描述的是数据类型语义，不表示调用永远不报错；ACL（Access Control List，访问控制列表）、连接和 Cluster 约束仍可导致失败。[MGET 返回定义](https://redis.io/docs/latest/commands/mget/)
+两个 nil 的原因并不相同：第二个是键存在、但类型是 Hash 不是 String；第三个才是键真的不存在。所以看到一个 nil 不能直接断定键不存在，它也可能说明键的类型和预期对不上。此处描述的是数据类型语义，不表示调用永远不报错；ACL（Access Control List，访问控制列表）、连接和 Cluster 约束仍可导致失败。[MGET 返回定义](https://redis.io/docs/latest/commands/mget/)
 
 MSET 是单条原子命令：它设置的多个值不会被其他客户端看到只更新一部分的中间状态；把多个 SET 放入 Pipeline 没有这项组合保证。在 Redis Open Source 7.2.0 Cluster 中，MGET、MSET 的所有键必须位于同一哈希槽，否则会报 CROSSSLOT 错误。客户端把跨节点多个 GET 聚合成一个 API，不意味着服务端执行了一个跨槽原子 MGET。[MSET 原子性](https://redis.io/docs/latest/commands/mset/) · [Cluster 多键规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#implemented-subset)
 
-Redis Open Source 7.2.0 默认限制单个 String 最大为 512 MB（512 × 1024 × 1024 字节），对应 `proto-max-bulk-len` 默认配置及 String 长度检查。实际业务不应按理论上限规划对象；大值会影响复制、持久化、网络和删除，应按延迟与资源预算控制尺寸。[7.2.0 配置默认值](https://raw.githubusercontent.com/redis/redis/7.2.0/src/config.c#L2943) · [String 长度检查](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_string.c#L37-L49)
+Redis Open Source 7.2.0 默认限制单个 String 最大为 512 MB（512 × 1024 × 1024 字节），对应 `proto-max-bulk-len` 默认配置及 String 长度检查。实际业务按理论上限规划对象会撞上复制与持久化成本；大值会影响复制、持久化、网络和删除，应按延迟与资源预算控制尺寸。[7.2.0 配置默认值](https://raw.githubusercontent.com/redis/redis/7.2.0/src/config.c#L2943) · [String 长度检查](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_string.c#L37-L49)
 
 ## 6. 编码只作为诊断线索
 

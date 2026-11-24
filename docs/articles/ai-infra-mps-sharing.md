@@ -1,6 +1,6 @@
 ---
 id: ai-infra-mps-sharing
-title: 第 15 章 MPS 与其他共享方式：并发不等于硬隔离
+title: 第 15 章 MPS 与其他共享方式：并发共享与硬隔离的边界
 description: "MPS（Multi-Process Service）通过协作多个 CUDA 进程复用设备资源，适合研究小任务的并发机会。"
 date: '2026-10-25'
 updated: '2026-10-28'
@@ -17,13 +17,13 @@ series: ai-infrastructure
 order: 15
 ---
 
-# 第 15 章 MPS 与其他共享方式：并发不等于硬隔离
+# 第 15 章 MPS 与其他共享方式：并发共享与硬隔离的边界
 
-MPS（Multi-Process Service）通过协作多个 CUDA 进程复用设备资源，适合研究小任务的并发机会。实际收益取决于负载与资源争用；它与 MIG 的资源划分方式不同，比较时应先明确复用、隔离和性能目标。
+MPS（Multi-Process Service）让多个 CUDA 进程共用同一块 GPU：各进程把工作交给同一套 GPU 调度资源，而不是各自排队抢占设备。它适合研究小任务的并发机会。实际收益取决于负载与资源争用；它与 MIG 的资源划分方式不同，比较时应先明确复用、隔离和性能目标。
 
 ## 1. 先分清历史实现
 
-传统 pre-Volta 路径和 Volta 起的执行及地址空间机制不同。MPS 有控制守护进程、server 与 client 运行时等角色，具体提交路径和隔离能力需按架构与实现理解。[MPS Architecture](https://docs.nvidia.com/deploy/mps/latest/architecture.html)
+换代之后机制变了：pre-Volta 上，客户端和 Server 共用同一份 GPU 地址空间；Volta 起，每个客户端有自己的地址空间并直接向 GPU 提交，Server 只负责建连接和管理共享的调度资源。MPS 有控制守护进程、server 与 client 运行时等角色，具体提交路径和隔离能力需按架构与实现理解。[MPS Architecture](https://docs.nvidia.com/deploy/mps/latest/architecture.html)
 
 [![GPU 共享：需求与机制](/assets/notes/ai-infra/sharing-choices.svg)](/assets/notes/ai-infra/sharing-choices.svg)
 
@@ -41,7 +41,7 @@ MPS 是 Multi-Process Service（多进程服务）。Control Daemon（控制守�
 
 ### 控制协议 v2 与 v3
 
-GPU 执行实现的 pre-Volta/Volta 分界与控制协议是两个维度。下表的 v2 实验采用 Linux、A100 非 MIG 整卡、CUDA Toolkit 12.8.1 和兼容驱动。v3 由 CUDA 13.4 引入，以 NVIDIA Release 615 接口文档为版本参照。使用 v3 前要核对支持目标 GPU 的驱动和配套控制二进制是否识别协议选项。CUDA 12.8.1 实验不使用 v3 命令。
+上一节按 GPU 架构划线（pre-Volta 与 Volta 起），这里的 v2/v3 是控制协议版本，两条线并不重合：下面的实验就在 A100 上用 v2 协议，而选哪个协议取决于工具、驱动和配套控制二进制。下表的 v2 实验采用 Linux、A100 非 MIG 整卡、CUDA Toolkit 12.8.1 和兼容驱动。v3 由 CUDA 13.4 引入，以 NVIDIA Release 615 接口文档为版本参照。使用 v3 前要核对支持目标 GPU 的驱动和配套控制二进制是否识别协议选项。CUDA 12.8.1 实验不使用 v3 命令。
 
 | 能力                | Legacy v2                                                  | v3                                                                                                        |
 | ------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -55,9 +55,9 @@ GPU 执行实现的 pre-Volta/Volta 分界与控制协议是两个维度。下�
 
 ## 2. 百分比参数限制的资源与性能范围 {#_2-百分比参数不表示预留同等算力}
 
-legacy MPS 的 active thread percentage 限制可使用的执行资源，并非把每个应用的吞吐、延迟都精确锁定为某个百分比。硬件粒度可能导致取整。显存限制、线程资源限制和带宽隔离也是不同机制。[Legacy MPS v2 接口](https://docs.nvidia.com/deploy/mps/latest/mpsv2-interface.html)
+legacy MPS 的 active thread percentage 限制可使用的执行资源，并非把每个应用的吞吐、延迟都精确锁定为某个百分比。硬件粒度可能导致取整。显存上限、执行资源比例和带宽是三件不同的事：一个管能分配多少内存，一个管能用多少执行资源，带宽没有对应的按进程百分比配额。[Legacy MPS v2 接口](https://docs.nvidia.com/deploy/mps/latest/mpsv2-interface.html)
 
-| 方式       | 主要作用                       | 不应自动承诺                           |
+| 方式       | 主要作用                       | 边界                                   |
 | ---------- | ------------------------------ | -------------------------------------- |
 | 多 stream  | 表达同一应用工作顺序和并发机会 | 跨租户隔离                             |
 | 时间片共享 | 多任务复用设备                 | 显存或吞吐的硬分区                     |
@@ -65,7 +65,7 @@ legacy MPS 的 active thread percentage 限制可使用的执行资源，并非�
 | MIG        | 受支持硬件的资源实例化         | 整卡级故障完全隔离                     |
 | vGPU       | 虚拟机等场景的设备虚拟化体系   | 一律只采用时间片；也有 MIG-backed 路径 |
 
-Volta+ 的 Active Thread Percentage（活跃线程比例）是执行资源上限。假设 A、B 分别设为 50%，硬件会把上限向下取到可支持的线程粒度。两个客户端没有预留互斥的一半 SM。若 B 空闲，A 可以使用在其有效上限内原本与 B 争用的资源，不能因此突破自身上限。要允许单个客户端在对方空闲时扩大可用范围，应预先配置更宽的上限，并验证并发时的竞争影响。两个 50% 也不会把显存容量或显存带宽平均分配。
+Volta+ 的 Active Thread Percentage（活跃线程比例）是执行资源上限。假设 A、B 分别设为 50%，硬件会把上限向下取到可支持的线程粒度。两个 50% 不是把 SM 切成两半、各锁一半：它只是各自的上限，不是预留。若 B 空闲，A 可以使用在其有效上限内原本与 B 争用的资源，但不会突破自身上限。要允许单个客户端在对方空闲时扩大可用范围，应预先配置更宽的上限，并验证并发时的竞争影响。两个 50% 也不会把显存容量或显存带宽平均分配。
 
 | 方式                                    | 约束单位和设置时机                                                                                                       |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -75,19 +75,19 @@ Volta+ 的 Active Thread Percentage（活跃线程比例）是执行资源上限
 
 这些动态限制与新版本显式启用的静态 SM 分区不同。后者需要单独核对 Toolkit、硬件和控制配置。参见 [NVIDIA MPS 资源配置](https://docs.nvidia.com/deploy/mps/when-to-use-mps.html)。
 
-Legacy MPS 的 `CUDA_MPS_PINNED_DEVICE_MEM_LIMIT` 限制支持架构上客户端通过 CUDA API 可分配的设备内存，超限会遇到分配失败。这里的 pinned device memory 与页锁定主机内存不同。CUDA Memory Pool 管理流序分配的缓存和复用，也不构成跨进程容量隔离。MIG 则在支持 GPU 上把显存路径与容量按 GI 硬件分区。
+Legacy MPS 的 `CUDA_MPS_PINNED_DEVICE_MEM_LIMIT` 限制支持架构上客户端通过 CUDA API 可分配的设备内存，超限会遇到分配失败。这里的 pinned device memory 与页锁定主机内存不同。CUDA Memory Pool 只在本进程内复用缓存，跨进程容量仍要另设隔离。MIG 则在支持 GPU 上把显存路径与容量按 GI 硬件分区。
 
-MPS v3 的 cgroup 设备内存分区要求 Linux cgroup v2、CUDA 13.4 或更新版本、支持此能力的驱动和非 MIG GPU。硬上限可使分配失败，软上限涉及内存压力下的回收或驱逐。Release 620 文档还区分 `dmem` 与 `misc` 后端，受内核能力和驱动配置约束，托管内存另有限制。这是配额与压力管理机制，不能据此推导带宽或故障隔离。[MPS v3 Memory Partitioning，Release 620](https://docs.nvidia.com/deploy/mps/620/mpsv3-memory-partitioning.html)
+MPS v3 的 cgroup 设备内存分区要求 Linux cgroup v2、CUDA 13.4 或更新版本、支持此能力的驱动和非 MIG GPU。硬上限可使分配失败，软上限涉及内存压力下的回收或驱逐。Release 620 文档还区分 `dmem` 与 `misc` 后端，受内核能力和驱动配置约束，托管内存另有限制。这是配额与压力管理机制，带宽与故障隔离要另看。[MPS v3 Memory Partitioning，Release 620](https://docs.nvidia.com/deploy/mps/620/mpsv3-memory-partitioning.html)
 
 ## 3. 按版本管理在途工作与退出顺序 {#_3-故障和退出行为不能靠框架名担保}
 
-停止服务时，应先排空并同步未完成的工作，再按相应版本的管理流程退出。不要从信号处理器直接调用复杂的 CUDA API，这并不能保证异步信号安全。还应保存 server 日志、客户端映射和故障前的时间线。
+停止服务时，应先排空并同步未完成的工作，再按相应版本的管理流程退出。从信号处理器里直接调用复杂的 CUDA API 并不安全：异步信号安全指这个函数在被打断的上下文里调用也能正确返回，而多数 CUDA API 不满足。还应保存 server 日志、客户端映射和故障前的时间线。
 
 ## 4. 强制中断、故障传播与受控终止 {#_4-sigkill-不能被框架捕获后优雅清理}
 
 Linux 的 SIGKILL 不能被捕获、阻塞或忽略。因此“kill -9 后别的任务没受影响”不能归因为框架在信号处理器里完成了清理。仅观察到其他任务未受影响，还不足以解释机制；进一步判断需要当时的在途工作、server 状态和日志。[Linux signal(7)](https://man7.org/linux/man-pages/man7/signal.7.html)
 
-| 事件                    | 必须区分的条件                    | 不应给出的通用保证       |
+| 事件                    | 必须区分的条件                    | 边界                     |
 | ----------------------- | --------------------------------- | ------------------------ |
 | 正常退出                | 是否已排空在途 GPU 工作           | 任意退出顺序都安全       |
 | 未同步强制中断          | server 和关联客户端状态           | 只会影响当前 Python 进程 |
@@ -100,7 +100,7 @@ Linux 的 SIGKILL 不能被捕获、阻塞或忽略。因此“kill -9 后别的
 
 ## 5. 在独立实验节点比较三组运行
 
-**以下命令会启动和停止 MPS 守护进程。仅用于已授权、无其他业务的单 GPU 实验节点。** 使用 A100 非 MIG 整卡、Linux、CUDA 12.8.1 的配套驱动与 Legacy v2 控制工具。同一 UID 启动控制端和两个客户端。先用 `nvidia-smi -L`、`nvidia-smi`、`nvcc --version` 和工具帮助核对设备、软件、计算模式和现有 MPS 状态。已有服务占用时停止实验。不要复用其目录或修改生产计算模式。
+**以下命令会启动和停止 MPS 守护进程。仅用于已授权、无其他业务的单 GPU 实验节点。** 使用 A100 非 MIG 整卡、Linux、CUDA 12.8.1 的配套驱动与 Legacy v2 控制工具。同一 UID 启动控制端和两个客户端。先用 `nvidia-smi -L`、`nvidia-smi`、`nvcc --version` 和工具帮助核对设备、软件、计算模式和现有 MPS 状态。已有服务占用时停止实验。复用其目录或修改生产计算模式会影响线上任务。
 
 复用[第 12 章](/articles/ai-infra-performance-profiling.html)的 `layout.cu`，用 `nvcc -std=c++17 -O2 layout.cu -o layout` 编译。将 `repeats` 固定到让两进程可观察重叠的值，三组保持一致。客户端成功标准是同步成功且逐元素校验输出 `PASS`。先在确认未使用 MPS 时分别运行 `./layout row`、`./layout column`（A 组），再并行启动并分别等待两个进程、保存输出和退出码（B 组）。
 

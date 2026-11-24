@@ -37,7 +37,7 @@ order: 90
 | GFS                  | [2003 论文](https://storage.googleapis.com/gweb-research2023-media/pubtools/4446.pdf)                                                                                                                                                                                                   | §2.7 一致性，§3 数据与控制路径                                                         |
 | CRAQ                 | [2009 论文](https://www.usenix.org/event/usenix09/tech/full_papers/terrace/terrace.pdf)                                                                                                                                                                                                 | §2 clean/dirty 与 Tail 版本查询                                                        |
 | WAL 与 SQL 隔离      | [PostgreSQL 17 WAL](https://www.postgresql.org/docs/17/wal-intro.html)、[隔离](https://www.postgresql.org/docs/17/transaction-iso.html)                                                                                                                                                 | 产品举例，不替其他引擎证明相同实现                                                     |
-| 原子提交             | [Gray、Lamport 的提交分析](https://lamport.azurewebsites.net/video/consensus-on-transaction-commit.pdf)                                                                                                                                                                                 | Prepared、持久决定、阻塞与共识的层次                                                   |
+| 原子提交             | [Gray、Lamport 的提交分析](https://lamport.azurewebsites.net/video/consensus-on-transaction-commit.pdf)                                                                                                                                                                                 | Prepared 是持久承诺；决定先落盘再通知；协调者失联时参与者只能等                        |
 | Saga / Outbox        | [Saga 原论文](https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf)、[Outbox 模式](https://microservices.io/patterns/data/transactional-outbox.html)                                                                                                                         | 补偿不是物理回滚；可靠传递仍可能重复                                                   |
 | Aurora               | [2017 论文](https://cdn.amazon.science/dc/2b/4ef2b89649f9a393d37d3e042f4e/amazon-aurora-design-considerations-for-high-throughput-cloud-native-relational-databases.pdf)                                                                                                                | 保护组、redo、正常读与恢复读不同                                                       |
 | Frangipani           | [1997 论文](https://rcs.uwaterloo.ca/papers/frangipani.pdf)                                                                                                                                                                                                                             | 元数据日志、缓存锁、恢复与租约限制                                                     |
@@ -58,11 +58,11 @@ order: 90
 
 PostgreSQL 17 是本册 WAL、MVCC 与隔离的**教学基线**，不表示当前最新版本；MVCC 的快照与隔离边界以该版本文档为准。ZooKeeper 资料固定为 3.9.3；Dynamo 2007、Aurora 2017、Frangipani 1997 和 vSphere 4.0 时代的 VMware FT 都按历史设计阅读，不推断今天产品的全部实现。
 
-GFS 另有[作者机构入口](https://research.google/pubs/the-google-file-system/)，CRAQ 另有[USENIX 2009 会议入口](https://www.usenix.org/conference/usenix-09/object-storage-craq-high-throughput-chain-replication-read-mostly-workloads)，可用于定位论文与出版信息。Outbox 已有模式作者原文，不要求额外采用某个 CDC 产品；实际连接器保证仍应按具体版本核对。
+GFS 另有[作者机构入口](https://research.google/pubs/the-google-file-system/)，CRAQ 另有[USENIX 2009 会议入口](https://www.usenix.org/conference/usenix-09/object-storage-craq-high-throughput-chain-replication-read-mostly-workloads)，可用于定位论文与出版信息。Outbox 已有模式作者原文，不必额外采用某个 CDC（Change Data Capture，变更数据捕获）产品；实际连接器保证仍应按具体版本核对。
 
 新增工程说明主要基于应用协议推演；个别已执行的单机教学例子以对应章节的环境、命令与结果记录为准，不扩写成分布式故障实验。文中未虚构实例规格、软件参数、性能数值或故障测试结果；各系统的安装、升级与安全配置也不在本次整理范围内。
 
-原截图包含课程画面或第三方图片，来源授权尚未逐一核实。本地候选稿采用重新表达机制的图，并不因此获得原图片的转载权；技术核对也不能替代公开授权和敏感信息审查。
+原截图包含课程画面或第三方图片，来源授权尚未逐一核实。本地候选稿采用重新表达机制的图，转载权仍要看原图授权；技术核对看内容对不对，公开授权看能不能转载，敏感信息审查看图里有没有不该出现的信息，三件事要分别做完。
 
 [返回本册目录](/collections/distributed-systems/)
 

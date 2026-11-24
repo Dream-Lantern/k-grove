@@ -1,7 +1,7 @@
 ---
 id: ai-infra-streams-events
 title: 第 6 章 Stream 与 Event：顺序、依赖和真正的重叠
-description: 异步不等于并行。CPU 提交函数较快返回，只能说明主机没有等待 GPU 完成全部工作；不同任务能否同时执行，还取决于依赖、硬件与资源。
+description: 异步只编排顺序，并行才同时执行。CPU 提交函数较快返回，只能说明主机没有等待 GPU 完成全部工作；不同任务能否同时执行，还取决于依赖、硬件与资源。
 date: '2026-10-25'
 updated: '2026-10-25'
 category: gpu-infra
@@ -19,11 +19,11 @@ order: 6
 
 # 第 6 章 Stream 与 Event：顺序、依赖和真正的重叠
 
-异步不等于并行。CPU 提交函数较快返回，只能说明主机没有等待 GPU 完成全部工作；不同任务能否同时执行，还取决于依赖、硬件与资源。
+把 kernel 提交到 stream 是异步的：CPU 把活排进队列就返回，这只能说明主机没在等 GPU 跑完，不代表两件事在同时执行。异步只规定谁先谁后，能不能真正并行，还取决于依赖、硬件与资源。
 
 ## 1. 先建立顺序保证
 
-普通使用中，同一 stream 的工作按照提交顺序推进。先拷入输入再计算，再拷回输出，能够表达依赖关系。不能把这三个依赖同一数据的阶段写成“放到一个 stream 里就会自动重叠”。
+普通使用中，同一个 stream 里的工作严格按提交顺序执行：先拷入输入，再算，最后把输出拷回，后一步一定等前一步做完。这三步读的是同一份数据，不能指望把它们塞进同一个 stream 就自动重叠。
 
 不同 stream 的独立工作可能并发，但没有“创建两个 stream 就保证加速”的契约。legacy default stream 还可能与其他 blocking stream 产生隐式同步；per-thread default stream 及 non-blocking stream 有不同语义。[Stream API，12.8.1](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__STREAM.html)
 
@@ -48,7 +48,7 @@ cudaStreamWaitEvent(s_consumer, ready, 0);
 consume<<<grid, block, 0, s_consumer>>>(buffer);
 ```
 
-`cudaStreamWaitEvent` 为设备工作建立顺序，不等于要求 CPU 阻塞等待。CPU 要读取结果时，再在相应 stream/event 上等待完成。避免在每个操作后调用 `cudaDeviceSynchronize()`，否则很容易把原本可流水化的工作全部串行化。
+`cudaStreamWaitEvent` 只是让 GPU 上的后续工作排队等这个事件，CPU 不用停下来等。CPU 要读取结果时，再在相应 stream/event 上等待完成。避免在每个操作后调用 `cudaDeviceSynchronize()`，否则很容易把原本可流水化的工作全部串行化。
 
 创建 Event 后，`cudaEventRecord(ready, producer)` 把生产流此前的工作关联到这次记录。随后调用 `cudaStreamWaitEvent(consumer, ready, 0)`，让消费流后续工作依赖这次记录。若在首次记录之前调用 wait，该 Event 还没有捕获工作，不能建立预期依赖。Event 作为依赖点可用 `cudaEventCreate()` 创建，也可用 `cudaEventCreateWithFlags(..., cudaEventDisableTiming)` 省去计时。此处生产者和消费者在同一设备执行环境中使用可共同访问的缓冲区。
 
@@ -62,9 +62,9 @@ consume<<<grid, block, 0, s_consumer>>>(buffer);
 
 ## 3. 什么情况下搬运与计算可能重叠
 
-通常需要硬件支持、相互独立的数据分块、合适的 stream 布局和主机内存条件。页锁定内存有利于异步主机搬运，但函数名带 `Async` 并不保证所有参数组合都对主机完全非阻塞；应检查具体拷贝类型和同步语义。[异步执行说明](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html#asynchronous-concurrent-execution)
+通常需要硬件支持、相互独立的数据分块、合适的 stream 布局和主机内存条件。页锁定内存（pinned memory）指不会被系统换出到磁盘的主机内存，拷贝引擎可以直接从它取数据，不必先复制到一块临时缓冲；它对异步主机搬运有利，但函数名带 `Async` 并不保证所有参数组合都对主机完全非阻塞；应检查具体拷贝类型和同步语义。[异步执行说明](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html#asynchronous-concurrent-execution)
 
-实验时，先画出三个分块的数据依赖，再检查时间线中是否出现预期的重叠。如果没有，应排查隐式同步、pageable memory、资源占满和输入依赖，而不是直接增加到几十个 stream。
+实验时，先画出三个分块的数据依赖，再检查时间线中是否出现预期的重叠。如果没有，应排查隐式同步、pageable memory（普通可分页主机内存，拷贝前驱动要先经一次暂存）、资源占满和输入依赖，而不是直接增加到几十个 stream。
 
 拷贝引擎（Copy Engine）可在支持的路径上独立于计算流水线搬运数据。可查询 `asyncEngineCount` 了解设备能力，并用页锁定缓冲区安排 H2D、Kernel 和 D2H。要观察重叠，可把不同分块放入可独立推进的流，分别管理缓冲区的生命周期，再用时间线确认。单个分块的计算仍需等输入可用，主机也要等 D2H 完成再读取输出。DMA 未结束时，提前覆盖输入或释放任一缓冲区都会破坏正确性。[CUDA 12.8.1 异步拷贝语义](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/api-sync-behavior.html)
 
@@ -72,7 +72,7 @@ consume<<<grid, block, 0, s_consumer>>>(buffer);
 
 CPU 在提交前后读时钟，通常测到的是提交开销，而不是 GPU 执行时长。CUDA event 可以测量受其顺序约束的 GPU 时间区间；跨 stream、跨设备或存在并发时，要认真设计依赖，不能把任意两个 event 相减当作某个 kernel 的独占成本。
 
-最终至少应同时记录端到端时间和 GPU 时间线。服务响应慢的原因可能在队列、CPU 分词或网络阶段，但也不能仅凭一个 kernel 耗时很短，就排除 GPU 性能问题。
+最终至少应同时记录端到端时间和 GPU 时间线。服务响应慢的原因可能在队列、CPU 分词或网络阶段，但一个 kernel 耗时短只覆盖该 kernel，GPU 侧仍可能是瓶颈。
 
 ## 5. 实践：两条流传递一个整数
 
@@ -152,7 +152,7 @@ nvcc stream_event.cu -o stream_event
 compute-sanitizer --tool memcheck --error-exitcode 1 ./stream_event
 ```
 
-预期输出 `PASS`。去掉 wait 会让消费操作与生产操作争用同一设备地址，即使偶然读到 16，也不能据此认定正确。若省略最后一次同步，主机可能在回拷完成前读取输出。该示例已静态核查，GPU 执行与 memcheck 待验证。
+预期输出 `PASS`。去掉 wait 会让消费操作与生产操作争用同一设备地址，即使偶然读到 16，也只是巧合。若省略最后一次同步，主机可能在回拷完成前读取输出。该示例已静态核查，GPU 执行与 memcheck 待验证。
 
 ## 6. 从异步依赖进入 CUDA Graphs
 

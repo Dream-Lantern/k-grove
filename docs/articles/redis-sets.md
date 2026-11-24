@@ -38,9 +38,9 @@ SCARD demo:tags:user-42
 SREM demo:tags:user-42 music
 ```
 
-预期依次返回 `2`、`1`、`2`、`1`。EXISTS 检查键是否存在，SISMEMBER 检查成员，不能互相替代。SADD 返回新加入的成员数；重复添加同一成员不增加集合基数（Cardinality，即不重复成员的数量）。
+预期依次返回 `2`、`1`、`2`、`1`。EXISTS 问的是“这个键还在不在”，SISMEMBER 问的是“这个成员在不在集合里”：键存在，不代表某个成员一定在里面。SADD 返回新加入的成员数；重复添加同一成员不增加集合基数（Cardinality，即不重复成员的数量）。
 
-`SCARD` 可以读取已有的数量信息，不需要为了数成员而先 SMEMBERS。
+`SCARD` 直接返回集合里有多少成员，不用先把成员全部拉回客户端再自己数。
 
 ## 2. 并集、交集与差集
 
@@ -59,9 +59,9 @@ SUNION demo:{audience}:a demo:{audience}:b
 SDIFF demo:{audience}:a demo:{audience}:b
 ```
 
-两个 SADD 预期各返回 `2`；交集成员为 `{user-2}`，并集为 `{user-1, user-2, user-3}`，差集为 `{user-1}`。这里花括号表示结果集合，实际返回的成员顺序不保证。差集有方向，A 减 B 与 B 减 A 不同。STORE 版本把结果写入目标键，可能覆盖已有数据，还会消耗内存；不能把它当成纯查询。
+两个 SADD 预期各返回 `2`；交集成员为 `{user-2}`，并集为 `{user-1, user-2, user-3}`，差集为 `{user-1}`。这里花括号表示结果集合，实际返回的成员顺序不保证。差集有方向，A 减 B 与 B 减 A 不同。STORE 版本把结果写入目标键，可能覆盖已有数据，还会消耗内存；它属于修改操作。
 
-在 Redis Cluster（Redis 集群）中，上述多键运算要求键位于同一个 Hash Slot（哈希槽，即键所在的分片单元）。Hash Tag（哈希标签）让这些键按花括号中的 `audience` 计算槽；下面需连接启用了 Cluster 的学习节点，单实例不能直接运行，且无需先创建键：
+在 Redis Cluster（Redis 集群）中，上述多键运算要求键位于同一个 Hash Slot（哈希槽，即键所在的分片单元）。Hash Tag（哈希标签）让这些键按花括号中的 `audience` 计算槽；下面需连接启用了 Cluster 的学习节点，单实例没有对应语义，且无需先创建键：
 
 ```redis
 # 计算键 demo:{audience}:a 所属的槽号；花括号内的 hash tag 用于确定槽，相同 tag 的键会落在同一槽
@@ -70,7 +70,7 @@ CLUSTER KEYSLOT demo:{audience}:a
 CLUSTER KEYSLOT demo:{audience}:b
 ```
 
-预期返回两个相同的槽编号。相同标签解决同槽约束，但是不会解决所有热点问题；大量集合共用同一标签会使负载集中到一个槽及其节点。[CLUSTER KEYSLOT](https://redis.io/docs/latest/commands/cluster-keyslot/) · [Cluster Hash Tag 规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#hash-tags)
+预期返回两个相同的槽编号。相同标签解决同槽约束，但热点问题另论；大量集合共用同一标签会使负载集中到一个槽及其节点。[CLUSTER KEYSLOT](https://redis.io/docs/latest/commands/cluster-keyslot/) · [Cluster Hash Tag 规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#hash-tags)
 
 ## 3. 随机返回与随机删除
 
@@ -86,24 +86,24 @@ SRANDMEMBER 用于随机返回，SPOP 用于随机移除。前者不会因为读
 
 SRANDMEMBER 正数 count 不重复，但不保证返回数组是随机排序；负数 count 允许重复，非空集合返回其绝对值指定的数量。SPOP 会实际删除成员。[SRANDMEMBER 随机规则](https://redis.io/docs/latest/commands/srandmember/) · [SPOP](https://redis.io/docs/latest/commands/spop/)
 
-教学推演：集合只有 a、b，count=3 最多返回这两个不同成员；count=-3 可以返回三个位置，其中必有重复，具体顺序不能预先确定。随机返回机制本身并不能证明商业抽奖公平，重复参与、随机来源和审计仍需在业务层考虑。
+教学推演：集合只有 a、b，count=3 最多返回这两个不同成员；count=-3 可以返回三个位置，其中必有重复，具体顺序由服务端决定。随机返回机制本身并不能证明商业抽奖公平，重复参与、随机来源和审计仍需在业务层考虑。
 
 ## 4. 精确集合的成本
 
-Set 能回答精确成员关系，也能列出成员；这些能力需要相应存储。若只需要近似统计不重复元素数量且不需要名单，见 [第 9 章：HyperLogLog](/articles/redis-hyperloglog.html)，它不能替代精确成员查询。
+Set 能回答精确成员关系，也能列出成员；这些能力需要相应存储。若只需要近似统计不重复元素数量且不需要名单，见 [第 9 章：HyperLogLog](/articles/redis-hyperloglog.html)；它只给近似数量，与精确成员查询是两回事。
 
-Bloom Filter（布隆过滤器）是一种高度节省空间的概率型数据结构，用于快速判定元素“可能出现过”。它通过多个哈希函数将元素映射到位数组，且不保存完整的成员列表。在查询时，若发现某个对应的位未被设置，即可100% 确定该元素不存在；但由于不同元素可能共享相同的位，即便所有对应的位均已设置，也只能推断其可能存在（即存在假阳性），不能证明该元素一定加入过。
+Bloom Filter（布隆过滤器）是一种高度节省空间的概率型数据结构，用于快速判定元素“可能出现过”。它通过多个哈希函数将元素映射到位数组，且不保存完整的成员列表。在查询时，若发现某个对应的位未被设置，即可100% 确定该元素不存在；但由于不同元素可能共享相同的位，即便所有对应的位均已设置，也只能推断其可能存在（即存在假阳性），加入与否仍需回查。
 
 | 查询结果    | 正常使用时的含义                                                      |
 | ----------- | --------------------------------------------------------------------- |
 | 不存在（0） | 确定未加入当前过滤器，不会漏掉已成功加入且仍被保留的元素              |
 | 存在（1）   | 可能存在，也可能是 False Positive（假阳性，即未加入却被判为可能存在） |
 
-正常使用条件下没有 False Negative（假阴性，即已加入却被判不存在）， **它适合在查数据库前排除明显不存在的对象，不适合代替 Set 的精确成员判断；“可能存在”仍应回查权威数据。** [官方 Bloom Filter 说明](https://redis.io/docs/latest/develop/data-types/probabilistic/bloom-filter/)
+正常使用条件下没有 False Negative（假阴性，即已加入却被判不存在）， **它适合在查数据库前排除明显不存在的对象，Set 的精确成员判断仍要另做；“可能存在”仍应回查权威数据。** [官方 Bloom Filter 说明](https://redis.io/docs/latest/develop/data-types/probabilistic/bloom-filter/)
 
-`BF.*` 属于 RedisBloom 提供的概率结构能力，不是核心 Set 命令。在 Redis Open Source 7.2.0 / 7.4.0 普通实例上，需要另行安装兼容的 RedisBloom 模块，并通过服务端启动配置 `loadmodule` 加载实际模块文件，或使用包含该模块的 Redis Stack；安装客户端库不会补上命令。Redis Open Source 8.0.0 已将 RedisBloom 纳入发行包，二进制分发与自行构建、加载配置仍需分别确认。[RedisBloom 项目与版本边界](https://github.com/RedisBloom/RedisBloom#readme) · [8.0.0 Release Notes](https://raw.githubusercontent.com/redis/redis/8.0.0/00-RELEASENOTES)
+`BF.*` 属于 RedisBloom 提供的概率结构能力，不是核心 Set 命令。在 Redis Open Source 7.2.0 / 7.4.0 普通实例上，需要另行安装兼容的 RedisBloom 模块，并通过服务端启动配置 `loadmodule` 加载实际模块文件，或使用包含该模块的 Redis Stack；只装客户端库，命令仍然不存在。Redis Open Source 8.0.0 已将 RedisBloom 纳入发行包，二进制分发与自行构建、加载配置仍需分别确认。[RedisBloom 项目与版本边界](https://github.com/RedisBloom/RedisBloom#readme) · [8.0.0 Release Notes](https://raw.githubusercontent.com/redis/redis/8.0.0/00-RELEASENOTES)
 
-以下以使用 `redis-full.conf` 加载完整概率结构能力的 Redis Open Source 8.0.0 学习实例为目标，假定 `demo:bloom` 不存在；这是教学语法与推演。`0.001` 表示期望假阳性率 0.1%，`100000` 是初始容量规划，不保证每批查询恰好有 0.1% 误判：
+以下以使用 `redis-full.conf` 加载完整概率结构能力的 Redis Open Source 8.0.0 学习实例为目标，假定 `demo:bloom` 不存在；这是教学语法与推演。`0.001` 表示期望假阳性率 0.1%，`100000` 是初始容量规划，0.1% 是期望值，单批查询的误判率会波动：
 
 ```redis
 # 创建 Bloom Filter demo:bloom；0.001 为目标误判率，100000 为初始容量（预计元素数），要求已提供 Bloom 命令能力
@@ -137,9 +137,9 @@ SSCAN demo:users 123 COUNT 100
 SSCAN demo:users 456 COUNT 100
 ```
 
-COUNT 是工作量提示，不是严格分页大小；一次可能返回空集合而游标仍不为 `0`。完整遍历可能出现重复成员，数据变化时不保证快照一致性，应用需去重并定义如何处理变化。SSCAN 不是 OFFSET/LIMIT（按偏移与条数取页）式稳定快照分页。[SSCAN](https://redis.io/docs/latest/commands/sscan/) · [官方 SCAN 遍历保证](https://raw.githubusercontent.com/redis/redis-doc/master/commands/scan.md)
+COUNT 只是工作量提示，与严格分页大小不同；一次可能返回空集合而游标仍不为 `0`。完整遍历可能出现重复成员，数据变化时不保证快照一致性，应用需去重并定义如何处理变化。SSCAN 与 OFFSET/LIMIT（按偏移与条数取页）式稳定快照分页不同。[SSCAN](https://redis.io/docs/latest/commands/sscan/) · [官方 SCAN 遍历保证](https://raw.githubusercontent.com/redis/redis-doc/master/commands/scan.md)
 
-时间复杂度描述工作量怎样随规模增长，不是固定的耗时。下表中 N 表示集合成员数，M 表示参与交集的集合数量，T 表示所有输入集合的元素总数（含输入间重复）：
+时间复杂度描述工作量怎样随规模增长，与实际耗时是两回事：O(1) 表示成员再多，这一步的开销也不变；O(N) 表示成员翻倍，工作量大致也翻倍，至于实际多少毫秒，还要看机器和负载。下表中 N 表示集合成员数，M 表示参与交集的集合数量，T 表示所有输入集合的元素总数（含输入间重复）：
 
 | 命令      | 作用         | 官方复杂度特点                             |
 | --------- | ------------ | ------------------------------------------ |
@@ -151,7 +151,7 @@ COUNT 是工作量提示，不是严格分页大小；一次可能返回空集�
 | SUNION    | 并集         | O(T)                                       |
 | SSCAN     | 游标遍历     | 固定 COUNT 下单次 O(1)，完整遍历 O(N)      |
 
-K 是本次添加的成员数。SSCAN 的单次复杂度并不意味着任意调大 COUNT 也成本固定，紧凑编码还可能一次返回全部成员。SINTER 即使结果很小，也可能要比较大量成员；并交差运算和大回复都要按输入规模评估。[SISMEMBER](https://redis.io/docs/latest/commands/sismember/) · [SADD](https://redis.io/docs/latest/commands/sadd/) · [SCARD](https://redis.io/docs/latest/commands/scard/) · [SMEMBERS](https://redis.io/docs/latest/commands/smembers/) · [SINTER](https://redis.io/docs/latest/commands/sinter/) · [SUNION](https://redis.io/docs/latest/commands/sunion/)
+K 是本次添加的成员数。SSCAN 的单次复杂度以固定 COUNT 为前提，调大 COUNT 后成本随之变化；紧凑编码还可能一次返回全部成员。SINTER 即使结果很小，也可能要比较大量成员；并交差运算和大回复都要按输入规模评估。[SISMEMBER](https://redis.io/docs/latest/commands/sismember/) · [SADD](https://redis.io/docs/latest/commands/sadd/) · [SCARD](https://redis.io/docs/latest/commands/scard/) · [SMEMBERS](https://redis.io/docs/latest/commands/smembers/) · [SINTER](https://redis.io/docs/latest/commands/sinter/) · [SUNION](https://redis.io/docs/latest/commands/sunion/)
 
 ## 5. 类型与编码分开
 
@@ -169,11 +169,11 @@ K 是本次添加的成员数。SSCAN 的单次复杂度并不意味着任意调
 | `set-max-listpack-entries` |          128 | listpack 成员数阈值                   |
 | `set-max-listpack-value`   |           64 | listpack 单个成员长度阈值，单位为字节 |
 
-在 Redis 7.2.0 中，底层编码的选择取决于首个成员及预估添加数量，因此不能仅凭“成员是整数”就断定底层必定是 intset。具体的转换规则如下：
+在 Redis 7.2.0 中，底层编码的选择取决于首个成员及预估添加数量，因此“成员是整数”推不出底层必定是 intset。具体的转换规则如下：
 1.向 intset 添加整数且超出数量阈值时，转为 hashtable；
 2.添加非整数时，系统会综合考量当前数量、现有成员长度、新成员长度及容量安全等检查，若均满足则转为 listpack，否则转为 hashtable；
 3.listpack 若因增长而超出数量或长度限制，同样转为 hashtable。
-需特别注意： **各项阈值仅是触发转换的条件之一，超出阈值并不意味着必然发生格式转换。** [7.2.0 t_set.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_set.c) · [redis.conf](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf) · [config.c 默认值](https://raw.githubusercontent.com/redis/redis/7.2.0/src/config.c)
+需特别注意： **各项阈值只是触发转换的条件之一，是否转换还要看其他检查。** [7.2.0 t_set.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_set.c) · [redis.conf](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf) · [config.c 默认值](https://raw.githubusercontent.com/redis/redis/7.2.0/src/config.c)
 
 intset 内部还可用 int16、int32、int64（分别为 16、32、64 位有符号整数）保存成员。加入超出当前宽度范围的整数，会扩大整个 intset 的整数宽度；这与对象编码转换不同：
 
@@ -182,8 +182,8 @@ intset 内部还可用 int16、int32、int64（分别为 16、32、64 位有符�
 | intset 内部宽度升级 | 原先只存 `1`，再加入 `32768`，可由 int16 升为 int32，对象仍是 intset |
 | 对象编码转换        | 加入非整数或增长超出条件，intset 可转为 listpack 或 hashtable        |
 
-上述例子根据 7.2.0 源码推演。intset 内部有序，但是应用不可以按下标或排序读取 Set。转换和回退需按具体命令、版本判断。[7.2.0 intset.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/intset.c)
+上述例子根据 7.2.0 源码推演。intset 在内存里按数值大小排列，这个顺序是“数值顺序”，不是插入顺序；Set 的对外接口也不提供按下标读取第几个成员。转换和回退需按具体命令、版本判断。[7.2.0 intset.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/intset.c)
 
-优化前先看实际版本与 OBJECT ENCODING，再根据业务场景做取舍，而不是只根据教科书里的一个阈值重组全部数据。基础成员语义见 [Set 数据类型](https://redis.io/docs/latest/develop/data-types/sets/)。
+优化前先看实际版本与 OBJECT ENCODING，再根据业务场景做取舍；只根据教科书里的一个阈值重组全部数据，风险很高。基础成员语义见 [Set 数据类型](https://redis.io/docs/latest/develop/data-types/sets/)。
 
 [返回本册目录](/collections/redis/)

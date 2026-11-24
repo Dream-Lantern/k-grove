@@ -23,7 +23,7 @@ order: 17
 
 ## 1. 副本数跟着节点范围走
 
-Deployment 管理一组可互换副本，DaemonSet（守护进程集）则让符合条件的节点具有相应 Pod。节点加入、移除或标签条件变化，都会影响期望覆盖范围。
+Deployment 管的是“跑几个副本”，副本之间可以互换；DaemonSet（守护进程集）管的是“哪些节点上要有这个 Pod”——节点加入、移除或标签条件变化，都会让需要覆盖的节点清单跟着变。
 
 “每台节点一个”是便于入门的说法，必须补上“符合该 DaemonSet 条件的节点”。节点选择、亲和、污点容忍和平台条件会限制范围；也可以有多个 DaemonSet 分别覆盖不同节点组。
 
@@ -40,7 +40,7 @@ Kubernetes 1.28 的典型协作为：DaemonSet Controller（守护进程集控�
 | node-c | agent=disabled | 否               |
 | node-d | 无 agent 标签  | 否               |
 
-阶段 A 期望覆盖 2 个节点；阶段 B 假设在已授权测试中 node-c 改为 enabled，期望变 3；阶段 C 再令 node-b 不符合，期望回到 2，对应节点实例由控制器按条件增减。这里只推演，不执行节点标签变更。资格符合也不代表资源、调度和启动一定成功。
+阶段 A 期望覆盖 2 个节点；阶段 B 假设在已授权测试中 node-c 改为 enabled，期望变 3；阶段 C 再令 node-b 不符合，期望回到 2，对应节点实例由控制器按条件增减。这里只推演，不执行节点标签变更。资格符合只是前提，资源、调度和启动仍可能失败。
 
 [![DaemonSet 节点覆盖：控制器计算范围，调度器绑定，kubelet 运行](/assets/notes/kubernetes/k8s-daemonset-node-coverage.svg)](/assets/notes/kubernetes/k8s-daemonset-node-coverage.svg)
 
@@ -71,7 +71,7 @@ updateStrategy:
 
 DaemonSet 的 RollingUpdate 使用自己的字段语义。v1.28.0 API 中，`maxUnavailable` 默认是 1，`maxSurge` 默认是 0；不能从 Deployment 抄成两项都是 25%。
 
-两项同时为 0 无法推进更新。DaemonSet 的 maxUnavailable 百分比向上取整，maxSurge 百分比也向上取整，后者百分比结果最小为 1；默认绝对数值 0 则另行理解。Deployment 的 maxUnavailable 百分比反而向下取整，不可照抄。[v1.28.0 DaemonSet 更新类型](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/apps/v1/types.go)
+两项同时为 0 无法推进更新。写百分比时，DaemonSet 的 maxUnavailable 向上取整，maxSurge 也向上取整且结果最小为 1；而默认值写的是绝对值 0，不经过取整。Deployment 的 maxUnavailable 百分比反而向下取整，不可照抄。[v1.28.0 DaemonSet 更新类型](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/apps/v1/types.go)
 
 更严格地说，v1.28 校验要求两者恰有一项非零，不能同时配置为正值。因此从 maxUnavailable=1、maxSurge=0 改成 surge 模式时，必须同时把 maxUnavailable 改为 0。[v1.28.0 更新策略校验](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/apis/apps/validation/validation.go)
 
@@ -112,21 +112,21 @@ DaemonSet 与 Deployment 都可以运行普通容器；资源类型不决定程�
 
 ### 4.1 污点与自动容忍
 
-Taint（污点）表达节点对 Pod 的排斥条件，Toleration（容忍）允许 Pod 忽略匹配污点。NoSchedule 阻止不容忍的新 Pod 调度，NoExecute 还可能驱逐已有的不容忍 Pod。容忍不是节点选择，也不是成功调度保证。
+Taint（污点）是节点上的一条“不欢迎”标记，写上之后，不容忍它的 Pod 不会来；Toleration（容忍）写在 Pod 这一侧，表示“这条标记我不在乎”。NoSchedule 阻止不容忍的新 Pod 调度，NoExecute 还可能驱逐已有的不容忍 Pod。容忍不是节点选择，也不是成功调度保证。
 
 1.28 官方文档列出 DaemonSet Pod 自动添加的以下容忍，用于节点代理在部分节点管理状态下仍能工作：
 
-| 污点键                                 | Effect     | 条件                                          |
-| -------------------------------------- | ---------- | --------------------------------------------- |
-| node.kubernetes.io/not-ready           | NoExecute  | 自动添加，无 tolerationSeconds 期限           |
-| node.kubernetes.io/unreachable         | NoExecute  | 自动添加，无 tolerationSeconds 期限           |
-| node.kubernetes.io/disk-pressure       | NoSchedule | 自动添加                                      |
-| node.kubernetes.io/memory-pressure     | NoSchedule | 自动添加                                      |
-| node.kubernetes.io/pid-pressure        | NoSchedule | 自动添加                                      |
-| node.kubernetes.io/unschedulable       | NoSchedule | 自动添加，因此 cordon 不等于阻止此类 Pod      |
-| node.kubernetes.io/network-unavailable | NoSchedule | 仅 hostNetwork=true 的 DaemonSet Pod 自动添加 |
+| 污点键                                 | Effect     | 条件                                               |
+| -------------------------------------- | ---------- | -------------------------------------------------- |
+| node.kubernetes.io/not-ready           | NoExecute  | 自动添加，无 tolerationSeconds 期限                |
+| node.kubernetes.io/unreachable         | NoExecute  | 自动添加，无 tolerationSeconds 期限                |
+| node.kubernetes.io/disk-pressure       | NoSchedule | 自动添加                                           |
+| node.kubernetes.io/memory-pressure     | NoSchedule | 自动添加                                           |
+| node.kubernetes.io/pid-pressure        | NoSchedule | 自动添加                                           |
+| node.kubernetes.io/unschedulable       | NoSchedule | 自动添加；cordon 只影响普通 Pod，此类 Pod 仍会部署 |
+| node.kubernetes.io/network-unavailable | NoSchedule | 仅 hostNetwork=true 的 DaemonSet Pod 自动添加      |
 
-这不是容忍所有污点，例如控制平面或业务专用污点仍需逐项判断。不要为了方便添加无限制通配容忍；资源、平台条件和其他调度约束依旧有效。[1.28 DaemonSet 自动容忍与调度](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/workloads/controllers/daemonset.md)
+这不是容忍所有污点，例如控制平面或业务专用污点仍需逐项判断。为了省事加一条匹配所有污点的通配容忍，DaemonSet 就会被铺到本来不该去的节点上；资源、平台条件和其他调度约束依旧有效。[1.28 DaemonSet 自动容忍与调度](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/workloads/controllers/daemonset.md)
 
 ### 4.2 节点代理的权限边界
 
@@ -157,7 +157,7 @@ kubectl describe daemonset AGENT -n NAMESPACE
 kubectl get pods -n NAMESPACE -o wide
 ```
 
-查询时对比 desired、current、ready、available、updated 等字段，并把缺失实例映射回具体节点。期望 5 个且实际 5 个，不说明其中 5 个都可用；实例存在也不代表节点功能已验收。
+查询时对比 desired、current、ready、available、updated 等字段，并把缺失实例映射回具体节点。期望 5 个且实际 5 个，只说明对象数量对齐，其中 5 个未必都可用；节点功能是否验收要另测。
 
 | 显示名称  | status 字段            | 含义                                                                   |
 | --------- | ---------------------- | ---------------------------------------------------------------------- |
@@ -167,9 +167,9 @@ kubectl get pods -n NAMESPACE -o wide
 | Available | numberAvailable        | 应被覆盖且有满足 minReadySeconds 等可用条件实例的节点数                |
 | Updated   | updatedNumberScheduled | 已有更新模板实例的目标节点数，不保证该实例已 Ready                     |
 
-这几列可能暂时不同；surge 时一个节点有两个实例，也不能把 Current 直接当 Pod 总数。[v1.28.0 DaemonSet 状态类型](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/apps/v1/types.go)
+这几列可能暂时不同；surge 时一个节点有两个实例，Current 只是当前实例数，surge 时与 Pod 总数不同。[v1.28.0 DaemonSet 状态类型](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/apps/v1/types.go)
 
-节点数变化时，应先确认覆盖范围是否按预期改变，再判断是否发生故障。节点代理配置错误可能影响整个集群，因此发布前应安排分批观察和回退方案，不要同时强制重启所有代理。
+节点数变化时，应先确认覆盖范围是否按预期改变，再判断是否发生故障。节点代理配置错误可能影响整个集群，所以发布前要安排分批观察和回退方案；一次性强制重启所有代理，会让整个集群的节点代理同时中断。
 
 ## 6. 无主机权限的隔离练习
 

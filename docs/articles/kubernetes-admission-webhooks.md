@@ -23,7 +23,7 @@ order: 29
 
 ## 1. 写权限之后的对象策略检查 {#_1-为什么有权限创建-还可能被拒绝}
 
-Authentication（认证）识别身份，Authorization（授权）判断操作权限，Admission Control（准入控制）进一步检查适用的对象写请求。例如，调用者能够创建 Pod，仍可能因为对象使用被禁止的主机权限而遭拒。GET 查询不是创建对象的准入流程。
+一个写请求进来，要先过三道关：Authentication（认证）先认出“你是谁”，Authorization（授权）再判断这个身份能不能做这个动作，Admission Control（准入控制）最后检查这次要写入的对象本身是否符合集群规则。例如，调用者能够创建 Pod，仍可能因为对象使用被禁止的主机权限而遭拒。GET 只读不写对象，因此不进入这套准入流程。
 
 [![准入 Webhook：允许、拒绝与调用异常](/assets/notes/kubernetes/k8s-admission-webhook.svg)](/assets/notes/kubernetes/k8s-admission-webhook.svg)
 
@@ -31,11 +31,11 @@ Authentication（认证）识别身份，Authorization（授权）判断操作�
 
 Mutating Admission Webhook（变更准入 Webhook）可修改请求对象，例如为 Pod 补充 `managed-by: policy-webhook`。Validating Admission Webhook（验证准入 Webhook）决定是否接受，例如要求 Pod 声明 `team` 标签。于是，变更成功的对象仍可能因缺少 team 被后续验证拒绝。
 
-MutatingWebhookConfiguration 和 ValidatingWebhookConfiguration 是不同的 Kubernetes API 配置对象，声明匹配规则和调用地址。实际 Webhook Server 是独立服务，需要实现协议、TLS 和网络访问；创建配置不会自动部署服务，也不会授予服务管理员权限。
+MutatingWebhookConfiguration 和 ValidatingWebhookConfiguration 只是两份“登记表”：写清楚哪些请求要送给哪个服务、送到哪个地址。真正做判断的是另外部署的 Webhook Server，它要自己实现协议、配好 TLS、能被 API Server 访问到。所以创建配置不会凭空变出一个服务，也不会给这个服务任何管理员权限。
 
 [![AdmissionReview 请求、响应与后续处理](/assets/notes/kubernetes/k8s-admission-review-flow.svg)](/assets/notes/kubernetes/k8s-admission-review-flow.svg)
 
-图是主要职责关系，省略内置准入组件、默认化和其他校验；不能据此假定所有插件的唯一内部顺序。API Server 调用各 Webhook，而不是 Webhook 直接相互调用。
+图是主要职责关系，省略内置准入组件、默认化和其他校验；插件的内部顺序不在这张图里。API Server 调用各 Webhook，而不是 Webhook 直接相互调用。
 
 下面是 **合成的 AdmissionReview 协议示例，未发送**。AdmissionReview 是 API Server 与 Webhook 交换请求、判定的信封。为突出字段，省略请求中的部分服务端上下文；真实请求的身份信息由 API Server 提供。`dryRun: true` 表示本次模拟写入不持久化，仍可调用匹配的 Webhook。
 
@@ -117,7 +117,7 @@ metadata:
 
 `allowed: true` 只允许继续，后续准入或 API 处理仍可能失败；`allowed: false` 是明确拒绝。即使所有 Webhook 允许，也不证明对象已经保存、Pod 已调度或应用已运行。这里 dry-run 更不会持久化。
 
-变更 Webhook 的 `reinvocationPolicy` 默认 `Never`，即同一次准入评估不重复调用该 Webhook。选择 `IfNeeded` 后，其他变更可能使其需要再次运行；它不保证固定两次，也不能依赖固定调用顺序实现业务逻辑。应先实现幂等，再考虑重新调用。[1.28 动态准入协议与重入机制](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/access-authn-authz/extensible-admission-controllers.md)
+变更 Webhook 的 `reinvocationPolicy` 默认 `Never`：同一个对象在一次准入评估里，这个 Webhook 只被调用一次。改成 `IfNeeded` 后，如果排在你后面的 Webhook 又改了对象，API Server 可能回头再调用你一次，让你看到最新内容；具体调几次不固定，先后顺序也没有保证。所以先把逻辑做成幂等（重复执行结果不变），再考虑打开它。[1.28 动态准入协议与重入机制](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/access-authn-authz/extensible-admission-controllers.md)
 
 ## 3. 匹配范围决定影响面
 
@@ -181,15 +181,15 @@ Ignore 不保证整个 API 请求成功；其他准入、校验或持久化仍�
 
 以上核对了 [v1.28.0 API 类型](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/api/admissionregistration/v1/types.go)与[默认值实现](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/apis/admissionregistration/v1/defaults.go)。
 
-场景 A：纯验证不写外部系统，可声明 `sideEffects: None`。场景 B：正常请求会写外部系统，但实现能够识别 `request.dryRun` 并在 dry-run 时抑制写入，可声明 `NoneOnDryRun`。Dry-run 不等于不调用 Webhook；它要求参与者正确处理模拟请求。
+场景 A：纯验证不写外部系统，可声明 `sideEffects: None`。场景 B：正常请求会写外部系统，但实现能够识别 `request.dryRun` 并在 dry-run 时抑制写入，可声明 `NoneOnDryRun`。Dry-run 仍会调用 Webhook；它要求参与者正确处理模拟请求。
 
-不能声明 None 却实际产生外部副作用。即使普通请求已产生副作用，后续验证仍可能拒绝或保存失败，所以外部操作还需要补偿、恢复或协调机制。Fail 与 Ignore 的可用性和策略风险取决于目标，不应把其中一个当作全场景默认修复。
+不能声明 None 却实际产生外部副作用。即使普通请求已产生副作用，后续验证仍可能拒绝或保存失败，所以外部操作还需要补偿、恢复或协调机制。Fail 与 Ignore 的差别在于故障时你更怕哪一种：选 Fail，Webhook 一旦超时，相关写入就被拒绝，策略不会失效，代价是 Webhook 自身故障会挡住操作；选 Ignore，Webhook 不可用时请求照常放行，可用性保住了，代价是这段时间策略检查形同虚设。
 
 ## 5. 证书与访问路径
 
 API Server 是调用方。`clientConfig.service` 指定的 Service、服务证书名称和 `caBundle` 的信任链必须对应。例如 `policy-webhook` 位于 study 时，服务证书应对 `policy-webhook.study.svc` 有效；`caBundle` 提供验证服务证书所需的 PEM CA 数据（API JSON 中为 Base64）。省略它意味着使用 API Server 的系统信任根，不意味着跳过验证。
 
-普通 Pod 能访问 Service，不足以证明控制面上的 API Server 访问路径正常。要结合控制面网络、Service 端点和服务监听判断；不要把跳过 TLS 验证当成修复。Webhook 服务账号仅应有实现所需权限，日志与拒绝信息应避免泄露 Secret 或完整敏感请求。
+普通 Pod 能访问 Service，不足以证明控制面上的 API Server 访问路径正常。要结合控制面网络、Service 端点和服务监听判断；跳过 TLS 验证只是绕过检查，不是修复。Webhook 服务账号仅应有实现所需权限，日志与拒绝信息应避免泄露 Secret 或完整敏感请求。
 
 | 现象                   | 优先检查                                                      |
 | ---------------------- | ------------------------------------------------------------- |
@@ -204,7 +204,7 @@ API Server 是调用方。`clientConfig.service` 指定的 Service、服务证�
 
 ## 6. 准入通过之后还要验什么
 
-对象保存不保证镜像可拉取、Pod 可调度或应用可启动，也不证明应用有数据库等业务权限。准入、容器安全上下文、网络策略和业务认证分别解决不同层次的问题。
+对象保存不保证镜像可拉取、Pod 可调度或应用可启动，也不证明应用有数据库等业务权限。这几件事各有各的负责人：准入回答“这个对象允不允许写进集群”，容器安全上下文回答“容器以什么身份、带哪些权限运行”，网络策略回答“哪些 Pod 之间能互相连接”，业务认证回答“应用拿什么账号登录数据库”。任何一层通过，都不能替其他层背书。
 
 在另行授权的测试环境中，还应记录允许、明确拒绝、调用超时、证书错误、dry-run、重新调用与故障恢复的结果。
 

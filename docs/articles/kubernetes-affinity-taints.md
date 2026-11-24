@@ -23,11 +23,11 @@ order: 24
 
 ## 1. 节点选择与污点容忍的分工 {#_1-先分清-想去哪里-与-允许谁来}
 
-nodeSelector（节点选择器）、Node Affinity（节点亲和性）描述 Pod 对节点的要求或偏好；Taint（污点）写在 Node 上，用来排斥没有匹配 Toleration（容忍）的 Pod。两者可以配合，但容忍一个节点污点不等于一定被调度到那个节点。
+nodeSelector（节点选择器）、Node Affinity（节点亲和性）写在 Pod 上，是 Pod 在挑节点：它列出“我要求或偏好这台节点具备什么标签”。Taint（污点）反过来写在 Node 上，是节点在挑 Pod：它声明“我不欢迎哪类 Pod 进来”，只有明确带 Toleration（容忍）的 Pod 才放行。两者可以配合，但容忍一个节点污点只是获得候选资格，是否调度还要看其他条件。
 
-[![调度约束：容忍不等于一定安排到该节点](/assets/notes/kubernetes/k8s-scheduling-constraints.svg)](/assets/notes/kubernetes/k8s-scheduling-constraints.svg)
+[![调度约束：容忍只是候选资格](/assets/notes/kubernetes/k8s-scheduling-constraints.svg)](/assets/notes/kubernetes/k8s-scheduling-constraints.svg)
 
-例如，为专用硬件节点设置污点，可以减少普通 Pod 进入；需要设备的 Pod 仍应声明设备资源和相应的选择条件。仅添加 toleration，并不能保证取得某块硬件。
+例如，为专用硬件节点设置污点，可以减少普通 Pod 进入；需要设备的 Pod 仍应声明设备资源和相应的选择条件。仅添加 toleration 只解决污点过滤，硬件还要靠亲和或资源请求。
 
 ## 2. 硬条件与软偏好
 
@@ -125,9 +125,9 @@ weight=80 是评分权重，不是 80% 的调度概率。只对通过硬约束�
 
 Pod Affinity（Pod 亲和性，字段 podAffinity）选择与某组 Pod 靠近的拓扑域；Pod Anti-Affinity（Pod 反亲和性，字段 podAntiAffinity）则表达适用的分离要求。先用选择器找参照 Pod，再通过 `topologyKey` 识别节点所在的域。
 
-如果 topologyKey 是 zone，相同区内的另一节点也可能满足亲和，不要求参照 Pod 就在目标节点本机。若需要同节点，通常采用相应 hostname 拓扑键。
+如果 topologyKey 是 zone，相同区内的另一节点也能满足亲和，参照 Pod 不必在目标节点本机。若需要同节点，通常采用相应 hostname 拓扑键。
 
-还要核对命名空间选择范围和拓扑标签是否齐全。把反亲和一律写成“不能同一个机房”，或把 NotIn 一律等同于 podAntiAffinity，都会丢失选择器和拓扑域的区别。[1.28 Pod 亲和与反亲和](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/assign-pod-node.md)
+还要核对命名空间选择范围和拓扑标签是否齐全。反亲和至少要说清两件事：跟哪些 Pod 分开，在多小的范围里分开（一台节点还是一个 Zone）。只写“不能同一个机房”，没说参照的是哪组 Pod；而 NotIn 只是选择器里的一个运算符，把它直接当成 podAntiAffinity 这个字段，同样会混淆这两件事。[1.28 Pod 亲和与反亲和](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/assign-pod-node.md)
 
 以下是独立场景，不叠加上一节节点表：zone-a 包含 node-a、node-b，zone-b 包含 node-c；study 中 app=ledger 的数据库参照 Pod 已运行在 node-a，各节点均具有正确 zone 与 hostname 标签。
 
@@ -177,7 +177,7 @@ Node Affinity 直接匹配 Node 标签；Pod Affinity/Anti-Affinity 通过参照
 | PreferNoSchedule | 尽量避开不容忍的 Pod         | 不是强制迁出                        |
 | NoExecute        | 对未容忍者施加调度及驱逐语义 | 容忍与 tolerationSeconds 会影响处理 |
 
-一个 Pod 可能需要匹配多个污点。Equal 关注适用的 key/value/effect，Exists 可不比较 value；省略某些字段会扩大匹配范围，不能随意用一个空 toleration 把所有限制都绕开。
+一个 Pod 可能需要匹配多个污点。Equal 要求 key、value、effect 三项都对上才算容忍；Exists 只看 key 在不在，不比较 value。省略某些字段会扩大匹配范围，不能随意用一个空 toleration 把所有限制都绕开。
 
 纸面假设 Node A 有 dedicated=storage:NoSchedule：
 
@@ -198,9 +198,9 @@ tolerations:
     effect: NoSchedule
 ```
 
-`tolerationSeconds` 用于相应 NoExecute 容忍的持续时间，不是任何调度偏好的通用超时。驱逐也不是把原 Pod UID 搬到另一节点；是否产生替代 Pod 还取决于控制器等条件。[1.28 污点与容忍](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/taint-and-toleration.md)
+`tolerationSeconds` 只在 NoExecute 效果下生效：节点打上这个污点后，Pod 还能在原地待多少秒再被驱逐。它不是任何调度偏好的通用超时。驱逐也不是把原 Pod UID 搬到另一节点；是否产生替代 Pod 还取决于控制器等条件。[1.28 污点与容忍](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/scheduling-eviction/taint-and-toleration.md)
 
-另一独立时间线：Pod 已在 Node A 运行，T0 后节点出现 dedicated=storage:NoExecute，并持续存在。不要与前面的 NoSchedule 效果混淆：
+另一独立时间线：Pod 已在 Node A 运行，T0 后节点出现 dedicated=storage:NoExecute，并持续存在。它与前面的 NoSchedule 效果不同：
 
 | 容忍情况                     | T0 之后的适用行为                                                          |
 | ---------------------------- | -------------------------------------------------------------------------- |
@@ -223,7 +223,7 @@ tolerations:
 
 ## 5. 拓扑分布是另一个有用补充
 
-TopologySpreadConstraints（拓扑分布约束）可以表达副本在适用拓扑域中的分布目标。它与反亲和用途有交集，但不是完全相同的字段。配置时应先明确故障域、选择哪些 Pod、允许多大偏斜以及无法满足时的处理。
+TopologySpreadConstraints（拓扑分布约束）管的是“副本别扎堆”：它给每个拓扑域（比如每个 Zone）设一个数量偏差上限，让副本尽量均匀铺开，而不是全挤在同一个域里。它与反亲和用途有交集，但不是完全相同的字段。配置时应先明确故障域、选择哪些 Pod、允许多大偏斜以及无法满足时的处理。
 
 ### 5.1 三个 Zone 的 maxSkew 推演
 
@@ -304,6 +304,6 @@ kubectl get pod POD_NAME -n NAMESPACE -o yaml
 
 先看 Pending Pod 是否已有 spec.nodeName：未分配节点时，重点读 FailedScheduling 事件；已经绑定而仍 Pending 时，还要检查镜像、网络、卷挂载等节点启动过程，不将所有 Pending 都归因于 Affinity。然后依次核对节点标签 → nodeSelector/required NodeAffinity → Pod 亲和/反亲和参照与 Namespace → Taint/Toleration → 拓扑分布 → CPU/内存 requests → PVC 和存储拓扑。
 
-单条事件不一定覆盖所有阻塞，多个硬约束的交集可能为空；不应直接删除所有污点或清空所有 Affinity 来“修好”调度。保留原来的隔离、存储与可用性目标，再按证据调整。下一章学习 [HPA](/articles/kubernetes-hpa.html)如何按指标改变期望副本数，它也不能取消上述调度约束。
+单条事件不一定覆盖所有阻塞，多个硬约束的交集可能为空；直接删除所有污点或清空所有 Affinity，只是把约束一起拆掉。保留原来的隔离、存储与可用性目标，再按证据调整。下一章学习 [HPA](/articles/kubernetes-hpa.html)如何按指标改变期望副本数，它也不会取消上述调度约束。
 
 [返回本册目录](/collections/kubernetes/)

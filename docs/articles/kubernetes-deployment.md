@@ -23,9 +23,9 @@ order: 15
 
 ## 1. Deployment 管理的是一组期望
 
-Deployment（部署）通过 ReplicaSet（副本集，简称 RS）协调符合模板的 Pod。用户通常修改 Deployment 的期望，而不是逐个修改它创建的 Pod。Pod 被替换后，新对象会来自相应模板。
+Deployment（部署）不直接管 Pod，中间隔了一层 ReplicaSet（副本集，简称 RS）：RS 盯着“按这个模板、跑够这个数量”，少了补、多了删，Deployment 则决定当前该用哪个模板的 RS。用户通常修改 Deployment 的期望，而不是逐个修改它创建的 Pod。Pod 被替换后，新对象会来自相应模板。
 
-修改 `spec.template` 才会触发适用的模板发布过程；只修改 `replicas` 是扩缩容，不因此产生一个新的应用模板版本。Deployment 自己的顶层 metadata 标签变化，也不等于 Pod 模板变化。
+修改 `spec.template` 才会触发适用的模板发布过程；只修改 `replicas` 是扩缩容，不因此产生一个新的应用模板版本。Deployment 顶层 metadata 的标签变化，不会改变 Pod 模板。
 
 [![Deployment 发布：约束过程，不保证零故障](/assets/notes/kubernetes/k8s-deployment-rollout-detail.svg)](/assets/notes/kubernetes/k8s-deployment-rollout-detail.svg)
 
@@ -33,7 +33,7 @@ Deployment（部署）通过 ReplicaSet（副本集，简称 RS）协调符合�
 
 ## 2. RollingUpdate 与 Recreate
 
-RollingUpdate 逐步调整新旧 ReplicaSet 的副本；Recreate 会先终止旧 Pod，再创建新模板的 Pod。这是策略差异，不是“一个永远零停机，一个永远错误”。
+RollingUpdate 让新旧两个 ReplicaSet 同时在场，逐步把副本从旧的挪到新的；Recreate 则先把旧 Pod 全部终止，再创建新模板的 Pod。差别在于切换期间有没有新版本顶着，不在哪个策略“永远正确”。
 
 新增教学片段，位于 Deployment spec 下：
 
@@ -52,7 +52,7 @@ minReadySeconds: 10
 progressDeadlineSeconds: 600
 ```
 
-这些数字用于解释：期望 4 个副本，允许适用的额外副本预算，并要求更新过程中不主动降低到低于期望的可用数量。实际是否有额外调度容量、应用是否 Ready，仍决定发布能否推进。终止中的 Pod 也可能暂时占用资源，不能只按期望副本加 surge 估计任何时刻的所有进程数。
+这组数字的意思是：平时要 4 个副本；发布期间最多允许多出 1 个（maxSurge=1）；可用副本不许因为更新而少于 4 个（maxUnavailable=0）。实际有没有多余容量调度新 Pod、应用能不能 Ready，仍决定发布能否推进。终止中的 Pod 也可能暂时占用资源，不能只按期望副本加 surge 估计任何时刻的所有进程数。
 
 `maxSurge` 百分比向上取整，`maxUnavailable` 百分比向下取整。两项不能同时为 0。`minReadySeconds` 参与“可用”的判断，避免仅短暂 Ready 就立即算成稳定副本。
 
@@ -75,7 +75,7 @@ Ready（就绪）是 Pod 条件；Available（可用）还需满足 Deployment �
 
 若第十四章中的单 Pod request 为 250m/256Mi，正常四副本请求合计为 1000m/1024Mi；额外一个同配置 surge 副本需再容纳 250m/256Mi，还要为终止重叠等留余量。缺少资源时，新 Pod 可因调度失败而 Pending，发布停滞，不会因旧 Pod 实时 CPU 使用率低就忽略 request。
 
-发布失败条件不是自动回滚数据库的指令，`progressDeadlineSeconds` 也不等于“超时后平台自动还原所有状态”。参数定义以 [v1.28.0 Deployment API 类型](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/apps/v1/types.go)为准。
+发布失败条件不会自动回滚数据库；`progressDeadlineSeconds` 只标记进度超时，平台不会自动还原所有状态。参数定义以 [v1.28.0 Deployment API 类型](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/apps/v1/types.go)为准。
 
 ## 3. 更新策略与应用兼容性 {#_3-为什么滚动更新仍会中断}
 
@@ -83,9 +83,9 @@ Ready（就绪）是 Pod 条件；Available（可用）还需满足 Deployment �
 
 发布前需要确认新旧版本能否同时工作：请求格式、缓存格式、数据库 schema、消息格式是否兼容？只要旧版仍可能接到请求，就不能假设整个系统已经原子切换。
 
-同理，更新中途又修改模板，控制器会继续协调新的目标，不是承诺“先完成上一版再开始下一版”，也不能概括成“立即删除所有刚更新过的 Pod”。
+同理，更新中途又修改模板，控制器会继续协调新的目标，上一版未必先完成，Pod 也不会被一次性删光。
 
-纸面失败场景：v1 正常，v2 镜像拉取失败或应用无法就绪。新的 RS 已存在，但新 Pod 可能处于 Pending phase，其中容器状态为 Waiting、reason 为 ErrImagePull/ImagePullBackOff；若进程启动后探针失败，也可能是 Running 但不 Ready。phase、容器状态与 kubectl 显示的 STATUS 不是同一字段。在本例预算与旧副本保持健康的前提下，旧 v1 通常继续承接请求，新 v2 卡在新增位置。
+纸面失败场景：v1 正常，v2 镜像拉取失败或应用无法就绪。新的 RS 已存在，但新 Pod 可能处于 Pending phase，其中容器状态为 Waiting、reason 为 ErrImagePull/ImagePullBackOff；若进程启动后探针失败，也可能是 Running 但不 Ready。这里的 phase、容器状态和 kubectl 打印的 STATUS 是三样东西：phase 是 Pod 整体的阶段，容器状态是其中单个容器的状态，STATUS 是 kubectl 按当前情况拼出来的展示值。在本例预算与旧副本保持健康的前提下，旧 v1 通常继续承接请求，新 v2 卡在新增位置。
 
 检查新 Pod 的 Events、镜像引用、调度资源、探针、退出状态和日志，而不是仅增加等待时间。持续没有满足进度条件，达到 progressDeadlineSeconds 后，Deployment 会报告 Progressing=False、reason=ProgressDeadlineExceeded；这是失败状态报告，不会自动执行模板回滚，也不会恢复数据库或外部状态。[1.28 Deployment 进度与失败条件](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/workloads/controllers/deployment.md)
 
@@ -122,7 +122,7 @@ kubectl scale deployment/APP -n NAMESPACE --replicas=4
 
 `--to-revision` 指定目标修订版本。回滚依赖保留的发布历史，`revisionHistoryLimit` 影响旧 ReplicaSet 的保留；历史是 Pod 模板的相关记录，不包括数据库备份、所有 ConfigMap 内容和外部副作用。
 
-如果镜像标签可变，即使模板中保留了旧标签，也不能保证拉取到当时的同一份内容。因此，发布交接时需要固定镜像版本或 digest，并保存配置与兼容性说明。
+如果镜像标签可变，即使模板中保留了旧标签，拉取到的内容也可能已经变了。因此，发布交接时需要固定镜像版本或 digest，并保存配置与兼容性说明。
 
 Revision（修订版本）关联 Pod Template（Pod 模板），通常以历史 RS 保留。清理旧 RS 后便失去相应回滚入口；revisionHistoryLimit 控制可保留的历史数量，不是数据备份策略。
 
@@ -130,11 +130,11 @@ Revision（修订版本）关联 Pod Template（Pod 模板），通常以历史 
 | -------------------------- | ------------------------------------------ |
 | 历史 Pod Template          | 可以尝试恢复，仍需重新协调并通过可用性验收 |
 | 旧 replicas 值             | 不属于模板回滚的主要范围，按当前规模协调   |
-| ConfigMap、Secret 的旧内容 | 不自动恢复；模板中的引用不等于内容快照     |
+| ConfigMap、Secret 的旧内容 | 不自动恢复；模板只保存引用，内容不在快照里 |
 | 数据库 Schema              | 不自动恢复                                 |
 | 已完成的外部副作用         | 不自动撤销                                 |
 
-应独立记录镜像 digest（内容摘要）、配置版本及应用兼容性。历史模板引用可变 tag 时，同名镜像可能已指向另一份内容，undo 不能据此构成完整灾难恢复。
+应独立记录镜像 digest（内容摘要）、配置版本及应用兼容性。历史模板引用可变 tag 时，同名镜像可能已指向另一份内容，undo 只回滚模板，不覆盖这类内容变化。
 
 ## 5. 暂停、补丁与声明式源
 
@@ -157,11 +157,11 @@ kubectl rollout resume deployment/catalog -n study
 
 典型 Deployment 的 ReplicaSet 与 Pod 会随适用的级联删除处理；Service 通常是独立对象，不因为标签相同就一起删除。孤儿化与后台、前台删除策略也会影响过程。
 
-删除改变资源生命周期，回滚恢复相关模板版本，二者处理不同层次的问题。在确认数据、依赖和恢复路径之前，不应通过“全删重建”处理仅需修改配置的问题。
+删除管的是对象还在不在，回滚管的是模板退到哪一版：删掉的 Pod、RS 不会因为回滚自己回来，回滚也不会替你重建已经删掉的对象。在确认数据、依赖和恢复路径之前，“全删重建”会把小问题扩大成数据问题。
 
 ## 7. 隔离环境中的发布与回滚练习
 
-下面均为教学步骤，需要专用 Linux 1.28 测试集群、能拉取 busybox:1.36.1 的网络和命名空间内管理 Deployment/Pod 的权限。使用全新的专用 study 命名空间；若已存在前面章节或其他人的资源，请另选名称并同步修改所有 YAML 与命令。不要覆盖现有 catalog，也不要在生产集群操作。
+下面均为教学步骤，需要专用 Linux 1.28 测试集群、能拉取 busybox:1.36.1 的网络和命名空间内管理 Deployment/Pod 的权限。使用全新的专用 study 命名空间；若已存在前面章节或其他人的资源，请另选名称并同步修改所有 YAML 与命令。本章操作会覆盖现有 catalog，只能在隔离实验环境执行。
 
 这是基于真实固定版本镜像的轻量 HTTP 演示，复用 catalog、app=catalog 和端口 8080；本例 readiness 检查静态页面的 HTTP 响应，用于观察发布门槛。附录 B 进一步加入业务配置和 startup/liveness 接口。
 
@@ -320,7 +320,7 @@ kubectl get rs,pods -n study -l app=catalog
 kubectl rollout history deployment/catalog -n study
 ```
 
-预期新 RS 的 Pod 因该路径返回 404 而未 Ready，旧的健康 v2 通常保留，发布卡住。120 秒是客户端等待超时，不等于服务端 600 秒进度期限，也不自动回滚；如需观察 ProgressDeadlineExceeded，应在专用实验中继续等待相应进度期限并读取 Deployment conditions。选择新失败 Pod 的实际名称替换下列 POD_NAME，查看证据：
+预期新 RS 的 Pod 因该路径返回 404 而未 Ready，旧的健康 v2 通常保留，发布卡住。120 秒是客户端等待超时，服务端进度期限是 600 秒，两者不同，也都不会触发自动回滚；如需观察 ProgressDeadlineExceeded，应在专用实验中继续等待相应进度期限并读取 Deployment conditions。选择新失败 Pod 的实际名称替换下列 POD_NAME，查看证据：
 
 ```bash
 # 查看指定资源的状态详情及相关事件，用于核对调度、启动或控制器失败原因
@@ -361,11 +361,11 @@ kubectl exec deployment/catalog -n study -c app -- wget -qO- -T 5 http://127.0.0
 kubectl rollout history deployment/catalog -n study
 ```
 
-预期恢复正确探针和 RELEASE=v2、发布完成且三个计数为 4、查询返回 catalog v2。回滚本身也更新修订历史，不代表历史编号倒退；未达到这些条件不能宣布恢复成功。实验若需保留，须同步维护声明文件中的已知可用模板，避免重新 apply 旧文件恢复到 v1。
+预期恢复正确探针和 RELEASE=v2、发布完成且三个计数为 4、查询返回 catalog v2。回滚本身也更新修订历史，历史编号继续向前；未达到这些条件就谈不上恢复成功。实验若需保留，须同步维护声明文件中的已知可用模板，避免重新 apply 旧文件恢复到 v1。
 
 ### 7.4 清理实验资源
 
-下面只删除由本实验创建的 Deployment。若另外部署了第十四章 PDB，应先确认其来源再清理；直接删除会绕过 PDB，不能据此验证驱逐预算。不删除整个命名空间或使用标签批量删除其他对象。
+下面只删除由本实验创建的 Deployment。若另外部署了第十四章 PDB，应先确认其来源再清理；直接删除会绕过 PDB，驱逐预算也就无从验证。不删除整个命名空间或使用标签批量删除其他对象。
 
 ```bash
 # 删除命令中明确指定的实验资源；-f 表示按该清单标识删除，不能当作只读检查

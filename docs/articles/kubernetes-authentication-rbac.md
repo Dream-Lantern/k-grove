@@ -23,21 +23,21 @@ order: 28
 
 ## 1. 认证、授权与工作负载身份 {#_1-谁在调用-与允许做什么}
 
-认证识别调用者；授权判断该身份是否能执行请求；适用的准入随后检查写请求。API 权限不等于网络访问权限，ServiceAccount 也不是应用数据库的万能账号。
+每个 API 请求进来，API Server 先做认证，认出调用者是谁；再交给授权，判断这个身份能不能做这个动作；如果是要写入对象的请求，最后还要过准入。API 权限不等于网络访问权限，ServiceAccount 也不是应用数据库的万能账号。
 
 下面是主要职责关系，不是 API Server 内部所有校验函数唯一且严格的执行顺序；读请求不走图中的对象写入分支。
 
 [![API 请求中的认证、授权与准入职责](/assets/notes/kubernetes/k8s-api-auth-admission-flow.svg)](/assets/notes/kubernetes/k8s-api-auth-admission-flow.svg)
 
-认证成功不代表有操作权限；授权成功也不保证准入通过。例如，用户有创建 Pod 的 RBAC 权限，但策略禁止 `privileged` 容器，该请求仍可能被拒绝。准入通过不代表保存一定成功，更不代表 Pod 已经调度或运行。控制器的协调发生在后续异步流程中。
+认证成功只说明调用者身份已被识别，是否有操作权限由授权决定；授权通过后还要经过准入。例如，用户有创建 Pod 的 RBAC 权限，但策略禁止 `privileged` 容器，该请求仍可能被拒绝。准入通过后，写请求仍可能保存失败，Pod 也还要经过调度才会运行。控制器的协调发生在后续异步流程中。
 
 普通用户可以通过证书、外部身份系统等方式认证，其身份由认证系统管理；ServiceAccount 则是 Kubernetes 提供的工作负载身份资源。两类身份都可在授权范围内访问 API。[1.28 身份认证](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/reference/access-authn-authz/authentication.md)
 
-ServiceAccount 是命名空间内的工作负载身份资源，其标准身份包含命名空间和账号名。创建它并不会自动授予管理员权限；需要分别考虑 Pod 使用哪个账号、如何提供凭据，以及允许哪些操作。
+ServiceAccount 是给工作负载（比如 Pod）用的账号，作用范围限定在一个命名空间内，账号的完整身份由命名空间和账号名共同确定。创建它并不会自动授予管理员权限；需要分别考虑 Pod 使用哪个账号、如何提供凭据，以及允许哪些操作。
 
 ## 2. TokenRequest、投射令牌与轮换 {#_2-1-28-的令牌不能套用旧-secret-模型}
 
-普通 Pod 默认使用所在命名空间的 default ServiceAccount，但是否自动挂载凭据还受相应配置影响。能挂载令牌不等于已经获得读取所有资源的权限。
+普通 Pod 默认使用所在命名空间的 default ServiceAccount，但是否自动挂载凭据还受相应配置影响。挂载令牌只提供身份凭据，能读取哪些资源仍由 RBAC 决定。
 
 1.28 的常见服务账户凭据采用 TokenRequest 与 projected volume 路线，有相应期限与绑定语义；不能继续把“每个 ServiceAccount 自动创建一个长期 token Secret，再挂到 Pod”当成普遍默认。
 
@@ -50,7 +50,7 @@ ServiceAccount 是命名空间内的工作负载身份资源，其标准身份�
 5. kubelet 在适用条件下提前请求并更新令牌。
 6. 应用重新读取更新后的文件；永久缓存启动时的值会导致轮换后仍使用旧令牌。
 
-令牌获取、文件投射、轮换与 RBAC 授权是不同机制。持有有效令牌只解决身份认证，不自动增加权限。对于无需访问 API 的 Pod，可以使用以下 **Pod spec 局部片段，不能单独提交**：
+拿到令牌、把令牌写成容器里的文件、到期前换新的令牌，以及 RBAC 判断谁能做什么，是四件独立的事：前三件只回答“调用者拿什么证明自己是谁”，最后一件才决定“这个身份能做什么”。持有有效令牌只解决身份认证，不自动增加权限。对于无需访问 API 的 Pod，可以使用以下 **Pod spec 局部片段，不能单独提交**：
 
 ```yaml
 spec:
@@ -129,7 +129,7 @@ Pod 模板使用 `serviceAccountName: reader` 引用账号。`pods/log`、`pods/
 | pods/exec        | create             | 典型 POST 容器执行请求            |
 | pods/portforward | create             | 典型 POST 端口转发请求            |
 
-后两项按 1.28 常见 kubectl POST 请求说明（[exec 源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubectl/pkg/cmd/exec/exec.go)、[port-forward 源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubectl/pkg/cmd/portforward/portforward.go)）；使用其他连接方法的客户端可能需要相应的 `get` 权限，不能推成所有客户端永远只需 create。子资源独立授权，因此 `get pods` 不等于 `get pods/log`，也不等于 `create pods/exec`。
+后两项按 1.28 常见 kubectl POST 请求说明（[exec 源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubectl/pkg/cmd/exec/exec.go)、[port-forward 源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubectl/pkg/cmd/portforward/portforward.go)）；使用其他连接方法的客户端可能需要相应的 `get` 权限，不能推成所有客户端永远只需 create。子资源独立授权，因此 `get pods`、`get pods/log` 和 `create pods/exec` 是三项需要分别授予的权限。
 
 ## 5. 权限验收与危险的间接能力
 
@@ -155,7 +155,7 @@ kubectl auth can-i get pods -n study --as=system:serviceaccount:study:reader
 kubectl auth can-i get pods --subresource=log -n study --as=system:serviceaccount:study:reader
 ```
 
-执行者需要对应的 `impersonate` 权限；模拟不是绕过认证或授权。仅指定用户名的模拟也不应被当作已完整复现真实令牌携带的所有组授权，应核对实际身份、组和全部适用规则。1.28 kubectl 支持上述 `--subresource` 用法。[命令源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubectl/pkg/cmd/auth/cani.go)
+执行者需要对应的 `impersonate` 权限；模拟不是绕过认证或授权。只指定用户名的模拟不会带上真实令牌里的组信息，核对时要一并检查实际身份、组和全部适用规则。1.28 kubectl 支持上述 `--subresource` 用法。[命令源码](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubectl/pkg/cmd/auth/cani.go)
 
 以下为 **reader 仅适用本例授权、没有其他允许规则时的教学预期**：
 
@@ -171,7 +171,7 @@ kubectl auth can-i get pods --subresource=log -n study --as=system:serviceaccoun
 
 判断是否满足最小权限，还要检查间接访问路径。能够创建 Pod、修改工作负载或挂载敏感资源的身份，可能获得超出单条 API 读权限的实际能力。不能只检查某个 Role 中是否包含 secrets，就认定敏感数据是安全的。
 
-账号撤销、令牌轮换、管理员配置分发和审计应形成完整流程。对于 401、403 等错误先区分认证与授权，结合真实服务端信息判断，不能用“给 cluster-admin 试试”代替定位。
+账号要能及时撤销，令牌要能轮换，管理员下发的权限配置要能追溯来源，实际操作要留审计记录——这些环节接起来，才算完整的权限管理。对于 401、403 等错误先区分认证与授权，结合真实服务端信息判断，不能用“给 cluster-admin 试试”代替定位。
 
 | 现象                          | 主要检查方向                                              |
 | ----------------------------- | --------------------------------------------------------- |

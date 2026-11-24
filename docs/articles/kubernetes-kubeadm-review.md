@@ -49,10 +49,10 @@ order: 2
 
 先记住几个工具的分工：
 
-- `kubeadm`：帮助引导集群，不是长期负责运行容器的守护进程。
+- `kubeadm`：装集群的工具，负责把控制平面搭起来，命令跑完就退出，不是长期运行容器的守护进程。
 - `kubelet`：节点上的代理，负责协调本节点 Pod 的运行。
-- `kubectl`：调用 Kubernetes API 的客户端；安装客户端不等于集群已经存在。
-- `containerd`：提供容器与镜像相关能力；进程启动不等于 CRI 和镜像配置已正确。
+- `kubectl`：调用 Kubernetes API 的客户端；安装客户端只是准备好工具，集群是否已存在要另查。
+- `containerd`：提供容器与镜像相关能力；进程启动只说明服务在跑，CRI 与镜像配置是否正确要另验。
 - CNI 网络实现：使 Pod 网络具备所需能力，不是 kubeadm 安装完成后自然就有。
 
 安装流程及前置条件以 [Kubernetes release-1.28 的 kubeadm 文档](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm.md)为历史核对依据，不用当前默认值反推当年的实际环境。
@@ -74,7 +74,7 @@ kubelet --version
 kubectl version --client
 ```
 
-这些输出回答的是不同问题：系统发行版、内核、swap 使用情况、运行时及工具版本，不能用其中一条替代全部检查。
+这些输出各答一件事：`/etc/os-release` 说这是什么发行版，`uname -r` 说跑的是哪个内核，`swapon --show` 说 swap 有没有开着，后面几条分别报 containerd 和三个 Kubernetes 工具自己的版本。任何一条都不能代替其他几条。
 
 `kubelet --version` 用于查看 kubelet 版本，应与运行时、内核和系统版本一并记录。
 
@@ -86,11 +86,11 @@ swap 会将部分内存页换出到磁盘，改变工作负载的内存行为与
 
 关闭 swap 的持久配置涉及 `/etc/fstab`。这属于会影响主机启动和挂载行为的修改，应先保留文件原件并确认目标 swap 条目，不适合写成面向所有系统的通用替换指令。本章保留这一操作目的，不提供自动改写未知主机配置的脚本。
 
-这也不应扩写成“所有 Kubernetes 版本都永远不能使用 swap”。1.28 已有需要显式配置的 NodeSwap 测试能力，后续版本的支持范围与默认值仍在变化；仅设置 `failSwapOn: false` 也不能直接推导出容器如何使用 swap。这里复盘的是关闭 swap 的路线，不改成另一套实验配置。[1.28 安装前置条件](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/setup/production-environment/tools/kubeadm/install-kubeadm.md)、[1.28 swap 管理说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/architecture/nodes.md)
+这个结论只针对本版本，不能扩写成“所有 Kubernetes 版本都不能使用 swap”。1.28 已有需要显式配置的 NodeSwap 测试能力，后续版本的支持范围与默认值仍在变化；仅设置 `failSwapOn: false` 只改变检查开关，容器如何使用 swap 是另一层配置。这里复盘的是关闭 swap 的路线，不改成另一套实验配置。[1.28 安装前置条件](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/setup/production-environment/tools/kubeadm/install-kubeadm.md)、[1.28 swap 管理说明](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/architecture/nodes.md)
 
 ### 3.3 内核模块和转发参数
 
-原记录提到 `overlay`、`br_netfilter` 以及 IP 转发和桥接过滤参数。它们分别关联文件系统/运行时及网络数据路径，不应把它们统称为“让 Kubernetes 可以联网的一条万能配置”。
+原记录提到 `overlay`、`br_netfilter` 以及 IP 转发和桥接过滤参数。它们解决的不是同一件事：`overlay` 是给容器拼出根文件系统用的，`br_netfilter` 让桥接流量能被 iptables 看到，IP 转发决定主机能不能在不同网卡之间转包。“一条配置让集群联网”的说法并不成立。
 
 模块加载配置的内容示意如下：
 
@@ -124,7 +124,7 @@ net.ipv4.ip_forward = 1
 
 ### 4.1 为什么“containerd active”还不够？
 
-服务处于运行状态，只能说明当前服务管理器未观察到进程退出。要确认 kubelet 能否访问 CRI、运行时插件是否可用、镜像能否获取，以及 sandbox 能否创建，还需分别检查。
+服务处于运行状态，只能说明当前服务管理器未观察到进程退出。要确认 kubelet 能否访问 CRI、运行时插件是否可用、镜像能否获取，以及 sandbox（Pod 里先起的那层基础环境，业务容器都挂在它下面）能否创建，每一项都要单独查。
 
 复盘时应依次核对版本、实际加载的配置、CRI 插件、socket 路径及日志，而不是一看到 Pod 创建失败就反复重启 containerd。
 
@@ -191,7 +191,7 @@ sudo journalctl -u kubelet --no-pager -n 100
 
 原记录还使用 `ctr -n k8s.io ...` 导入离线镜像。这里的 `k8s.io` 是 containerd 的 namespace，**不是 Kubernetes 的 Namespace 资源**。镜像是否出现在 CRI 可见范围、清单引用的名称是否一致、架构是否匹配，都需要进一步确认。
 
-第三方代理和镜像站只是传输与分发选择，不是官方来源、镜像完整性或长期可用性的保证。历史地址可以保留在私有原文，不应包装成新的默认信任链。
+第三方代理和镜像站只是传输与分发选择，不是官方来源、镜像完整性或长期可用性的保证。把历史地址包装成新的默认信任链，会把旧信任关系带进新集群。
 
 ## 5. 引导控制平面：保存好配置，也分清成功的含义
 
@@ -213,11 +213,11 @@ kubeadm init
   --image-repository=<IMAGE_REPOSITORY>
 ```
 
-这是带占位符的结构示意，不是可以逐行执行的 shell 脚本。参数主要涉及控制平面的通告地址、预期 Pod 网段、组件镜像来源及目标版本。修改它们会影响后续节点访问、网络插件配置和镜像获取，不能只为绕过一条报错临时填写任意值。
+这是带占位符的结构示意，不是可以逐行执行的 shell 脚本。四个参数各管一头：`--apiserver-advertise-address` 是其他节点和客户端该用哪个 IP 连 API Server；`--pod-network-cidr` 是划给 Pod 的地址段，必须和网络插件的配置对上；`--image-repository` 决定组件镜像从哪拉；`--kubernetes-version` 锁定要装的版本。改动它们会影响后续节点访问、网络插件配置和镜像获取，不能只为绕过一条报错临时填写任意值。
 
 初始化还会创建证书、kubeconfig 和相关控制平面配置。应保留必要的恢复材料，但不能把管理凭证上传到博客或发给所有节点。高可用和工作节点加入不是“把全部私钥复制过去”的同义词。
 
-### 5.3 配置 kubectl，不等于创建第二套集群
+### 5.3 配置 kubectl 与创建第二套集群的区别
 
 将管理用 kubeconfig 放到客户端选定的位置，是让客户端知道 API 地址和认证信息。它不是在安装新的 API Server。
 
@@ -229,9 +229,9 @@ kubeadm init
 
 应结合节点条件、Pod 事件、插件日志及运行时错误判断。Pod CIDR 配置是否一致是其中一项检查，不是全部网络验收。
 
-原记录的 Calico 版本保留为 `v3.26.1`。目前没有当年的完整安装输出与兼容性验收记录，不能把这一组合写成已复现成功。也不能同时下载两套不同清单，修改不同文件后却假定应用的是同一配置。
+原记录的 Calico 版本保留为 `v3.26.1`。目前没有当年的完整安装输出与兼容性验收记录，不能把这一组合写成已复现成功。同时下载两套不同清单、修改不同文件，很容易误以为应用的是同一配置。
 
-单节点实验如果允许业务 Pod 与控制平面共用节点，需要明确处理调度隔离。解除某个污点会改变允许调度的范围，但“单节点必须删除所有污点”并不成立；专门的容忍配置或其他部署安排也属于需要说明的选择。
+单节点实验如果允许业务 Pod 与控制平面共用节点，需要明确处理调度隔离。解除某个污点会改变允许调度的范围，但单节点并不需要删除所有污点；专门的容忍配置或其他部署安排也属于需要说明的选择。
 
 移除污点或设置容忍前，需确认目标节点与允许调度的工作负载范围。
 
@@ -298,8 +298,8 @@ kubectl get pods -n kube-system -l component=kube-scheduler -o wide
 
 先看 Pod 的 `spec.nodeName`、`PodScheduled` 条件与 Events。若尚未分配节点且有 `FailedScheduling`，按照事件内容逐项核对：
 
-- 资源：Pod 的 `requests` 是否能放进节点可分配资源减去已请求的额度；Scheduler 主要依据请求量，CPU 当前利用率低不代表能调度。
-- 污点与容忍：单节点 kubeadm 控制平面常带有 `node-role.kubernetes.io/control-plane:NoSchedule`。仅在明确允许该实验工作负载共用控制平面时，为该 Pod 模板设置匹配的 toleration；容忍只是允许考虑该节点，不保证调度，也不应无条件删除所有污点。
+- 资源：先算节点能给 Pod 用的总量，减去已经被其他 Pod 请求走的部分，剩下的够不够放这个 Pod 的 `requests`。Scheduler 看的是这个数，CPU 当前利用率低只是瞬时状态，能不能调度要另算。
+- 污点与容忍：单节点 kubeadm 控制平面常带有 `node-role.kubernetes.io/control-plane:NoSchedule`。仅在明确允许该实验工作负载共用控制平面时，为该 Pod 模板设置匹配的 toleration；容忍只是允许考虑该节点，不保证调度；无条件删除所有污点会放开其他约束。
 - 选择条件：`nodeSelector` 和必要的 Node Affinity 是否匹配节点标签；还要关注事件提示的未绑定 PVC、端口冲突等约束。
 - Scheduler：若长期没有调度进展，核对 Pod 的 `schedulerName`、调度器健康和日志。常见 kubeadm 静态 Pod 可用 `kubectl logs -n kube-system SCHEDULER_POD_NAME --tail=100` 检查，名称从上一步列表获取。
 
@@ -374,7 +374,7 @@ kubectl get events -A --sort-by=.metadata.creationTimestamp
 journalctl -u kubelet --no-pager -n 100
 ```
 
-日志包含凭证、地址或工作负载信息时，应先脱敏。遇到错误后，先定位它发生的层次，再决定修改哪项配置，不要同时调整所有组件。
+日志包含凭证、地址或工作负载信息时，应先脱敏。遇到错误后，先定位它发生的层次，再决定修改哪项配置；同时调整所有组件，会无法判断哪一步生效。
 
 ## 8. GPU、Helm 与 Minikube 为什么不混进基础安装主线？
 

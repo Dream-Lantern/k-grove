@@ -66,13 +66,13 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 读图时把两个方向分开：API Server 的变化流更新缓存，Reconcile 的 API 请求修改对象。API 操作又会产生后续观察；处理失败可以限速重新入队，但不要求一个事件对应一次完整事务。
 
-这是常见实现模式，不代表所有内置控制器都采用完全一致的缓存、接口或重试策略。具体源码可读 [Kubernetes v1.28.0 的 sample-controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/sample-controller/controller.go)：其中事件入队、工作项处理和状态同步展示了职责分离；不要把主分支后来更新的实现当作全部版本的行为。
+这是常见实现模式；不同内置控制器的缓存、接口与重试策略可能不同。具体源码可读 [Kubernetes v1.28.0 的 sample-controller](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/sample-controller/controller.go)：其中事件入队、工作项处理和状态同步展示了职责分离；本章描述的是所注版本的行为，主分支后续改动不在范围内。
 
 ## 3. 根据当前状态实现重复协调 {#_3-为什么重复协调不应该反复创造相同资源}
 
 假设某次请求已经创建了目标对象，但客户端在收到成功响应前断线。如果下一次协调不检查现有状态，而是无条件再创建一份，就可能不断制造多余资源或冲突。
 
-控制器通常需要根据当前对象和约束作决定，使重复协调能够正确收敛。这是设计上的要求，不能只凭函数名叫 `Reconcile` 就断言实现天然幂等。
+控制器通常需要根据当前对象和约束作决定，让重复协调无论执行多少次都朝同一个目标状态靠拢——这就是收敛。这是设计上的要求，不能只凭函数名叫 `Reconcile` 就断言实现天然幂等。
 
 在教学例子中，可以这样区分：
 
@@ -93,7 +93,7 @@ Ingress Controller、外部存储相关控制器或自定义 Operator 等，也�
 
 它围绕 ReplicaSet 的选择范围、归属及目标副本数量协调 Pod。这里要数的是符合相关管理条件的 Pod，不是只数已经 Ready 的容器。
 
-如果目标是三个 Pod，三个 Pod 对象都存在但其中一个尚未就绪，不能据此简单推导 ReplicaSet 一定再创建第四个。副本计数、就绪和 Deployment 的可用性判断属于相关但不同的问题。
+如果目标是三个 Pod，三个对象都存在但其中一个尚未就绪，ReplicaSet 未必会创建第四个。副本数已经够了，Ready 数是 2，Deployment 的可用性又是第三项判断——三者相关，但不是一回事。
 
 ### 4.3 ReplicationController（RC）
 
@@ -150,21 +150,21 @@ kubectl get pods -n k8s-arch-demo -l app=web-demo -o yaml
 
 标签不是纯展示字段。控制器可以基于选择器定位相关对象，其他组件也可能使用标签选择后端。
 
-但“标签匹配”不等于可以忽略对象的 ownerReferences 和控制关系，任意接管其他控制器的对象。修改标签、模板或选择器前，需要检查资源自己的约束及已有归属。
+但“标签匹配”只是收养的必要条件之一。收养是指控制器把不是自己创建、但标签符合选择器的 Pod 纳入管理；还要看对象的 ownerReferences 和控制关系，否则会接管本该属于其他控制器的对象。修改标签、模板或选择器前，需要检查资源自己的约束及已有归属。
 
 例如，给一个 Pod 换标签，可能同时影响副本管理和 Service 选择；它并不保证 Pod 会以你想象的方式自动转交给另一个 Deployment。
 
-排查重复 Pod 时，应一起查看对象的管理链、选择范围、事件和新旧 ReplicaSet，不要先删除看似“多出来”的实例。
+排查重复 Pod 时，应一起查看对象的管理链、选择范围、事件和新旧 ReplicaSet；先删掉看似“多出来”的实例会让证据消失。
 
 以目标 ReplicaSet 的选择器匹配 `app=web-demo` 为例，先比较以下三种情况：
 
 | Pod 标签与控制器引用                                     | 对目标 ReplicaSet 的意义                                                                                             |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | 标签匹配，`controller: true` 引用指向目标 ReplicaSet UID | 属于该控制器管理范围，还需结合删除状态、阶段等判断是否计入副本数                                                     |
-| 标签匹配，但控制器引用指向另一个控制器 UID               | 不因标签匹配就接管；修改标签也不能绕开现有控制器归属                                                                 |
+| 标签匹配，但控制器引用指向另一个控制器 UID               | 标签匹配只是条件之一；改标签同样绕不开现有控制器归属                                                                 |
 | 标签匹配，没有 Controller OwnerReference                 | 满足收养条件时可能被目标 ReplicaSet 收养，例如对象和 ReplicaSet 均未进入删除等状态；不能绝对地说只管理自己创建的 Pod |
 
-“没有 Controller OwnerReference”不等于 `ownerReferences` 数组一定为空。标签选择器决定哪些对象匹配，控制器引用识别谁管理对象，所有者引用还为垃圾回收提供依赖关系；删除所有者后是否级联清理，还与删除传播策略和 Finalizer 等有关。不要为了验证收养而在共享集群里删除或伪造控制器引用。[ReplicaSet 的收养行为](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/#non-template-pod-acquisitions)、[所有者与依赖对象](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/)
+“没有 Controller OwnerReference”有两种情况：`ownerReferences` 为空，或数组里只有非 Controller 类型的引用。标签选择器决定哪些对象匹配，控制器引用识别谁管理对象，所有者引用还为垃圾回收提供依赖关系；删除所有者后是否级联清理，还与删除传播策略和 Finalizer 等有关。验证收养不必删除或伪造控制器引用；在共享集群里这样做会破坏其他控制器的管理链。[ReplicaSet 的收养行为](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/#non-template-pod-acquisitions)、[所有者与依赖对象](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/)
 
 ## 6. 节点状态观察与故障协调 {#_6-节点控制-不是运行-get-nodes-才开始工作}
 
@@ -172,13 +172,13 @@ kubectl get pods -n k8s-arch-demo -l app=web-demo -o yaml
 
 节点相关机制持续关注节点健康等状态，故障处理还会涉及超时、污点、Pod 生命周期和其他协调逻辑。不能写成“Node Controller 一收到网络断开，就把所有进程立即迁移到另一台机器”。
 
-对于工作负载重建，最终还要有相应控制器、可调度资源以及网络/存储等依赖。节点层认为出现了问题，不等于业务已经恢复。[节点管理](https://kubernetes.io/docs/concepts/architecture/nodes/)
+对于工作负载重建，最终还要有相应控制器、可调度资源以及网络/存储等依赖。节点层认为出现问题，与业务是否恢复是两回事。[节点管理](https://kubernetes.io/docs/concepts/architecture/nodes/)
 
-## 7. ResourceQuota：控制器统计不等于所有限制都由它同步执行
+## 7. ResourceQuota：统计由控制器协调，限制在准入时执行
 
-ResourceQuota 表达某个命名空间的资源配额约束。相关状态统计和请求准入共同参与工作，不能理解为“只有 ResourceQuota Controller 后台检查，所有创建请求都会先成功，之后再清理超出的对象”。
+ResourceQuota 表达某个命名空间的资源配额约束。它分两头工作：ResourceQuota Controller 在后台统计当前用量写进 status，API 则在创建对象时同步查一次配额，超了就直接拒绝。不能理解为“只有 ResourceQuota Controller 后台检查，所有创建请求都会先成功，之后再清理超出的对象”。
 
-也不能把它当作主机资源硬隔离的完整替代：对象配额、Pod 的 requests/limits、节点容量和实际资源使用属于不同层次。
+主机资源的硬隔离要靠 cgroups 等机制，ResourceQuota 覆盖不到这一层。对象配额管“这个命名空间能建几个”，requests/limits 管“每个容器要多少、最多多少”，节点容量决定“放不放得下”，实际用量则要看运行时——四件事不是同一个问题。
 
 新手排查创建失败时，应区分：配额拒绝、字段校验失败和调度资源不足，并查看 API 返回的具体信息。[ResourceQuota](https://kubernetes.io/docs/concepts/policy/resource-quotas/)
 
@@ -201,19 +201,19 @@ kubectl describe rs -n k8s-arch-demo -l app=web-demo
 
 这些只读命令沿用上节实验空间，不会为它新增配额。以下三类约束各有分工：
 
-| 机制                  | 主要负责什么                                       | 常见观察边界                                               |
-| --------------------- | -------------------------------------------------- | ---------------------------------------------------------- |
-| ResourceQuota         | 限制命名空间内的对象数量或资源请求总额等           | API 创建或更新可能被拒绝，查看配额与返回错误               |
-| Pod `requests/limits` | 声明容器的资源需求与限制；运行时按相应机制执行限制 | requests 参与配额与调度核算，limits 不等于预先获得节点资源 |
-| Scheduler             | 按资源请求及其他约束为已存在的待调度 Pod 选择节点  | 无可行节点时，Pod 可以存在但尚未绑定                       |
+| 机制                  | 主要负责什么                                       | 常见观察边界                                                 |
+| --------------------- | -------------------------------------------------- | ------------------------------------------------------------ |
+| ResourceQuota         | 限制命名空间内的对象数量或资源请求总额等           | API 创建或更新可能被拒绝，查看配额与返回错误                 |
+| Pod `requests/limits` | 声明容器的资源需求与限制；运行时按相应机制执行限制 | requests 参与配额与调度核算，limits 只是上限，不预留节点资源 |
+| Scheduler             | 按资源请求及其他约束为已存在的待调度 Pod 选择节点  | 无可行节点时，Pod 可以存在但尚未绑定                         |
 
 ## 8. Namespace 删除：为什么会停在 Terminating？
 
-命名空间删除通常需要协调其中对象的清理。Finalizer 等机制可能要求先完成某项外部清理，或由相应控制器移除完成标志。
+命名空间删除通常需要协调其中对象的清理。Finalizer（最终处理标记）相当于对象上的“先别删”标记：对应控制器做完清理、把它去掉，对象才会真正消失。
 
-因此，删除请求被接受，并不代表所有对象与外部资源都已同步消失。命名空间长期处于删除状态，可能与剩余对象、相关 API 或清理控制器无法推进有关，需要根据证据定位。
+因此，删除请求被接受后，对象与外部资源仍可能处于清理过程中。命名空间长期处于删除状态，可能与剩余对象、相关 API 或清理控制器无法推进有关，需要根据证据定位。
 
-不要把删除 finalizers 当作万能修复。强行跳过清理约束，可能留下外部存储、云资源或其他无法正确回收的对象。本章不提供强制清理未知命名空间的脚本。[Finalizer](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/)
+删除 finalizers 只是跳过清理，把问题留到之后。强行跳过清理约束，可能留下外部存储、云资源或其他无法正确回收的对象。本章不提供强制清理未知命名空间的脚本。[Finalizer](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/)
 
 ## 9. Service、EndpointSlice 与数据平面的配合 {#_9-service-与端点协调-不要再把一切都称为-endpoint-controller}
 
@@ -251,7 +251,7 @@ Pod 是否已绑定节点？如果没有，再看调度条件
 | Pod 存在但未绑定                   | `kubectl describe pod POD_NAME -n k8s-arch-demo`；查 `PodScheduled`、`spec.nodeName`、`FailedScheduling` 和资源、标签、污点、卷约束                  |
 | Pod 已绑定但未正常运行             | `kubectl get pod POD_NAME -n k8s-arch-demo -o yaml`；查容器状态和事件，再关联节点 kubelet、运行时、镜像、CNI、挂载和应用日志                         |
 
-需要日志时，根据实际部署方式定位 kube-controller-manager 或节点服务；不要在没有证据时通过重启整个控制平面代替排查。
+需要日志时，根据实际部署方式定位 kube-controller-manager 或节点服务；没有证据时重启整个控制平面，只会掩盖故障现场。
 
 控制器本身还依赖正确的 API 访问、相应的领导者工作状态，以及可用的依赖组件。进程存在或日志未立即报错，都不足以证明所有控制循环能够完成业务目标。
 

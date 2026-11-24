@@ -23,7 +23,7 @@ order: 30
 
 ## 1. 先给现象加上边界
 
-排障从明确现象开始：记录时间范围、影响用户、环境、命名空间、工作负载、相关 Pod UID 与最近变更，再将问题归为提交失败、启动失败、间歇错误、延迟升高或数据不一致。
+排障从把现象说清楚开始：先记下发生的时间段、哪些用户受影响、哪个环境、哪个命名空间和工作负载、相关 Pod 的 UID，以及最近改过什么；再判断它属于哪一类——对象根本没提交成功、提交了但起不来、能跑却时好时坏、响应变慢，还是数据对不上。
 
 先判断影响一个副本、一台节点、一个命名空间还是全局；集群内外是否都失败。下面所有案例均为 **合成教学推演**，命令是只读查询模板，输出描述是给定证据或预期，不是实际集群结果。POD_NAME 等大写名称需要替换；日志和事件也可能含敏感信息，保存前应脱敏。
 
@@ -31,7 +31,7 @@ order: 30
 
 ## 2. API 请求失败
 
-先核对当前上下文、API 地址、真实身份，再保留脱敏错误原文和时间。认证、授权、准入和对象冲突需要分别定位。
+先核对当前上下文、API 地址、真实身份，再保留脱敏后的错误原文和时间。四类失败要分开查：认证问「你是谁」，授权问「你能不能做这件事」，准入问「这个对象能不能通过策略检查」，对象冲突则是「你改的时候别人已经改过了」。
 
 | 现象                       | 可能原因                                              | 关键证据                                     |
 | -------------------------- | ----------------------------------------------------- | -------------------------------------------- |
@@ -41,7 +41,7 @@ order: 30
 | Webhook 超时               | 服务、网络或依赖异常                                  | 超时原文、匹配配置、Service 与后端状态       |
 | API 对象冲突               | 更新所用 resourceVersion 过旧，或声明式字段所有权冲突 | 操作类型、错误原文、对象版本或 managedFields |
 
-普通更新的版本冲突与 Server-Side Apply（服务端应用）的字段管理冲突不是同一机制。应先读取最新对象、理解并发修改或字段归属，再制定变更；不要一律强制覆盖。403 也不能一律归为 RBAC，更不能靠临时 cluster-admin 授权掩盖原因。不要公开 kubeconfig、Bearer token 或 Secret。
+普通更新的版本冲突和 Server-Side Apply（服务端应用）的字段管理冲突要分开看：前者是「你读到的对象版本已经被别人改过」，后者是「这个字段归别人管，你也在写」。应先读取最新对象、弄清是并发修改还是字段归属问题，再制定变更；一律强制覆盖会盖掉他人的字段。403 未必是 RBAC，临时 cluster-admin 授权只会掩盖原因。公开 kubeconfig、Bearer token 或 Secret 等于交出凭据。
 
 ## 3. Pod 没有进入业务运行
 
@@ -58,13 +58,13 @@ order: 30
 | Pending           | Pod phase               | 接受对象后仍在准备；已分配 Node 也可能因镜像、卷等原因 Pending |
 | FailedScheduling  | Event reason            | 调度失败事件，需查看具体约束与消息                             |
 | ContainerCreating | 常见容器 Waiting reason | 运行准备中，结合事件分辨 sandbox、卷或其他步骤                 |
-| ImagePullBackOff  | 容器 Waiting reason     | 拉取失败后退避；不等于镜像一定不存在                           |
+| ImagePullBackOff  | 容器 Waiting reason     | 拉取失败后退避；镜像未必不存在                                 |
 | CrashLoopBackOff  | 容器 Waiting reason     | 反复退出后重启退避，不是 Pod phase                             |
 | OOMKilled         | 容器 Terminated reason  | 查看 state 或 lastState 的终止原因，再结合内存限制、节点与监控 |
 
 [v1.28.0 Pod phase 定义](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/api/core/v1/types.go)也明确将调度等待和镜像下载等准备时间包含在 Pending 中。
 
-kubectl 的 STATUS 列是摘要，不能替代 API 字段。readiness 决定是否就绪；liveness 失败可导致容器重启；配置 startup 后，启动检查成功前其余两类探针暂不执行，不能混称为同一检查。
+kubectl 的 STATUS 列是摘要，不能替代 API 字段。三种探针管的事不同：readiness 决定这个 Pod 要不要接收流量；liveness 失败会让容器重启；startup 只管启动阶段，在它成功之前，另外两种探针都先不跑。
 
 ```bash
 # 查询命令中指定的资源及对象名；只读返回当前状态
@@ -93,7 +93,7 @@ kubectl logs POD_NAME -n study -c app --previous --timestamps --tail=100
 
 ## 4. 运行中但不能服务
 
-案例一：study/catalog 的 Pod Ready，从指定集群内客户端访问 Pod IP 和 Service 成功，但外部通过 Ingress 访问失败。给定 Service 端口为 80、targetPort 为 8080，Ingress 主机为 `catalog.example.com`。这些证据先缩小到入口路径；不能证明 Ingress Controller 到后端的路径也健康，因为客户端来源、节点与网络策略可能不同，部分控制器还直接访问端点。
+案例一：study/catalog 的 Pod Ready，从指定集群内客户端访问 Pod IP 和 Service 成功，但外部通过 Ingress 访问失败。给定 Service 端口为 80、targetPort 为 8080，Ingress 主机为 `catalog.example.com`。这些证据只能把问题缩到「外部 → Ingress 入口」这一段；它不能证明 Ingress Controller → Pod 后端那一段也通，因为客户端来源、节点和网络策略可能不同，部分控制器还直接访问端点。
 
 ```bash
 # 查询命令中指定的资源及对象名；只读返回当前状态
@@ -143,11 +143,11 @@ curl --connect-timeout 3 --max-time 10 -v https://catalog.example.com/
 curl --connect-timeout 3 --max-time 10 -v --resolve catalog.example.com:443:INGRESS_IP https://catalog.example.com/
 ```
 
-比较同一来源、同一协议和业务路径，才能解释差异。ICMP ping 不验证 HTTP 路由或 TLS。若表现为仅跨节点失败，再沿节点路由/封装、MTU 与策略调查，不能仅凭超时就宣布 DNS 或 CNI 故障。[1.28 Service 排障](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/debug/debug-application/debug-service.md)
+比较同一来源、同一协议和业务路径，才能解释差异。ICMP ping 不验证 HTTP 路由或 TLS。若表现为仅跨节点失败，再沿节点路由/封装、MTU 与策略调查，仅凭超时还判不了 DNS 或 CNI 故障。[1.28 Service 排障](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/debug/debug-application/debug-service.md)
 
 ## 5. 存储与数据异常
 
-案例二：catalog 使用 `catalog-data` PVC；PVC 已 Bound，但新 Pod 尚不能启动，事件报告 FailedAttachVolume 或 FailedMount。Bound 只说明 PVC 与 PV 已绑定，不保证节点附加、挂载和应用文件访问成功。
+案例二：catalog 使用 `catalog-data` PVC；PVC 已 Bound，但新 Pod 尚不能启动，事件报告 FailedAttachVolume 或 FailedMount。从 PVC 到应用能读写，中间有四步：PVC 先绑定到 PV（Bound），PV 再被附加到 Pod 所在节点（Attach），然后挂载进容器的目录（Mount），最后应用真正读写文件。Bound 只完成第一步，后三步都还可能失败。
 
 ```bash
 # 查询命令中指定的资源及对象名；只读返回当前状态
@@ -184,9 +184,9 @@ kubectl get volumeattachment
 
 进一步核对 Pod 的 volumeMounts 是否将该 PVC 挂在预期 `/data`，是否误配只读或 subPath，应用配置是否实际使用 `/data`；再结合应用和存储记录验证预期文件的读写。本章不写入卷。PVC Bound、挂载成功、应用能够读写是三个不同的验收层次，不随意修改 PV 回收策略。
 
-最后一行是另一条分支，不应把它冒充前面“尚未挂载”的同一结论。先确定停在哪一步，再由责任人选择处理方法；不删除 PVC/PV、不格式化卷，也不以改成 root 或全目录可写作为默认修复。
+最后一行是另一条分支，与前面“尚未挂载”的结论不同。先确定停在哪一步，再由责任人选择处理方法；不删除 PVC/PV、不格式化卷，也不以改成 root 或全目录可写作为默认修复。
 
-Pod 能写临时目录不证明持久卷可写。发现数据异常时保护现场，防止旧实例与替代实例同时写入；etcd 对象备份也不能代替业务卷或数据库的一致性备份。恢复方案需结合存储与应用记录另行验证。
+Pod 能写临时目录不证明持久卷可写。发现数据异常时保护现场，防止旧实例与替代实例同时写入；etcd 备份里只有 Kubernetes 对象（各种资源的配置和状态），卷里的业务数据不在其中，要单独备份。恢复方案需结合存储与应用记录另行验证。
 
 ## 6. 一次只验证一个假设
 
@@ -233,7 +233,7 @@ kubectl logs NEW_POD_NAME -n study -c app --timestamps --tail=100
 kubectl logs NEW_POD_NAME -n study -c app --previous --timestamps --tail=100
 ```
 
-对比新旧 ReplicaSet 模板中的镜像、启动参数、配置引用及探针；不要直接打印所引用的 Secret 内容。Ready=false 不必然意味着进程退出，探针配置错误与应用本身不可用应分别验证。
+对比新旧 ReplicaSet 模板中的镜像、启动参数、配置引用及探针；直接打印所引用的 Secret 内容会把凭据写进终端历史。Ready=false 不必然意味着进程退出，探针配置错误与应用本身不可用应分别验证。
 
 给定教学证据：新 Pod 已分配节点且容器 Running；事件出现 `Readiness probe failed`；readiness 使用 HTTP `/ready` 的 9090 端口，而应用启动配置和日志显示监听 `0.0.0.0:8080`，并提供 `/ready`；旧模板使用 8080。`containerPort: 8080` 只是声明，单凭这个字段不能证明进程真的监听，应与启动参数、应用日志和获准的连接验证相互印证。
 
@@ -243,7 +243,7 @@ kubectl logs NEW_POD_NAME -n study -c app --previous --timestamps --tail=100
 | 下一假设：探针端口错误 | 对比新旧模板、事件、应用启动配置和日志；9090 与 8080 不一致                   | 支持端口不匹配，继续确认路径、协议和实际监听                       |
 | 验证修复假设           | 在授权测试环境单独修正探针端口，保持路径、镜像和资源等其余条件                | 观察探针是否成功及新版本业务；本章未实施，不能写成根因已被实测确认 |
 
-不要同时升级 CNI、重启 DNS、增加资源和改变探针。若修正端口后仍失败，就保留结果，继续检查路径、协议、监听地址或依赖；不能把图中的常见原因当作必然根因。
+同时升级 CNI、重启 DNS、增加资源和改变探针，会无法归因。若修正端口后仍失败，就保留结果，继续检查路径、协议、监听地址或依赖；不能把图中的常见原因当作必然根因。
 
 责任人在受控流程中保存修复前配置，单独修改探针；需要恢复时先核实可用历史模板和配置兼容性，再选择恢复方案，不假定固定 revision 永远有效。本文不执行修复或回滚。
 

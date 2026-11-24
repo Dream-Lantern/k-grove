@@ -1,7 +1,7 @@
 ---
 id: kafka-network-security
 title: 第 21 章：网络、安全与权限边界
-description: "客户端先通过配置中的初始地址获取集群元数据，再根据元数据中的 Broker 地址访问相应分区和协调者。初始地址能够连接，并不代表后续所有地址都能解析、路由可达，或与证书匹配。"
+description: "客户端先通过配置中的初始地址获取集群元数据，再根据元数据中的 Broker 地址访问相应分区和协调者。初始地址能连上，只验证了这一个地址；后续地址的解析、路由与证书要分别确认。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -25,13 +25,13 @@ order: 21
 
 ## 1. 从 Bootstrap 获取元数据，再连接目标节点 {#_1-bootstrap-只是入口}
 
-客户端先通过配置中的初始地址获取集群元数据，再根据元数据中的 Broker 地址访问相应分区和协调者。初始地址能够连接，并不代表后续所有地址都能解析、路由可达，或与证书匹配。
+客户端先通过配置中的初始地址获取集群元数据，再根据元数据中的 Broker 地址访问相应分区和协调者。初始地址能连上，只验证了这一个地址；后续地址的解析、路由与证书要分别确认。
 
-容器、NAT、内外网和多 Listener 环境尤其容易出现这种问题：服务端监听成功，却向客户端公布了仅内部可达的主机名。应核对 listeners、advertised.listeners 及适用监听器映射，不要把 0.0.0.0 的监听意义误认为客户端可使用的远端地址。
+容器、NAT、内外网和多 Listener 环境尤其容易出现这种问题：服务端监听成功，却向客户端公布了仅内部可达的主机名。应核对 listeners、advertised.listeners 及适用监听器映射，`0.0.0.0` 只表示监听所有本地接口，客户端要连的是 advertised 地址。
 
 ![初始与后续连接各自完成安全握手](/assets/notes/kafka/kf-security.svg)
 
-客户端首先解析 Bootstrap 域名并建立 TCP 连接。按 Listener 协议建立 TLS，再在适用时完成 SASL 认证，随后请求 Metadata（集群及分区元数据）。客户端从返回结果取得该 Listener 对应的 Broker 公布地址，并定位分区 Leader，或通过 FindCoordinator 查找组和事务协调器。连接新节点时重新执行 DNS、TCP 和相应安全握手，再发送 Produce、Fetch 或组请求。Metadata 本身也涉及 Topic Describe 等权限，失败未必等到读写时才出现。
+客户端先解析 Bootstrap 域名、建立 TCP 连接，再按这个 Listener 配置的协议做 TLS 握手，需要认证时接着做 SASL，之后才发 Metadata 请求，问集群有哪些 Broker、每个分区由谁负责。从返回结果里，客户端取出该 Listener 对应的 Broker 公布地址：要读写分区就去找分区 Leader，要加入消费组或使用事务就先通过 FindCoordinator 找协调器。每连一个新节点，DNS、TCP 和握手都要重来一遍，然后才发 Produce、Fetch 或组请求。Metadata 请求本身也要 Topic Describe 之类的权限，所以失败可能在读写之前就出现。
 
 ### Kafka 3.9 多 Listener 示例
 
@@ -66,7 +66,7 @@ listener.name.external.ssl.key.password=<key-password>
 listener.name.external.ssl.client.auth=none
 ```
 
-`listeners` 绑定本地网卡和端口，`0.0.0.0` 表示监听所有 IPv4 接口。远端客户端使用 `advertised.listeners` 返回的实际主机名和端口。协议映射决定每个入口怎样完成安全握手。容器的内部 DNS 名可能只在容器网络有效，NAT 也可能改写端口。多 Broker 场景中，每个节点都要公布该客户端网络可达的对应端点，并使用名称匹配的证书。Controller Listener 服务仲裁和控制通信，省略于业务 advertised 列表，并应与客户端网络隔离。若节点只运行 Broker 角色，它仍需配置如何连接 Controller，但不会在本地监听 Controller 端口。
+`listeners` 绑定本地网卡和端口，`0.0.0.0` 表示监听所有 IPv4 接口。远端客户端使用 `advertised.listeners` 返回的实际主机名和端口。协议映射决定每个入口怎样完成安全握手。容器的内部 DNS 名可能只在容器网络有效，NAT 也可能改写端口。多 Broker 场景中，每个节点都要公布该客户端网络可达的对应端点，并使用名称匹配的证书。Controller Listener 只供 Broker 之间做仲裁和控制通信，不写进面向业务的 advertised 列表，并且应该和客户端网络隔开。若节点只运行 Broker 角色，它仍然要配置怎么连上 Controller，但本地不会监听 Controller 端口。
 
 外部 Java CLI 使用 `security.protocol=SSL`，配置信任库的类型、位置及适用密码，保留主机名验证。此例的 INTERNAL 与 CONTROLLER 为明文，仅限隔离实验网络。实际启用双向 TLS 时，还需 Broker 信任客户端证书签发者，并要求客户端提供证书和私钥。
 
@@ -76,11 +76,11 @@ TLS（Transport Layer Security，传输层安全协议）加密连接，客户�
 
 SASL（Simple Authentication and Security Layer，简单认证与安全层）为 Kafka 连接认证客户端身份。`SASL_SSL` 在 TLS 内运行 SASL，`SASL_PLAINTEXT` 无 TLS 传输保护。PLAIN 使用账号密码，适合放在 TLS 内。SCRAM 通过挑战响应认证，仍可用 TLS 保护通信并验证服务端。GSSAPI 依赖 Kerberos 环境，OAUTHBEARER 依赖相应令牌签发和验证机制。所选机制必须由客户端、Broker Listener 和部署的身份系统共同支持。
 
-ACL（Access Control List，访问控制列表）决定已识别的 Principal（安全主体）可以对哪些资源执行哪些操作。身份验证成功后，Topic 读取、组管理和事务操作仍按相应权限判断。
+ACL（Access Control List，访问控制列表）回答的是“这个身份能做什么”。前面的认证只确认“你是谁”（Principal，安全主体）；认证通过之后，读 Topic、加入消费组、使用事务 ID 这些操作还要各自查 ACL，没授权照样被拒。
 
 遇到证书问题时，应检查信任链、有效期、主机名和服务端公布的地址，不能把关闭校验当作长期修复方案。明文传输密码或把私钥贴进笔记，会在排查过程中引入新的安全风险。
 
-证书的 SAN（Subject Alternative Name，主题备用名称）应覆盖实际连接名。域名连接匹配 DNS SAN。IP 直连并按 IP 验证时需要对应的 IP SAN。SNI（Server Name Indication，服务端名称指示）帮助支持它的服务端或代理按请求名称选择证书。SNI 发送与证书名称验证是两项独立操作。
+证书的 SAN（Subject Alternative Name，主题备用名称）要覆盖实际连接用的名字。用域名连接就核对 DNS SAN，用 IP 直连并按 IP 校验就需要对应的 IP SAN。SNI（Server Name Indication，服务端名称指示）是握手时客户端先报出自己要连的域名，服务端或代理据此挑一张证书发回来。报域名和校验证书名字是两步：发了 SNI 不等于已经验过名字，验过名字也不代表 SNI 里填的是同一个域名。
 
 从同一客户端网络使用 OpenSSL 3.0 做只读检查，每个 advertised 地址分别测一次：
 
@@ -96,7 +96,7 @@ openssl s_client -connect broker-1.example.net:9094 \
 
 ## 3. Topic、Group 与事务身份的资源权限 {#_3-topic-权限不是全部权限}
 
-消费者可能需要对 Topic 和 Group 的适用权限；事务生产者还涉及 TransactionalId 等资源；管理操作又有独立动作。具体权限应按版本授权表和实际调用核对，不能用“加一个 Topic Read”解释所有失败。
+消费一个分区，既要有这个 Topic 的 Read，也要有所属消费组的 Read；事务生产者还要对 TransactionalId 有权限；删除 Topic、修改 ACL 这类管理操作又各有各的动作。具体权限应按版本授权表和实际调用核对，不能用“加一个 Topic Read”解释所有失败。
 
 观察错误码与请求阶段能帮助定位：初始连接失败、认证失败、Topic 授权失败、组授权失败和事务身份权限失败不是同一件事。临时赋予超级权限可能掩盖根因，也扩大误删和泄露风险。
 
@@ -105,7 +105,7 @@ openssl s_client -connect broker-1.example.net:9094 \
 | 角色                   | 典型权限及错误定位                                                                                                                                                          |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 普通 Producer          | 对目标 Topic 的 Write，Metadata 涉及 Describe，适用的 Allow Write 隐含 Allow Describe。Topic 权限不足可报 `TOPIC_AUTHORIZATION_FAILED`                                      |
-| 非事务幂等 Producer    | 写入仍需目标 Topic 的 Write。3.9.0 的 InitProducerId 允许 Cluster 的 IdempotentWrite，或通过 Topic 资源类型的 Write 授权检查。不要仅为通过初始化就扩大为集群级授权          |
+| 非事务幂等 Producer    | 写入仍需目标 Topic 的 Write。3.9.0 的 InitProducerId 允许 Cluster 的 IdempotentWrite，或通过 Topic 资源类型的 Write 授权检查。只按初始化需要授权，不扩大为集群级            |
 | Consumer Group 成员    | 对输入 Topic 和 Group 的 Read，涉及 Fetch、JoinGroup、OffsetCommit 等请求。缺失时检查 `TOPIC_AUTHORIZATION_FAILED` 或 `GROUP_AUTHORIZATION_FAILED`                          |
 | Transactional Producer | 对对应 TransactionalId 的 Write，并对输出 Topic 有 Write。把输入位点纳入事务时，还需对输入 Group 和 Topic 有 Read。事务身份不足可报 `TRANSACTIONAL_ID_AUTHORIZATION_FAILED` |
 | 只读运维工具           | Topic Describe 需要对应 Topic 的 Describe，组进度查询涉及 Group Describe、适用的 Topic Describe，查询配置另需 DescribeConfigs。集群级列表及 ACL 查询有自己的权限            |
@@ -113,7 +113,7 @@ openssl s_client -connect broker-1.example.net:9094 \
 
 ## 4. 多租户还需要资源隔离
 
-配额、命名规范、敏感数据分类和容量预算共同约束共享集群。某客户端过载可能造成节流与延迟，应结合配额指标分析，而不是一味增加重试。
+共享集群靠几样东西一起约束租户：配额限制每个租户能用多少流量，命名规范划分资源归谁，敏感数据分类决定数据要按什么要求处理，容量预算说明还剩多少余量可以接新业务。某客户端过载可能造成节流与延迟，应结合配额指标分析，而不是一味增加重试。
 
 client.id 可以帮助识别流量与适用配额，但不是可靠的应用身份认证凭据。真正的访问控制不能仅靠所有人自觉填写不同 client.id。
 
@@ -121,9 +121,9 @@ client.id 可以帮助识别流量与适用配额，但不是可靠的应用身�
 
 ## 5. 一条故障的观察顺序
 
-先记录客户端版本、错误码、发生时间和受影响的 Topic/Group。初始连接阶段，应检查 Bootstrap 的 DNS/TCP，以及该连接配置的 TLS/SASL，连接成功后才能取得元数据；随后按 advertised 地址建立连接时，还需检查这些地址的路由、证书与认证。最后，再按实际请求核对资源权限和配额。不能等拿到元数据后才排查 Bootstrap 握手，也不应同时修改端口、关闭校验并扩大 ACL。
+先记录客户端版本、错误码、发生时间和受影响的 Topic/Group。初始连接阶段，应检查 Bootstrap 的 DNS/TCP，以及该连接配置的 TLS/SASL，连接成功后才能取得元数据；随后按 advertised 地址建立连接时，还需检查这些地址的路由、证书与认证。最后，再按实际请求核对资源权限和配额。Bootstrap 握手要在拿元数据之前排查；同时改端口、关校验并扩 ACL 会无法归因。
 
-本册使用占位地址，不复制原笔记中真实环境地址、凭据或会话数据。正式公开前还要单独审查图片、代码和日志中的敏感信息，技术正确不等于已经通过公开授权。
+本册使用占位地址，不复制原笔记中真实环境地址、凭据或会话数据。正式公开前还要单独审查图片、代码和日志中的敏感信息，技术正确只解决内容，公开授权要另走流程。
 
 ### 三个故障练习与只读诊断
 

@@ -23,7 +23,7 @@ order: 8
 
 [![观测链：API 与设备活动](/assets/notes/ai-infra/observe-paths.svg)](/assets/notes/ai-infra/observe-paths.svg)
 
-GNU ld 的 `--wrap=symbol` 重定向参与该链接过程的相应未定义引用。已解析的内部引用、独立动态库、`dlsym`/Driver 入口查询和其他 API 变体，需要分别确认。[GNU ld：wrap](https://sourceware.org/binutils/docs/ld/Options.html)
+GNU ld 的 `--wrap=cudaMalloc` 只做一件事：在这一次链接里，凡是还没找到定义的 `cudaMalloc` 引用，都改指向你写的 `__wrap_cudaMalloc`。它管不到另外几类调用：链接时已经解析好的内部引用、其他动态库自己发出的调用、运行期才按名字查找的 `dlsym` 和 Driver 入口。这几条要各自验证。[GNU ld：wrap](https://sourceware.org/binutils/docs/ld/Options.html)
 
 | 路径                     | 应检查的证据         | 不能直接宣称                   |
 | ------------------------ | -------------------- | ------------------------------ |
@@ -34,7 +34,7 @@ GNU ld 的 `--wrap=symbol` 重定向参与该链接过程的相应未定义引�
 
 ### 一次 `cudaMalloc()` 从哪里经过
 
-应用调用 CUDA Runtime（运行时）的 `cudaMalloc()`，运行时按当前设备和 Context 处理请求，并借助驱动管理设备分配。CUDA Driver API（驱动接口）也提供可直接调用的分配入口。Runtime API 与公开 Driver 入口没有一一对应的承诺，内部路径会随版本和状态变化。覆盖验收从实际调用点、符号或设备活动取证。[CUDA 12.8.1 Runtime 与 Driver 的差异](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/driver-vs-runtime-api.html)
+应用调用 CUDA Runtime（运行时）的 `cudaMalloc()`，运行时按当前设备和 Context 处理请求，再借助驱动完成设备分配。Context（上下文）是进程在设备上的一份运行环境记录，分配、流和内核都挂在它下面。CUDA Driver API（驱动接口）也提供可直接调用的分配入口。Runtime API 与公开 Driver 入口没有一一对应的承诺，内部路径会随版本和状态变化。覆盖验收从实际调用点、符号或设备活动取证。[CUDA 12.8.1 Runtime 与 Driver 的差异](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/driver-vs-runtime-api.html)
 
 | 方式                 | 条件与作用                                                                  | 验证边界                                                                   |
 | -------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
@@ -132,25 +132,25 @@ nm -C build/app | grep cudaMalloc
 
 ## 3. 异步内存需要两套账
 
-| 记录项                       | 反映什么               | 释放时要注意                  |
-| ---------------------------- | ---------------------- | ----------------------------- |
-| requested/live logical bytes | 应用的有效分配请求     | 失败请求不应计为活跃分配      |
-| pending stream operations    | 已排队的分配/使用/释放 | host 返回不等于设备已到达该点 |
-| pool reserved bytes          | 内存池保留的后备空间   | logical free 后可能仍由池保留 |
+| 记录项                       | 反映什么               | 释放时要注意                              |
+| ---------------------------- | ---------------------- | ----------------------------------------- |
+| requested/live logical bytes | 应用的有效分配请求     | 失败请求不计入活跃分配                    |
+| pending stream operations    | 已排队的分配/使用/释放 | host 返回只说明入队，设备可能尚未到达该点 |
+| pool reserved bytes          | 内存池保留的后备空间   | logical free 后可能仍由池保留             |
 
-`cudaFreeAsync` 入队并不等于后备显存立即归还给系统；释放点之后不能再访问该分配，后续工作也不能因为 host 地址值还在就继续使用。跨 stream 使用必须满足相应顺序和生命周期。[CUDA 12.8.1 流序分配 API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html)
+`cudaFreeAsync` 入队只登记释放，后备显存不会立即归还；释放点之后访问该分配即失效，host 地址值仍在也不代表可用。跨 stream 使用必须满足相应顺序和生命周期。[CUDA 12.8.1 流序分配 API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html)
 
 包装层的 host enter/exit 不能冒充 kernel start/end。需要设备时间时使用受支持的 profiler/activity 路径并关联标识。[CUPTI Usage](https://docs.nvidia.com/cupti/main/main.html)
 
-流序内存分配（Stream-Ordered Memory Allocation）把分配和释放置于流顺序中。主机拿到指针后，设备只有在有序执行到分配点之后才能访问。合法例是在 A 流分配并记录 E，B 流等 E 后使用，B 再记录完成事件，A 等到完成后入队释放。同一流中直接按分配、使用、释放提交也合法。若 B 无等待就访问，或 A 的释放未等待 B 的最后使用，指针值仍在也不能保证有效。调用 `cudaFreeAsync()` 后不再提交新的访问。
+流序内存分配（Stream-Ordered Memory Allocation）把分配和释放置于流顺序中。主机拿到指针后，设备只有在有序执行到分配点之后才能访问。合法例是在 A 流分配并记录 E，B 流等 E 后使用，B 再记录完成事件，A 等到完成后入队释放。同一流中直接按分配、使用、释放提交也合法。若 B 无等待就访问，或 A 的释放未等待 B 的最后使用，指针值仍在，分配却可能已经释放。调用 `cudaFreeAsync()` 后不再提交新的访问。
 
-账本应拆开记录请求字节（含失败）、成功返回后的逻辑存活字节（按约定在成功入队释放后扣除）、尚未确认完成的异步分配和释放、`cudaMemPoolAttrReservedMemCurrent` 的池保留字节，以及进程或设备层可观察显存占用。它们有不同采样时点和统计范围，可能重叠。池保留可以在逻辑释放后继续存在，跨流复用还需满足池策略和依赖条件。前置分配及 Context 归属分别见 [第 4 章](/articles/ai-infra-cuda-memory.html)和[第 5 章](/articles/ai-infra-green-context.html)。
+账本至少要拆成四份：应用请求过多少字节（失败请求也算）；成功后在应用侧还活着多少字节（按约定在成功入队释放后扣除）；已经入队、尚未确认完成的异步分配和释放；`cudaMemPoolAttrReservedMemCurrent` 记录的池保留字节。另外再记一项进程或设备层可观察的显存占用。这几项的采样时点和统计范围都不一样，数字可能重叠。池保留可以在逻辑释放后继续存在，跨流复用还需满足池策略和依赖条件。前置分配及 Context 归属分别见 [第 4 章](/articles/ai-infra-cuda-memory.html)和[第 5 章](/articles/ai-infra-green-context.html)。
 
 ### 将主机调用与设备活动关联
 
 一条可能的时间线为 `API enter → 工作入队 → API exit → kernel start → kernel end → 同步返回`。入队发生在调用内部，设备也可能在 API 返回前开始。一次同步可能涵盖多项工作。CPU 计时只覆盖所量的主机区间。
 
-CUPTI Callback 给出 Runtime 或 Driver 域中的 API 进入和退出。API Activity 提供时间和 Correlation ID（关联标识），设备 Activity 给出 kernel 或 memcpy 执行区间。按记录类型及关联 ID 连接主机提交与设备活动，并保留 Context ID 和 Stream ID 区分执行环境。对 CUDA 12.8.1 所配 CUPTI，`CUpti_ActivityKernel9` 可含 `correlationId`、`contextId`、`streamId`、`graphId` 和 `graphNodeId`。节点级与整图采集粒度不同，整图记录不能分解出每个 kernel 耗时。核对零值、时间戳缺失和丢失记录，跨时钟域使用 CUPTI 时间戳或经过校准的时基，避免将应用时钟直接与设备记录相减。[CUPTI 12.8.1 Kernel9](https://docs.nvidia.com/cupti/12.8.1/api/structCUpti__ActivityKernel9.html) · [CUPTI 12.8.1 Usage](https://docs.nvidia.com/cupti/12.8.1/main/main.html)
+CUPTI 的 Callback 只在 Runtime 或 Driver 这一层报“某个 API 进去了、出来了”。API Activity 提供时间和 Correlation ID（关联标识），设备 Activity 给出 kernel 或 memcpy 的实际执行区间。按记录类型及关联 ID 连接主机提交与设备活动，并保留 Context ID 和 Stream ID 区分执行环境。对 CUDA 12.8.1 所配 CUPTI，`CUpti_ActivityKernel9` 可含 `correlationId`、`contextId`、`streamId`、`graphId` 和 `graphNodeId`。节点级与整图采集粒度不同，整图记录不能分解出每个 kernel 耗时。核对零值、时间戳缺失和丢失记录，跨时钟域使用 CUPTI 时间戳或经过校准的时基，避免将应用时钟直接与设备记录相减。[CUPTI 12.8.1 Kernel9](https://docs.nvidia.com/cupti/12.8.1/api/structCUpti__ActivityKernel9.html) · [CUPTI 12.8.1 Usage](https://docs.nvidia.com/cupti/12.8.1/main/main.html)
 
 ## 4. 用覆盖矩阵验证返回值与资源生命周期 {#_4-验收覆盖-而不是只增加符号名单}
 

@@ -1,7 +1,7 @@
 ---
 id: redis-hashes
 title: 第四章 Hash、对象字段与字段过期
-description: "Hash 在一个键下保存 field-value 映射，适合需要按字段读取、更新的对象。它不要求每个对象拥有完全相同的字段集合，但也不自动提供关系型数据库的约束和关联查询。"
+description: "Hash 在一个键下保存 field-value 映射，适合需要按字段读取、更新的对象。每个对象的字段集合可以不同；关系型数据库的约束和关联查询则要由应用自己实现。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: distributed-systems
@@ -19,7 +19,7 @@ order: 4
 
 # 第四章 Hash、对象字段与字段过期
 
-Hash（哈希）在一个键下保存 field-value（字段—值）映射，适合需要按字段读取、更新的对象。它不要求每个对象拥有完全相同的字段集合，也不自动提供关系型数据库的约束和关联查询。整份对象存为 String（字符串）与拆成 Hash 的对比，见 [第 2 章：数据建模](/articles/redis-data-modeling.html)。
+Hash（哈希）在一个键下保存 field-value（字段—值）映射：一个键对应一个对象，对象里每个属性各占一个字段，可以只读、只改其中一个字段，不必把整份对象读出来再写回去。每个对象的字段集合可以不同；关系型数据库的约束和关联查询则要由应用自己实现。整份对象存为 String（字符串）与拆成 Hash 的对比，见 [第 2 章：数据建模](/articles/redis-data-modeling.html)。
 
 本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。
 
@@ -65,7 +65,7 @@ Redis Open Source 4.0.0 起，HSET 支持多组 field-value 参数；HMSET 同�
 HSET demo:user:42 name Lin age 30 city Beijing
 ```
 
-接续前面的示例，name 被更新而 age、city 新增，预期返回 `2`。HKEYS、HVALS、HGETALL 的返回量会随字段数增长，使用方便并不代表可以不受限制地调用。[HSET 版本记录](https://redis.io/docs/latest/commands/hset/#history) · [HMSET 弃用说明](https://redis.io/docs/latest/commands/hmset/)
+接续前面的示例，name 被更新而 age、city 新增，预期返回 `2`。HKEYS、HVALS、HGETALL 的返回量会随字段数增长，调用前要估规模。[HSET 版本记录](https://redis.io/docs/latest/commands/hset/#history) · [HMSET 弃用说明](https://redis.io/docs/latest/commands/hmset/)
 
 ## 2. HINCRBY 需要整数表示
 
@@ -76,7 +76,7 @@ HINCRBY demo:user:42 score 5
 HINCRBY demo:user:42 score -2
 ```
 
-键或字段不存在时可从 0 开始，值必须是命令可接受的整数表示。字段内部本来就是字节串，所以“字符串一定不能 HINCRBY”过于笼统；应区分合法整数字符串与普通文本。
+键或字段不存在时，HINCRBY 把它当作 0 再相加。值必须是一段能解析成整数的字节串：`"5"`、`"-3"` 可以，`"abc"` 或 `"3.5"` 会报错。字段内部本来就是字节串，所以“字符串一定不能 HINCRBY”过于笼统；要区分的是这段字节能不能被读成整数。
 
 上述两条命令预期依次返回 `5`、`3`。HINCRBY 使用整数增量，必须遵守有符号 64 位范围与溢出检查；HINCRBYFLOAT 使用浮点增量，适合允许近似数值的场景。浮点表示不能精确表达所有十进制小数，这是通用计算机数值表示问题，不是 Redis 独有问题。严格精确的金额可考虑按最小货币单位存为整数，例如以分保存金额，再核对范围、舍入和业务规则。[HINCRBY](https://redis.io/docs/latest/commands/hincrby/) · [HINCRBYFLOAT](https://redis.io/docs/latest/commands/hincrbyfloat/)
 
@@ -93,7 +93,7 @@ demo:user:42
     └── session = token-001 → Field TTL = 300s
 ```
 
-这是生命周期结构示意：键级 TTL 到期会删除整个 Hash；字段 TTL 到期只删除对应字段，不会延长 Key TTL。最后一个字段被删除或过期后，Hash Key 也会消失，因此“无字段 TTL”并不意味着字段一定永久存在。
+这是生命周期结构示意：键级 TTL 到期会删除整个 Hash；字段 TTL 到期只删除对应字段，不会延长 Key TTL。最后一个字段被删除或过期后，Hash Key 也会消失，因此没有字段 TTL 时，字段仍可能随键过期或删除而消失。
 
 Redis Open Source 7.4.0 起提供字段 TTL。以下流程接续本章用户示例，先准备字段，再设置并查询期限：
 
@@ -124,7 +124,7 @@ HTTL demo:user:42 FIELDS 1 session
 | -1                | 字段存在但没有字段期限                   |
 | -2                | 相应字段不存在，包括 Hash 键不存在的情况 |
 
-HTTL 使用秒，HPTTL 使用毫秒。本例按 [Redis Open Source 7.4.0 httlGenericCommand](https://raw.githubusercontent.com/redis/redis/7.4.0/src/t_hash.c) 的逐字段数组语义说明，不把网页输出复制成实测记录。整个 Hash 的键级期限不会因普通 HSET 自动被清除；不要将它与字段期限混淆。Redis Open Source 8.0.0 起的 [HSETEX](https://redis.io/docs/latest/commands/hsetex/) 可在适用规则下组合字段写入与过期，但不属于上述 7.4.0 流程。
+HTTL 使用秒，HPTTL 使用毫秒。本例按 [Redis Open Source 7.4.0 httlGenericCommand](https://raw.githubusercontent.com/redis/redis/7.4.0/src/t_hash.c) 的逐字段数组语义说明，不把网页输出复制成实测记录。普通 HSET 覆盖字段时只清掉这个字段自己的期限，整个 Hash 的键级期限不受影响：键级期限管的是整个键什么时候消失，字段期限只管某一个字段什么时候消失，两条计时各走各的。Redis Open Source 8.0.0 起的 [HSETEX](https://redis.io/docs/latest/commands/hsetex/) 可在适用规则下组合字段写入与过期，但不属于上述 7.4.0 流程。
 
 HPERSIST 可主动清除字段 TTL，同时保留字段和值。以下仍要求 Redis Open Source 7.4.0 或更高版本；必须在期限到达前执行，不能用它找回已经过期的字段：
 
@@ -150,17 +150,17 @@ HTTL demo:user:42 FIELDS 1 session
 
 把十万个对象放进一个 Hash，可能减少某些开销，也会把访问集中到同一个键；Cluster 不会把这个 Hash 的字段自动分到不同节点。
 
-读取部分字段可用 HMGET；HSCAN 则通过 cursor（游标，即继续遍历的位置标记）分批遍历字段和值。初始传入 `0`，之后使用上次返回的游标，直到返回游标 `0` 才表示本轮结束。COUNT 是工作量提示，不是严格分页大小；一次可能返回空结果而游标仍不为 `0`，不能因此停止。完整遍历可能出现重复字段，数据变化时也不保证快照一致性，它不是传统数据库的 OFFSET/LIMIT（按偏移与条数取页）分页。[HSCAN](https://redis.io/docs/latest/commands/hscan/) · [官方 SCAN 遍历保证](https://raw.githubusercontent.com/redis/redis-doc/master/commands/scan.md)
+读取部分字段可用 HMGET；HSCAN 则通过 cursor（游标，即继续遍历的位置标记）分批遍历字段和值。初始传入 `0`，之后使用上次返回的游标，直到返回游标 `0` 才表示本轮结束。COUNT 是工作量提示，不是严格分页大小；一次可能返回空结果而游标仍不为 `0`，游标不为 `0` 就还没结束。完整遍历可能出现重复字段，数据变化时也不保证快照一致性，它不是传统数据库的 OFFSET/LIMIT（按偏移与条数取页）分页。[HSCAN](https://redis.io/docs/latest/commands/hscan/) · [官方 SCAN 遍历保证](https://raw.githubusercontent.com/redis/redis-doc/master/commands/scan.md)
 
-大量字段会影响查询、编码转换与删除。
+字段一多，代价落在三处：HGETALL、HKEYS 这类整份读取的返回量和内存占用跟着涨；字段数超过阈值时的编码转换要遍历全部字段；删除整个键时也要一次释放所有字段。
 
 若需要对字段独立授权、独立淘汰，或大量单独迁移，单个大 Hash 可能并不合适。按用户、时间或业务分组拆分时，应同时考虑热点与过期范围，而不是机械地按每组 1000 个处理。
 
-这里的“独立授权”尤其需要区分应用校验与 Redis 键级 ACL（Access Control List，访问控制列表，用于限制命令和键访问）：允许访问这个 Hash 键，并不意味着 Redis 会自动为每个 field 建立单独的授权规则。相关边界见 [第 31 章](/articles/redis-security-maintenance.html)。
+这里的“独立授权”尤其需要区分应用校验与 Redis 键级 ACL（Access Control List，访问控制列表，用于限制命令和键访问）：授权粒度仍是键，field 级规则要应用自己实现。相关边界见 [第 31 章](/articles/redis-security-maintenance.html)。
 
 ## 5. 按版本观察内部编码与阈值 {#_5-内部编码不要沿用旧参数名}
 
-内部编码（Internal Encoding）是 Redis 保存对象的具体方式，不会改变 Hash 对外的字段语义。小 Hash 将字段和值紧凑排列，可减少指针和分配开销；hashtable（哈希表）需要更多空间，但适合较大对象的字段查找。ziplist（压缩列表）是旧紧凑结构，listpack（紧凑列表）是后续替代结构。
+内部编码（Internal Encoding）是 Redis 保存对象的具体方式，不会改变 Hash 对外的字段语义：不管底层怎么存，HGET、HSET 用的还是同一套字段名。小 Hash 把字段名和值一个挨一个放进一整块连续内存，省掉每个字段单独分配、各挂一个指针的开销；hashtable（哈希表）要多花空间维护桶数组，但字段多时按名字查值不必逐个比对。ziplist（压缩列表）是旧紧凑结构，listpack（紧凑列表）是后续替代结构。
 
 以下列出已核对的 Redis Open Source 固定版本。
 

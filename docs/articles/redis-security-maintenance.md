@@ -25,17 +25,17 @@ Redis 维护需要共同管理网络可达性、身份权限、数据文件与�
 
 ## 1. 网络、认证、授权、加密各管一层
 
-监听地址和防火墙限制谁能到达服务；认证识别客户端；ACL（Access Control List，访问控制列表）限制可以执行的命令与访问的键；TLS（Transport Layer Security，传输层安全协议）保护适用链路的传输。AUTH 是认证命令，仅配置 AUTH 不代表传输已经加密，仅修改默认端口也不构成有效访问控制。
+监听地址和防火墙限制谁能到达服务；认证识别客户端；ACL（Access Control List，访问控制列表）限制可以执行的命令与访问的键；TLS（Transport Layer Security，传输层安全协议）把链路上的字节加密，别人即使截到流量也读不出内容。AUTH 只回答“你是谁”，不加密传输；修改默认端口同样不构成访问控制。
 
-Redis 应放在受控网络内，由可信应用访问，不直接暴露给不可信终端。不要为解决一次连接失败，就默认关闭 protected mode（保护模式） 或允许公网无认证访问。[Redis 安全模型](https://redis.io/docs/latest/operate/oss_and_stack/management/security/)
+Redis 应放在受控网络内，由可信应用访问，不直接暴露给不可信终端。为解决一次连接失败而关闭 protected mode（保护模式）或放开公网无认证访问，会把临时故障变成长期暴露。[Redis 安全模型](https://redis.io/docs/latest/operate/oss_and_stack/management/security/)
 
 Redis Open Source 6.0.0 起提供 ACL。应按业务需要授予最小命令和键空间权限，区分应用、运维、复制与 Sentinel（哨兵）等用途；升级时重新检查命令类别变化，而不是永久沿用过宽账号。[ACL](https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/)
 
-键范围与 Pub/Sub（Publish/Subscribe，发布/订阅）频道范围是不同规则：`~demo:*` 描述键权限；Redis Open Source 6.2.0 起的 `&demo:*` 描述适用频道权限。允许访问同名键，不等于频道已经隔离，仍需对应的命令权限。
+键范围与 Pub/Sub（Publish/Subscribe，发布/订阅）频道范围是不同规则：`~demo:*` 描述键权限；Redis Open Source 6.2.0 起的 `&demo:*` 描述适用频道权限。键的访问权限不覆盖频道：访问同名键与订阅频道是两套授权，后者仍需对应的命令权限。
 
-PUBLISH/SUBSCRIBE 的频道名可按允许频道模式匹配；PSUBSCRIBE 的订阅模式则有与允许模式进行字面匹配的规则，不能简单按“两个 glob 看起来包含”推导。allchannels 等宽权限又会改变整体结果。设计后分别测试允许/拒绝的键、发布、订阅路径，不用管理员账号证明最小权限正确。
+PUBLISH/SUBSCRIBE 的频道名可以按允许的频道模式去匹配；但 PSUBSCRIBE 传的是一个模式，它必须与授权的模式逐字相同才算通过，不能因为“demo:news.tech 落在 demo:news.* 里面”就认为允许。allchannels 等宽权限又会改变整体结果。设计后分别测试允许/拒绝的键、发布、订阅路径，不用管理员账号证明最小权限正确。
 
-以下 `redis` 代码块是 Redis 命令；修改账号、数据或备份状态的示例只适用于隔离环境。账号、键和频道使用虚构的 `demo:` 范围，口令为占位值；不要原样用于生产，也不要把 `>`、`<` 当成 Shell（命令解释环境）重定向。以 Redis Open Source 7.2.0 为例，由管理员创建专用测试用户：
+以下 `redis` 代码块是 Redis 命令；修改账号、数据或备份状态的示例只适用于隔离环境。账号、键和频道使用虚构的 `demo:` 范围，口令为占位值，不能原样用于生产；`>`、`<` 在这里是 ACL 语法符号，不是 Shell（命令解释环境）重定向。以 Redis Open Source 7.2.0 为例，由管理员创建专用测试用户：
 
 ```redis
 # 配置用户 demo:pub-user：reset 清空旧规则并重置，on 启用用户，>placeholder 添加示例密码
@@ -57,15 +57,15 @@ ACL SETUSER demo:pub-user reset on >placeholder resetchannels &demo:news.* +subs
 
 新用户的频道默认值也有版本边界：Redis Open Source 6.2.0 的 `acl-pubsub-default` 默认 `allchannels`；7.0.0 改为 `resetchannels`。这是新用户初始化的默认行为，不能代替检查已加载的具体账号规则，更不能推广为 Redis Cloud 的默认权限。依据为 [6.2.0 配置](https://github.com/redis/redis/blob/6.2.0/redis.conf)与 [7.0.0 配置](https://github.com/redis/redis/blob/7.0.0/redis.conf)。
 
-Redis Open Source 8.0.0 统一发行版还改变了类别覆盖：JSON、Time Series（时间序列）、Vector（向量）、Probabilistic（概率型结构）相关命令进入标准 `@read`、`@write` 等类别。原规则可能扩大授权，也可能因否定类别而拒绝原来可用的命令，例如 `+@all -@write` 会排除 JSON.SET。升级前后都应比较实际命令类别和账号规则，再用应用账号检查允许及拒绝路径，不能只确认 AUTH 成功。参见 [8.0 ACL 兼容变化](https://redis.io/docs/latest/develop/whats-new/8-0/#access-control-improvements)与 [第 32 章升级验证](/articles/redis-upgrade-validation.html)。
+Redis Open Source 8.0.0 统一发行版把模块命令也归进了标准命令类别：JSON、Time Series（时间序列）、Vector（向量）、Probabilistic（概率型结构）的读写命令现在算作 `@read`、`@write` 等类别。同一份账号规则的效果因此会变：原来没被覆盖的命令可能被放开，写了否定类别的规则反而会拒掉以前能用的命令，例如 `+@all -@write` 会排除 JSON.SET。升级前后都应比较实际命令类别和账号规则，再用应用账号检查允许及拒绝路径，不能只确认 AUTH 成功。参见 [8.0 ACL 兼容变化](https://redis.io/docs/latest/develop/whats-new/8-0/#access-control-improvements)与 [第 32 章升级验证](/articles/redis-upgrade-validation.html)。
 
 普通键级 ACL 也不会自动对一个 Hash 中的不同 field（字段）做独立授权。若权限边界需要分别控制字段，应重新评估拆键或在可信应用层授权，见 [第 2 章建模](/articles/redis-data-modeling.html)和 [第 4 章 Hash](/articles/redis-hashes.html)。本节没有修改任何账号。
 
 ## 2. 凭据的保存、轮换与公开材料检查 {#_2-凭据不要出现在命令历史与文章中}
 
-示例使用虚构的 `demo:` 命名空间和占位参数。真实口令、证书、内部地址、客户标识不应被提交到博客仓库。命令行参数、进程列表、Slowlog、终端截图与复制日志都可能泄露信息。
+示例使用虚构的 `demo:` 命名空间和占位参数。提交到博客仓库的材料要先剔除真实口令、证书、内部地址和客户标识。命令行参数、进程列表、Slowlog、终端截图与复制日志都可能泄露信息。
 
-轮换凭据时，还需同步考虑连接池、自动任务、复制和监控。变更认证设置前，应先确认恢复通道，避免正常维护导致集体断连。
+轮换凭据时，还要一并考虑连接池、自动任务、复制和监控，它们各自都在用某个密码登录。变更认证设置前先确认手里还有一条能改回来的路，比如另一个仍有效的管理员账号；否则一次改错，所有客户端会同时连不上。
 
 一个 ACL 用户可以同时有多个有效密码。假设隔离环境的 `demo:app` 已使用密码 A 且已有正确权限，先增加 B，不重置其他规则：
 
@@ -83,9 +83,9 @@ ACL SETUSER demo:app >password-B-placeholder
 ACL SETUSER demo:app <password-A-placeholder
 ```
 
-`<password` 删除指定有效密码；它不等于强制断开所有已经认证的旧连接。完整流程是“A 生效 → 增加 B → 切换调用方 → 验证新连接与认证 → 撤销 A”。删除 A 前若 B 验证失败，可让调用方切回仍有效的 A；不要先撤销唯一可用凭据。规则语义见 [ACL SETUSER](https://redis.io/docs/latest/commands/acl-setuser/)。
+`<password` 删除指定有效密码，已认证的旧连接不受影响。完整流程是“A 生效 → 增加 B → 切换调用方 → 验证新连接与认证 → 撤销 A”。删除 A 前若 B 验证失败，可让调用方切回仍有效的 A；先撤销唯一可用凭据会让调用方无路可退。规则语义见 [ACL SETUSER](https://redis.io/docs/latest/commands/acl-setuser/)。
 
-运行态改动不等于重启后仍保留。Redis Open Source 6.0.0 起，配置 `aclfile` 时，`ACL SAVE` 将内存中的用户规则写入该外部 ACL 文件；未配置外部文件或不可写会报错。若用户直接配置在 redis.conf 中，则用 `CONFIG REWRITE` 重写配置文件。两种用户配置方式不能混用，CONFIG REWRITE 不会自动执行 ACL SAVE；还需确认配置管理不会用旧规则覆盖文件。持久化本身也会修改文件，参见 [ACL SAVE](https://redis.io/docs/latest/commands/acl-save/)和 [ACL 配置文件说明](https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/#use-an-external-acl-file)。
+运行态改动只在当前进程有效，重启后回到配置文件的值。Redis Open Source 6.0.0 起，配置 `aclfile` 时，`ACL SAVE` 将内存中的用户规则写入该外部 ACL 文件；未配置外部文件或不可写会报错。若用户直接配置在 redis.conf 中，则用 `CONFIG REWRITE` 重写配置文件。两种用户配置方式不能混用，CONFIG REWRITE 不会自动执行 ACL SAVE；还需确认配置管理不会用旧规则覆盖文件。持久化本身也会修改文件，参见 [ACL SAVE](https://redis.io/docs/latest/commands/acl-save/)和 [ACL 配置文件说明](https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/#use-an-external-acl-file)。
 
 ## 3. 多实例的目录、身份与资源隔离 {#_3-多实例隔离不只有端口}
 
@@ -93,7 +93,7 @@ ACL SETUSER demo:app <password-A-placeholder
 
 在 Linux 上，systemd（系统与服务管理器）的服务单元、运行用户、PID（Process ID，进程标识）文件、配置目录、数据目录、appenddirname（AOF 目录）与日志应分别管理。服务名称不同仍不足以隔离资源；按需要配置 CPU（Central Processing Unit，中央处理器）与内存限制，并把共享磁盘 I/O（Input/Output，输入输出）的竞争纳入评估。
 
-CPU、内存、磁盘、网络和故障域仍然共享。maxmemory 是 Redis 的内存控制参数，不是整个进程或主机的硬上限。教学假设：16 GiB 主机上两个实例各设 6 GiB，虽然 6 + 6 < 16，剩余 4 GiB 仍可能不足以容纳操作系统、其他进程、客户端与持久化缓冲、fork（创建子进程）和 COW（Copy On Write，写时复制）峰值，从而触发 OOM（Out Of Memory，内存耗尽）。GiB 为 2³⁰ 字节；这些数字是预算示意。同机主副本也不能抵御主机故障，见 [第 20 章 fork/COW](/articles/redis-fork-copy-on-write.html)与 [第 25 章内存预算](/articles/redis-memory-eviction.html)。
+CPU、内存、磁盘、网络和故障域仍然共享。maxmemory 是 Redis 的内存控制参数，不是整个进程或主机的硬上限。教学假设：16 GiB 主机上两个实例各设 6 GiB，虽然 6 + 6 < 16，剩余 4 GiB 仍可能不足以容纳操作系统、其他进程、客户端与持久化缓冲、fork（创建子进程）和 COW（Copy On Write，写时复制）峰值，从而触发 OOM（Out Of Memory，内存耗尽）。GiB 为 2³⁰ 字节；这些数字是预算示意。同机主副本会一起受主机故障影响，见 [第 20 章 fork/COW](/articles/redis-fork-copy-on-write.html)与 [第 25 章内存预算](/articles/redis-memory-eviction.html)。
 
 ## 4. 备份验收必须包含隔离恢复
 
@@ -160,7 +160,7 @@ preload-file aof:/tmp/demo-restore/appendonly.aof.manifest
 
 `preload-file` 格式为 `aof:路径` 或 `rdb:路径`；使用 Manifest 时还需其引用的 BASE/INCR。设置后仅加载指定目标，跳过正常 appenddirname 与 dump.rdb 加载；目标丢失或无法加载会中止启动，加载结束后继续按配置的持久化模式运行。因此它与“把文件放到普通 AOF 目录”或“指定一份 dump.rdb”不同，恢复后还应明确后续启动的数据来源。此语法见 [8.10.0 redis.conf](https://github.com/redis/redis/blob/8.10.0/redis.conf)与 [官方恢复说明](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/#restoring-a-backup)，不能套用到旧版本。
 
-还应确认启动实际加载哪一组文件：RDB 与 AOF 同时启用时，正常启动优先使用 AOF，不能因目录里有 dump.rdb 就把它当成恢复来源。AOF 损坏也不代表自动回退旧 RDB；单文件 AOF、多部分 AOF 与故障分支见 [第 19 章](/articles/redis-rdb-aof.html)。
+还应确认启动实际加载哪一组文件：RDB 与 AOF 同时启用时，正常启动优先使用 AOF，不能因目录里有 dump.rdb 就把它当成恢复来源。AOF 损坏时不会自动回退到旧 RDB；单文件 AOF、多部分 AOF 与故障分支见 [第 19 章](/articles/redis-rdb-aof.html)。
 
 恢复演练应在不接收真实写入的隔离环境中进行。除确认能够启动外，还应抽查类型、TTL（Time To Live，存活时间）、关键关系与业务不变量，并记录恢复点和总耗时。恢复时已到期的数据可能不会保留，不能简单要求 TTL 与备份时相同。如果备份与源盘处于同一故障域，备份的保护价值就会降低。
 
@@ -169,7 +169,7 @@ preload-file aof:/tmp/demo-restore/appendonly.aof.manifest
 | RPO（Recovery Point Objective，恢复点目标）  | 允许丢失多少时段的数据 | 将有效恢复边界与故障时刻比较，核对业务提交记录                             |
 | RTO（Recovery Time Objective，恢复时间目标） | 最长允许多久恢复可用   | 从约定的故障或中断起点到应用恢复可用计时，包含发现、决策、取回、加载与校验 |
 
-验收清单应覆盖文件及清单完整性、加密与密钥可取得性、异地存储、保留周期、独立失败告警、恢复权限、Redis 与模块版本兼容、TTL、业务数据一致性及恢复后的应用验证。备份文件存在或 Redis 启动成功，都不等于业务恢复成功。新能力的补丁与回退验证见 [第 32 章](/articles/redis-upgrade-validation.html)。
+验收清单应覆盖文件及清单完整性、加密与密钥可取得性、异地存储、保留周期、独立失败告警、恢复权限、Redis 与模块版本兼容、TTL、业务数据一致性及恢复后的应用验证。备份文件存在、Redis 启动成功，都只是恢复的前置条件，业务是否恢复要另测。新能力的补丁与回退验证见 [第 32 章](/articles/redis-upgrade-validation.html)。
 
 ## 5. 把操作按影响分级
 

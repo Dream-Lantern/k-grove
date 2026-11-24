@@ -29,7 +29,7 @@ NPU（Neural Processing Unit，神经网络处理器）专门加速神经网络�
 
 [![异构计算：软件栈与跨层调用](/assets/notes/ai-infra/hetero-stack.svg)](/assets/notes/ai-infra/hetero-stack.svg)
 
-图可按左、中、右三栏阅读：应用与框架组织高层算子和服务，编译与运行时负责代码编译及执行管理，设备与系统提供驱动、通信和硬件支持。这些职责划分不表示应用每次都必须逐层调用所有库。数学库也可能直接使用 Driver API。CUDA 是 NVIDIA 的并行计算平台及编程体系，不等于一张显卡，也不等于某个 Python 包。[CUDA 平台说明](https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/cuda-platform.html)
+图可按左、中、右三栏阅读：应用与框架组织高层算子和服务，编译与运行时负责代码编译及执行管理，设备与系统提供驱动、通信和硬件支持。这三栏只是按职责归类，不代表应用每次都要一层层调用所有库：数学库也可能绕过上层，直接调用 Driver API。CUDA 是 NVIDIA 的并行计算平台和编程体系，它本身既不是一块具体的显卡，也不是一个 Python 包——前者是硬件，后者是语言绑定，CUDA 描述的是编程模型和工具链。[CUDA 平台说明](https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/cuda-platform.html)
 
 ## 2. 从输入准备到设备计算与结果返回 {#_2-一次加速工作经历什么}
 
@@ -40,11 +40,11 @@ NPU（Neural Processing Unit，神经网络处理器）专门加速神经网络�
 1. CPU 在主机内存准备 `A=[1,2]`、`B=[3,4]`，并为设备端的 A、B、C 分配内存。
 2. 将 A、B 从主机拷贝到设备，这一步称为 H2D（Host to Device）。此时设备端已有输入，C 尚未得到计算结果。
 3. 启动加法 kernel，让两个线程分别计算 `C[0]=1+3=4` 和 `C[1]=2+4=6`。两个元素的计算互不依赖，可以并行处理；这也是向量加法能随数据量增加而组织更多并行工作的原因。
-4. kernel launch 对主机异步，提交返回时设备可能尚未完成计算。这条简单路径在同步等待成功、确认设备计算完成后，再把 C 从设备拷贝回主机，即 D2H（Device to Host）。CPU 在回传完成后逐元素与预期的 `[4,6]` 比较；提交返回本身不能证明结果正确。[CUDA API 同步语义](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/api-sync-behavior.html)
+4. kernel launch 对主机异步，提交返回时设备可能尚未完成计算。这条简单路径会先同步等待，确认设备算完，再把 C 从设备拷回主机，即 D2H（Device to Host）。CPU 在回传完成后逐元素与预期的 `[4,6]` 比较；提交返回只说明 kernel 已排入队列，结果是否正确仍要等同步后校验。[CUDA API 同步语义](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-runtime-api/api-sync-behavior.html)
 
-在简单串行实现中，可用 `T总 = T准备 + TH2D + T提交 + T计算 + TD2H + T收尾` 建立开销账本：准备包含输入与内存准备，H2D/D2H 对应上述两次搬运，收尾包含结果校验与资源释放。实际流水线可能重叠这些阶段，不能把各工具报告的重叠时间再相加当作端到端延迟。
+在简单串行实现中，可用 `T总 = T准备 + TH2D + T提交 + T计算 + TD2H + T收尾` 建立开销账本：准备包含输入与内存准备，H2D/D2H 对应上述两次搬运，收尾包含结果校验与资源释放。实际流水线可能重叠这些阶段，把各工具报告的重叠时间相加会高估端到端延迟。
 
-只有两个元素时，计算量很小，搬运与提交开销可能超过节省的计算时间，因此即使 GPU 计算更快，端到端也可能更慢。是否获益要比较完整路径的耗时，不能只看 kernel 时间。[主机与设备间的数据搬运](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-best-practices-guide/index.html#data-transfer-between-host-and-device)；显式分配、拷贝、同步与校验的完整代码见[第 4 章](/articles/ai-infra-cuda-memory.html)第 2 节“完整教学例：向量加法”。
+只有两个元素时，计算量很小，搬运与提交开销可能超过节省的计算时间，因此即使 GPU 计算更快，端到端也可能更慢。是否获益要比较完整路径的耗时，kernel 时间只占其中一部分。[主机与设备间的数据搬运](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-best-practices-guide/index.html#data-transfer-between-host-and-device)；显式分配、拷贝、同步与校验的完整代码见[第 4 章](/articles/ai-infra-cuda-memory.html)第 2 节“完整教学例：向量加法”。
 
 如果只有一小部分工作能被加速，加速后的收益仍受未加速部分限制。例如原程序 20% 时间是必须串行的，即使其他部分无限快，整体加速比也不会超过 5。这个算例只用于说明固定问题规模下的 [Amdahl 定律](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-best-practices-guide/index.html#strong-scaling-and-amdahl-s-law)，不是本机测量。
 
@@ -83,7 +83,7 @@ NPU（Neural Processing Unit，神经网络处理器）专门加速神经网络�
 
 TTFT（Time to First Token，首 Token 延迟）衡量从发出请求到收到首个有效输出 token 的时间。TPOT（Time per Output Token，每输出 Token 耗时）在一种常用口径下取首末 token 的接收时间差，再除以输出 token 数减一，因此只输出一个 token 时没有该值。端到端延迟覆盖从发出请求到收到完整输出。比较工具时应确认起止点、空响应或流结束标记的处理以及聚合方式。详见[第 19 章指标解释](/articles/ai-infra-prefill-decode-kv-cache.html#_3-ttft、tpot-和吞吐不是一个数字)及 [NVIDIA NIM Benchmarking LLM 1.0.0 指标文档](https://docs.nvidia.com/nim/benchmarking/llm/1.0.0/metrics)。NVIDIA 已将 1.0.0 标记为 Deprecated，此处引用其历史指标口径。
 
-GPU 利用率只提供设备活动的一部分信息，功能正确性、资源隔离与用户响应还需分别使用对应证据判断。
+GPU 利用率只能说明设备忙不忙：它既不说明算得对不对，也不说明多个任务之间有没有互相干扰，更不说明用户等到的延迟是多少。这三件事要分别找证据。
 
 ## 4. 本册的版本边界
 

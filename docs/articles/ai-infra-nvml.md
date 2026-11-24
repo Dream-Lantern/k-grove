@@ -21,7 +21,7 @@ order: 10
 
 NVML（NVIDIA Management Library）提供设备管理与监控接口，可以读取 UUID、显存、温度和进程等信息。使用时先定位设备与实例身份，再选择该对象支持的字段；kernel 级执行时间则由相应性能分析工具观察。
 
-NVML 是 NVIDIA Management Library（NVIDIA 管理库），与 NVIDIA 驱动配套。它也有改电源限制、管理 MIG 等接口。本章主动限定为只读查询。设同一节点运行服务 A 和 B，A 的首 Token 延迟上升。先用以下工具确认观察层级。
+NVML 是 NVIDIA Management Library（NVIDIA 管理库），与 NVIDIA 驱动配套。它也有改电源限制、管理 MIG 等接口。本章主动限定为只读查询。设同一节点运行服务 A 和 B，A 的首 Token 延迟上升。先要分清想问的是哪一层：是这台机器和它上面的进程，还是某次调用里某个 kernel 的耗时——不同层由不同工具回答。
 
 | 工具                                                 | 解决的问题                                                   |
 | ---------------------------------------------------- | ------------------------------------------------------------ |
@@ -36,7 +36,7 @@ GPU 0 只是当前枚举中的编号。重启、调整可见设备设置或设�
 
 [![NVML：查询对象不能混用](/assets/notes/ai-infra/nvml-objects.svg)](/assets/notes/ai-infra/nvml-objects.svg)
 
-GPU handle、GI handle、CI handle 和 MIG device handle 表示不同层次的对象。`nvmlGpuInstanceGetComputeInstanceById` 从父 GI 查询 CI，因此其父对象使用 GI handle。[NVML API](https://docs.nvidia.com/deploy/nvml-api/latest/index.html)
+这四种句柄指向的不是同一级的对象：GPU handle 是整张物理卡；GI handle 是卡上切出的一整块；CI handle 是 GI 里再切出的计算单元；MIG device handle 则是 GI 与 CI 这一组合交给应用、当作“一块设备”来用的视图。`nvmlGpuInstanceGetComputeInstanceById` 从父 GI 查询 CI，因此其父对象使用 GI handle。[NVML API](https://docs.nvidia.com/deploy/nvml-api/latest/index.html)
 
 ### 设备身份与实例生命周期
 
@@ -51,7 +51,7 @@ MIG（Multi-Instance GPU，多实例 GPU）在支持的硬件上划分 GPU。GI�
 | A 的实例二 | GPU-A     |     3 |     1 | MIG UUID Y、MIG `nvmlDevice_t` |
 | A 的实例三 | GPU-A     |     5 |     0 | MIG UUID Z、MIG `nvmlDevice_t` |
 
-表中 ID 与 UUID 均为示意。MIG Device 是对 GI/CI 组合的设备视图，可用物理句柄和有效索引通过 `nvmlDeviceGetMigDeviceHandleByIndex()` 获取，再查询 MIG UUID、GI ID 与 CI ID。它与资源管理的 `nvmlGpuInstance_t`、`nvmlComputeInstance_t` 句柄分开。MIG 重建可改变 UUID、复用 ID 并使旧句柄失效，应重新发现并记录实例代次。设备支持、可用 Profile 和枚举权限按实际型号与驱动确认。[NVIDIA MIG 用户指南](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/)
+表中 ID 与 UUID 均为示意。MIG Device 是对 GI/CI 组合的设备视图，可用物理句柄和有效索引通过 `nvmlDeviceGetMigDeviceHandleByIndex()` 获取，再查询 MIG UUID、GI ID 与 CI ID。它与资源管理的 `nvmlGpuInstance_t`、`nvmlComputeInstance_t` 句柄分开。MIG 重建后 UUID 可能变、ID 可能被下一个实例复用、旧句柄全部失效；所以每次重建都要重新枚举，并记下这是第几轮重建出来的实例，免得新旧记录混在一起。设备支持、可用 Profile 和枚举权限按实际型号与驱动确认。[NVIDIA MIG 用户指南](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/)
 
 ## 2. 一个只读 Python 教学例
 
@@ -136,25 +136,25 @@ if __name__ == "__main__":
 
 ## 3. 根据当前模式与 Profile 枚举 MIG 实例 {#_3-mig-枚举不能依赖硬编码数字}
 
-先确认设备支持和当前 MIG 模式，再查询可用 profile、GI/CI 及其 UUID。profile 枚举值、profile ID、创建出的 instance ID、设备索引是不同概念。“整卡时 id 一律填 0”“最多八张卡”“A30 只有两种 profile”都不应成为跨型号规则。
+先确认设备支持和当前 MIG 模式，再查询可用 profile、GI/CI 及其 UUID。四个名字容易混：profile 枚举值是按型号固定的一组规格（如 `3g.20gb`）；profile ID 是这套规格在当前驱动里的编号；instance ID 是实例创建之后才分配的序号；设备索引只是本次枚举的顺序。“整卡时 id 一律填 0”“最多八张卡”“A30 只有两种 profile”这些说法只适用于个别型号，不能当作跨型号规则。
 
 ## 4. 监控能力的缺失也是信息
 
-MIG 下某些 NVML 利用率接口可能返回不支持，`nvidia-smi` 显示 N/A 也不代表工作没有执行。进程显存、设备利用率、GI/CI 指标的支持范围不同，应该分别记录；需要更细的实体指标时转向 DCGM 等支持路径，而不是把整卡平均值按显存比例拆给实例。
+MIG 下某些 NVML 利用率接口可能返回不支持，`nvidia-smi` 显示 N/A 只说明该接口不可用，工作可能仍在执行。进程显存、设备利用率、GI/CI 指标的支持范围不同，应该分别记录；需要更细的实体指标时转向 DCGM 等支持路径，而不是把整卡平均值按显存比例拆给实例。
 
 | 指标               | 读法                                                                     |
 | ------------------ | ------------------------------------------------------------------------ |
 | GPU Utilization    | 在产品相关采样窗口中有一个或多个 kernel 执行的时间比例，不是算力峰值效率 |
 | Memory Used        | 已用显存容量，单位为字节，不反映带宽                                     |
 | Memory Utilization | 采样窗口中全局显存被读写的时间比例，不是已用显存百分比                   |
-| 进程显存           | 指定设备视图上报告的进程占用，可能不可用，不代表计算贡献                 |
+| 进程显存           | 指定设备视图上报告的进程占用，可能不可用；它不是计算贡献的度量           |
 | 进程利用率         | 支持时由独立 API 查询带时间戳的进程采样，不能从显存或整卡活动反推        |
 
 即使整卡活动为假设的 90%，A、B 可能轮流运行，也可能重叠。一条整卡时间比例无法确定各自占用，MIG 视图上的部分查询还可能不支持。保留字段、采样窗口、对象和状态，再把进程与服务记录关联。[NVML 设备查询](https://docs.nvidia.com/deploy/nvml-api/latest/group__nvmlDeviceQueries.html)
 
 ## 5. 只读 GI/CI 查询的类型链
 
-以 NVML R535 的 C 签名为参照，`nvmlDeviceGetGpuInstanceById` 接受 device handle 并返回 GI handle；`nvmlGpuInstanceGetComputeInstanceById` 再接受该 GI handle 并返回 CI handle。不要用 MIG device handle 或物理 GPU handle 替代第二步的父 GI。[NVML R535 MIG API](https://docs.nvidia.com/deploy/archive/R535/nvml-api/group__nvmlMultiInstanceGPU.html)
+以 NVML R535 的 C 签名为参照，`nvmlDeviceGetGpuInstanceById` 接受 device handle 并返回 GI handle；`nvmlGpuInstanceGetComputeInstanceById` 再接受该 GI handle 并返回 CI handle。第二步的父 GI 只能用 GI handle，MIG device handle 与物理 GPU handle 都不行。[NVML R535 MIG API](https://docs.nvidia.com/deploy/archive/R535/nvml-api/group__nvmlMultiInstanceGPU.html)
 
 下面是 Python 绑定调用关系片段；`physical`、`gi_id`、`ci_id` 必须来自当前枚举结果，包签名也需核对，不是创建操作：
 

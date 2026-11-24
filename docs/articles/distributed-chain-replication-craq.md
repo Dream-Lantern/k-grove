@@ -38,7 +38,7 @@ Head 接收写入并向后继传递，逐步到达 Tail；基础协议将到达 
 CRAQ 论文实现的写回复：C → B → A → Client
 ```
 
-读取 Head 的未提交新值可能让不同客户端观察到互相矛盾的进度；基础协议用 Tail 集中读来避免这个问题。CR 2004 的服务语义针对单个对象，不自动提供多个对象同时提交的事务。[CR 2004 §2～3](https://www.usenix.org/legacy/event/osdi04/tech/full_papers/renesse/renesse_html/)
+如果允许客户端直接去 Head 读，可能读到还没传到 Tail、尚未提交的新值；另一客户端去 Tail 读，看到的还是旧值，两边看到的顺序就对不上。基础协议因此让所有读都集中到 Tail。CR 2004 的服务语义针对单个对象，不自动提供多个对象同时提交的事务。[CR 2004 §2～3](https://www.usenix.org/legacy/event/osdi04/tech/full_papers/renesse/renesse_html/)
 
 ## 2. 用 clean/dirty 状态选择读取路径 {#_2-craq-怎样安全地分散读}
 
@@ -46,7 +46,7 @@ CRAQ 论文实现的写回复：C → B → A → Client
 
 节点可保留对象的多个版本。新写到达非 Tail 节点时先标 dirty；到达 Tail 后提交并产生反向确认，节点收到确认将对应版本标 clean。
 
-若对象处于适用的 clean 状态，可以在本地直接返回；若存在 dirty 新版本，则向 Tail 查询当前已提交版本号，再返回相应版本。dirty 不是损坏，而是本节点尚不能仅凭本地状态确定提交边界。
+若对象处于适用的 clean 状态，可以在本地直接返回；若存在 dirty 新版本，则向 Tail 查询当前已提交版本号，再返回相应版本。dirty 表示本节点尚不能仅凭本地状态确定提交边界，与数据损坏无关。
 
 CRAQ（Chain Replication with Apportioned Queries，分摊查询的链复制）通过多版本和提交状态，让读多写少时的查询分布到不同副本。Clean（已确认提交）和 Dirty（本地尚未确认提交）是**版本状态**，不是校验结果或磁盘是否脏：
 
@@ -73,11 +73,11 @@ B / Middle：v5 Clean，v6 Dirty
 C / Tail：v5 Clean
 ```
 
-Client 向 B 发起强一致读；B 不能擅自返回 Dirty v6，也不能直接假设旧 v5 仍是最新提交值。它查询 C，C 此刻确认最新提交为 v5，B 便从保留的本地版本返回 v5。
+Client 向 B 发起强一致读。B 既不能直接返回还没提交的 v6，也不能想当然认为手上的 v5 就是最新提交值，必须先确认提交边界。它查询 C，C 此刻确认最新提交为 v5，B 便从保留的本地版本返回 v5。
 
-**场景 B：v6 已到 Tail。** 在后一个时刻 tB，C 接收 v6、标 Clean 并提交，ACK 由 C→B→A 反向传播。B 尚未收到 ACK 时若读到来，查询 C 将得到 v6，并返回自己的 v6；ACK 到达后，最新版本已 Clean，满足条件的后续读可以直接本地返回。A 与 B 的确认进度不必同时变化。
+**场景 B：v6 已到 Tail。** 在后一个时刻 tB，C 接收 v6、标 Clean 并提交，ACK 由 C→B→A 反向传播。如果这时又有一个读请求打到 B，B 查询 C 会得到 v6，于是返回自己保存的 v6；等 ACK 到达、最新版本变成 Clean，后续读就可以直接本地返回。A 与 B 的确认进度不必同时变化。
 
-如果 C 回答版本 v6 后又提交 v7，而 B 稍后才把 v6 返回 Client，该读仍可排在 Tail 处理版本查询的时刻，位于 v7 之前；这笔并发写与读操作的时间区间重叠。强一致性不要求响应抵达瞬间再次追赶所有并发写。版本回收与读取也必须正确协调，不能把正在返回的对象内容先删掉。[CRAQ §2.3，版本查询后的说明](https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf)
+如果 C 回答版本 v6 之后又提交了 v7，而 B 稍后才把 v6 返回 Client，这个读仍然合法：它在 Tail 处理版本查询的那一刻就已经定值，当时 v7 还没提交，读和 v7 的时间区间是重叠的。强一致性只约束读到哪个值，不要求响应抵达时再追上之后新提交的写。版本回收与读取也必须正确协调，不能把正在返回的对象内容先删掉。[CRAQ §2.3，版本查询后的说明](https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf)
 
 ### 按请求选择读取一致性
 
@@ -95,13 +95,13 @@ CRAQ 2009 §2.4 允许为读取标注一致性要求，准确名称与语义如�
 
 Head、Tail 或中间节点故障时，链的前后关系与在途更新都需重建。中间节点可能接收了尚未转发的请求；新链需要依据确认状态补传，不能假设所有幸存节点天然具有相同进度。
 
-配置管理器（Configuration Manager）提供配置权威；但一个权威存在，不代表旧节点和旧客户端已经收到新配置。配置代际、旧资格隔离、重试和网络分区必须共同处理。它自身也需要一致、可恢复的实现，不能说“因为只有一个角色决策，所以绝不会脑裂”。
+配置管理器（Configuration Manager）提供配置权威；但权威存在只说明配置有来源，旧节点和旧客户端未必已经收到。配置代际、旧资格隔离、重试和网络分区必须共同处理。它自身也需要一致、可恢复的实现，不能说“因为只有一个角色决策，所以绝不会脑裂”。
 
 ### 原始 CR：故障模型与传播前缀
 
-CR 2004 采用停止式故障（Fail-stop Failure）：故障服务器停止而不做错误状态转换，环境能检测其停止。它不等于任意网络分区中“超时就证明对方已停止”。论文以可靠配置管理服务 Master 组织变化，原型用 Paxos 复制该服务；这与 GFS 中名为 Master 的具体角色并非同一个系统。
+CR 2004 采用停止式故障（Fail-stop Failure）：故障服务器停止而不做错误状态转换，环境能检测其停止。超时只说明当前收不到响应，不能证明对方已停止。论文以可靠配置管理服务 Master 组织变化，原型用 Paxos 复制该服务；这与 GFS 中名为 Master 的具体角色并非同一个系统。
 
-正常 FIFO（First In, First Out，先进先出）传播使后继的已接收更新历史是前驱历史的前缀。反向确认使前驱能够删去已完成记录，并用 `Sent` 列表保留已转发但尚未获 Tail 确认的更新。故障时要恢复这些前缀和在途请求，不能只改链地址。
+正常 FIFO（First In, First Out，先进先出）传播时，前驱按什么顺序收到更新，后继就按同样顺序收到；所以后继手里的记录，永远是前驱记录从头开始的一段（前缀）。反向确认使前驱能够删去已完成记录，并用 `Sent` 列表保留已转发但尚未获 Tail 确认的更新。故障时要恢复这些前缀和在途请求，不能只改链地址。
 
 | 原链 A→B→C→D | 新链  | 恢复动作及未完成请求                                                                                                           |
 | ------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -113,11 +113,11 @@ CR 2004 采用停止式故障（Fail-stop Failure）：故障服务器停止而�
 
 [![Chain Replication 三类故障、配置权威与在途更新恢复](/assets/notes/distributed-systems/dist-chain-reconfiguration.png)](/assets/notes/distributed-systems/dist-chain-reconfiguration.png)
 
-在该 Fail-stop 模型中，被移除节点已停止；迁移到会恢复运行或发生分区的环境时，还要证明旧节点不再以旧 Head/Tail 服务，旧请求被拒绝、转发或重新定位，并使新链按安全条件生效。配置代际与隔离是这类实现的要求，不能冒充原论文已经给出了某种通用 token 字段。恢复期间可以暂停相关请求，强一致不等于切换零中断。
+在该 Fail-stop 模型中，被移除节点已停止；迁移到会恢复运行或发生分区的环境时，还要证明旧节点不再以旧 Head/Tail 服务，旧请求被拒绝、转发或重新定位，并使新链按安全条件生效。配置代际与隔离是这类实现的要求，不能冒充原论文已经给出了某种通用 token 字段。恢复期间可以暂停相关请求，强一致只约束数据，切换仍可能中断。
 
 ### CRAQ：ZooKeeper 配置与双向状态同步
 
-CRAQ 2009 用 ZooKeeper 维护节点成员与链元数据，通过 Watch 获知相关变化，再由节点执行 CRAQ 的数据恢复。ZooKeeper 是配置管理依赖，不负责逐个对象的前向写入、Tail 提交或反向确认；它自身也需要可靠部署。论文中的成员临时节点应按会话语义理解：短暂断连不等于立即删除，相关机制见[第十三章](/articles/distributed-zookeeper-zab.html#_4-会话失联与会话过期)。[CRAQ §3.4、§5.1](https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf)
+CRAQ 2009 用 ZooKeeper 维护节点成员与链元数据，通过 Watch 获知相关变化，再由节点执行 CRAQ 的数据恢复。ZooKeeper 是配置管理依赖，不负责逐个对象的前向写入、Tail 提交或反向确认；它自身也需要可靠部署。论文中的成员临时节点应按会话语义理解：短暂断连不会立即触发删除，相关机制见[第十三章](/articles/distributed-zookeeper-zab.html#_4-会话失联与会话过期)。[CRAQ §3.4、§5.1](https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf)
 
 原始 CR 主要描述在 Tail 增加副本；CRAQ 采用分布式哈希表（Distributed Hash Table，DHT）组织节点布局，允许新成员在由此确定的其他位置加入，不能简化成普通链表插入。依据 §5.3，新节点需要从前驱接收前向传播（Forward Propagation），也可能从后继接收反向状态传播（Back-propagation）。后者不是仅一个 ACK，而是**最新 Clean 版本与所有更高的待确认 Dirty 版本**；恢复用前向传播也可传完整对象状态。
 

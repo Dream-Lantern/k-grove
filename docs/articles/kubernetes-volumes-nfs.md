@@ -23,13 +23,13 @@ order: 22
 
 ## 1. 卷把路径与数据来源连接起来
 
-容器镜像提供文件系统基础，运行中的可写层不适合作为跨 Pod 生命周期的数据保留承诺。Volume（卷）让容器通过某个路径访问适用的数据来源。
+容器镜像提供文件系统基础，但容器一重建，写在可写层里的文件就跟着消失，所以它不能当作跨 Pod 生命周期的存储。Volume（卷）的做法是：在 Pod 里声明一份数据来源，再把它挂到容器的某个路径上，容器读写这个路径就等于读写那份数据。
 
 一个 Pod 的 `volumes` 定义来源，各容器的 `volumeMounts` 定义挂载位置，通过 `name` 对应。相同卷在两个容器中可以挂到不同路径；文件能否互读写还受权限与访问方式影响。
 
 [![卷的生命周期：先问数据属于谁](/assets/notes/kubernetes/k8s-volume-lifetimes.svg)](/assets/notes/kubernetes/k8s-volume-lifetimes.svg)
 
-图按数据所属层级逐项比较，箭头不代表数据会自动从 emptyDir 迁移到远端存储。
+图按数据所属层级逐项比较，箭头只表示写入路径，数据不会自动从 emptyDir 迁移到远端存储。
 
 | 存储方式   | 容器实例重启         | Pod 删除后以新 UID 替代  | 数据归属     |
 | ---------- | -------------------- | ------------------------ | ------------ |
@@ -38,7 +38,7 @@ order: 22
 | hostPath   | 节点目录可继续存在   | 取决于实际节点和目录     | 指定 Node    |
 | NFS        | 通常不删除远端数据   | 满足挂载条件时可再次访问 | NFS 服务端   |
 
-容器重启与 Pod 替换是不同事件。数据继续存在不等于已备份；能共享访问也不等于应用具有并发写入一致性。[1.28 卷生命周期与类型](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/storage/volumes.md)
+容器重启与 Pod 替换是不同事件。数据继续存在只是没被删除，备份要另做；能共享访问只解决路径问题，并发写入一致性仍要应用自己保证。[1.28 卷生命周期与类型](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/storage/volumes.md)
 
 ## 2. emptyDir：跟随 Pod 的临时共享空间
 
@@ -93,7 +93,7 @@ spec:
         sizeLimit: 1Gi
 ```
 
-writer 的 /work 与 reader 的 /input 对应同一个卷。`sizeLimit` 也不是为 Pod 自动预留一整块磁盘；节点实际容量、临时存储与驱逐条件仍需要考虑。内存型 emptyDir 还有内存核算等条件，不能只看它“速度可能更快”。
+writer 的 /work 与 reader 的 /input 对应同一个卷。`sizeLimit` 是上限，不是预留：它不会替 Pod 划出一整块磁盘，写超了还可能被限制或触发驱逐，节点磁盘够不够仍要看实际用量。内存型 emptyDir 还有内存核算等条件，不能只看它“速度可能更快”。
 
 这里不是共享两个镜像的所有文件系统。卷内文件仍受 UID/GID（用户/组标识）与权限影响；本例统一身份并设置 fsGroup，让卷目录可供 writer 写入，reader 通过只读挂载读取。
 
@@ -175,17 +175,17 @@ tmpfs（Temporary File System，临时文件系统）把文件放入内存。Mem
 | 默认 emptyDir | 节点适用临时存储，底层介质依节点配置 | 可用空间、ephemeral-storage 核算及节点压力驱逐     |
 | medium=Memory | 内存 tmpfs                           | 写入容器内存用量、内存 limit、节点压力和卷容量上限 |
 
-Memory 不代表没有资源代价，也不据此宣称任何负载性能最好。两者都随 Pod 生命周期结束，资源核算细节见上述 1.28 卷文档。
+Memory 介质仍有资源代价，本文也不据此判断哪种负载性能最好。两者都随 Pod 生命周期结束，资源核算细节见上述 1.28 卷文档。
 
-## 3. hostPath：节点目录不等于可迁移持久卷
+## 3. hostPath：节点目录与可迁移持久卷的区别
 
 hostPath 映射特定节点的路径。Pod 换到另一个节点，不会自动把原目录的数据带走；同一个绝对路径在不同节点也可能指向完全不同的数据。
 
-Directory、DirectoryOrCreate、File、FileOrCreate 等 type 用于适用的类型检查或创建条件。FileOrCreate 不会替你创建缺失的父目录；空 type 不表示路径已经被完整安全验证。
+这些 type 决定 kubelet 在挂载前做哪一步检查：路径必须已存在、不存在就创建目录、必须是已有文件，还是不存在就创建空文件。FileOrCreate 不会替你创建缺失的父目录；空 type 只表示不做存在性检查，不表示路径已经过完整安全验证。
 
-DirectoryOrCreate 可在缺失时创建目录，按 kubelet 对应的所有者/组及目录权限处理；FileOrCreate 可创建空文件，但父目录必须先存在。创建成功仍不代表容器身份可读写，节点安全策略和文件权限也会影响结果。
+DirectoryOrCreate 可在缺失时创建目录，按 kubelet 对应的所有者/组及目录权限处理；FileOrCreate 可创建空文件，但父目录必须先存在。创建成功只说明对象已建立，容器身份能否读写还取决于节点安全策略和文件权限。
 
-hostPath 可能暴露节点文件、Unix Socket 或敏感设备；readOnly 也不能消除读取敏感信息的风险。本章不把主机根目录、运行时 Socket、kubelet 敏感目录或 privileged 配合 hostPath 作为默认实验，更不在节点上写入或删除文件。[1.28 hostPath 类型与限制](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/storage/volumes.md)
+hostPath 可能暴露节点文件、Unix Socket 或敏感设备；readOnly 只限制写入，读取敏感信息的风险仍在。本章不把主机根目录、运行时 Socket、kubelet 敏感目录或 privileged 配合 hostPath 作为默认实验，更不在节点上写入或删除文件。[1.28 hostPath 类型与限制](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/storage/volumes.md)
 
 | 场景                | 选择方向                                  |
 | ------------------- | ----------------------------------------- |
@@ -200,11 +200,11 @@ NFS（Network File System，网络文件系统）的数据在远端。Pod 卸载
 
 客户端节点需要具备适用的挂载支持，服务端需要导出目录、网络可达和正确权限。不能只在一台节点测试成功，就宣称整个集群都可用。
 
-典型访问关系为 Pod 中的挂载路径 → Node 上的 NFS 客户端与内核挂载 → 网络 → NFS Server 的导出目录。kubelet 根据卷配置协调挂载，不会自动创建远端 NFS 服务。服务端需允许对应客户端，节点需具备挂载工具和协议支持，读写还受身份映射、文件权限与挂载选项约束。
+一次 NFS 读写要经过四段：容器访问挂载路径；节点上的 NFS 客户端把它变成内核挂载操作；请求走网络到达 NFS Server；服务端在自己的导出目录里完成读写。kubelet 只按卷配置协调这一串挂载动作，不会自动创建远端 NFS 服务。服务端需允许对应客户端，节点需具备挂载工具和协议支持，读写还受身份映射、文件权限与挂载选项约束。
 
 [![NFS：远端导出、节点客户端挂载与容器路径](/assets/notes/kubernetes/k8s-nfs-mount-path.svg)](/assets/notes/kubernetes/k8s-nfs-mount-path.svg)
 
-以下是 Pod spec 下的只读结构片段。192.0.2.10 是文档示例地址，/exports/study 也是假设路径，不能据此实际连接；容器、镜像等必需字段仍省略。本章不部署 NFS 服务端、不改 exports 或执行挂载维护：
+以下是 Pod spec 下的只读结构片段。192.0.2.10 是文档示例地址，/exports/study 也是假设路径，实际连接要换成环境中的地址；容器、镜像等必需字段仍省略。本章不部署 NFS 服务端、不改 exports 或执行挂载维护：
 
 ```yaml
 volumes:
@@ -222,7 +222,7 @@ containers:
         readOnly: true
 ```
 
-`no_root_squash` 关闭 root squashing（root 身份压缩映射），使客户端 UID/GID 0 不再按该机制映射为匿名身份，但不会绕过所有其他权限检查。它会改变安全边界，不宜作为通用默认；应分别核对客户端范围、身份映射、目录权限和读写需求。[exports(5) 的身份映射选项](https://man7.org/linux/man-pages/man5/exports.5.html)
+NFS 服务端默认会把客户端发来的 root（UID/GID 0）映射成匿名身份，这叫 root squashing。`no_root_squash` 就是关掉这个映射，让客户端的 root 以 root 身份操作服务端文件，但它不会绕过其他权限检查。这会改变安全边界，不宜作为通用默认；应分别核对客户端范围、身份映射、目录权限和读写需求。[exports(5) 的身份映射选项](https://man7.org/linux/man-pages/man5/exports.5.html)
 
 | 现象                | 优先检查                                   |
 | ------------------- | ------------------------------------------ |
@@ -233,7 +233,7 @@ containers:
 | 网络中断后 I/O 卡住 | 挂载语义、服务端恢复与应用 I/O 行为        |
 | 文件内容异常        | 并发访问、共享写入协议与应用一致性         |
 
-这些是取证线索，不是症状与根因的一一对应；不要用默认关闭 root squash 或强制卸载替代定位。
+这些是取证线索，症状与根因并非一一对应；定位要靠证据，关闭 root squash 或强制卸载都只是绕过症状。
 
 ## 5. exportfs 与卸载操作的含义 {#_5-命令纠错与保留的前提}
 
@@ -250,7 +250,7 @@ containers:
 
 这里不提供可直接复制的服务端改配命令，因为原记录缺少发行版、服务端版本和维护窗口。Linux 上的命令语义可对照 [nfs-utils 的 exportfs 手册](https://man7.org/linux/man-pages/man8/exportfs.8.html)；实施时仍以目标系统随附文档为准。
 
-挂载卡住时，应分别检查服务端故障、网络、挂载选项和进程状态。强制卸载或重启服务可能影响其他 Pod 和数据写入，不应作为排查的第一步。
+挂载卡住时，应分别检查服务端故障、网络、挂载选项和进程状态。强制卸载或重启服务会影响其他 Pod 和数据写入，排查要从影响更小的检查开始。
 
 ## 6. 持久化与备份之间还差一步
 

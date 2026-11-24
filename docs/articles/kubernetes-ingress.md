@@ -23,15 +23,15 @@ order: 20
 
 ## 1. 规则、控制器与入口地址
 
-Ingress（入口路由）是声明 HTTP/HTTPS 路由的 API 对象，不是实际代理服务器；Ingress Controller（入口控制器）观察并实现这些规则。只创建一个 Ingress 对象，不会自动安装一个能接外部流量的代理。
+Ingress（入口路由）写出来就是一张表：哪个域名、哪个路径的请求应该转给哪个 Service。把这张表提交给集群，规则就存在了，但不会有任何流量因此被转发——真正转发的是另一个组件，Ingress Controller（入口控制器），它读到这张表后去改自己代理的配置。只创建一个 Ingress 对象，不会自动安装一个能接外部流量的代理。
 
 外部 DNS、负载均衡或节点入口仍需相应的基础设施支持。控制器可以作为 Pod 运行，但入口如何暴露取决于部署方式，不能只根据“它在哪个节点”，就认定外部一定能直接连接该节点的某个端口。
 
 [![Ingress：规则不是控制器本身](/assets/notes/kubernetes/k8s-ingress-boundaries.svg)](/assets/notes/kubernetes/k8s-ingress-boundaries.svg)
 
-图中的 Service 是规则后端引用。某些控制器直接使用端点地址转发，不要求每个业务数据包都先经过 ClusterIP；不要把声明上的依赖画成唯一的实际包路径。
+图中的 Service 只是规则里写的一个名字。控制器查到这个 Service 后，往往直接转发到它背后的 Pod 地址（端点），数据包不一定真的流经 ClusterIP。所以 YAML 里写了 Service，不代表实际链路就经过 Service。
 
-控制关系可理解为 Ingress → ingressClassName 引用 IngressClass（入口类）→ 与该类 spec.controller 对应的 Controller → 配置代理数据平面。业务客户端则经外部 DNS、LoadBalancer 或其他入口访问代理，再被转发到适用后端；Controller 通常不在每个请求的数据路径上。
+控制关系是一条引用链：你写的 Ingress 用 ingressClassName 指向一个 IngressClass（入口类）；IngressClass 的 spec.controller 字段说明这一类由哪个实现负责；集群里对应的 Controller 只接管归自己管的 Ingress，读到规则后去改代理的配置。客户端走的则是另一条线：请求先经外部 DNS、LoadBalancer 或其他入口到达代理，再由代理按规则转给后端。Controller 只在这条链的旁边改配置，通常不碰每个请求。
 
 study-controller 只是教学类名，必须存在实际 IngressClass 和对应运行中的 Controller。未指定 ingressClassName 时，是否采用默认类、是否处理无类对象，取决于默认类设置及实现配置。这里不创建虚构的 Controller 标识，也不假定已安装任何入口实现。[1.28 IngressClass 与控制器](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/ingress.md)
 
@@ -76,19 +76,19 @@ spec:
                   number: 80
 ```
 
-`study-controller` 需要相应 IngressClass 和实现；`catalog` Service 需要在适用命名空间存在。入口路由到 Service 80，不等于后端应用必须也监听 80。
+`study-controller` 需要相应 IngressClass 和实现；`catalog` Service 需要在适用命名空间存在。入口可以把流量路由到 Service 的 80 端口，后端应用监听的端口则可以不同。
 
-客户端的 Host、DNS 解析与入口地址需要一致。仅用 IP 访问一个按域名分流的入口，可能落入其他规则或默认后端，这不自动证明网络故障。
+客户端的 Host、DNS 解析与入口地址需要一致。直接用 IP 访问一个按域名分流的入口时，请求里的 Host 不是约定的域名，命中的可能是别的规则或默认后端；看起来像网络故障，实际是没匹配上。
 
 ## 3. 三种 pathType
 
 | 类型                   | 匹配规则               | 例子                                   |
 | ---------------------- | ---------------------- | -------------------------------------- |
-| Exact                  | 路径精确匹配           | /foo 不等于 /foo/                      |
+| Exact                  | 路径精确匹配           | /foo 与 /foo/ 是两条路径               |
 | Prefix                 | 按路径元素进行前缀匹配 | /foo 可匹配 /foo/bar，但不匹配 /foobar |
 | ImplementationSpecific | 由相应实现定义         | 必须查控制器文档                       |
 
-Prefix 按路径元素匹配，规则 `/foo/` 可以匹配 `/foo`，也可匹配 `/foo/bar`，但不能匹配 `/foobar`。存在多个匹配时，要按标准的最长匹配与 Exact 优先等规则理解。[1.28 Ingress 路径定义与例子](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/ingress.md)
+Prefix 按路径元素匹配，规则 `/foo/` 可以匹配 `/foo`，也可匹配 `/foo/bar`，但不能匹配 `/foobar`。多条规则同时匹配时，先比谁更长（/api/admin 比 /api 更具体，赢），长度相同时才看是不是 Exact。跟 YAML 里谁写在前面无关。[1.28 Ingress 路径定义与例子](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/ingress.md)
 
 在 Host=catalog.example.com 的前提下，本章规则得到以下匹配结果；不按 YAML 中书写的先后顺序简单挑第一项：
 
@@ -105,11 +105,11 @@ Prefix 按路径元素匹配，规则 `/foo/` 可以匹配 `/foo`，也可匹配
 
 正则表达式不属于所有 Prefix 规则的通用能力。控制器是否支持正则、如何开启、与 pathType 如何组合，都属于实现和版本条件。
 
-Prefix 只判断选择哪条路由。例如 /api/users 匹配 /api，不代表后端收到的路径自动变为 /users。Rewrite（路径重写）需要具体 Controller 的实现与配置，不是标准 Ingress 对任意控制器的统一保证。本文不加入私有重写注解，后端需能处理原路径。
+Prefix 只判断选择哪条路由。例如 /api/users 匹配 /api，后端收到的路径仍是 /api/users，除非配置了 rewrite。Rewrite（路径重写）需要具体 Controller 的实现与配置，不是标准 Ingress 对任意控制器的统一保证。本文不加入私有重写注解，后端需能处理原路径。
 
 ## 4. TLS 与扩展注解
 
-TLS（Transport Layer Security，传输层安全协议）证书需要与入口使用的名字匹配，并由相应配置引用。入口终止 TLS 不表示到后端的每一段连接都会自动继续使用 TLS；这是另一项部署和信任条件。
+TLS（Transport Layer Security，传输层安全协议）证书需要与入口使用的名字匹配，并由相应配置引用。入口终止 TLS，意思是 HTTPS 在入口这一跳就被解开，入口往后端发的是明文 HTTP；想让入口到后端这一段也加密，要另外配后端协议和证书信任。
 
 在具备受信任、域名匹配的测试证书后，才把下面局部字段加入 Ingress spec；它不是独立清单。本次没有创建或读取证书、私钥或 Secret：
 
@@ -121,11 +121,11 @@ tls:
     secretName: catalog-tls
 ```
 
-catalog-tls 应是 Ingress 所在 study 命名空间的适用 TLS Secret，包含证书和私钥。Secret 存在不等于证书未过期、证书链受信任或域名匹配；证书签发、续期与信任须独立管理。不要把真实私钥放进公开笔记。
+catalog-tls 应是 Ingress 所在 study 命名空间的适用 TLS Secret，包含证书和私钥。Secret 存在只说明对象已创建；证书是否过期、证书链是否受信任、域名是否匹配都要单独检查，签发、续期与信任也须独立管理。真实私钥放进公开笔记就等于泄露。
 
-SNI（Server Name Indication，服务器名称指示）位于 TLS 握手，用于选择适用证书；HTTP Host 位于后续 HTTP 请求，用于规则匹配。二者属于不同协议层。通常在入口解密，再通过 HTTP 转发本例 8080 后端；如需入口至后端 HTTPS，还必须另行配置实现支持与信任链。
+SNI（Server Name Indication，服务器名称指示）位于 TLS 握手，用于选择适用证书；HTTP Host 位于后续 HTTP 请求，用于规则匹配。两者出现的时间点不同：SNI 在 TLS 握手时由客户端发来，HTTP Host 要等连接建立、客户端发出请求时才带上。通常在入口解密，再通过 HTTP 转发本例 8080 后端；如需入口至后端 HTTPS，还必须另行配置实现支持与信任链。
 
-上传大小、重写、跳转等注解通常是控制器扩展，键名不能随意混用。旧的 class 注解与 `ingressClassName` 也不能仅因名字相似就当作可互换配置。
+上传大小、重写、跳转等注解通常是控制器扩展，键名不能随意混用。旧的 class 注解与 `ingressClassName` 名字相似，配置语义却不同。
 
 本文清单采用标准字段；控制器注解属于具体实现，需要单独核对。实施前核对控制器的安装版本、维护状态和兼容要求。
 
@@ -149,7 +149,7 @@ HTTP 404、502、503 可能来自不同组件，需要结合响应特征与控�
 
 ### 5.1 补齐测试后端与入口前提
 
-需要已安装、与 Kubernetes 1.28 兼容的实际 Controller、对应 IngressClass、可达入口地址及专用 study。先完成[第十九章实验 A](/articles/kubernetes-service-endpointslice.html#_5-1-实验-a-正常后端与访问)，暂不清理其 catalog Deployment/Service；若此前已清理，则重新按该节创建。不要覆盖其他实验或生产对象，整个练习均未在集群执行。
+需要已安装、与 Kubernetes 1.28 兼容的实际 Controller、对应 IngressClass、可达入口地址及专用 study。先完成[第十九章实验 A](/articles/kubernetes-service-endpointslice.html#_5-1-实验-a-正常后端与访问)，暂不清理其 catalog Deployment/Service；若此前已清理，则重新按该节创建。练习会创建同名对象，先确认不会覆盖其他实验或生产对象；整个练习均未在集群执行。
 
 第二个后端保存为 `catalog-admin.yaml`。固定版本 busybox:1.36.1 实际监听 8080，标签 app=catalog-admin，避免与 catalog 的 Service 相互混选：
 
@@ -277,7 +277,7 @@ curl -i --resolve catalog.example.com:443:INGRESS_IP https://catalog.example.com
 curl -i --cacert TEST_CA_PEM --resolve catalog.example.com:443:INGRESS_IP https://catalog.example.com/api/items
 ```
 
-不默认使用 -k 绕过校验。仅在 HTTPS 请求上手工改 Host 头，并不能替代正确的 SNI 与证书匹配验证。
+不默认使用 -k 绕过校验。仅在 HTTPS 请求上手工改 Host 头，绕不过 SNI 与证书匹配；这两项要单独验证。
 
 ### 5.3 故障分层与清理
 

@@ -19,7 +19,7 @@ order: 12
 
 # 第 12 章 性能分析：先看时间线，再看 Kernel
 
-GPU 性能分析先把业务延迟拆到 CPU、提交、搬运与设备计算等阶段，再选择适合该层次的工具。本章按系统时间线、选定 kernel 和长期监控的顺序，说明如何从现象缩小到可验证的瓶颈假设。
+一个请求的耗时可能花在四个地方：CPU 上、把 kernel 交给 GPU 的路上、搬数据上、GPU 真正计算上。性能分析先把总延迟拆到这几段，看大头在哪，再决定用哪个工具。本章按系统时间线、选定 kernel 和长期监控的顺序，说明如何从现象缩小到可验证的瓶颈假设。
 
 ## 1. 工具分工
 
@@ -32,7 +32,7 @@ GPU 性能分析先把业务延迟拆到 CPU、提交、搬运与设备计算等
 
 [![性能定位：按证据选择工具](/assets/notes/ai-infra/profiling-decision.svg)](/assets/notes/ai-infra/profiling-decision.svg)
 
-沿用前两章的双服务场景。假设服务 A 的 TTFT（Time to First Token，首 Token 延迟）升高且请求吞吐低于目标，服务 B 与它共用节点。先固定模型、输入输出长度、并发和负载模式，记录请求吞吐、错误率及 TTFT 分位数。用 [NVML](/articles/ai-infra-nvml.html)确认进程、节点、GPU UUID 和实例，再用 [DCGM](/articles/ai-infra-dcgm-monitoring.html)核对同一实体的活动和显存趋势。设备活动异常只是线索，不能据此把根因归给某个请求或 kernel。
+沿用前两章的双服务场景。假设服务 A 的 TTFT（Time to First Token，首 Token 延迟）升高且请求吞吐低于目标，服务 B 与它共用节点。先固定模型、输入输出长度、并发和负载模式，记录请求吞吐、错误率及 TTFT 分位数。用 [NVML](/articles/ai-infra-nvml.html)确认进程、节点、GPU UUID 和实例，再用 [DCGM](/articles/ai-infra-dcgm-monitoring.html)核对同一实体的活动和显存趋势。设备活动异常只是线索，根因是否在某个请求或 kernel 上要另行确认。
 
 把诊断分成三段。先无 profiler 测业务基线。随后用 Nsight Systems 找到主要耗时阶段，仅在设备热点已明确时用 Nsight Compute 分析选中的 kernel。最后只修改一个因素，在相同负载下关闭 profiler 再测业务。持续监控的采集配置也应在两组一致，并记录是否暂停了 profiling 字段。
 
@@ -49,9 +49,9 @@ nsys profile --trace=cuda,nvtx --delay=5 --duration=10 --kill=none --stop-on-exi
 nsys stats trial.nsys-rep
 ```
 
-可以用 NVTX 自定义标记对齐业务阶段：用请求处理、prefill、decode、数据加载等业务阶段对齐时间线。先预热并关注稳定区间，避免把首次 JIT 或模型加载误当作每次请求成本。[Nsight Systems User Guide](https://docs.nvidia.com/nsight-systems/UserGuide/index.html)
+时间线默认只有 kernel 和 API，看不出某一段对应请求的哪一步。用 NVTX 在代码里打标记，把请求处理、prefill、decode、数据加载这些业务阶段贴到同一条时间线上，才能和耗时对上。先预热并关注稳定区间，避免把首次 JIT 或模型加载误当作每次请求成本。[Nsight Systems User Guide](https://docs.nvidia.com/nsight-systems/UserGuide/index.html)
 
-以 Linux 的 Nsight Systems CLI 手册为准，`--delay=5` 从启动后推迟 5 秒开始采集，`--duration=10` 限制采集时长为 10 秒。示例显式设置 `--stop-on-exit=true`，目标先正常退出时采集随之结束。限时结束时，手册记录的 Linux 默认行为可能向目标进程组发送 SIGTERM。下面显式用 `--kill=none`，避免采集结束时由该选项终止目标。请用能自行退出的实验程序运行，记录 `nsys --version`，先用 `nsys profile --help` 核对本机版本。不要直接用它启动生产服务并假定服务会在采集后照常运行。对长驻服务优先用隔离副本、按工具版本核对受支持的附加或会话控制方式，并安排停止和清理。用 NVTX（NVIDIA Tools Extension，NVIDIA 工具扩展）标出预热后的稳定阶段，可在支持版本中用 `--capture-range=nvtx` 和指定 NVTX 范围选择窗口，另核对范围结束策略。
+以 Linux 的 Nsight Systems CLI 手册为准，`--delay=5` 从启动后推迟 5 秒开始采集，`--duration=10` 限制采集时长为 10 秒。示例显式设置 `--stop-on-exit=true`，目标先正常退出时采集随之结束。限时结束时，手册记录的 Linux 默认行为可能向目标进程组发送 SIGTERM。下面显式用 `--kill=none`，避免采集结束时由该选项终止目标。请用能自行退出的实验程序运行，记录 `nsys --version`，先用 `nsys profile --help` 核对本机版本。直接用它启动生产服务，采集结束后服务未必照常运行。对长驻服务优先用隔离副本、按工具版本核对受支持的附加或会话控制方式，并安排停止和清理。用 NVTX（NVIDIA Tools Extension，NVIDIA 工具扩展）标出预热后的稳定阶段，可在支持版本中用 `--capture-range=nvtx` 和指定 NVTX 范围选择窗口，另核对范围结束策略。
 
 | 请求阶段      | 假设耗时 |
 | ------------- | -------: |
@@ -71,7 +71,7 @@ nsys stats trial.nsys-rep
 ncu --set basic --launch-count 1 --output=kernel-trial python app.py
 ```
 
-该命令只展示最小采集思路，不保证首个 kernel 就是目标，实际使用时应按名称和启动范围筛选。Nsight Compute 可能通过 replay 收集多组计数器，因此测得的时间不等于无采集条件下的业务延迟。metric 名称也会随硬件和版本变化，应查询支持列表后再选择。[Nsight Compute Profiling Guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)
+该命令只展示最小采集思路，不保证首个 kernel 就是目标，实际使用时应按名称和启动范围筛选。Nsight Compute 可能通过 replay 收集多组计数器，因此测得的时间带有采集开销，与无采集条件下的业务延迟不同。metric 名称也会随硬件和版本变化，应查询支持列表后再选择。[Nsight Compute Profiling Guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)
 
 从 Systems 的 CUDA GPU 时间线选目标，记录进程、设备、Context、Stream、kernel 名称、启动配置及该名称第几次出现。用相同输入复现，先核查本机 `ncu --version` 和 `ncu --help`，再按以下方式缩小范围。
 
@@ -86,13 +86,13 @@ ncu --set basic --launch-count 1 --output=kernel-trial python app.py
 
 ## 4. 用 Occupancy 与 Roofline 分析瓶颈假设 {#_4-occupancy-和-roofline-怎么用}
 
-较高的 Occupancy 可能有助于隐藏延迟，但它本身不是优化目标。如果增加常驻 warp 导致寄存器溢出，运行反而可能更慢。判断时需要综合考虑共享内存、寄存器和 block 数的约束。
+较高的 Occupancy 可能有助于隐藏延迟，但它本身不是优化目标。如果为了多塞 warp 而让每个线程要的寄存器超过上限，寄存器会溢出到本地内存，运行反而可能更慢。判断时需要综合考虑共享内存、寄存器和 block 数的约束。
 
 Roofline 用算术强度 `I = 运算次数 / 数据字节数` 连接计算峰值与带宽峰值，可建立 `性能上界 ≈ min(计算峰值, 带宽 × I)`。这里必须注明数据来自哪一层、使用哪种精度。它是帮助提出瓶颈假设的模型，不是精确预测器。
 
 Arithmetic Intensity（算术强度）用 `I = FLOPs / Bytes` 表示，Roofline 上界为 `Pmax ≈ min(Pcompute, BW × I)`。Compute Throughput（计算吞吐）用选定精度的运算率衡量，Memory Throughput（内存吞吐）用穿过所选边界的字节率衡量。使用 DRAM 字节应配 DRAM 带宽，使用 L2 字节应配 L2 带宽。峰值只给出上界，指令依赖、同步或 launch 等也可能先限制性能。
 
-Theoretical Occupancy（理论占用率）由启动配置和寄存器、共享内存及 SM 的常驻上限推导。Achieved Occupancy（实际占用率）来自执行期间的活跃 warp 采样。两者的差距可来自负载不均衡或尾部，数值高也可能出现就绪 warp 少或内存等待。SM Active 反映有活跃 warp 的空间与时间比例，和峰值算力效率采用不同分母。
+Theoretical Occupancy（理论占用率）由启动配置和寄存器、共享内存及 SM 的常驻上限推导。Achieved Occupancy（实际占用率）来自执行期间的活跃 warp 采样。两者的差距可来自负载不均衡或尾部，数值高也可能出现就绪 warp 少或内存等待。SM Active 算的是“多少 SM、在多长时间里至少有一个 warp 在跑”，分母是全卡的 SM 数和总时间；峰值算力效率的分母是这段时间理论上能做的最大运算量。两者不能直接对读。
 
 假设时间线指向 A 的某个低算术强度 kernel。若 Compute 报告显示大量全局访问事务、低有效字节比例和访存等待，可先提出访存不合并的假设。核对线程索引、实际 DRAM/L2 流量和就绪 warp，再用只改访问布局的对照验证。若调整后事务减少但无采集延迟没有改善，就回到业务关键路径或排查其他限制。
 
@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
 }
 ```
 
-保存为 `layout.cu`，在 Linux、兼容驱动、CUDA Toolkit 12.8.1 和受支持宿主编译器下构建。Nsight 与 Toolkit 分别记录版本。先不启动 profiler 运行两组，再按第 3 节过滤分别采样，最后退出 profiler、交替顺序重复两组。两种模式都应输出 `PASS`，分别记录时间和瓶颈。不要把带 Replay 的程序计时并入无采集结果。
+保存为 `layout.cu`，在 Linux、兼容驱动、CUDA Toolkit 12.8.1 和受支持宿主编译器下构建。Nsight 与 Toolkit 分别记录版本。先不启动 profiler 运行两组，再按第 3 节过滤分别采样，最后退出 profiler、交替顺序重复两组。两种模式都应输出 `PASS`，分别记录时间和瓶颈。带 Replay 的程序计时另有开销，统计时要与无采集结果分开。
 
 ```bash
 # 查询驱动侧 GPU 状态、显存与进程概况；不等于 CUDA Toolkit 编译器版本
@@ -200,9 +200,9 @@ nvcc -std=c++17 -O2 layout.cu -o layout
 
 ## 6. Trace、GPU Metrics 和 Replay 分开标注
 
-`nsys --trace=cuda,nvtx` 提供相应 API/活动与标记时间线，不代表默认已经取得所有 SM occupancy、DRAM 带宽和硬件指标。若额外启用 GPU metrics，核对硬件支持、采样配置和权限，并在报告中列为另一项采集配置。
+`nsys --trace=cuda,nvtx` 提供相应 API/活动与标记时间线，默认只覆盖这些内容；SM occupancy、DRAM 带宽和硬件指标要另开采集。若额外启用 GPU metrics，核对硬件支持、采样配置和权限，并在报告中列为另一项采集配置。
 
-`ncu` 的 kernel 选择、replay 与缓存控制则可能改变观测条件。不要把多 pass 得到的计数器直接视为该服务某次无干扰请求的完整现场。对“多个 GPU kernel 同时重叠”的问题，应保留 Systems 时间线作为背景，再选择需深入的 kernel；不同工具报告的百分比也不能在不核对分母时相互验证。
+`ncu` 的 kernel 选择、replay 与缓存控制则可能改变观测条件。多 pass 得到的计数器来自多次重放，与某次无干扰请求的现场并不相同。对“多个 GPU kernel 同时重叠”的问题，应保留 Systems 时间线作为背景，再选择需深入的 kernel；不同工具报告的百分比分母不同，核对分母后才能比较。
 
 ## 7. 从现象缩小排查范围
 

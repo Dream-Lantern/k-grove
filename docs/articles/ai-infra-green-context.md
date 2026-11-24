@@ -19,15 +19,15 @@ order: 5
 
 # 第 5 章 Context、Module 与 Green Context 的边界
 
-Context 可以理解为 CUDA 资源和状态的管理环境。一个进程可以使用多张设备，也可以管理多个 context；因此需要明确对象归属和生命周期。
+Context 可以理解成 CUDA 给一套资源和状态记的账：这个进程在这张卡上加载了哪些代码、分配了哪些显存、有哪些流，都挂在它名下。一个进程可以用多张卡，一张卡上也可以同时有多个 context，所以先要弄清某个对象记在谁名下、会跟着谁一起失效。
 
 ## 1. Runtime API 与 Driver API
 
-Runtime API 常见前缀为 `cuda`，负责较多隐式管理；Driver API 常见前缀为 `cu`，提供更明确的 context 和 module 操作。Runtime 通常使用设备的 primary context。混用两套 API 时，应先明确当前线程使用哪个 context，不要每个组件都自行创建、销毁一套互不知情的环境。[Driver 与 Runtime 的差异](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/driver-vs-runtime-api.html)
+Runtime API 常见前缀是 `cuda`，很多事它替你隐式做了：第一次调用就自动初始化设备、拿到该设备的 primary context，不用你自己创建；Driver API 常见前缀是 `cu`，context 和 module 都要你显式创建、显式绑定。Runtime 通常使用设备的 primary context。混用两套 API 时，应先明确当前线程使用哪个 context；各组件自行创建、销毁一套互不知情的环境会带来失效句柄。[Driver 与 Runtime 的差异](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/driver-vs-runtime-api.html)
 
 [![Context：所有权与当前线程](/assets/notes/ai-infra/context-ownership.png)](/assets/notes/ai-infra/context-ownership.png)
 
-`cuCtxSetCurrent()` 设置的是调用它的宿主线程的当前 context，不是一个“整个 GPU 当前只能选中谁”的全局开关。context 所属、宿主线程当前状态、硬件此刻执行哪个任务，是三个不同问题。[Context API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__CTX.html)
+`cuCtxSetCurrent()` 设置的是调用它的宿主线程的当前 context，不是一个“整个 GPU 当前只能选中谁”的全局开关。所以要分清三件事：这个对象属于哪个 context，这是所有权；这条宿主线程现在把哪个 context 当作当前绑定，这是线程局部状态；GPU 此刻正在执行谁的活，这是硬件调度。三者各自变化，不能互相推断。[Context API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__CTX.html)
 
 ### 设备、上下文与宿主线程
 
@@ -49,7 +49,7 @@ Driver API 由应用显式调用 `cuInit(0)` 初始化，并通过 `cuDevicePrim
 | Stream     | 有顺序约束的工作队列 | 创建环境和使用约束           |
 | Allocation | 已分配的内存         | 分配方式、可访问方和释放时机 |
 
-PTX 是中间表示，cubin 是面向相应 GPU 架构的设备二进制。fat binary 可以携带多个目标版本。不能由“文件里有 PTX”推断任何驱动都能 JIT 它；兼容性仍受驱动和 PTX 版本约束。
+PTX 是编译器输出的一种中间代码，要到运行时才由驱动针对具体 GPU 编译成机器码（JIT）；cubin 是已经为某个 GPU 架构编好的设备二进制，拿来就能跑。fat binary 可以把多个目标版本的代码打进同一个文件。“文件里有 PTX”和“任何驱动都能 JIT 它”是两回事，兼容性仍受驱动和 PTX 版本约束。
 
 跨进程通信也不是只能复制回 CPU。CUDA IPC、外部内存、设备间访问等提供特定能力，但需要满足设备、句柄、安全和生命周期条件。初学示例默认各进程管理自己的分配，不依赖隐式共享。
 
@@ -60,13 +60,13 @@ PTX 是中间表示，cubin 是面向相应 GPU 架构的设备二进制。fat b
 3. 用 `cuStreamCreate()` 创建有序提交队列，用 `cuMemAlloc()` 准备设备输入输出。把准备好的设备指针作为参数交给 `cuLaunchKernel()`，明确指定该流。
 4. 在相应流上等待工作完成，回读并校验。确认所有使用者均已完成后，释放分配、销毁流并卸载 Module，恢复线程绑定，最后按持有方式释放或销毁 Context。
 
-Module 卸载或 Context 销毁后，旧 Function 句柄失效。异步提交返回时 GPU 仍可能读写参数指向的内存，不能用返回时间推断何时可释放。如果另一组件重置共享 Primary Context，仍存活的流、分配或模块也可能随之失效。[CUDA 12.8.1 Driver API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/index.html)
+Module 卸载或 Context 销毁后，旧 Function 句柄失效。异步提交返回时 GPU 仍可能读写参数指向的内存，返回时间说明不了何时可以释放。如果另一组件重置共享 Primary Context，仍存活的流、分配或模块也可能随之失效。[CUDA 12.8.1 Driver API](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/index.html)
 
 ## 3. Green Context 的 SM 资源划分流程 {#_3-green-context-不是更轻但仍随便抢全卡}
 
-以 CUDA 12.8.1 文档为准，Green Context 可以把所支持的 SM 资源集合划分并提供给特定执行环境。逻辑步骤是查询资源 → 划分 SM 资源 → 生成描述符 → 创建 green context，再按 API 契约创建或使用相关 stream。
+以 CUDA 12.8.1 文档为准，Green Context 做的事是：从整卡可用的 SM 里划出一组，交给一个独立的执行环境使用。按 API 走是五步：先查这台设备有多少 SM 资源可用；再把这份资源按数量切成几组；然后把选中的组打包成一个描述符，相当于一份配置单；拿描述符创建 green context；最后在它里面建流、提交工作。
 
-Green Context 与 MIG 提供不同层次的资源能力。解释其保证时，应分别核对 SM 划分粒度、最小数量、并发进展条件与其他 context 的关系；显存控制器、带宽和故障域的隔离还需按目标架构与 API 限制单独判断。[Green Contexts，CUDA 12.8.1](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__GREEN__CONTEXTS.html)
+Green Context 切的只是 SM 这一层：它约束一个执行环境能用哪些 SM，不管显存容量、显存带宽和故障域；MIG 才是把计算和内存一起做硬件分区。所以谈它到底保证了什么，要逐项核对：SM 划分的粒度、每组最少几个 SM、并发时能不能真的推进下去、与其他 context 是什么关系；显存控制器、带宽、故障域的隔离还要按目标架构和 API 限制另外判断。[Green Contexts，CUDA 12.8.1](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-driver-api/group__CUDA__GREEN__CONTEXTS.html)
 
 ### 按 12.8.1 Driver API 划分并使用资源
 
@@ -100,7 +100,7 @@ CUDA 13.1.0 的 Runtime 文档列出了 Execution Context Management，包括 `c
 
 ## 4. 工程上先写清所有权
 
-插件式程序尤其需要明确：谁初始化设备、谁持有 primary context、谁创建 stream，以及谁负责最终同步和销毁。不要让一个插件调用 reset，销毁其他插件仍在使用的环境。排查 invalid context 或失效句柄时，沿“创建线程—当前 context—传递对象—销毁时机”追踪。
+插件式程序尤其需要明确：谁初始化设备、谁持有 primary context、谁创建 stream，以及谁负责最终同步和销毁。一个插件调用 reset 会销毁其他插件仍在使用的环境。排查 invalid context 或失效句柄时，沿“创建线程—当前 context—传递对象—销毁时机”追踪。
 
 ### 插件 A 退出时，插件 B 仍在运行
 

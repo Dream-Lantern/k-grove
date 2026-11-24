@@ -1,7 +1,7 @@
 ---
 id: kubernetes-service-endpointslice
 title: 第十九章 Service 与 EndpointSlice 资源实践
-description: "Service 的 selector 通常选择同命名空间中具有匹配标签的 Pod。它不要求 Pod 一定来自 Deployment，也不通过 Deployment 的名字找到后端。"
+description: "Service 的 selector 通常选择同命名空间中具有匹配标签的 Pod。后端 Pod 不必来自 Deployment，选择依据是标签与端口，不是 Deployment 名称。"
 date: '2026-10-25'
 updated: '2026-10-28'
 category: engineering
@@ -23,9 +23,9 @@ order: 19
 
 ## 1. 先准备被选择的后端
 
-Service（服务）提供逻辑访问入口，其 selector（选择器）通常选择同命名空间中具有匹配标签的 Pod。它不要求 Pod 一定来自 Deployment，也不通过 Deployment 的名字找到后端。
+Service（服务）给一组 Pod 提供一个统一的访问入口：一个地址加一个端口，客户端只认这个入口，不必知道后面有哪几个 Pod。它的 selector（选择器）通常挑出同命名空间中标签匹配的 Pod 作为后端；Pod 是不是由 Deployment 创建都无所谓，选择依据是标签与端口，不是 Deployment 名称。
 
-如果 Service 在 study，Pod 在另一个命名空间，即使标签完全一样，也不会被这个普通 selector 自动纳入。标签匹配采用所列要求的组合，Pod 可以还有额外标签。
+如果 Service 在 study，Pod 在另一个命名空间，即使标签完全一样，也不会被这个普通 selector 自动纳入。selector 里列出的每个标签都要对上，缺一个就不算匹配；Pod 身上多出来的标签不影响结果。
 
 [![Service：port与targetPort映射](/assets/notes/kubernetes/k8s-service-ports-detail.png)](/assets/notes/kubernetes/k8s-service-ports-detail.png)
 
@@ -92,7 +92,7 @@ spec:
 
 客户端访问 Service 的 80，目标是后端的 8080。Pod 的 `containerPort` 只是相应端口声明，不负责让应用真正监听。应用只监听 127.0.0.1 时，另一个 Pod 访问其 Pod IP 可能仍失败。
 
-数字 targetPort=8080 直接指定目标端口；本例 targetPort=http 则解析所选 Pod 中名字为 http、协议匹配的容器端口。Service 的 ports[].name 和容器的 ports[].name 是两个不同字段，前者并不因为名字相同就自动完成映射，是 targetPort 的引用建立了关联。多端口 Service 应逐项核对名称、协议与目标。
+数字 targetPort=8080 直接指定目标端口；本例 targetPort=http 则去所选 Pod 里找名字叫 http、协议也匹配的容器端口。Service 的 ports[].name 和容器的 ports[].name 是两个互不相干的字段：名字相同不会自动建立映射，真正把两边接起来的是 targetPort 写了哪个名字。多端口 Service 要逐项核对名称、协议与目标。
 
 新旧 Pod 可以都把端口命名为 http，却分别监听 8080、8081；标准控制器需要把解析出的不同目标端口放进不同 EndpointSlice 的端口组，因为一个 Slice 的 ports 适用于其中所有端点。命名端口允许这种迁移，但应用也必须实际在各自端口监听。[1.28 EndpointSlice 端口分组](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/endpoint-slices.md)
 
@@ -100,13 +100,13 @@ spec:
 
 Service 描述逻辑入口，EndpointSlice（端点切片）描述后端地址、端口与条件。普通有 selector 的路径通常由 EndpointSlice Controller（端点切片控制器）维护；用户不需要逐个手工创建每个 Pod 的端点。
 
-典型控制关系是 Deployment → ReplicaSet → Pod 的标签与就绪状态，再由 EndpointSlice Controller 结合另一项输入 Service selector，维护 EndpointSlice → 供 kube-proxy 或其他 Service 数据平面消费。这是状态协调路径，不是每个业务数据包都要经过 Controller。
+这条链路通常这样运转：Deployment 先建出 ReplicaSet，ReplicaSet 再建出 Pod，并持续更新 Pod 的标签和就绪状态；EndpointSlice Controller 读取这些状态，再加上 Service 的 selector，算出该把哪些地址写进 EndpointSlice；最后由 kube-proxy 等数据平面读走这份清单，在各节点上生成转发规则。整个过程只协调状态，业务数据包不会逐个经过 Controller。
 
 EndpointSlice 并非 Pod 对象的完整副本。一个 Service 可以对应多个 Slice，因此不能按“对象名必须等于 Service 名”查找全部后端，而应使用 `kubernetes.io/service-name` 标签等关联信息。
 
-同时查看 `endpointslice.kubernetes.io/managed-by`，区分标准控制器和其他管理者；标准控制器通常使用 endpointslice-controller.k8s.io。不要只取第一个 Slice 就认定已看到全部后端。
+同时查看 `endpointslice.kubernetes.io/managed-by`，区分标准控制器和其他管理者；标准控制器通常使用 endpointslice-controller.k8s.io。只取第一个 Slice 会漏掉其余后端。
 
-传统 Endpoints 对象仍有历史用途；1.28 学习不应只依赖其同名关系。读取 Slice 时，进一步查看每个 endpoint 的 conditions：
+传统 Endpoints 对象仍有历史用途；1.28 学习要把两者当作独立对象。读取 Slice 时，进一步查看每个 endpoint 的 conditions：
 
 | 字段        | 本章普通 Pod 后端的解释              | 缺省时怎样读                                        |
 | ----------- | ------------------------------------ | --------------------------------------------------- |
@@ -123,7 +123,7 @@ ready       = Service publishNotReadyAddresses
               OR (serving AND NOT terminating)
 ```
 
-例如 `ready: false, serving: true, terminating: true` 表示端点正在退出，但 Pod 仍就绪。启用 publishNotReadyAddresses 会使这里的 ready 为 true，即使应用本身未就绪；因此不能只凭 ready 判断应用健康，也不应将该选项当成普通故障修复开关。
+例如 `ready: false, serving: true, terminating: true` 表示端点正在退出，但 Pod 仍就绪。启用 publishNotReadyAddresses 会使这里的 ready 为 true，即使应用本身未就绪；因此 ready 只反映发布条件，应用健康要另测；这个选项也不是通用的故障修复开关。
 
 下表限定标准控制器管理的普通 Pod 后端，且 publishNotReadyAddresses=false：
 
@@ -143,11 +143,11 @@ publishNotReadyAddresses: true
 
 [![Pod 状态到 EndpointSlice 条件，再传播到数据平面](/assets/notes/kubernetes/k8s-endpointslice-condition-flow.svg)](/assets/notes/kubernetes/k8s-endpointslice-condition-flow.svg)
 
-EndpointSlice 改变不代表所有节点转发规则立即同步，已有连接与新连接可能表现不同。终止中 serving=true 也不是完成业务排空的证明；具体是否选择终止端点，还取决于数据平面及流量策略。
+EndpointSlice 改变后，各节点转发规则不会同时同步，已有连接与新连接可能表现不同。终止中 serving=true 也不是完成业务排空的证明；具体是否选择终止端点，还取决于数据平面及流量策略。
 
 公式依据 [v1.28.0 EndpointSlice 控制器实现](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/endpointslice/utils.go)，缺省字段依据 [v1.28.0 EndpointConditions 类型](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/staging/src/k8s.io/api/discovery/v1/types.go)。手工管理端点还需确认管理者怎样设置这些条件；数据平面、流量策略与已有连接继续决定具体流量走向。
 
-没有 selector 的 Service 也是合法资源，但标准控制器不会按 Pod 标签自动生成后端，需用户或其他控制器管理 EndpointSlice，正确设置 Service 关联标签、端口与管理者。不能把 Service ClusterIP 直接用作它自己的后端地址。对于非 Pod 后端，API Server 不允许把任意外部端点当作 Pod 代理，`kubectl port-forward service/...` 也不能据此成为通用调试路径。[1.28 无选择器 Service 的限制](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/service.md)
+没有 selector 的 Service 也是合法资源，但标准控制器不会按 Pod 标签自动生成后端，需用户或其他控制器管理 EndpointSlice，正确设置 Service 关联标签、端口与管理者。不能把 Service ClusterIP 直接用作它自己的后端地址。对于非 Pod 后端，API Server 不允许把任意外部端点当作 Pod 代理，`kubectl port-forward service/...` 只适用于受支持的后端，不能当作通用调试手段。[1.28 无选择器 Service 的限制](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/services-networking/service.md)
 
 ## 4. Service 类型与基础设施条件 {#_4-类型表示入口意图-不保证底层已准备}
 
@@ -159,13 +159,13 @@ EndpointSlice 改变不代表所有节点转发规则立即同步，已有连接
 | ExternalName | DNS 别名语义                     | 别名目标、协议主机名与证书             |
 | Headless     | 不分配普通 ClusterIP             | 端点发现与客户端如何使用返回地址       |
 
-Headless 是 `clusterIP: None` 等条件形成的行为，不是一个叫 Headless 的 `type` 值。LoadBalancer 也不等于“平台自动替你购买并配置所有外网资源”。
+Headless 是 `clusterIP: None` 等条件形成的行为，不是一个叫 Headless 的 `type` 值。LoadBalancer 只声明期望，外网资源是否自动创建取决于云实现。
 
-ExternalName 返回适用的 DNS CNAME（规范名称别名），不为目标创建普通 Service VIP（虚拟 IP）代理后端。ClusterIP 也不是通用安全边界，不能替代网络策略与应用认证。
+ExternalName 不转发流量，只让集群 DNS 把服务名解析成一条 CNAME 记录（相当于「这个名字等价于那个名字」），不会为目标创建 VIP（虚拟 IP）去代理后端。ClusterIP 也不是通用安全边界，不能替代网络策略与应用认证。
 
 `externalTrafficPolicy`、`internalTrafficPolicy` 等字段会改变适用流量的端点选择与源地址行为。尤其 Local 条件下，无本地合格端点的节点不能按“任意节点都会转到远端”理解。
 
-例如 NodePort/LoadBalancer Service 设置 externalTrafficPolicy=Local：节点 A 有合格本地后端，节点 B 没有，则 A 可以按本地路径处理外部请求，B 不应被假设自动转发给 A，可能丢弃适用流量；实际外部负载均衡还需将请求发往健康入口。终止端点等细节依实现与策略判断，不把所有状态简化成相同结果。本章完整实验使用 ClusterIP，不直接应用这项外部策略。
+例如 NodePort/LoadBalancer Service 设置 externalTrafficPolicy=Local：节点 A 有合格本地后端，节点 B 没有，则 A 可以按本地路径处理外部请求，B 不会自动转发给 A，适用流量可能被丢弃；实际外部负载均衡还需将请求发往健康入口。终止端点等细节依实现与策略判断，不把所有状态简化成相同结果。本章完整实验使用 ClusterIP，不直接应用这项外部策略。
 
 ## 5. 不可达时按关系逐层核对
 
@@ -188,7 +188,7 @@ kubectl get endpointslice -n study -l kubernetes.io/service-name=catalog -o yaml
 
 先确认标签与命名空间，再看就绪、端口与端点条件。随后比较服务名、Service IP 和 Pod IP 的访问证据，必要时才进入节点规则层。
 
-标签与命名空间决定后端选择，就绪条件影响端点状态，应用监听决定目标端口能否响应。将访问证据对应到这些层次，再处理相应配置。
+三件事各管一环：标签和命名空间决定 Service 会挑中哪些 Pod；就绪条件决定这些 Pod 能不能进入端点列表；应用有没有在目标端口监听，决定请求到了 8080 有没有人应答。访问失败时，先判断断在哪一环，再改对应那一层的配置。
 
 ### 5.1 实验 A：正常后端与访问
 
@@ -261,7 +261,7 @@ kubectl exec catalog-client -n study -- wget -qO- -T 5 http://catalog/
 kubectl patch service catalog -n study --type=merge -p '{"spec":{"selector":{"app":"catalog"}}}'
 ```
 
-待控制器同步后，没有匹配后端，可能保留空 Slice，不能要求所有 Slice 对象消失。请求预期失败或超时，具体表现依数据平面，不预设固定错误码。恢复后再次检查两个就绪端点与访问；不要在变更尚未传播时把旧结果当新状态。
+待控制器同步后，没有匹配后端，可能保留空 Slice，不能要求所有 Slice 对象消失。请求预期失败或超时，具体表现依数据平面，不预设固定错误码。恢复后再次检查两个就绪端点与访问；变更尚未传播时，旧结果不代表新状态。
 
 ### 5.3 实验 C：只让一个后端未 Ready
 

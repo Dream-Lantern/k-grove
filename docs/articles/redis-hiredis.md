@@ -21,7 +21,7 @@ order: 15
 
 [返回本册目录](/collections/redis/)
 
-应用通过客户端库完成连接、请求发送和回复解析，还要管理截止时间、错误与重试。一次完整调用从等待连接开始，到取得可解释的结果结束。本章用 hiredis 的同步接口说明这条路径；代码为教学片段，尚无编译或连接服务器验证记录。
+应用通过客户端库完成连接、请求发送和回复解析，还要管理截止时间、错误与重试。一次完整调用从等待连接开始，经过建连、发命令、等服务端执行、读回并解析回复，到应用能判断“这次到底成没成”才结束。本章用 hiredis 的同步接口说明这条路径；代码为教学片段，尚无编译或连接服务器验证记录。
 
 hiredis 是轻量级 C 客户端库，负责建立连接，将命令格式化并编码为 RESP（Redis Serialization Protocol，Redis 序列化协议），发送请求、接收及解析回复，再转换成 C 数据结构。`redisContext` 是管理一条连接及其通信状态的上下文对象；`redisReply` 是同步调用交给应用处理的回复对象。本章固定以 **hiredis v1.2.0** 为依据，不把其他版本接口混入示例。[v1.2.0 官方说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
 
@@ -34,11 +34,11 @@ C 应用 ← redisReply        ← RESP 解析 ← 接收回复 ← Redis 服务
 
 [![Redis 客户端超时：端到端预算模型](/assets/notes/redis/redis-study-client-budget.svg)](/assets/notes/redis/redis-study-client-budget.svg)
 
-连接池先决定有没有可用连接，随后才可能发生 DNS（Domain Name System，域名系统）解析、TCP（Transmission Control Protocol，传输控制协议）建连、TLS（Transport Layer Security，传输层安全）握手、认证和命令读写。复用已建立的连接通常跳过建连阶段。服务端收到完整请求后也可能排队。SLOWLOG（慢查询日志）只覆盖命令执行部分，不是完整调用耗时，参见 [第 29 章慢查询与延迟](/articles/redis-slow-queries.html)。
+一次调用要排的队按顺序是这样的：先从连接池借一条连接，借不到就在这里等；拿到连接后，如果它是新建的，还要依次做 DNS（Domain Name System，域名系统）解析、TCP（Transmission Control Protocol，传输控制协议）建连、TLS（Transport Layer Security，传输层安全）握手和认证；这些都通了才把命令写出去，然后等服务端执行并读回回复。复用已建立的连接通常跳过建连这一段。服务端收到完整请求后也可能排队。SLOWLOG（慢查询日志）只覆盖命令执行部分，不是完整调用耗时，参见 [第 29 章慢查询与延迟](/articles/redis-slow-queries.html)。
 
-连接超时限制建立连接阶段；命令读写超时限制后续通信；连接池超时限制等待借用连接。Redis 服务端的 `timeout` 又是另一种空闲连接管理参数。把这些参数都设成相同数值，并不能自动得到合理的总超时。
+连接超时限制建立连接阶段；命令读写超时限制后续通信；连接池超时限制等待借用连接。Redis 服务端的 `timeout` 又是另一种空闲连接管理参数。这些参数各自约束一个阶段，设成同一数值也拼不出合理的总超时。
 
-| 阶段或参数                        | 控制内容                       | 不代表什么                               |
+| 阶段或参数                        | 控制内容                       | 容易混淆为                               |
 | --------------------------------- | ------------------------------ | ---------------------------------------- |
 | Pool Timeout（连接池等待超时）    | 等待借到可用连接，由连接池实现 | Redis 建连时间；hiredis 本身不提供连接池 |
 | Connect Timeout（连接超时）       | 建立连接过程中的适用等待       | 完整业务调用总耗时                       |
@@ -46,7 +46,7 @@ C 应用 ← redisReply        ← RESP 解析 ← 接收回复 ← Redis 服务
 | Redis timeout                     | 服务端对适用空闲客户端的管理   | 单条命令执行超时                         |
 | Business Deadline（业务截止时间） | 整个调用允许持续到的时刻       | 某一个 Socket（套接字）超时设置          |
 
-在 hiredis v1.2.0 中，`redisConnectWithTimeout` 为连接阶段提供超时；同步上下文的 `redisSetTimeout` 设置底层套接字读写超时。`redisOptions` 分别有 `connect_timeout` 和 `command_timeout`，可通过 `redisConnectWithOptions` 使用。它们不是整段业务的统一秒表，分次读写也不能直接等同于一次完整命令的总时限。[v1.2.0 接口定义](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/hiredis.h) · [同步超时设置](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/net.c)
+在 hiredis v1.2.0 中，`redisConnectWithTimeout` 为连接阶段提供超时；同步上下文的 `redisSetTimeout` 设置底层套接字读写超时。`redisOptions` 分别有 `connect_timeout` 和 `command_timeout`，可通过 `redisConnectWithOptions` 使用。它们分别约束连接与单次读写，整段业务的耗时要把各阶段叠加计算。[v1.2.0 接口定义](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/hiredis.h) · [同步超时设置](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/net.c)
 
 v1.2.0 的 TCP 连接实现会调用系统 `getaddrinfo` 解析域名，不能认为传入的 connect timeout 一定限制 DNS 调用总耗时。连接池等待由应用或其他库管理，TLS 握手和认证又有自己的调用路径，应分别核对配置和计时范围。[v1.2.0 连接实现](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/net.c) · [TLS 接入方式](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
 
@@ -141,7 +141,7 @@ cc -std=c11 -Wall -Wextra \
 | 情况                   | 返回结果                           | 应如何理解                                     |
 | ---------------------- | ---------------------------------- | ---------------------------------------------- |
 | 收到正常回复           | 非 NULL 的 redisReply              | 仍要核对类型和具体内容，例如 PING 的 PONG      |
-| Redis 命令错误         | 非 NULL，type 为 REDIS_REPLY_ERROR | 已收到错误回复，不代表连接已断开               |
+| Redis 命令错误         | 非 NULL，type 为 REDIS_REPLY_ERROR | 连接仍在，错误只针对本次命令                   |
 | 通信、协议或上下文异常 | NULL                               | 没有可使用的回复对象，先检查 c->err、c->errstr |
 | 读写超时               | NULL，错误上下文                   | 请求可能已经执行，结果可能未知                 |
 
@@ -152,14 +152,14 @@ NULL 时不能访问 `r->type` 或 `r->str`；所有非 NULL 的同步回复，�
 | 观察结果                                 | 处置思路                                                           |
 | ---------------------------------------- | ------------------------------------------------------------------ |
 | 收到完整 REDIS_REPLY_ERROR               | 收到服务端错误，连接未必损坏；仍需按具体命令判断错误前是否有副作用 |
-| 通信失败、读写超时，存在未确认请求或回复 | 将结果标记未知；不要当成干净连接归还池，也不要继续假定请求回复同步 |
+| 通信失败、读写超时，存在未确认请求或回复 | 结果未知；连接不能当作干净连接归还池，请求与回复的对应关系也已破坏 |
 | 已重新建立连接                           | 恢复认证、适用 DB 选择和其他连接状态；并不证明旧写入未执行         |
 
 上下文出错后，应按库约定关闭/重建，不能把“多读一下也许能对齐”当作通用恢复方法。PubSub 还需要恢复订阅，断线期间的普通通知不会自动补发；Cluster 的路由则由相应客户端管理。[hiredis v1.2.0 错误处理](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
 
 ## 3. 字节、格式串与内存归属
 
-String 可以包含零字节。二进制值不能简单用 C 的字符串结束符判断长度，应使用 `%b` 或 `redisCommandArgv` 的显式长度。不要把外部输入直接当成格式串。
+String 可以包含零字节。二进制值不能简单用 C 的字符串结束符判断长度，应使用 `%b` 或 `redisCommandArgv` 的显式长度。外部输入直接当格式串会引入格式串漏洞：用户传来的 `%s`、`%n` 会被 hiredis 当成占位符解析，轻则参数错位，重则按占位符读写本不该碰的内存。
 
 `%s` 按 `strlen` 确定长度，遇到零字节会停止；`%b` 要求指针和 `size_t` 长度，数据中有零字节也能完整传递。下面是另一个未编译的函数片段：调用者独占并持有健康上下文 `c`，函数只释放自己取得的回复；若出现通信错误，调用者应丢弃该上下文。它不是上面 PING 程序的一部分。
 
@@ -182,9 +182,9 @@ int set_binary_example(redisContext *c) {
 }
 ```
 
-预期健康实例接受 SET 后得到状态 OK。`redisCommandArgv` 则以参数数组及长度数组传递命令，适合已有独立参数或二进制键值的场景；不要先拼成未经控制的格式串。`%b` 和参数长度的约定见 [v1.2.0 命令格式化说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)。
+预期健康实例接受 SET 后得到状态 OK。`redisCommandArgv` 则以参数数组及长度数组传递命令，适合已有独立参数或二进制键值的场景；先把参数拼成格式串会重新引入注入风险。`%b` 和参数长度的约定见 [v1.2.0 命令格式化说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)。
 
-同步命令返回的回复对象由调用方按约定释放，上例用 `freeReplyObject`。上下文由 `redisFree` 释放；不要在异步回调里照搬同步回复的释放方式，下一章会区分。
+同步命令返回的回复对象由调用方按约定释放，上例用 `freeReplyObject`。上下文由 `redisFree` 释放；异步回调里照搬同步回复的释放方式会造成重复释放，下一章会区分。
 
 hiredis v1.2.0 的同步 redisContext 不是线程安全对象。即使连接池是线程安全的，也不意味着借出的单连接可以同时被多个请求交错读写。应明确连接的所有权，避免 A 请求读到 B 的回复。[v1.2.0 线程安全说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md)
 
@@ -208,8 +208,8 @@ hiredis v1.2.0 的同步 redisContext 不是线程安全对象。即使连接池
 
 假设 `INCR demo:orders` 已在服务端执行，回复却在返回途中丢失。客户端看到超时，再次执行 INCR 就会多加一次。因此“没收到成功”不能推出“没有执行”。
 
-读请求通常更容易重试；写请求需要结合请求唯一标识、条件更新、业务去重和恢复查询判断。即使使用 SET，同一值重试也可能重新计算 TTL，或者覆盖另一位写入者的新值，不能只按命令名称宣布幂等。
+读请求通常更容易重试，多读一次一般不会改变数据。写请求要先想清楚怎么认出“这就是刚才那一次”：给请求带唯一标识，让重复执行能被识别；改用条件更新，让第二次执行因为条件不成立而不生效；或在业务侧去重、事后回查结果。选哪条取决于业务能容忍多少重复。即使使用 SET，同一值重试也可能重新计算 TTL，或者覆盖另一位写入者的新值，不能只按命令名称宣布幂等。
 
-排查连接问题时，至少保留错误阶段、耗时、重试次数和业务请求标识；日志中不要记录口令或完整敏感值。连接持续报错时，应先弄清网络、认证、路由和服务器状态，而不是无上限创建新连接。
+排查连接问题时，至少保留错误阶段、耗时、重试次数和业务请求标识；日志里记录口令或完整敏感值，会把凭据扩散到日志系统。连接持续报错时，应先弄清网络、认证、路由和服务器状态，而不是无上限创建新连接。
 
 生产连接还需明确 TLS 证书校验、ACL 用户及最小权限、连接池容量、TCP Keepalive（连接保活）、断线恢复、命令超时和业务 Deadline。Keepalive 检测失联不替代业务截止时间。hiredis v1.2.0 的 TLS 支持需单独构建和链接相关库，不能把普通 localhost 教学连接当作已经启用加密认证的生产方案。[v1.2.0 TLS 与保活说明](https://raw.githubusercontent.com/redis/hiredis/v1.2.0/README.md) · [第 31 章安全与维护](/articles/redis-security-maintenance.html)

@@ -21,7 +21,7 @@ order: 15
 
 > 阅读标签：x86 32 位非 PAE、4 KiB 页、4 字节表项、两级分页，不使用大页的教学模型。
 
-程序需要连续的虚拟空间，并不意味着系统总能找到同样连续的物理内存。分页把虚拟空间分为页，把物理内存分为页框，再通过页表连接两者；相邻虚拟页可以映射到不相邻物理页框。以下统一把平坦分段下的虚拟地址作为线性地址讨论，历史分段生成线性地址的过程见上一组章节。
+程序需要连续的虚拟空间，物理内存未必有同样连续的空闲区。分页把虚拟空间分为页，把物理内存分为页框，再通过页表连接两者；相邻虚拟页可以映射到不相邻物理页框。以下统一把平坦分段下的虚拟地址作为线性地址讨论，历史分段生成线性地址的过程见上一组章节。
 
 本章关闭物理地址扩展（PAE，Physical Address Extension），只分析 32 位地址和普通 4 KiB 页。它不是所有中央处理器（CPU，Central Processing Unit）及现代 Linux 的通用结构。相关硬件规则依据 [Intel 手册 Volume 3A 的 Paging 章节](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)。
 
@@ -61,13 +61,13 @@ order: 15
 每项 4 字节  → 2^20 × 4 = 2^22 字节 = 4 MiB
 ```
 
-4 MiB 是覆盖整个 32 位虚拟页空间的**完整平坦表**的规模，不表示进程已使用 4 GiB 物理内存。即使程序只映射很少几页，这种完整平坦结构也要保留全部条目，这正是引入按需分层的动机。
+4 MiB 是覆盖整个 32 位虚拟页空间的**完整平坦表**的规模，不表示进程已使用 4 GiB 物理内存。麻烦在于：即使程序只映射很少几页，这种完整平坦结构也要为其余根本用不到的页全部留好条目。下一节的两级表就是冲着这一点改的——哪一块地址真的要用，才为那一块建下级表。
 
 页表项大小、地址宽度和页尺寸必须固定，不能把此数推广到任意 64 位机器。页表本身占用内核管理的物理内存，不是应用可以随意修改的普通数组。
 
 ## 3. 两级表按需建立
 
-页目录项（PDE，Page Directory Entry）指向适用的二级页表；页表项（PTE，Page Table Entry）在本模型中描述数据页映射。每张表 1024 项、每项 4 字节，因此目录和每张二级表各占 4 KiB；一张二级表覆盖 `1024 × 4 KiB = 4 MiB` 虚拟范围。
+两级结构像两层目录。页目录项（PDE，Page Directory Entry）是上层目录里的一格，记着一张二级表在哪个物理页；页表项（PTE，Page Table Entry）是二级表里的一格，在本模型中才真正指出数据页落在哪个页框。每张表 1024 项、每项 4 字节，因此目录和每张二级表各占 4 KiB；一张二级表覆盖 `1024 × 4 KiB = 4 MiB` 虚拟范围。
 
 [![0x2240 的 10/10/12 位拆分、PDE/PTE 物理位置与 0x7240 结果](/assets/notes/operating-systems/os-paging.svg)](/assets/notes/operating-systems/os-paging.svg)
 
@@ -84,11 +84,11 @@ order: 15
 
 PDE/PTE 保存的是地址信息和属性，不能把整个条目的数值都当页框号。允许用户写入不能只看叶子 PTE，还需相应 PDE 的用户/写权限允许；内核态写入另受适用控制位等规则影响。此处限定正常用户态访问，未完整展开所有保护功能。
 
-页表遍历和数据访问都经过硬件相关机制；真实 CPU 可能命中翻译后备缓冲（TLB，Translation Lookaside Buffer），从缓存中取得翻译而避免每次完整遍历。相邻虚拟页 3 也可映射页框 9，使 `0x3000` 对应 `0x9000`，无需接在页框 7 后面。[Linux Page Tables](https://docs.kernel.org/mm/page_tables.html)
+页表遍历和数据访问都经过硬件相关机制；真实 CPU 还会把最近用过的“虚拟页 → 页框”结果记在一小块缓存里，这就是翻译后备缓冲（TLB，Translation Lookaside Buffer）。再访问同一页时先查这块缓存，查到就不必把上面的六步再走一遍。相邻虚拟页 3 也可映射页框 9，使 `0x3000` 对应 `0x9000`，无需接在页框 7 后面。[Linux Page Tables](https://docs.kernel.org/mm/page_tables.html)
 
 ## 4. 多级页表的空间与遍历成本 {#_4-多加一级不是永远更省}
 
-若某个目录覆盖的 4 MiB 范围完全不需要叶子映射，可以不建立对应二级页表；但只要建了二级表，就占完整的 4 KiB，不能把其中每个无效条目当成不占空间。
+如果某个目录项管的那 4 MiB 地址范围内，一页都不需要真正落到物理内存上，内核干脆不建这张二级表，这份开销就省了；但只要建了二级表，它就占完整的 4 KiB，其中暂时无效的条目同样占着位置，不能当成不占空间。
 
 | 映射分布（仅统计表结构）         | 完整平坦单级表 | 本模型两级结构                              |
 | -------------------------------- | -------------- | ------------------------------------------- |
@@ -99,7 +99,7 @@ PDE/PTE 保存的是地址信息和属性，不能把整个条目的数值都当
 
 [![完整平坦页表与稀疏两级页表的表结构开销对照](/assets/notes/operating-systems/os-page-table-cost.svg)](/assets/notes/operating-systems/os-page-table-cost.svg)
 
-这些数值不含被映射的数据页、VMA 或其他内核开销；仅映射一页时的 8 KiB 不包括那一页数据本身。可见节省来自“未使用范围不分配下级表”，不是“所有多级表永远比单级小”。更深层级增加遍历工作，稠密程度、表页大小、大页与缓存都会影响实际成本。
+这些数值不含被映射的数据页、VMA 或其他内核开销；仅映射一页时的 8 KiB 不包括那一页数据本身。省下来的部分，全部来自“用不到的范围不建下级表”；地址映射得很稠密时，两级表反而要为每 4 MiB 配一张 4 KiB 的表，总开销会追上甚至超过单级表。层级更深还会让每次访问多读几级表，表页大小、大页与缓存也都会影响实际成本。
 
 ### 与现代结构对照
 
@@ -110,7 +110,7 @@ PDE/PTE 保存的是地址信息和属性，不能把整个条目的数值都当
 | x86-64 五级      | 在支持并启用的硬件/系统配置下增加一级，扩展可用线性地址范围                    |
 | Linux 软件抽象   | PGD → P4D → PUD → PMD → PTE，按架构和配置折叠不需要的层级                      |
 
-这些软件层名分别指 Page Global Directory（全局页目录）、Page 4th-level Directory（第四级目录）、Page Upper Directory（上层目录）、Page Middle Directory（中间目录）与页表项层。软件有五级抽象，不等于机器一定启用了五级硬件分页。适用大页可以在更高层级结束遍历。CR3 是 x86 的控制寄存器机制，不是所有平台通用的“页表寄存器”。[Linux 页表层级与折叠](https://docs.kernel.org/mm/page_tables.html)
+这些软件层名分别指 Page Global Directory（全局页目录）、Page 4th-level Directory（第四级目录）、Page Upper Directory（上层目录）、Page Middle Directory（中间目录）与页表项层。软件有五级抽象，机器是否启用五级分页要另查。适用大页可以在更高层级结束遍历。CR3 是 x86 的控制寄存器机制，不是所有平台通用的“页表寄存器”。[Linux 页表层级与折叠](https://docs.kernel.org/mm/page_tables.html)
 
 ## 5. 翻译也包含保护
 
@@ -126,7 +126,7 @@ PDE/PTE 保存的是地址信息和属性，不能把整个条目的数值都当
 
 [![映射有效、映射缺失与权限不足后由内核判定能否恢复的分支](/assets/notes/operating-systems/os-page-access.svg)](/assets/notes/operating-systems/os-page-access.svg)
 
-访问若先违反分段规则，会在分页之前走其他异常；x86-64 非规范地址也不能一律叫缺页。本节只讨论已限定的分页访问。TLB 未命中仅表示缓存中没找到可用翻译，页表有效时仍可成功遍历，不等于缺页，更不等于必读磁盘。[Intel Volume 3A：Access Rights 与 Page-Fault Exceptions](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
+访问若先违反分段规则，会在分页之前走其他异常；x86-64 非规范地址触发的是其他异常。本节只讨论已限定的分页访问。TLB 未命中仅表示缓存中没找到可用翻译，页表有效时仍可成功遍历，与缺页、读盘都不是一回事。[Intel Volume 3A：Access Rights 与 Page-Fault Exceptions](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
 
 ## 6. Python 两级页表模拟
 

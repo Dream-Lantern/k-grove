@@ -19,7 +19,7 @@ order: 3
 
 # 第 3 章 CUDA 执行模型：Grid、Block、Warp 与同步
 
-CUDA 程序通过 Grid、Block 和线程组织并行工作。一次 launch 定义任务布局，硬件将线程块分配到 SM，再以 warp 等粒度推进指令。本章沿这条路径解释同步范围、资源占用和数据覆盖。
+CUDA 程序靠三层划分把活分给 GPU：一次 launch 先定义整个任务怎么切（Grid），再切成若干线程块（Block），块里再分成一个个线程。提交之后，硬件把线程块分到 SM 上，再以 warp 为单位推进指令。本章沿这条路径解释同步范围、资源占用和数据覆盖。
 
 ## 1. 从一次 kernel launch 看层次
 
@@ -29,7 +29,7 @@ CUDA 程序通过 Grid、Block 和线程组织并行工作。一次 launch 定�
 
 图中的块编号和箭头示意一种分配结果。SM 会从已常驻的 warp 中调度指令，同一 SM 上的块可以同时常驻，图中的“按时间片顺序执行”可理解为资源不足时部分块分批执行。图中 Thread 方格表示逻辑线程，Warp 的 32 线程分组见第 2 节。
 
-普通线程块整体被分配到某个 SM 上执行；同一 SM 可以容纳多个 block，数量受寄存器、共享内存和架构上限约束。block 的执行先后不可假定，更不能依赖“block 0 必须先完成”。支持 thread block cluster 的新架构还有额外协作机制，不能倒推为所有 GPU 都支持。
+普通线程块整体被分配到某个 SM 上执行；同一 SM 可以容纳多个 block，数量受寄存器、共享内存和架构上限约束。block 的执行先后不可假定，“block 0 先完成”没有依据。支持 thread block cluster 的新架构还有额外协作机制，这一能力只属于相应架构。
 
 ### 一维索引推演
 
@@ -46,9 +46,9 @@ CUDA 程序通过 Grid、Block 和线程组织并行工作。一次 launch 定�
 
 ## 2. Warp 是 32 个线程的执行组织
 
-在本册讨论的 NVIDIA CUDA 架构中，一个 warp 包含 32 个线程。SIMT 允许线程按各自数据执行相同程序。分支条件在 warp 内不一致时，会产生发散并可能降低执行效率。
+在本册讨论的 NVIDIA CUDA 架构中，一个 warp 包含 32 个线程，硬件按 warp 统一取指和发指令。SIMT（单指令多线程）的意思是：同一条指令一次发给 warp 内所有线程，每条线程拿自己的数据去算。因此分支条件在 warp 内不一致时，两条路径只能分先后各执行一遍，这就是发散，可能降低执行效率。
 
-从 Volta 起还需要考虑 Independent Thread Scheduling。不要假设 warp 内线程始终隐式同步；涉及 warp 内共享数据时使用正确的掩码、同步或原语。`__syncthreads()` 是线程块范围的屏障，要求该块需要参与的线程以合法方式到达，不能放在仅部分线程会进入的分支中。[CUDA 编程模型与硬件实现，12.8.1](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html)
+从 Volta 起还需要考虑 Independent Thread Scheduling。warp 内线程并非始终隐式同步；涉及 warp 内共享数据时使用正确的掩码、同步或原语。`__syncthreads()` 是线程块范围的屏障，要求该块需要参与的线程以合法方式到达，放在仅部分线程会进入的分支中会破坏参与条件。[CUDA 编程模型与硬件实现，12.8.1](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html)
 
 ### 案例 A：同一 Warp 走不同分支
 
@@ -82,13 +82,13 @@ int value = shared_value;
 
 ## 3. 从常驻到就绪与指令发射 {#_3-常驻不等于每周期都执行}
 
-常驻 warp 会占用相应硬件资源，但也可能正在等待数据或依赖；只有满足发射条件的 warp 才有机会被调度器选中。本章用“等待—就绪—选中”说明延迟隐藏。
+常驻 warp 会占用相应硬件资源，但也可能正在等待数据或依赖；只有满足发射条件的 warp 才有机会被调度器选中。本章用“等待—就绪—选中”说明延迟隐藏：一个 warp 等数据的时候，调度器转去发射另一个就绪 warp 的指令，把这段空档填掉。
 
-程序正确性应建立在公开同步与执行契约上，不能依赖某种未明确保证的 warp 调度偏好。资源占用高时，所有常驻 warp 仍可能等待同类依赖，因此吞吐需要结合就绪工作和瓶颈观察。
+程序正确性应建立在公开同步与执行契约上，未明确保证的 warp 调度偏好不进入正确性论证。资源占用高时，所有常驻 warp 仍可能等待同类依赖，因此吞吐需要结合就绪工作和瓶颈观察。
 
 ## 4. 跨 Block 通信与进度前提 {#_4-block-之间能否通信}
 
-可以通过合法的全局内存、原子操作或相应协作机制交换数据，但普通 kernel 内不存在一个随手可用的全 grid 屏障。简单地让一个 block 自旋等待另一个尚未被调度的 block，可能死锁。
+block 之间可以通过合法的全局内存、原子操作或相应协作机制交换数据，但普通 kernel 里没有一个“等所有 block 都到齐再继续”的全 grid 屏障。让一个 block 原地空转、等另一个还没被调度的 block 写标志，就可能死锁，因为那个 block 也许永远拿不到 SM。
 
 入门时，最稳妥的设计是将不同阶段拆成多个 kernel，在同一 stream 中按序执行；需要跨块协作时，再研究 cooperative launch、cluster 等条件。先确认算法正确，再判断多一次提交是否确实造成了瓶颈。
 
@@ -102,7 +102,7 @@ int value = shared_value;
 
 ## 5. 线程块大小的选择
 
-128、256 等只是常见试验点，不是最优定律。用 occupancy API 得到候选值后，还要看访问合并、寄存器压力、尾部浪费和端到端时间。如果为了限制 grid 大小而只启动少量 block，kernel 必须采用 grid-stride loop 等方式覆盖全部数据，不能漏算剩余元素。
+128、256 等只是常见试验点，最优值随 kernel 与设备变化。用 occupancy API 得到候选值后，还要看访问合并、寄存器压力、尾部浪费和端到端时间。如果为了限制 grid 大小而只启动少量 block，kernel 必须采用 grid-stride loop 等方式覆盖全部数据，漏算剩余元素会造成结果不完整。
 
 ### 从资源预算算 Occupancy
 
@@ -132,7 +132,7 @@ __global__ void add_stride(const float* a, const float* b,
 }
 ```
 
-假设启动了 1024 个线程而数组有 10000 个元素，线程会按步长继续处理后续位置，而不是只算前 1024 个。这个例子假设索引和步长在 `size_t` 中可表示；超大规模还要检查乘法与递增溢出。occupancy API 只能帮助选择候选启动规模，不能代替完整覆盖和实测。
+假设启动了 1024 个线程而数组有 10000 个元素，线程会按步长继续处理后续位置，而不是只算前 1024 个。这个例子假设索引和步长在 `size_t` 中可表示；超大规模还要检查乘法与递增溢出。occupancy API 只帮助选择候选启动规模，完整覆盖与实测仍需另行进行。
 
 ### 用第 4 章的主程序验证覆盖
 
@@ -175,13 +175,13 @@ Windows 终端运行对应的 `vector_add_stride.exe`。预期空输入直接通
 
 ## 7. 函数限定符说的是调用与执行语义
 
-| 限定符       | 常见含义                      | 不应理解为                      |
-| ------------ | ----------------------------- | ------------------------------- |
-| `__host__`   | host 端函数                   | 源码存放在 CPU 内               |
-| `__device__` | device 端函数，由设备代码调用 | host 可以像普通函数一样直接调用 |
-| `__global__` | device 执行的 kernel 入口     | 所有场景都只能由 host 发起      |
+| 限定符       | 常见含义                      | 常见误解                  |
+| ------------ | ----------------------------- | ------------------------- |
+| `__host__`   | host 端函数                   | 源码位置等同执行位置      |
+| `__device__` | device 端函数，由设备代码调用 | host 可直接按普通函数调用 |
+| `__global__` | device 执行的 kernel 入口     | 只能由 host 发起          |
 
-设备端 kernel launch 属于动态并行，须核对架构、Toolkit 与链接要求。它与设备堆上的 `malloc`，以及 host 端 `cudaMalloc` 是不同机制。[CUDA 12.8.1 编译与链接说明](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-compiler-driver-nvcc/index.html)
+在设备代码里启动子 kernel 属于动态并行，须核对架构、Toolkit 与链接要求。注意这不是一回事，而是三件不同的事：动态并行是在 GPU 上再起一个 kernel；设备堆上的 `malloc` 是在设备侧申请内存；host 端 `cudaMalloc` 是由 CPU 调用来申请显存。[CUDA 12.8.1 编译与链接说明](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-compiler-driver-nvcc/index.html)
 
 下面是调用关系片段。主机调用普通 host 函数，用启动语法提交 kernel。运行在设备上的 kernel 再调用 device 函数。
 
@@ -201,10 +201,10 @@ void launch(float* device_result) {
 }
 ```
 
-省略限定符的普通函数默认为 host 函数。设备端启动子 kernel 属于 CUDA Dynamic Parallelism（动态并行），在 CUDA 12.8.1 中应核对 Toolkit 支持的目标架构，按设备运行时要求启用可重定位设备代码并链接设备运行时。CUDA 12.0 起默认采用 CDP2，计算能力 9.0 及以上使用 CDP2。旧版设备侧 `cudaDeviceSynchronize()` 规则不能直接套用。详见 [CUDA 12.8.1 Dynamic Parallelism](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html#cuda-dynamic-parallelism)。
+省略限定符的普通函数默认为 host 函数。设备端启动子 kernel 属于 CUDA Dynamic Parallelism（动态并行），在 CUDA 12.8.1 中应核对 Toolkit 支持的目标架构，按设备运行时要求启用可重定位设备代码并链接设备运行时。CUDA 12.0 起默认采用 CDP2，计算能力 9.0 及以上使用 CDP2。旧版设备侧 `cudaDeviceSynchronize()` 规则在 CDP2 下不再适用。详见 [CUDA 12.8.1 Dynamic Parallelism](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-c-programming-guide/index.html#cuda-dynamic-parallelism)。
 
 ## 理解检查
 
 - 若最后一个块有线程越过数组末尾，应该怎样保护访存，同时确保块屏障合法？
-- 为什么原子标志能处理一部分通信问题，却不能保证另一个块得到调度？
+- 为什么原子标志能处理一部分通信问题，却决定不了另一个块是否得到调度？
 - 启动 1024 个线程时，索引 1024 和 9999 分别由哪个线程在第几轮处理？

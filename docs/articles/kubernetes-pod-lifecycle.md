@@ -25,18 +25,18 @@ order: 13
 
 Pod 是运行一组紧密协作容器的资源单元。普通 Pod 中的容器共享网络环境，并可通过卷共享文件；它们不自动共享各自镜像里的所有文件。
 
-Pod 对象有自己的 UID（Unique Identifier，唯一标识符）。原 Pod 删除后，即使控制器创建了同名替代对象，也不代表旧 UID 被迁移到另一节点。而在原 Pod 内重启容器，仍属于同一个 Pod 的容器运行过程。
+Pod 对象有自己的 UID（Unique Identifier，唯一标识符）。原 Pod 删除后，控制器补上的替代对象即使名字相同，也是另一个对象、另一个 UID，旧 UID 不会跟着名字走；而在原 Pod 内重启容器，换的只是容器实例，Pod 对象还是原来那个。
 
 | 场景                              | 名称与 UID                         | 如何理解                                          |
 | --------------------------------- | ---------------------------------- | ------------------------------------------------- |
 | 同一 Pod 内应用容器异常退出后重启 | Pod 名、UID 通常不变，容器实例改变 | 查看 restartCount 与上次退出状态                  |
 | 原 Pod 删除后控制器补副本         | 新对象、新 UID，名称通常也改变     | 不是原对象复活                                    |
-| StatefulSet 重建同一序号的 Pod    | 可以复用名称，UID 改变             | 名称稳定不代表对象身份未变                        |
+| StatefulSet 重建同一序号的 Pod    | 可以复用名称，UID 改变             | 名称稳定，对象身份已变                            |
 | 已绑定节点发生故障                | 原 UID 不会搬到另一节点            | 控制器按条件创建替代对象；裸 Pod 不会自行获得替代 |
 
 [![Pod 生命周期：同一个对象不会迁移到另一节点](/assets/notes/kubernetes/k8s-pod-lifetime.svg)](/assets/notes/kubernetes/k8s-pod-lifetime.svg)
 
-排查时同时记录 Pod 名、UID、节点、创建时间和容器重启次数，可以避免把“新对象接替”误读成“旧进程恢复”。稳定名称在 StatefulSet 中尤其常见，名称稳定与实例不变是不同概念。
+排查时同时记录 Pod 名、UID、节点、创建时间和容器重启次数，可以避免把“新对象接替”误读成“旧进程恢复”。StatefulSet 里名称复用很常见，但名字被复用的时候，坐在这名字上的已经是另一个对象。
 
 ## 2. 初始化容器处理启动前置条件
 
@@ -149,9 +149,9 @@ kubectl logs catalog-init -n study -c app
 kubectl delete -f catalog-init.yaml
 ```
 
-预期观察：两个 init 的 state.terminated.reason 为 Completed、exitCode 为 0 后，app 才运行，日志输出 ready。prepare、verify 不主动打印日志，空日志本身不代表失败。连续检查 initContainerStatuses 中的 restartCount、state、lastState 和事件判断重试；单次快照与日志保留不能证明历史上从未重复执行。
+预期观察：两个 init 的 state.terminated.reason 为 Completed、exitCode 为 0 后，app 才运行，日志输出 ready。prepare、verify 不主动打印日志，空日志只说明没有输出，失败要看退出状态。连续检查 initContainerStatuses 中的 restartCount、state、lastState 和事件判断重试；单次快照与日志保留不能证明历史上从未重复执行。
 
-初始化动作应能重试。直接在每次 init 中执行不可重复的数据迁移，可能造成重复副作用。Kubernetes 1.28 还存在受特性门控控制的 sidecar 相关演进，本文的“运行完再启动应用”只针对普通 init，不应外推到所有后续版本的可重启 init 容器。
+初始化动作应能重试。直接在每次 init 中执行不可重复的数据迁移，可能造成重复副作用。Kubernetes 1.28 还存在受特性门控控制的 sidecar 相关演进，本文的“运行完再启动应用”只针对普通 init；可重启 init 容器属于后续版本，本文结论不覆盖它。
 
 ## 3. 生命周期钩子与探针的分工 {#_3-lifecycle-与探针不是同一组配置}
 
@@ -174,7 +174,7 @@ preStop 用于适用终止流程中的收尾。它不是“Pod 对象只要消�
 
 ## 4. 优雅终止与端点状态传播 {#_4-终止过程为何不能画成绝对串行}
 
-删除请求记录在 API 后，节点侧开始处理适用的优雅终止；相关控制器也会更新端点信息。二者的传播与处理不会自动成为“所有连接先排空，再向应用发信号”的严格屏障。
+删除请求写进 API 之后，两条线同时开始：kubelet 在节点上走适用的终止流程，端点控制器把该 Pod 标成终止中。这两条线并行推进，走到哪算哪，并不构成“连接先全部排空，再给应用发信号”的固定先后顺序。
 
 `terminationGracePeriodSeconds` 限制适用的优雅终止时间。preStop 消耗其中的时间，不能把“钩子等待时间”和“完整应用收尾时间”当成互不占用的两份预算。
 
@@ -194,7 +194,7 @@ containers:
 
 | 教学阶段               | 节点终止分支                                          | 时间含义                         |
 | ---------------------- | ----------------------------------------------------- | -------------------------------- |
-| T0                     | API 接受删除请求，记录 deletionTimestamp 和适用宽限期 | 不代表所有组件同时看到变化       |
+| T0                     | API 接受删除请求，记录 deletionTimestamp 和适用宽限期 | 各组件不会同时看到变化           |
 | T0 后                  | kubelet 观察到删除，开始本地终止处理                  | 观察与执行有传播延迟             |
 | 本地开始后的约 0～8 秒 | PreStop 执行 8 秒                                     | 消耗总计 30 秒预算               |
 | PreStop 返回后         | 运行时通常向容器 PID 1 发送 SIGTERM（终止信号）       | 实际停止信号结合镜像、运行时确认 |
@@ -205,7 +205,7 @@ containers:
 
 [![Pod 优雅终止：节点与端点传播并行，PreStop 占用宽限期](/assets/notes/kubernetes/k8s-pod-termination-timeline.svg)](/assets/notes/kubernetes/k8s-pod-termination-timeline.svg)
 
-EndpointSlice（服务端点切片）更新是并行分支：终止中的端点通常表现为 terminating=true、ready=false，serving 可表达终止期间是否仍能服务；各数据平面观察与应用变化需要时间。Terminating 不等于已有连接排空，也没有“所有代理确认后才发 SIGTERM”的屏障。端点条件可回看[第十九章 Service 与 EndpointSlice](/articles/kubernetes-service-endpointslice.html)。
+EndpointSlice（服务端点切片）更新是并行分支：终止中的端点通常表现为 terminating=true、ready=false，serving 可表达终止期间是否仍能服务；各数据平面观察与应用变化需要时间。Terminating 只表示删除已开始，已有连接未必排空；也没有“所有代理确认后才发 SIGTERM”的屏障。端点条件可回看[第十九章 Service 与 EndpointSlice](/articles/kubernetes-service-endpointslice.html)。
 
 应用需要停止接收新任务、处理已有请求，并适时结束进程。仅在 preStop 中 sleep，而应用不处理停止信号，无法保证请求不丢失；如果等待期间未能正常结束，平台仍可能强制终止剩余进程。
 
@@ -215,11 +215,11 @@ EndpointSlice（服务端点切片）更新是并行分支：终止中的端点�
 
 ## 5. 重启策略与成功失败
 
-普通应用容器的重启策略为 `Always`、`OnFailure`、`Never`，分别表达不同退出条件下的重启行为。选择哪一种要结合工作负载：长期服务与执行完即可结束的批处理，不应使用同一种心智模型。
+普通应用容器的重启策略有 `Always`、`OnFailure`、`Never` 三种：`Always` 是容器不管以什么退出码结束都重新拉起；`OnFailure` 只在退出码非零时重启，正常退出就到此为止；`Never` 一律不重启。长期在线的服务和跑完就该结束的批处理，对“退出之后该不该再来一次”的期望正好相反，所以要按工作负载选。
 
 `CrashLoopBackOff` 表示重复失败后的退避现象，并不是一个独立 Pod phase。仅提高探针超时未必能解决进程入口、缺失配置或应用异常；应先定位首次退出的原因。
 
-`Running` 也不等于 Ready，Ready 更不保证业务所有依赖都正确。探针应围绕应用真实的可服务条件设计，避免一份返回固定成功的接口掩盖故障。
+`Running` 只说明容器进程在跑，Ready 也只反映探针结果，业务依赖仍要另查。探针应围绕应用真实的可服务条件设计，避免一份返回固定成功的接口掩盖故障。
 
 ## 6. 读日志时保留实例边界
 

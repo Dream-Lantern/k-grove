@@ -19,7 +19,7 @@ order: 90
 
 # 六周系统学习路线与主动复习
 
-> 建议每周投入 4～6 小时。按执行链、设计权衡和实验验证三个层次学习，每周留下可检查的图、代码或记录。
+> 建议每周投入 4～6 小时。每周按三件事推进：先弄清一次执行从头到尾经过哪些环节、每个环节谁负责；再想清楚设计上做了哪些取舍；最后用实验或记录证明自己真的跑通了。每周留下可检查的图、代码或记录。
 
 | 周    | 主题                                | 最小学习目标                          | 核心产物                            |
 | ----- | ----------------------------------- | ------------------------------------- | ----------------------------------- |
@@ -52,7 +52,7 @@ python -X utf8 main.py --provider offline-demo --output demo.json
 python examples/ai-agent/ch9-11-review/controlled_plan.py
 ```
 
-输入为固定 DemoLLM 计划；检查 `before_approval=REJECTED`、`after_approval=APPROVED`、`same_execution_on_retry=true`、`missing_metrics=UNKNOWN`。该程序演示批准、幂等和 SLO 约束，不含模型决策循环。再写一份含任务、工作目录、文件和下一步的 Checkpoint。进阶可选上下文压缩或真实工具接入，分别保存新增配置与反馈。
+输入为固定 DemoLLM 计划；检查 `before_approval=REJECTED`、`after_approval=APPROVED`、`same_execution_on_retry=true`、`missing_metrics=UNKNOWN`。这个脚本不调用模型，只演示批准、幂等和 SLO 约束这几段程序逻辑。再写一份含任务、工作目录、文件和下一步的 Checkpoint。进阶可选上下文压缩或真实工具接入，分别保存新增配置与反馈。
 
 ### 第2周：运行最小检索并核对三个指标
 
@@ -89,7 +89,7 @@ for row in report["per_query"]:
     })
 ```
 
-最小验收是查询、候选 ID／名次、相关标注及三个指标可以互相复算。若得到 `[B,A]`、相关集为 `{A,B}`，则 Hit@5、Recall@5、RR@5 都为 1；结果不同就按实际候选定位分词或输入差异。不要直接把上游未截断的单题 `mrr` 字段改名为 RR@5。进阶再扩充语料或加入 Dense／Rerank。
+最小验收：拿着查询、候选 ID 和名次、相关标注，能自己手算出三个指标，并且与脚本输出一致。若得到 `[B,A]`、相关集为 `{A,B}`，则 Hit@5、Recall@5、RR@5 都为 1；结果不同就按实际候选定位分词或输入差异。上游未截断的单题 `mrr` 字段与 RR@5 口径不同，改名会混淆两者。进阶再扩充语料或加入 Dense／Rerank。
 
 ### 第3周：区分校验、授权与执行反馈
 
@@ -139,7 +139,7 @@ python examples/ai-agent/ch9-11-review/audio_state.py
 python -X utf8 examples/ai-agent/ch9-11-review/translation_contracts.py
 ```
 
-检查无 ACK 时停止确认仍为 UNKNOWN、重复／旧代次不改变新回复；核对两章术语返修前后指标、输入 Hash 和新版本。再列出单 Agent 与 Manager 方案的公平控制变量。真实音频设备或付费翻译消融是选做，不能把离线状态输出当成它们的性能结果。
+检查无 ACK 时停止确认仍为 UNKNOWN、重复／旧代次不改变新回复；核对两章术语返修前后指标、输入 Hash 和新版本。再列出单 Agent 与 Manager 方案的公平控制变量。真实音频设备或付费翻译消融是选做；离线状态输出只是教学记录，与这些实验的性能结果是两回事。
 
 ## 每章学习记录模板
 
@@ -206,30 +206,30 @@ python -X utf8 examples/ai-agent/ch9-11-review/translation_contracts.py
 
 ### 回答后如何自检
 
-保留上面 20 道题。答完后用下表核对机制、前提和易混点，再回到对应章节查漏；检查点不是要求背诵的标准长答案。
+保留上面 20 道题。答完后用下表核对机制、前提和易混点，再回到对应章节查漏；检查点用于核对理解，背诵标准长答案并非目的。
 
-| 题号 | 对应章节                                                                                                              | 答案至少应包含                                                                                    |
-| ---- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| 1    | [第1章：Harness](/articles/ai-agent-harness.html)                                                                     | 模型提议动作，运行时管理工具、状态、预算、权限与退出；有工具不等于有可靠执行闭环                  |
-| 2    | [第1章：执行循环](/articles/ai-agent-harness.html)                                                                    | 工具/状态反馈、重复或无进展检测、有限预算；成功、失败、取消各有退出条件                           |
-| 3    | [第2章：上下文压缩](/articles/ai-agent-context-engineering.html)                                                      | 关键性、能否重读、时效与信任边界；批准约束须可恢复且由执行器强制，不依赖摘要措辞                  |
-| 4    | [第2章：注入与信任](/articles/ai-agent-context-engineering.html)和[第4章：护栏](/articles/ai-agent-tools-events.html) | 外部内容是数据；权限、工具白名单和参数校验由程序执行，Prompt 不能成为唯一防线                     |
-| 5    | [第2章：Skills](/articles/ai-agent-context-engineering.html)和[第4章：工具发现](/articles/ai-agent-tools-events.html) | Skill 按需加载流程指导，工具发现按任务找能力/Schema；二者不自动执行或授予权限                     |
-| 6    | [第3章：记忆](/articles/ai-agent-memory-rag.html)和[第8章：持续改进](/articles/ai-agent-continuous-improvement.html)  | 写入可检索事实不等于参数更新；策略经验需归纳、验证、选载体并回归                                  |
-| 7    | [第3章：Sparse/Dense](/articles/ai-agent-memory-rag.html)                                                             | 精确术语、型号等词面匹配可利于 BM25；同义语义可能利于 Dense，不能无条件排序优劣                   |
-| 8    | [第3章：检索评价](/articles/ai-agent-memory-rag.html)                                                                 | Reranker 只能重排已召回候选；正确片段未进入候选集时需修召回链                                     |
-| 9    | [第4章：工具契约](/articles/ai-agent-tools-events.html)                                                               | 稳定业务键、参数指纹、持久状态与原子去重；同键不同请求应冲突，不是模型记住不重试                  |
-| 10   | [第4章：事件契约](/articles/ai-agent-tools-events.html#event-contract)                                                | event_id 管重投递，generation/version 管时效；旧结果、冲突身份和取消后晚到消息需检查              |
-| 11   | [第5章：Coding Agent](/articles/ai-agent-coding-agent.html)                                                           | 实际 diff、目标测试与旧行为回归；工具返回成功不等于代码行为正确，静态扫描不等于沙盒               |
-| 12   | [第6章：Pass 指标](/articles/ai-agent-evaluation.html)                                                                | 至少一次成功与全部成功；单题 IID 前提、逐题后汇总，实际选择器和副作用另计                         |
-| 13   | [第6章：配对评估](/articles/ai-agent-evaluation.html)                                                                 | 同任务结果对应、不一致配对、缺一侧不能硬配；同题重复不是独立新任务                                |
-| 14   | [第7章：LoRA](/articles/ai-agent-post-training.html)                                                                  | rank 控制低秩容量，target_modules 决定覆盖矩阵；alpha/缩放实现、训练成本与留出结果一起判断        |
-| 15   | [第7章：奖励和约束](/articles/ai-agent-post-training.html)                                                            | 独立结果/过程验证、不可绕过的执行护栏、防删测试等投机；负奖励不是权限控制                         |
-| 16   | [第8章：更新载体](/articles/ai-agent-continuous-improvement.html)                                                     | 按根因选载体；确定性状态机/协议错误修代码和测试，流程遗漏才考虑 Prompt/Skill                      |
-| 17   | [第9章：实时语音](/articles/ai-agent-multimodal-realtime.html)                                                        | 说话结束、端点、ASR/LLM/TTS、实际播放的起止点；流式可重叠，取消接纳不等于停止 ACK                 |
-| 18   | [第9章：Computer Use](/articles/ai-agent-multimodal-realtime.html)                                                    | 读与写的影响不同；确认目标、授权和覆盖/发送风险，动作后重新观察并读回                             |
-| 19   | [第10章：协作模式](/articles/ai-agent-multi-agent.html)                                                               | 独立来源、专用工具、执行测试或有效并行可带来新信息；相似模型互相赞同不构成证明                    |
-| 20   | [第10章：公平对照](/articles/ai-agent-multi-agent.html)                                                               | 同输入、模型、共享资料、质量标准；统计全体 Token、墙钟、返工与负结果，不拿 Manager 峰值代替总成本 |
+| 题号 | 对应章节                                                                                                              | 答案至少应包含                                                                                         |
+| ---- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 1    | [第1章：Harness](/articles/ai-agent-harness.html)                                                                     | 模型提议动作，运行时管理工具、状态、预算、权限与退出；有工具之外，还要有可靠执行闭环                   |
+| 2    | [第1章：执行循环](/articles/ai-agent-harness.html)                                                                    | 工具/状态反馈、重复或无进展检测、有限预算；成功、失败、取消各有退出条件                                |
+| 3    | [第2章：上下文压缩](/articles/ai-agent-context-engineering.html)                                                      | 关键性、能否重读、时效与信任边界；批准约束须可恢复且由执行器强制，摘要措辞承担不了这一职责             |
+| 4    | [第2章：注入与信任](/articles/ai-agent-context-engineering.html)和[第4章：护栏](/articles/ai-agent-tools-events.html) | 外部内容是数据；权限、工具白名单和参数校验由程序执行，Prompt 之外还需这些程序化防线                    |
+| 5    | [第2章：Skills](/articles/ai-agent-context-engineering.html)和[第4章：工具发现](/articles/ai-agent-tools-events.html) | Skill 按需加载流程指导，工具发现按任务找能力/Schema；执行与授权仍由运行时控制                          |
+| 6    | [第3章：记忆](/articles/ai-agent-memory-rag.html)和[第8章：持续改进](/articles/ai-agent-continuous-improvement.html)  | 写入可检索事实与参数更新是两条路径；策略经验需归纳、验证、选载体并回归                                 |
+| 7    | [第3章：Sparse/Dense](/articles/ai-agent-memory-rag.html)                                                             | 精确术语、型号等词面匹配可利于 BM25；同义语义可能利于 Dense，优劣取决于查询类型                        |
+| 8    | [第3章：检索评价](/articles/ai-agent-memory-rag.html)                                                                 | Reranker 只能重排已召回候选；正确片段未进入候选集时需修召回链                                          |
+| 9    | [第4章：工具契约](/articles/ai-agent-tools-events.html)                                                               | 稳定业务键、参数指纹、持久状态与原子去重；同键不同请求应冲突，靠模型记忆避免重试并不可靠               |
+| 10   | [第4章：事件契约](/articles/ai-agent-tools-events.html#event-contract)                                                | event_id 管重投递，generation/version 管时效；旧结果、冲突身份和取消后晚到消息需检查                   |
+| 11   | [第5章：Coding Agent](/articles/ai-agent-coding-agent.html)                                                           | 实际 diff、目标测试与旧行为回归；工具返回成功之外还要看代码行为，静态扫描也替代不了沙盒                |
+| 12   | [第6章：Pass 指标](/articles/ai-agent-evaluation.html)                                                                | 至少一次成功与全部成功；单题 IID 前提、逐题后汇总，实际选择器和副作用另计                              |
+| 13   | [第6章：配对评估](/articles/ai-agent-evaluation.html)                                                                 | 同任务结果对应、不一致配对、缺一侧不能硬配；同题重复仍属同一任务                                       |
+| 14   | [第7章：LoRA](/articles/ai-agent-post-training.html)                                                                  | rank 控制低秩容量，target_modules 决定覆盖矩阵；alpha/缩放实现、训练成本与留出结果一起判断             |
+| 15   | [第7章：奖励和约束](/articles/ai-agent-post-training.html)                                                            | 独立结果/过程验证、不可绕过的执行护栏、防删测试等投机；负奖励之外仍需权限控制                          |
+| 16   | [第8章：更新载体](/articles/ai-agent-continuous-improvement.html)                                                     | 按根因选载体；确定性状态机/协议错误修代码和测试，流程遗漏才考虑 Prompt/Skill                           |
+| 17   | [第9章：实时语音](/articles/ai-agent-multimodal-realtime.html)                                                        | 说话结束、端点、ASR/LLM/TTS、实际播放的起止点；流式可重叠，取消接纳不等于停止 ACK                      |
+| 18   | [第9章：Computer Use](/articles/ai-agent-multimodal-realtime.html)                                                    | 读与写的影响不同；确认目标、授权和覆盖/发送风险，动作后重新观察并读回                                  |
+| 19   | [第10章：协作模式](/articles/ai-agent-multi-agent.html)                                                               | 独立来源、专用工具、执行测试或有效并行可带来新信息；相似模型互相赞同提供不了独立证据                   |
+| 20   | [第10章：公平对照](/articles/ai-agent-multi-agent.html)                                                               | 同输入、模型、共享资料、质量标准；总成本按全体 Token、墙钟、返工与负结果统计，Manager 峰值只是其中一项 |
 
 若答出了名词却没有说明一次具体输入怎样变成反馈，补一个小例子；若漏掉权限、版本或证据前提，用对应反例重新检查答案。
 
@@ -239,7 +239,7 @@ python -X utf8 examples/ai-agent/ch9-11-review/translation_contracts.py
 
 ### 固定输入：先设计，不发起真实压测
 
-采用以下合成任务，DemoLLM 和 Synthetic Dataset 均为教学名称，不对应实际部署。测量时长按每个并发点 30 秒理解，不含预热和准备；并发集合仅为 1、2、4，不是无限边界搜索：
+采用以下合成任务，DemoLLM 和 Synthetic Dataset 均为教学名称，不对应实际部署。测量时长按每个并发点 30 秒理解，不含预热和准备；并发集合仅为 1、2、4，边界搜索不在本练习范围内：
 
 参数说明：输入/输出 token 数规定合成负载，`concurrency` 是待测并发点，`measurement_seconds_per_point` 是每点测量秒数；`slo` 中 TTFT 使用毫秒，错误率使用比例。
 
@@ -257,20 +257,20 @@ python -X utf8 examples/ai-agent/ch9-11-review/translation_contracts.py
 }
 ```
 
-SLO（Service Level Objective，服务等级目标）阈值也是本练习的合成约定，须随正式计划一起获批。真实工具需冻结 Tokenizer 与数据生成方式，明确固定的是目标输出长度还是实测长度，以及错误、超时、完成吞吐与测量窗口口径；不能仅凭两项 128 就认定各 Endpoint 负载等价。
+SLO（Service Level Objective，服务等级目标）阈值也是本练习的合成约定，须随正式计划一起获批。真实工具需冻结 Tokenizer 与数据生成方式，明确固定的是目标输出长度还是实测长度，以及错误、超时、完成吞吐与测量窗口口径；两项 128 只描述合成负载，各 Endpoint 的实际负载是否等价要另行确认。
 
 ### 沿同一任务说明职责和状态
 
-1. **Agent 提议**：解释需求并生成候选 Plan。模型可以提出并发点和阈值，但候选状态必须是 CANDIDATE，不能把用户说“帮我设计”解释为已批准执行。
+1. **Agent 提议**：解释需求并生成候选 Plan。模型可以提出并发点和阈值，但候选状态必须是 CANDIDATE；用户说“帮我设计”只表示提出需求，批准执行需要单独记录。
 2. **程序校验并冻结**：确定性服务检查模型/数据集白名单、参数范围、预算和 SLO，产生不可变版本与 Hash。用户批准的是该正式 Plan 的具体内容；之后修改并发、时长或阈值需要重新批准。
 3. **执行审批与权限**：执行器检查批准记录绑定的 Plan Hash、执行身份与工具权限。重复请求用同一幂等键与参数指纹复用原 execution_id；同键不同 Plan 必须冲突，不创建第二次负载。
-4. **分开记录状态**：Plan 的 APPROVED 不等于任务已运行；Worker 的 RUNNING/COMPLETED/FAILED/CANCELLED 由实际回执更新。COMPLETED 仅说明执行过程结束，不自动意味着 SLO 通过。
-5. **按证据评价**：逐并发点读取吞吐、p95 TTFT、错误率与运行覆盖。缺度量、单位或结果时记 UNKNOWN，不补零；超出冻结阈值的已知证据为 FAIL。只有完整可比、满足 SLO 的点才参加最大吞吐选择。
-6. **限定结论**：在三个点里选出的只是“本次固定网格内、满足 SLO 的最佳已测点”，不是全局最大值或边界已经收敛。若部分点 UNKNOWN，可报告局部观察，但不能宣布完整比较完成。
+4. **分开记录状态**：Plan 的 APPROVED 与任务运行是两个状态；Worker 的 RUNNING/COMPLETED/FAILED/CANCELLED 由实际回执更新。COMPLETED 仅说明执行过程结束，SLO 判定要另按证据进行。
+5. **按证据评价**：逐并发点读取吞吐、p95 TTFT、错误率与运行覆盖。缺度量、单位或结果时记 UNKNOWN，补零会伪造证据；超出冻结阈值的已知证据为 FAIL。只有完整可比、满足 SLO 的点才参加最大吞吐选择。
+6. **限定结论**：在三个点里选出的只是“本次固定网格内、满足 SLO 的最佳已测点”，全局最大值与边界收敛都不在这个结论内。若部分点 UNKNOWN，可报告局部观察；宣布完整比较完成需要先补齐这些点。
 
-最小验收保留：原请求、候选和正式 Plan 差异、版本 Hash、批准引用、权限检查、幂等记录、逐点执行回执、指标及其覆盖、SLO 判定原因。没有正式批准时，预期证据是执行器拒绝，而不是一份漂亮的压测报告。
+最小验收保留：原请求、候选和正式 Plan 差异、版本 Hash、批准引用、权限检查、幂等记录、逐点执行回执、指标及其覆盖、SLO 判定原因。没有正式批准时，预期证据是执行器的拒绝记录；压测报告只在批准之后出现。
 
-本仓库的 `examples/ai-agent/ch9-11-review/controlled_plan.py` 提供纯内存教学状态与 SLO 检查。测试中的批准、执行和指标均为构造输入，不连接 Endpoint，也不会制造真实负载；不能把其模拟 RUNNING 状态当成实际运行回执。
+本仓库的 `examples/ai-agent/ch9-11-review/controlled_plan.py` 提供纯内存教学状态与 SLO 检查。测试中的批准、执行和指标均为构造输入，不连接 Endpoint，也不制造真实负载；其模拟 RUNNING 状态只是夹具，与实际运行回执不同。
 
 将上述职责连成最小教学状态路径：
 
@@ -283,7 +283,7 @@ CANDIDATE → APPROVED → QUEUED → RUNNING → COMPLETED → 结果验证
 
 这里的 QUEUED 表示已持久登记待执行，RUNNING／COMPLETED 应由真实 Worker 回执更新。当前脚本只演示 `CANDIDATE → APPROVED`，以及 `simulate_start()` 返回带 `simulated=true` 的 RUNNING 夹具；没有持久队列和完成回执。`assess_slo()` 是对传入指标单独评价。
 
-两个反例必须留在交付物中：未批准就调用 `simulate_start()`，应得到 `PermissionError` 并记为 REJECTED；假设真实任务已 COMPLETED，但提供给 `assess_slo()` 的结果缺关键指标，应为 UNKNOWN。后者的 COMPLETED 是状态推演，不是脚本实际执行过压测；实际示例中的 `assess_slo({})` 只验证缺指标分支。
+两个反例必须留在交付物中：未批准就调用 `simulate_start()`，应得到 `PermissionError` 并记为 REJECTED；假设真实任务已 COMPLETED，但提供给 `assess_slo()` 的结果缺关键指标，应为 UNKNOWN。后者的 COMPLETED 属于状态推演，脚本并未实际执行压测；实际示例中的 `assess_slo({})` 只验证缺指标分支。
 
 **必须输出的设计成果**：
 
@@ -296,7 +296,7 @@ CANDIDATE → APPROVED → QUEUED → RUNNING → COMPLETED → 结果验证
 7. 多 Agent 比较：一个 Agent + 工具 vs Orchestrator/Planner/Analyzer，控制变量记录质量和成本。
 8. 经验进化：从失败追踪形成候选修复，通过回归后发布。
 
-**交付检验**：如果模型“宣称任务成功”而环境没有对应任务，评估必须失败；如果指标证据缺失，SLO 不能凭文字推测为 PASS；如果没有确认授权，执行器不能放行不可逆动作。
+**交付检验**：如果模型“宣称任务成功”而环境没有对应任务，评估必须失败；如果指标证据缺失，SLO 的 PASS 需要证据，文字推测不算；如果没有确认授权，执行器拒绝不可逆动作。
 
 ## 源码版实践路线
 
@@ -320,11 +320,11 @@ CANDIDATE → APPROVED → QUEUED → RUNNING → COMPLETED → 结果验证
 python -m unittest discover -s examples/ai-agent/ch9-11-review -p "test_*.py" -v
 ```
 
-本地脚本位于 `docs/` 外，供取得仓库源码后运行；它们不会随静态页面变成在线工具。每次保留命令、输入版本、实际输出和未测范围，不把教学模拟结果写成真实压测或语音性能。
+本地脚本位于 `docs/` 外，供取得仓库源码后运行；它们是本地脚本，静态页面不提供在线运行。每次保留命令、输入版本、实际输出和未测范围；教学模拟结果与真实压测、语音性能分开标注。
 
 先从 [实验地图](/articles/ai-agent-source-experiments.html) 中选择无需外部服务的确定性检查，再逐步开展需要模型或服务的实验。运行前固定代码版本、依赖与输入；结果分别标记为本地观察、上游参考或待复现。
 
-练习中的20条任务不保证达到统计显著性所需的样本量；应按第6章预先定义任务、变体、重复、效应量和未知数据的处理方式。检查输出分别列出上游实现的观察与本地教学契约的结果，使复现现象和验证修复各有对应证据。
+练习中的 20 条任务样本量有限，统计显著性需要更大样本；应按第 6 章预先定义任务、变体、重复，以及效应量（差距到底有多大，例如成功率相差几个百分点）和未知数据怎么处理。检查输出分别列出上游实现的观察与本地教学契约的结果，使复现现象和验证修复各有对应证据。
 
 ## 学习资料与代码出处
 

@@ -21,9 +21,9 @@ order: 20
 
 ## 1. 用尺度与零点表示量化数值 {#_1-量化如何表示数值}
 
-一种常见的仿射整数表示为 `q = clamp(round(x/s)+z)`，还原近似值为 `x̂ = s(q-z)`。scale `s`、zero point `z`、量化范围及分组粒度影响误差和元数据开销。对称与非对称量化属于这种模型中的不同选择，不能代表所有低精度格式。
+一种常见的仿射整数表示为 `q = clamp(round(x/s)+z)`，还原近似值为 `x̂ = s(q-z)`。scale `s`、zero point `z`、量化范围及分组粒度影响误差和元数据开销。对称与非对称量化属于这种模型中的不同选择，其他低精度格式另有编码方式。
 
-FP16 与 BF16 都是 16bit 浮点，但指数和尾数字段不同：BF16 范围更接近 FP32、精度较低；FP16 范围更窄。低位整数与 FP8 等浮点也不是同一种编码。不能由“位数一样”判断相同精度或相同 kernel 支持。
+FP16 与 BF16 都是 16bit 浮点，但指数和尾数字段不同：BF16 的指数位多、尾数位少，能表示的数值范围接近 FP32，但相邻数值的间距更粗；FP16 尾数位多、指数位少，小数值更细，范围却更窄。低位整数和 FP8 这类浮点不是同一套编码：整数码值等间距，浮点的间距随数值大小变化。位数相同只说明字段总长一致，精度和 kernel 支持都要另行核对。
 
 令 `q = clip(round(x / scale) + zero_point, qmin, qmax)`，`x_hat = scale × (q - zero_point)`。正的 scale 表示相邻码值的间距，整数 zero point 指定实数零对应的码值，qmin/qmax 限定可用码值。先舍入，再截断到端点。以第 5 节的参数为例，3.14 舍入并还原为 3.1；20 的码值候选为 200，饱和到 127，反量化为 12.7，误差为 −7.3。范围内的就近舍入误差最多为半个 scale，饱和误差可以更大。对称方案通常用零点 0 和关于零对称的有效范围，非对称方案可移动零点以覆盖偏斜的数值分布。
 
@@ -38,7 +38,7 @@ FP16 与 BF16 都是 16bit 浮点，但指数和尾数字段不同：BF16 范围
 
 ## 2. PTQ、QAT 与 W4A16
 
-PTQ 在训练后做量化，可能使用校准数据；QAT 在训练中考虑量化误差。W4A16 表示相应权重/激活精度组合，不等于模型中所有张量都以同样方式存放或计算。硬件支持、反量化开销和矩阵形状决定是否真的加速。[Transformers 量化概览](https://huggingface.co/docs/transformers/main/en/quantization/overview)
+PTQ 在训练后做量化，可能使用校准数据；QAT 在训练中考虑量化误差。W4A16 读作权重 4bit、激活 16bit，它只规定这两项，模型里其他张量仍按各自格式存放和计算。硬件支持、反量化开销和矩阵形状决定是否真的加速。[Transformers 量化概览](https://huggingface.co/docs/transformers/main/en/quantization/overview)
 
 PTQ（Post-Training Quantization）在训练后转换模型。校准可用代表性数据估计激活范围；某些仅量化权重的方案可直接从权重统计尺度。异常值会扩大范围，使多数普通数值可用的码点更稀疏。QAT（Quantization-Aware Training）在训练或微调中模拟量化误差，使参数有机会适应该误差。流程是原始模型 → 选择方案 → 按需准备校准数据 → 量化 → 质量评估 → 推理性能评估。
 
@@ -51,9 +51,9 @@ PTQ（Post-Training Quantization）在训练后转换模型。校准可用代表
            + CUDA Graph 相关缓冲/内存池 + 通信与框架开销 + 安全余量
 ```
 
-这些项可能因负载与实现而复用或重叠，因此不能将不同工具报告的 reserved、allocated、缓存池和已用显存重复相加。框架 reserved 所包含的空间，也不一定全部由活跃张量占用。
+这些项可能因负载与实现而复用或重叠，因此不同工具报告的 reserved、allocated、缓存池和已用显存会互相包含，重复相加会高估需求。框架 reserved 所包含的空间，也不一定全部由活跃张量占用。
 
-教学算例：7×10^9 个参数按 16bit 存储，权重约 14×10^9 字节，即约 13.04 GiB；理想 4bit 数据约 3.5×10^9 字节，即约 3.26 GiB。后者还没有包含 scale、其他精度张量与任何运行时内存，不能据此保证“4GB 卡一定可运行”。
+教学算例：7×10^9 个参数按 16bit 存储，权重约 14×10^9 字节，即约 13.04 GiB；理想 4bit 数据约 3.5×10^9 字节，即约 3.26 GiB。后者还没有包含 scale、其他精度张量与任何运行时内存，“4GB 卡一定可运行”要连同这些项一起算。
 
 Allocated 指框架分配给当前活跃张量等对象的内存，reserved 指其分配器已向设备保留的内存，通常包含 allocated。设备层的 free 和 GPU used 反映设备视角的剩余与已用空间，CUDA Context、其他进程或后端直接申请的显存也可能影响它们。Memory Pool 是预留后再分配的空间，池内已用部分属于池本身。
 
@@ -75,9 +75,9 @@ Allocated 指框架分配给当前活跃张量等对象的内存，reserved 指�
 
 ## 4. 按模型与运行配置建立 SGLang 预算 {#_4-修正-sglang-原估算}
 
-文档将 `mem-fraction-static` 关联到权重和 KV 池的预算比例，同时要求为激活与 Graph 等保留空间。`chunked_prefill_size` 和 `cuda_graph_max_bs` 属于运行配置，其数值需要结合模型维度、张量类型和实现换算；直接采用 `chunked_prefill_size × 1.5 + cuda_graph_max_bs × 2` 无法得到有依据的 GB 估算。[SGLang 参数调优](https://docs.sglang.io/docs/advanced_features/hyperparameter_tuning)
+文档将 `mem-fraction-static` 关联到权重和 KV 池的预算比例，同时要求为激活与 Graph 等保留空间。`chunked_prefill_size` 和 `cuda_graph_max_bs` 属于运行配置，其数值需要结合模型维度、张量类型和实现换算；直接采用 `chunked_prefill_size × 1.5 + cuda_graph_max_bs × 2` 只是一组经验系数，与实际的 GB 占用没有固定换算关系。[SGLang 参数调优](https://docs.sglang.io/docs/advanced_features/hyperparameter_tuning)
 
-应固定模型、精度、上下文、并发和 Graph 配置，读取启动预算，再测试最坏的 prefill/decode 负载并预留余量。每次增加配额后，都要重新检查 OOM、p99 和质量。
+先把模型、精度、上下文、并发和 Graph 配置固定下来，从引擎启动日志读出它给自己划了多少显存，再用最坏的 prefill/decode 负载压一遍，留出余量。每调高一项配额，都要重新看会不会 OOM、p99 有没有变差、质量有没有掉。
 
 以下参数以 SGLang v0.5.2 为准。可在安装该版本的环境执行 `python -m sglang.launch_server --help` 核对，不需要启动模型。该版本 CLI 的参数定义见官方源码。[SGLang v0.5.2 server_args.py](https://github.com/sgl-project/sglang/blob/v0.5.2/python/sglang/srt/server_args.py)
 
@@ -100,7 +100,7 @@ Allocated 指框架分配给当前活跃张量等对象的内存，reserved 指�
 
 新增算例设 `x=3.14`、`scale=0.1`、`zero_point=0`，选择对称有效范围 [-127,127]，使用本例明确的就近舍入：`q=clip(round(31.4),-127,127)=31`。存储为 int8 的位串是 `00011111`；还原约为 3.1，`还原值−原值≈−0.04`。这不是把 FP32 的指数或尾数截成整数，也不使用错误的 `01001000`（十进制 72）。
 
-有符号 int8 存储类型可表示 [-128,127]；本例为对称方案选择 [-127,127]，两者不能混为一谈。超过量化范围会发生 clip；数值到半整数时采用哪种舍入规则也需按后端声明。[TensorRT 量化类型与方案](https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/work-with-quantized-types.html)
+有符号 int8 存储类型可表示 [-128,127]；本例为对称方案选择 [-127,127]，两者分属存储范围与有效范围。超过量化范围会发生 clip；数值到半整数时采用哪种舍入规则也需按后端声明。[TensorRT 量化类型与方案](https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/work-with-quantized-types.html)
 
 图中 [-128,127] 是 int8 的存储范围；正文的 [-127,127] 是此例选定的对称有效范围。码值 31 在两者之内，因此图中的位串、还原值与误差均适用。
 
@@ -112,7 +112,7 @@ Allocated 指框架分配给当前活跃张量等对象的内存，reserved 指�
 | 激活 A   | 输入及层内中间张量的表示    | 范围估计、校准、异常值与动态尺度           |
 | KV cache | 注意力缓存的低精度表示      | 长上下文误差、可用后端和缓存格式           |
 
-激活不是“不断更新的输入 token”；token ID 与层内中间张量是不同对象。LoRA/adapter 属于参数适配方法，不会自动压缩基础权重；W4A16 也不表示 KV 使用了 4bit。
+激活是层内算出来的中间张量，不是输入的那串 token ID，两者量化的对象不同。LoRA/adapter 属于参数适配方法，不会自动压缩基础权重；W4A16 也不表示 KV 使用了 4bit。
 
 表示范围和分辨率可以不同：FP32 为 1/8/23 位符号/指数/显式尾数字段，FP16 为 1/5/10，BF16 为 1/8/7。这里是格式字段说明，不是把所有数都当作 normal finite value；零、subnormal、Inf/NaN 另有编码。一个 π 的舍入例子只反映表示误差，不直接证明模型质量下降多少。
 
@@ -128,7 +128,7 @@ Allocated 指框架分配给当前活跃张量等对象的内存，reserved 指�
 
 浮点列为符号、指数、显式尾数。浮点编码本身可表示相应数值；FP8 量化常额外使用尺度来适配张量范围，具体编码与缩放粒度按后端确认。GPU 架构、软件版本和矩阵形状共同决定低精度 kernel 是否可用。[FP8 Formats for Deep Learning](https://arxiv.org/abs/2209.05433)、[TensorRT 量化类型与方案](https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/work-with-quantized-types.html)
 
-仅量化权重时，W4A16 可将 4bit 权重解包、按尺度反量化，在 BF16 或 FP16 激活参与的乘法中使用；融合 kernel 可在计算内部完成这一步，减少额外全局内存读写。权重与激活联合量化还要处理激活的缩放。累加器可使用与输入不同的精度，例如在支持的路径上用 FP32 累加。存储、乘法输入、累加和结果的精度应分别核对；访存节省能否抵消解包、缩放与 kernel 调度成本，要用目标工作负载验证。
+仅量化权重时，W4A16 的 4bit 权重在显存里是打包存放的，算之前要先解包、按 scale 乘回近似原值，再和 16bit 激活相乘；融合 kernel 把解包、反量化、相乘放进同一次计算里，省掉中间结果写回全局内存再读出来的往返。权重与激活联合量化还要处理激活的缩放。累加器可使用与输入不同的精度，例如在支持的路径上用 FP32 累加。存储、乘法输入、累加和结果的精度应分别核对；访存节省能否抵消解包、缩放与 kernel 调度成本，要用目标工作负载验证。
 
 ## 7. 联合评估质量与性能
 

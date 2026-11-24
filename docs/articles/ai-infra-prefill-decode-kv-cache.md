@@ -19,15 +19,15 @@ order: 19
 
 # 第 19 章 大模型推理：Prefill、Decode 与 KV Cache
 
-自回归语言模型通常先处理输入，再逐步生成输出，对应 prefill 和 decode 两个阶段。前者建立输入上下文的状态，后者在已有状态上继续生成。沿这两阶段观察 KV Cache、调度与计时，可以把首字延迟、生成间隔和显存需求联系起来。
+自回归语言模型回答问题时分两步走：先把整段输入一次读完，把读到的内容记成内部状态，这一步叫 prefill；此后每生成一个 token，就把它接在已有状态后面再读一遍、再吐下一个，这一步叫 decode。沿这两阶段观察 KV Cache、调度与计时，可以把首字延迟、生成间隔和显存需求联系起来。
 
 ## 1. 从 Prefill 进入逐步 Decode {#_1-一次请求如何推进}
 
-prefill 处理输入 token 并建立相应注意力状态；decode 在已有上下文基础上逐步产生新 token，并追加所需状态。两阶段的瓶颈会随 batch、上下文和模型而变化，不能写成“prefill 永远计算密集、decode 永远带宽密集”。
+prefill 处理输入 token 并建立相应注意力状态；decode 在已有上下文基础上逐步产生新 token，并追加所需状态。两阶段的瓶颈会随 batch、上下文和模型而变化：prefill 一次处理整段输入，算力容易先成为上限；decode 每步只为新 token 算一次，却要把模型权重重新读一遍，显存带宽容易先成为上限。所以“prefill 永远计算密集、decode 永远带宽密集”只是过度简化的说法，换个批量或换个模型，谁先撞墙就会变。
 
 [![LLM自回归推理：Prefill到Decode](/assets/notes/ai-infra/llm-serving.png)](/assets/notes/ai-infra/llm-serving.png)
 
-continuous batching 允许在迭代调度中加入和移除请求，无需让整个静态 batch 等待最长的请求。它仍然受到队列、公平性和资源约束的影响，并发增加并不意味着吞吐和延迟都会改善。
+静态 batching 要等同一批里最慢的那条请求生成完，整批才一起返回，先做完的请求只能占着位置空等。continuous batching 改成每一轮都重排一次：谁生成完了谁退出，空出的位置立刻补进排队的新请求。它仍然受队列、公平性和资源约束的影响，并发增加后吞吐和延迟各自怎么变要实测。
 
 ### 四个输入 Token 如何生成两个输出 Token
 
@@ -43,7 +43,7 @@ A（8192 输入、128 输出）有更长的 Prefill，普通全注意力中因�
 
 ## 2. KV Cache 复用历史 Key 与 Value {#_2-kv-cache-缓存的不是最后回答}
 
-注意力计算可以复用历史 token 的 key/value。KV cache 的大小与层数、KV head 数、head dimension、已缓存 token 数和数据类型有关。PagedAttention 将逻辑 token 与非连续物理块关联，改善相应内存管理，并不是增加 GPU 的实际显存容量。[vLLM Paged Attention](https://docs.vllm.ai/en/latest/design/paged_attention/)
+注意力计算可以复用历史 token 的 key/value。KV cache 的大小与层数、KV head 数、head dimension、已缓存 token 数和数据类型有关。PagedAttention 将逻辑 token 与非连续物理块关联，改善的是相应内存管理，GPU 的实际显存容量保持不变。[vLLM Paged Attention](https://docs.vllm.ai/en/latest/design/paged_attention/)
 
 对普通全注意力 decoder，在未分片、未压缩、未考虑特殊层结构的简化模型中：
 
@@ -51,7 +51,7 @@ A（8192 输入、128 输出）有更长的 Prefill，普通全注意力中因�
 KV 字节数 ≈ 2 × 层数 × KV heads × head_dim × 已缓存 token 数 × 每元素字节数
 ```
 
-前面的 2 表示 K 与 V。使用 GQA/MQA 时应填 KV heads，而不是 query heads；MLA、滑动窗口、量化、分片和前缀共享需要另建模型，不能盲套该公式。
+前面的 2 表示 K 与 V。使用 GQA/MQA 时应填 KV heads，而不是 query heads；MLA、滑动窗口、量化、分片和前缀共享需要另建模型，该公式在这些结构下不成立。
 
 式中层数只计写缓存的注意力层，KV heads 是每层实际存储的 K/V 头数，head_dim 是每头元素数，缓存 Token 是本轮累计位置数，元素宽度以字节计。GQA（Grouped-Query Attention，分组查询注意力）由多个查询头共享一组 KV，MQA（Multi-Query Attention，多查询注意力）通常共享单组 KV。MLA（Multi-head Latent Attention，多头潜在注意力）可存压缩的潜在状态，须依据具体后端布局估算。滑窗或局部层按实际保留位置计算，量化还需计尺度等元数据。TP（张量并行）可能拆分或复制 KV 头，PP（流水线并行）按层放置。要按 GPU 分别建账。
 
@@ -65,11 +65,11 @@ Prefix Sharing（前缀共享）可让匹配前缀引用同一物理块。Refere
 
 TTFT 是请求到首个输出 token 的时间，通常包含排队和 prefill；TPOT 描述后续输出 token 的时间间隔，需注明计算和聚合定义。吞吐应区分输入 token、输出 token、请求数以及稳定时间窗口。
 
-同一配置可能提高吞吐，却让 p99 变差。报告必须注明输入/输出长度分布、并发或到达率、流式/非流式、是否包含 tokenization，以及是否排除了失败和超时请求。不能将“某模型 85ms”视为引擎的通用延迟。
+同一配置可能提高吞吐，却让 p99 变差。报告必须注明输入/输出长度分布、并发或到达率、流式/非流式、是否包含 tokenization，以及是否排除了失败和超时请求。“某模型 85ms”只对应那一次测量条件，换配置要重测。
 
 ## 4. 四项常见优化解决不同问题
 
-前缀复用减少重复上下文工作；chunked prefill 限制长提示一次占用的调度工作量；CUDA Graphs 降低适合路径的提交开销；speculative decoding 用候选生成和验证改变解码过程。是否有效需核对后端支持、模型和输出质量，不能只看功能名称。
+前缀复用让相同开头不必重算，直接接着上次的缓存往下走；chunked prefill 把长提示拆成几块分批喂进去，避免一轮就把调度预算占满；CUDA Graphs 把一串固定的 kernel 提交录成图，省掉重复的提交开销；speculative decoding 先让一个小模型猜几个候选 token，再让大模型一次验证，猜对的直接留下。是否有效需核对后端支持、模型和输出质量，功能名称本身说明不了这些。
 
 优化前先明确目标是降低 TTFT、稳定 TPOT 还是提高容量，然后保持质量与错误率约束。如果没有这些目标，调大并发或显存比例通常只会把一个瓶颈移到另一个位置。
 
@@ -89,7 +89,7 @@ Continuous Batching（连续批处理）在每轮重新组织 Waiting Queue（�
 
 ### PD 分离
 
-PD Disaggregation（Prefill-Decode Disaggregation，预填充与解码分离）把两类工作调度到独立实例。路由器安排 Prefill 生成上下文状态，再让 Decode 实例通过传输层接收并导入 KV 与必要的请求状态，继续生成。可按长短请求比例分别配置两类资源池，也能减少长 Prefill 对 Decode 节奏的干扰。代价包括 KV 传输、接收缓存、跨实例等待、两端负载失衡及故障处理。若请求短或网络慢，交接可能超过节省的排队时间。Attention 的数学定义保持一致。
+PD Disaggregation（Prefill-Decode Disaggregation，预填充与解码分离）把两类工作拆到两组独立实例上跑。请求先到路由器，被送去 Prefill 实例读完输入、算出 KV；这份 KV 再经网络传到 Decode 实例，由它导入后接着逐 token 生成。可按长短请求比例分别配置两类资源池，也能减少长 Prefill 对 Decode 节奏的干扰。代价包括 KV 传输、接收缓存、跨实例等待、两端负载失衡及故障处理。若请求短或网络慢，交接可能超过节省的排队时间。Attention 的数学定义保持一致。
 
 以 vLLM v0.10.2 为例，分块 Prefill 使用 `--enable-chunked-prefill` 和 `--max-num-batched-tokens`，前缀缓存用 `--enable-prefix-caching` 或 `--no-enable-prefix-caching` 做对照。PD 由独立实例配合 KV connector，`--kv-transfer-config` 配置角色及传输。可用 connector、硬件和版本要求按对应部署文档确认。[vLLM v0.10.2 引擎参数](https://docs.vllm.ai/en/v0.10.2/configuration/engine_args.html)、[vLLM v0.10.2 PD 部署](https://docs.vllm.ai/en/v0.10.2/features/disagg_prefill.html)
 
@@ -103,7 +103,7 @@ KV 字节 ≈ 2 × 32 × 8 × 128 × 32768 × 2
         = 4,294,967,296 bytes = 4 GiB
 ```
 
-这里先得到全模型的逻辑 KV 数据量，不是每 GPU 实际占用。TP/PP 布局、某些实现的 KV 复制、分页尾块、预留池和元数据还要分别算；请求继续生成时 `T_i` 会增长，不能只用初始 prompt 长度规划峰值。GQA 填的是 KV heads，不能误填 query heads；MLA 等结构也不能硬套本例。
+这里先得到全模型的逻辑 KV 数据量，每 GPU 实际占用另算。TP/PP 布局、某些实现的 KV 复制、分页尾块、预留池和元数据还要分别算；请求继续生成时 `T_i` 会增长，峰值规划要按最大位置数算。GQA 的输入是 KV heads 而非 query heads；MLA 等结构需要另建模型。
 
 按本例参数，每 Token 为 131072 bytes（128 KiB），每请求 4096 Token 为 512 MiB，8 个请求合计 4 GiB。若每请求再实际缓存 128 Token，新增 `8 × 128 × 128 KiB = 128 MiB`。这是逻辑数据量。池可能预先保留整块空间，新的 Token 有时只填已有尾块。
 
@@ -115,12 +115,12 @@ KV 字节 ≈ 2 × 32 × 8 × 128 × 32768 × 2
 | ----------- | ---------------------- | ---------------------------------------------- |
 | TTFT        | `t1 - t0`              | 可能含排队和 prefill；标明客户端还是服务端计时 |
 | 单间隔 ITL  | `tj - t(j-1)`，j≥2     | 看分布，可能被网络分包聚合影响                 |
-| 单请求 TPOT | `(tN - t1)/(N-1)`，N>1 | N=1 时无定义；不是所有 token 间隔的 p99        |
+| 单请求 TPOT | `(tN - t1)/(N-1)`，N>1 | N=1 时无定义；与逐间隔 p99 是不同量            |
 | E2E         | `tN - t0`              | 最终完成事件的定义需固定                       |
 
-按请求平均 TPOT、按 token 汇总 ITL，以及先计算每个请求的 p99 再取平均，属于不同的统计方式。一次响应 chunk 还可能包含多个 token，因此不能将 chunk 到达间隔直接视为逐 token ITL。
+这三种统计回答的不是同一个问题：按请求平均 TPOT，是先算每条请求自己的平均间隔，再对请求取平均；按 token 汇总 ITL，是把所有间隔样本混在一起算，长输出请求占的权重更大；先算每条请求的 p99 再取平均，问的是“典型请求的最差情况有多糟”。一次响应 chunk 还可能包含多个 token，因此 chunk 到达间隔与逐 token ITL 是两回事。
 
-以客户端发送为 `t0=0 ms`，四个 Token 分别在 500、550、620、680 ms 到达。TTFT（Time to First Token，首 Token 延迟）是 500 ms。三个 ITL（Inter-Token Latency，Token 间隔）分别为 50、70、60 ms。TPOT（Time per Output Token，每输出 Token 平均耗时）为 60 ms，E2E（End-to-End Latency，端到端延迟）按最后 Token 完成定义为 680 ms。服务端 TTFT 应标明从接收请求、入队还是执行起算，并明确结束事件，不能直接与客户端含网络的时间比较。ITL P99 对逐间隔样本求分位数，TPOT P99 对请求级均值求分位数。Output Token/s 与 Request/s 分别用测量窗口内的输出 Token 数与完成请求数除以窗口秒数。超时、失败、截断和无输出应单列分母及计入规则。AIPerf 文档用 ITL 表示请求级平均间隔，采用该工具时要与本文的逐间隔口径对齐。[NIM Benchmarking 2.0.0 指标](https://docs.nvidia.com/nim/benchmarking/llm/2.0.0/metrics)
+以客户端发送为 `t0=0 ms`，四个 Token 分别在 500、550、620、680 ms 到达。TTFT（Time to First Token，首 Token 延迟）是 500 ms。三个 ITL（Inter-Token Latency，Token 间隔）分别为 50、70、60 ms。TPOT（Time per Output Token，每输出 Token 平均耗时）为 60 ms，E2E（End-to-End Latency，端到端延迟）按最后 Token 完成定义为 680 ms。服务端 TTFT 应标明从接收请求、入队还是执行起算，并明确结束事件；与客户端含网络的时间属于两种口径。ITL P99 对逐间隔样本求分位数，TPOT P99 对请求级均值求分位数。Output Token/s 与 Request/s 分别用测量窗口内的输出 Token 数与完成请求数除以窗口秒数。超时、失败、截断和无输出应单列分母及计入规则。AIPerf 文档用 ITL 表示请求级平均间隔，采用该工具时要与本文的逐间隔口径对齐。[NIM Benchmarking 2.0.0 指标](https://docs.nvidia.com/nim/benchmarking/llm/2.0.0/metrics)
 
 ## 7. 验证容量、调度和前缀复用
 

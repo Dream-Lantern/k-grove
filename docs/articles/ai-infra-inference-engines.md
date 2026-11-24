@@ -23,15 +23,15 @@ order: 23
 
 ## 1. 先确认必须支持的组合
 
-模型架构、权重格式、量化格式、GPU 后端、上下文长度、多模态、并行方式、adapter 和结构化输出，可能分别有限制。“支持 NVIDIA”不等于任何 NVIDIA 卡都支持该引擎的所有优化 kernel。
+选型第一步是把“必须支持什么”一条条列出来，再逐条去对：模型架构、权重与量化格式、GPU 后端、上下文长度、多模态输入、并行方式、adapter、结构化输出，每一项在具体引擎里可能各有各的限制，支持其中一项推不出支持另一项。“支持 NVIDIA”说的是整个产品线，具体哪张卡能用哪些优化 kernel，还得查支持矩阵。
 
 ![从兼容性到质量与负载测试](/assets/notes/ai-infra/engine-selection.svg)
 
 ## 2. 各项目看什么，而不是谁永远最快
 
-可以从以下项目了解推理服务的实现。FP6、NVMe offload、固定长上下文等不能从“属于同一个生态”直接归到某个独立服务项目。
+下面这些项目可以拿来了解推理服务是怎么实现的。像 FP6、NVMe offload、固定长上下文这些能力，是某个项目自己实现的，别因为两个引擎同属一个生态，就以为另一个也有。
 
-核对具体支持范围时直接查看项目资料：[TensorRT-LLM](https://nvidia.github.io/TensorRT-LLM/)、[LMDeploy](https://lmdeploy.readthedocs.io/en/latest/)、[DeepSpeed-MII](https://github.com/deepspeedai/DeepSpeed-MII)。不要用过时截图中的星级替代当前支持矩阵。
+核对具体支持范围时直接查看项目资料：[TensorRT-LLM](https://nvidia.github.io/TensorRT-LLM/)、[LMDeploy](https://lmdeploy.readthedocs.io/en/latest/)、[DeepSpeed-MII](https://github.com/deepspeedai/DeepSpeed-MII)。截图中的星级反映的是历史状态，当前支持矩阵以项目资料为准。
 
 ### 版本化候选范围
 
@@ -51,9 +51,9 @@ order: 23
 
 ### 请求如何在引擎内推进
 
-HTTP 层解析请求、应用 Chat Template 并分词后，把输入与生成约束交给引擎队列。Scheduler（调度器）在每轮按 token 预算和 KV 余量，从 Waiting Queue（等待队列）接纳请求，更新 Running Batch（运行批次）。Prefill 消化输入，Decode 为已有请求推进输出，模型执行后进行 Sampling（采样），前端按流式或一次性返回。缓存是运行中的资源，分配通常发生在执行前，结束、取消或抢占时按实现释放请求引用。客户端超时应验证是否传成引擎取消，及后台请求、KV 和队列指标何时回落。
+HTTP 层解析请求、应用 Chat Template 并分词后，把输入与生成约束交给引擎队列。Scheduler（调度器）在每轮按 token 预算和 KV 余量，从 Waiting Queue（等待队列）接纳请求，更新 Running Batch（运行批次）。引擎推进时要做两件事：Prefill 把新请求的整段输入一次算完，Decode 给已经在跑的请求一步步往前推、每步多生成一个 token。模型执行后进行 Sampling（采样），挑出下一个 token，前端按流式或一次性把结果返回。缓存是运行中的资源，分配通常发生在执行前，结束、取消或抢占时按实现释放请求引用。客户端超时应验证是否传成引擎取消，及后台请求、KV 和队列指标何时回落。
 
-vLLM v0.10.2 的 V1 调度器按已计算 token 与目标 token 的差额推进并调用 KV 管理器分配块，可在预算内混合不同阶段；共享前缀可复用匹配的块。SGLang v0.5.2 的 Scheduler 调度新请求和运行批次，RadixCache 用 token 前缀组织树，查找匹配前缀并对活跃引用保护，空闲缓存可淘汰。两个实现的缓存匹配、抢占、取消和回收都应按目标版本观察。CUDA Graph 可在支持的形状重放 GPU 工作、减少 Host 提交开销，也要核对捕获开销、显存和回退路径。[vLLM V1 调度源码](https://github.com/vllm-project/vllm/blob/v0.10.2/vllm/v1/core/sched/scheduler.py) · [SGLang 调度源码](https://github.com/sgl-project/sglang/blob/v0.5.2/python/sglang/srt/managers/scheduler.py) · [SGLang RadixCache](https://github.com/sgl-project/sglang/blob/v0.5.2/python/sglang/srt/mem_cache/radix_cache.py)
+vLLM v0.10.2 的 V1 调度器每轮看每个请求还差多少 token，就按这个差额继续算，同时调用 KV 管理器分配块；预算允许时还能把 prefill 和 decode 混在一轮里，共享同一段前缀的请求可以复用已经算好的块。SGLang v0.5.2 里由 Scheduler 统一排新请求和运行批次，RadixCache 把 token 前缀组织成一棵树：新请求进来先在这棵树里找能复用的前缀，还在被请求用着的前缀不会被淘汰，没人用的才回收。两个实现的缓存匹配、抢占、取消和回收，都要按目标版本的实际行为观察。CUDA Graph 可在支持的形状重放 GPU 工作、减少 Host 提交开销，也要核对捕获开销、显存和回退路径。[vLLM V1 调度源码](https://github.com/vllm-project/vllm/blob/v0.10.2/vllm/v1/core/sched/scheduler.py) · [SGLang 调度源码](https://github.com/sgl-project/sglang/blob/v0.5.2/python/sglang/srt/managers/scheduler.py) · [SGLang RadixCache](https://github.com/sgl-project/sglang/blob/v0.5.2/python/sglang/srt/mem_cache/radix_cache.py)
 
 ## 3. 逐级验收兼容性、质量与容量
 
@@ -69,7 +69,7 @@ vLLM v0.10.2 的 V1 调度器按已计算 token 与目标 token 的差额推进�
 
 prefill chunk、并发上限、静态显存比例和 Graph 覆盖范围相互影响。比如给 KV 留出更多空间可能减少工作区余量，增加 Graph 捕获范围也可能增加内存。先记录默认基线，再一次调整一个因素。[SGLang 调优文档](https://docs.sglang.io/docs/advanced_features/hyperparameter_tuning)
 
-每个候选结果都应附上模型 revision、镜像 digest、引擎版本、GPU、驱动、输入分布和计时定义。正文不应保留“首选”“最佳”“90%+ 利用率”等缺少适用条件的宣传语；技术选型需要说明取舍，而不只是给出排名。
+每个候选结果都应附上模型 revision、镜像 digest、引擎版本、GPU、驱动、输入分布和计时定义。正文只保留带适用条件的结论；“首选”“最佳”“90%+ 利用率”这类说法缺少条件，技术选型需要说明取舍，而不只是给出排名。
 
 先用同一 GPU 数量和预算跑默认基线，再分别调整 Chunked Prefill、Prefix Cache、KV Pool、Static Memory Fraction、CUDA Graph、Max Running Requests、TP/PP 或量化。用实际 token 预算、图覆盖、池字节与并行布局比较等效条件；同名参数或相同数值也可能有不同语义。每轮调优后重新核查正确性、质量、Goodput、设备资源成本及回退条件。第 19、20 章列出了相应 vLLM 与 SGLang 参数。
 
@@ -93,7 +93,7 @@ Fixed Concurrency（固定并发）常采用 Closed-loop Load（闭环负载）�
 
 TTFT（Time to First Token，首 Token 延迟）从客户端发出到首 Token。ITL（Inter-Token Latency，Token 间隔）按逐间隔采样；TPOT（Time per Output Token，每输出 Token 平均耗时）按请求计，不足两 Token 单列。E2E（End-to-End Latency，端到端延迟）需声明最后 Token 或完成事件。各指标记录 P50/P95/P99，并记录 Output Token/s、Request/s、GPU 峰值显存与利用率、质量得分、失败率与超时率。流式 chunk 可能包含多个 Token；无法获取逐 Token 时间时另标 chunk 口径。失败、超时、拒绝、截断以及窗口末尾未完成请求均保留状态与分母规则。
 
-SLO（Service Level Objective，服务等级目标）和 Goodput（满足条件的有效吞吐）需先定义。例如 100 秒内成功完成 1000 个请求，800 个同时满足质量、TTFT 和 TPOT 门槛，则完成吞吐为 10 req/s，Goodput 为 8 req/s。失败和超时不能成为合格请求。测试前确定窗口、完成口径、超时和截断规则，报告全部送入请求数，避免事后排除不利样本。
+SLO（Service Level Objective，服务等级目标）和 Goodput（满足条件的有效吞吐）需先定义。例如 100 秒内成功完成 1000 个请求，800 个同时满足质量、TTFT 和 TPOT 门槛，则完成吞吐为 10 req/s，Goodput 为 8 req/s。失败和超时不计入合格请求。测试前确定窗口、完成口径、超时和截断规则，报告全部送入请求数，避免事后排除不利样本。
 
 ### 一次版本化压测的入口
 
@@ -111,7 +111,7 @@ vllm bench serve --backend openai --base-url "$BASE_URL" \
   --percentile-metrics ttft,tpot,itl,e2el --metric-percentiles 50,95,99
 ```
 
-先预热并保存缓存状态，再重复运行三次，核对实际发出速率、输出长度、完成与超时计数、分位数和设备峰值。若响应不兼容、发生拒绝或队列持续增长，保留日志及错误样本，按矩阵判定。跨引擎对照需核对相同请求内容和到达序列，不能只比较各自客户端默认结果。[vLLM v0.10.2 benchmark 参数](https://docs.vllm.ai/en/v0.10.2/cli/bench/serve.html)
+先预热并保存缓存状态，再重复运行三次，核对实际发出速率、输出长度、完成与超时计数、分位数和设备峰值。若响应不兼容、发生拒绝或队列持续增长，保留日志及错误样本，按矩阵判定。跨引擎对照需核对相同请求内容和到达序列，各自客户端默认结果不可直接比较。[vLLM v0.10.2 benchmark 参数](https://docs.vllm.ai/en/v0.10.2/cli/bench/serve.html)
 
 ### 选型报告模板
 

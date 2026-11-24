@@ -25,9 +25,9 @@ DCGM 提供 GPU 实体与性能字段的观测能力，Exporter 将相应指标�
 
 [![DCGM Exporter：hostengine 使用方式](/assets/notes/ai-infra/dcgm-deployment-modes.svg)](/assets/notes/ai-infra/dcgm-deployment-modes.svg)
 
-Exporter 可以使用嵌入式 hostengine，或连接受管理的已有 hostengine；选择其一并记录实际进程与连接。外部模式通过 `-r Host:Port` 等受支持配置连接，需结合目标进程与连接关系确定实际采集拓扑。客户端 `libdcgm` 与服务端版本也要检查兼容，不只检查 exporter 镜像是否能启动。[DCGM Exporter 部署说明](https://docs.nvidia.com/datacenter/cloud-native/gpu-telemetry/latest/dcgm-exporter.html)
+Exporter 可以使用嵌入式 hostengine，或连接受管理的已有 hostengine（hostengine 是真正去读 GPU 指标的那个 DCGM 服务进程）；选择其一并记录实际进程与连接。外部模式通过 `-r Host:Port` 等受支持配置连接，需结合目标进程与连接关系确定实际采集拓扑。客户端 `libdcgm` 与服务端版本也要检查兼容，不只检查 exporter 镜像是否能启动。[DCGM Exporter 部署说明](https://docs.nvidia.com/datacenter/cloud-native/gpu-telemetry/latest/dcgm-exporter.html)
 
-DCGM（Data Center GPU Manager，数据中心 GPU 管理器）发现实体、采样字段并维护数据。客户端通过 `libdcgm` 使用接口。Embedded 模式由 Exporter 在自身进程内启动和停止引擎；External 模式下 `nv-hostengine` 独立运行，Exporter 通过客户端连接，重启 Exporter 不会重启该服务。客户端库版本宜与服务端相同，至少核对 NVIDIA 对客户端不低于服务端的建议和具体兼容性。重复部署可能增加轮询及硬件计数器竞争。
+DCGM（Data Center GPU Manager，数据中心 GPU 管理器）负责发现设备、按字段采样并把数据留在服务端，客户端通过 `libdcgm` 调用这些接口。这里的“实体”指监控对象：一张整卡，或 MIG 切出来的一个实例。Embedded 模式由 Exporter 在自身进程内启动和停止引擎；External 模式下 `nv-hostengine` 独立运行，Exporter 通过客户端连接，重启 Exporter 不会重启该服务。客户端库版本宜与服务端相同，至少核对 NVIDIA 对客户端不低于服务端的建议和具体兼容性。重复部署可能增加轮询及硬件计数器竞争。
 
 Exporter 将数据暴露到 HTTP `/metrics`，Prometheus 周期抓取和保存时序，Grafana 查询 Prometheus 绘图。沿用[第 10 章](/articles/ai-infra-nvml.html)的 A、B 服务，先把两者映射到节点、GPU UUID 和实例，再对齐 A 延迟升高的时间段。长期采样可以缩小调查范围，具体请求仍要看时间线。
 
@@ -55,7 +55,7 @@ Exporter 将数据暴露到 HTTP `/metrics`，Prometheus 周期抓取和保存�
 |     1005 | `DCGM_FI_PROF_DRAM_ACTIVE`        | 设备显存接口收发活跃周期占比                 | ratio |
 |      252 | `DCGM_FI_DEV_FB_USED`             | 当前实体报告的 framebuffer 已用容量          | MiB   |
 
-`dcgmi profile -l` 的列标签可能省略 `DCGM_FI_`，按数值 ID 交叉核对。新版 DCGM 头文件把 1001 和 1002 的主名称分别写作 `DCGM_FI_PROF_GR_ENGINE_UTIL_RATIO` 和 `DCGM_FI_PROF_SM_UTIL_RATIO`，并保留旧 C 名称为别名。ID 相同并不意味着旧版 Exporter 接受新版名称，也不保证 Prometheus 序列改名。Profiling 字段需按设备、驱动、实体和兼容组验证。整卡支持不代表 GI 或 CI 支持同一字段。FB Used 也要确认采集的是整卡还是实例。 [DCGM v4.2.3 头文件](https://raw.githubusercontent.com/NVIDIA/DCGM/v4.2.3/dcgmlib/dcgm_fields.h) · [新版 DCGM 头文件](https://github.com/NVIDIA/DCGM/blob/master/dcgmlib/dcgm_fields.h)
+`dcgmi profile -l` 的列标签可能省略 `DCGM_FI_`，按数值 ID 交叉核对。新版 DCGM 头文件把 1001 和 1002 的主名称分别写作 `DCGM_FI_PROF_GR_ENGINE_UTIL_RATIO` 和 `DCGM_FI_PROF_SM_UTIL_RATIO`，并保留旧 C 名称为别名。ID 相同只说明字段对应，旧版 Exporter 未必接受新版名称，Prometheus 序列也不会自动改名。Profiling 字段需按设备、驱动、实体和兼容组验证。整卡支持的字段，GI 或 CI 未必支持。FB Used 也要确认采集的是整卡还是实例。 [DCGM v4.2.3 头文件](https://raw.githubusercontent.com/NVIDIA/DCGM/v4.2.3/dcgmlib/dcgm_fields.h) · [新版 DCGM 头文件](https://github.com/NVIDIA/DCGM/blob/master/dcgmlib/dcgm_fields.h)
 
 假设 80 个 SM 中 20 个在整个窗口内始终有活跃 warp，其余为空，SM Active 约为 25%。等待访存的 warp 仍可能计入活跃。该值无法推出峰值算力效率、Tensor 管线活跃度或显存带宽。NVML GPU Utilization 则按设备采样窗口中是否有 kernel 执行计时，其分母也与 SM Active 不同。
 
@@ -72,7 +72,7 @@ dcgmi discovery -c
 dcgmi profile -l -i 0
 ```
 
-区分物理 GPU、GI、CI 的 entity；重建 MIG 后重新发现 ID。`stats` 的作业统计与 `dmon` 的字段观察不是互为必要前置，也不保证支持所有 MIG 指标。配置 CSV 时检查字段支持，避免只复制旧截图里的编号。
+要分清三种实体：物理 GPU 指整张卡；GI（GPU Instance）和 CI（Compute Instance）是 MIG 把一张卡切成实例后的两级编号。重建 MIG 后 ID 会变，要重新发现。`stats` 的作业统计与 `dmon` 的字段观察不是互为必要前置，也不保证支持所有 MIG 指标。配置 CSV 时检查字段支持，避免只复制旧截图里的编号。
 
 ```text
 DCGM_FI_DEV_GPU_TEMP, gauge, GPU temperature (C).
@@ -130,7 +130,7 @@ scrape_configs:
 
 ## 4. 逐节点发现并保留设备身份标签 {#_4-按节点监控-不能只依赖一个共享-service-名}
 
-[![逐节点抓取：不要把 Service 名当节点身份](/assets/notes/ai-infra/dcgm-node-targets.png)](/assets/notes/ai-infra/dcgm-node-targets.png)
+[![逐节点抓取：Service 名不是节点身份](/assets/notes/ai-infra/dcgm-node-targets.png)](/assets/notes/ai-infra/dcgm-node-targets.png)
 
 DaemonSet 可以在多个 GPU 节点运行 exporter。普通多 endpoint Service 代表一组后端，一次连接可能选到其中一个。应通过监控发现逐个抓取目标，并保留 node、UUID、GI/CI 等对应标签；具体标签由 exporter 和发现配置决定。[Kubernetes Service](https://kubernetes.io/docs/concepts/services-networking/service/)
 
@@ -142,9 +142,9 @@ Kubernetes 中可用 DaemonSet 为每个 GPU Node 创建 Exporter Pod，以 PodM
 
 ## 5. 四层时间与两类扰动
 
-应分别记录硬件字段的采样/watch、exporter 更新、Prometheus scrape 和查询聚合窗口。每 1 秒更新、每 30 秒抓取，并不能获得完整的 1 秒历史序列。是否需要滚动更新取决于部署和配置加载方式，“两次重启”并不是采样周期的固有要求。
+一条指标从硬件到你看到的图表，要过四道时间窗：硬件字段自己的采样间隔（watch）、Exporter 取最新值的更新间隔、Prometheus 的抓取间隔（scrape），以及查询时的聚合窗口。字段每 1 秒更新、每 30 秒抓取，最终只能得到 30 秒粒度的采样。是否需要滚动更新取决于部署和配置加载方式，“两次重启”并不是采样周期的固有要求。
 
-profiling counters 可能受采集权限、组合限制或多工具竞争影响；DCGM 复用某些字段也不能等同于 Nsight Compute 对应用的 replay。先无采集测业务基线，再短时选择少量指标，比较吞吐、尾延迟和资源开销。
+profiling counters 可能受采集权限、组合限制或多工具竞争影响；DCGM 复用某些字段，与 Nsight Compute 对应用的 replay 是两套机制。先无采集测业务基线，再短时选择少量指标，比较吞吐、尾延迟和资源开销。
 
 ### 三秒突发为什么看不见
 
@@ -157,6 +157,6 @@ profiling counters 可能受采集权限、组合限制或多工具竞争影响�
 
 Profiling Counter 是硬件提供的活动计数资源。若所选字段不能同时采，DCGM 可能按组复用计数器，时间分辨率会受影响。Nsight Compute Replay 则可能重跑 kernel 收集不同组，带来执行和缓存扰动。两者还可能竞争设备计数器，具体取决于 GPU、驱动、权限和所选工具功能。
 
-在隔离实验节点或协调过的窗口中，先记录目标 Hostengine 和正在使用的 profiling 字段，核对 `dcgmi profile --help` 和 Nsight 所需权限。仅当确认需要时，在连接同一 Hostengine 的客户端执行 `dcgmi profile --pause`，短时采集后执行 `dcgmi profile --resume`。Pause 影响整个目标 Hostengine 的 profiling 采集，不应作为业务节点的无影响操作。为异常退出设置清理步骤或 shell trap；若进程被强杀，安排另一操作者手动恢复。最后检查 profiling 字段重新产生有效样本，并标注空窗。[DCGM Profiling](https://docs.nvidia.com/datacenter/dcgm/latest/learn/modules/profiling.html)
+在隔离实验节点或协调过的窗口中，先记录目标 Hostengine 和正在使用的 profiling 字段，核对 `dcgmi profile --help` 和 Nsight 所需权限。仅当确认需要时，在连接同一 Hostengine 的客户端执行 `dcgmi profile --pause`，短时采集后执行 `dcgmi profile --resume`。Pause 影响整个目标 Hostengine 的 profiling 采集，它会影响业务节点上的 profiling 采集。为异常退出设置清理步骤或 shell trap；若进程被强杀，安排另一操作者手动恢复。最后检查 profiling 字段重新产生有效样本，并标注空窗。[DCGM Profiling](https://docs.nvidia.com/datacenter/dcgm/latest/learn/modules/profiling.html)
 
 如果 A 的延迟仍无法从实体级趋势解释，转到[第 12 章](/articles/ai-infra-performance-profiling.html)定位请求关键路径。

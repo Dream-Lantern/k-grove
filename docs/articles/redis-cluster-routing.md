@@ -21,7 +21,7 @@ order: 23
 
 [返回本册目录](/collections/redis/)
 
-Redis Cluster 用槽把键分布到多个主节点，各主节点再通过副本支持故障处理。一次请求先由键确定槽，再由客户端找到当前负责节点；槽迁移或拓扑变化时，通过重定向更新访问路径。[第二十二章 Sentinel](/articles/redis-sentinel.html) 管理非 Cluster 复制组的切换，不承担这里的数据分片职责。本章以 Redis Open Source 7.2.0 为机制核对基线，其他版本边界单独标明。
+Redis Cluster 用槽把键分布到多个主节点，各主节点再通过副本支持故障处理。一次请求的处理顺序是：客户端先算出这个键属于哪个槽，再查自己缓存的那张“槽—节点”表，直接连负责这个槽的节点；当客户端手里的表和集群实际归属对不上时，节点用重定向告诉它该去哪个地址，客户端更新表后重试。[第二十二章 Sentinel](/articles/redis-sentinel.html) 管理非 Cluster 复制组的切换，不承担这里的数据分片职责。本章以 Redis Open Source 7.2.0 为机制核对基线，其他版本边界单独标明。
 
 [![Redis Cluster：MOVED与ASK](/assets/notes/redis/redis-study-cluster-slots.png)](/assets/notes/redis/redis-study-cluster-slots.png)
 
@@ -35,7 +35,7 @@ Hash Slot（哈希槽）是键和节点之间的分配单位。Redis Cluster 用
 slot = CRC16(key) % 16384
 ```
 
-槽号是 0～16383，数量不随节点数变化。主节点负责一组槽，副本跟随相应主节点。这个中间层使扩容可以移动部分槽及数据，无需改变全部键的计算规则；16,384 是协议选定的固定数量，不是当前主节点数，也不是业务应部署的节点数量。
+槽号是 0～16383，数量不随节点数变化。主节点负责一组槽，副本跟随相应主节点。有了这层固定编号，扩容只需要把一部分槽连同槽里的键交给新节点，所有键算槽的公式一个字都不用改；16,384 是协议选定的固定数量，不是当前主节点数，也不是业务应部署的节点数量。
 
 Hash Tag（哈希标签）让相关键按同一段内容计算槽，例如：
 
@@ -58,18 +58,18 @@ CLUSTER KEYSLOT user:{42}:cart
 
 两条命令预期返回相同槽号，不要求它们已经存在。订单也可以按业务对象分组：`order:{1001}:detail`、`order:{1001}:items`、`order:{1001}:payment`。若全部订单统一使用 `{order}`，会集中在一个槽，容易形成热点。标签解决同槽问题，需要在多键操作便利性和分片均衡之间权衡。[Hash Tag 精确匹配规则](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#hash-tags)
 
-同一个节点可能负责很多槽。两把键恰好在同节点，不代表跨键命令一定可用；约束通常是同槽，迁移中还可能出现额外状态与错误。Cluster 也只使用数据库 0，不能用 SELECT 切换逻辑数据库分摊数据。[Cluster 协议规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
+同一个节点可能负责很多槽。跨键命令（如 MGET、事务）要求涉及的键落在同一个槽，而不只是同一台机器：两个键恰好被分到同一节点，也仍可能来自不同槽，命令照样会被拒绝；迁移中还会多出额外状态与错误。Cluster 也只使用数据库 0，不能用 SELECT 切换逻辑数据库分摊数据。[Cluster 协议规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
 
 ## 2. 客户端维护槽与节点映射 {#_2-客户端应该懂-cluster}
 
 客户端通常先发现拓扑，缓存槽与节点的映射，再直接连接负责相应槽的节点。Redis 节点并不是替客户端转发任意请求的透明代理；普通单机客户端可能无法正确处理地址变化、重定向和多节点连接。
 
-| 命令             | Redis Open Source 版本                      | 用途                                     |
-| ---------------- | ------------------------------------------- | ---------------------------------------- |
-| `CLUSTER SLOTS`  | 3.0.0 引入；7.0.0 起标记 Deprecated（弃用） | 传统槽到节点映射接口；弃用不等于立即删除 |
-| `CLUSTER SHARDS` | 7.0.0 引入                                  | 新的分片拓扑接口，新客户端优先考虑       |
+| 命令             | Redis Open Source 版本                      | 用途                                                 |
+| ---------------- | ------------------------------------------- | ---------------------------------------------------- |
+| `CLUSTER SLOTS`  | 3.0.0 引入；7.0.0 起标记 Deprecated（弃用） | 传统槽到节点映射接口；弃用只表示计划移除，当前仍可用 |
+| `CLUSTER SHARDS` | 7.0.0 引入                                  | 新的分片拓扑接口，新客户端优先考虑                   |
 
-客户端要按服务端版本和自身能力选择接口；旧环境仍可能需要 SLOTS。能 PING 一个入口，不代表能处理多节点连接、认证和通告地址。[SHARDS](https://redis.io/docs/latest/commands/cluster-shards/)、[SLOTS 的版本与弃用说明](https://redis.io/docs/latest/commands/cluster-slots/)
+客户端要按服务端版本和自身能力选择接口；旧环境仍可能需要 SLOTS。PING 通一个入口，只证明该入口可达；多节点连接、认证和通告地址还要各自验证。[SHARDS](https://redis.io/docs/latest/commands/cluster-shards/)、[SLOTS 的版本与弃用说明](https://redis.io/docs/latest/commands/cluster-slots/)
 
 Pipeline（命令流水线，即批量发送命令以减少往返等待）也要先按节点路由，不能把分属不同节点的命令全部发往同一入口。见[第十七章](/articles/redis-pipeline.html)；事务和脚本的多键同槽约束见[第十八章](/articles/redis-transactions-lua-functions.html)。
 
@@ -77,7 +77,7 @@ Pipeline（命令流水线，即批量发送命令以减少往返等待）也要
 
 ![两种重定向的处理分支](/assets/notes/redis/redis-study-redirect.svg)
 
-MOVED 表示当前已知的槽归属在别处，客户端应重试并更新相关拓扑认知。ASK 常出现在传统迁移过程，要求本次请求临时去目标节点，先在同一连接发送 ASKING，再发送被重定向的命令；不能因此立刻把该槽永久改到目标节点。
+MOVED 表示这个槽现在归别的节点，客户端应把本地那张“槽—节点”表里这一项改掉，再重试。ASK 常出现在传统迁移过程：源端已经没有这个键，但它还没正式交出槽，所以只要求本次请求临时去目标节点，先在同一连接发送 ASKING，再发送被重定向的命令；因此这次重定向只对当前请求有效，槽的永久归属仍要靠 SETSLOT 变更。
 
 | 响应       | 含义                                 | 客户端处理                                                    |
 | ---------- | ------------------------------------ | ------------------------------------------------------------- |
@@ -98,7 +98,7 @@ MGET user:{42}:profile user:{42}:cart
 
 ## 4. 分片容量与单键热点的不同处理 {#_4-分片解决不了所有热点}
 
-槽数平衡不代表数据字节、请求数或 CPU（Central Processing Unit，中央处理器）负载平衡。一万个小冷键可能远轻于一个热点大 Hash。单个键通常由一个分片负责，增加节点不会自动把该键内部拆开。
+槽数平衡只说明键的分布，数据字节、请求数和 CPU（Central Processing Unit，中央处理器）负载仍可能倾斜。一万个小冷键可能远轻于一个热点大 Hash。单个键通常由一个分片负责，增加节点不会自动把该键内部拆开。
 
 是否拆分热点，或采用本地缓存、请求合并和限流，需要结合数据模型判断。拆分后，跨分片聚合与一致性成本也会上升，因此不能仅因架构图中节点更多，就认定容量会线性增长。
 
@@ -106,7 +106,7 @@ MGET user:{42}:profile user:{42}:cart
 
 Cluster 通过 Gossip（流言传播，即节点互换彼此观察到的状态）收集故障信息。Node Timeout（节点超时，对应 `cluster-node-timeout`）影响探测与故障处理，但不是固定恢复时间。
 
-PFAIL（Possible Failure，疑似故障）是本地怀疑；FAIL（Failure，确认故障状态）需要相应多数主节点报告，接到 FAIL 消息的节点也会更新状态。报告有有效期，不是所有主节点必须在同一瞬间一致投票。故障判断只是启动后续处理的依据，不能等同于提升已经完成。
+PFAIL（Possible Failure，疑似故障）只是一个节点自己的判断——“我这里连不上它”，还不能下结论；等相应多数主节点都报告连不上，才升级为 FAIL（Failure，确认故障状态），这时才算集群层面的结论，接到 FAIL 消息的节点也会更新状态。报告有有效期，不是所有主节点必须在同一瞬间一致投票。故障判断只是启动后续处理的依据，不能等同于提升已经完成。
 
 其逻辑流程为：
 
@@ -118,13 +118,13 @@ PFAIL（Possible Failure，疑似故障）是本地怀疑；FAIL（Failure，确
 → 副本提升，使用新的配置纪元公布槽归属
 ```
 
-Config Epoch（配置纪元）是槽归属配置的版本号，用来解决不同节点声明同一槽时的冲突。自动提升还要求旧主有槽、副本数据足够新、未禁止自动提升，并获得多数有槽主节点的当轮授权；复制进度影响候选尝试时机。Redis Open Source 7.2.0 中，新鲜度受 `cluster-replica-validity-factor` 等配置影响，设为 0 可关闭该年龄检查，不应写成跨版本固定秒数。[Cluster 规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#replica-election-and-promotion)、[7.2.0 故障检测与选举实现](https://github.com/redis/redis/blob/7.2.0/src/cluster.c)
+Config Epoch（配置纪元）是槽归属配置的版本号，用来解决不同节点声明同一槽时的冲突。自动提升还要求旧主有槽、副本数据足够新、未禁止自动提升，并获得多数有槽主节点的当轮授权；复制进度影响候选尝试时机。Redis Open Source 7.2.0 中，新鲜度受 `cluster-replica-validity-factor` 等配置影响，设为 0 可关闭该年龄检查；该阈值随版本与配置变化，没有跨版本通用的固定秒数。[Cluster 规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/#replica-election-and-promotion)、[7.2.0 故障检测与选举实现](https://github.com/redis/redis/blob/7.2.0/src/cluster.c)
 
 **Cluster 的故障报告与选举不是 Sentinel 的 quorum 算法。** 不在这里配置 Sentinel 的 `down-after-milliseconds` 或 quorum。三个主节点各配一个副本只是常见教学拓扑，不能把副本也算成同等授权票。
 
-Redis Open Source 7.2.0 默认 `cluster-require-full-coverage yes`，槽未分配或其主节点被判 FAIL 时，会使相应节点视图中的集群状态失败，默认拒绝正常数据请求。设为 `no` 允许在缺槽时继续服务可用槽，但不会恢复丢失槽的数据，也不能绕过主节点多数可达的要求。
+Redis Open Source 7.2.0 默认 `cluster-require-full-coverage yes`，槽未分配或其主节点被判 FAIL 时，会使相应节点视图中的集群状态失败，默认拒绝正常数据请求。设为 `no` 允许在缺槽时继续服务可用槽，但丢失槽的数据不会因此恢复，主节点多数可达仍是前提。
 
-假设三个分片 A、B、C 各有一主一副本，C 主副本均失效：A、B 仍有 2/3 主节点多数；全槽覆盖开启时，缺失 C 的槽会影响整体服务；关闭时，A、B 的槽可能继续服务，C 的槽仍不可用。若再失去 B，A 无法形成主节点多数，关闭全槽覆盖也不能让它无条件继续服务。[7.2.0 配置](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf)、[clusterUpdateState 实现](https://github.com/redis/redis/blob/7.2.0/src/cluster.c)
+假设三个分片 A、B、C 各有一主一副本，C 主副本均失效：A、B 仍有 2/3 主节点多数；全槽覆盖开启时，缺失 C 的槽会影响整体服务；关闭时，A、B 的槽可能继续服务，C 的槽仍不可用。若再失去 B，A 无法形成主节点多数，关闭全槽覆盖后仍要满足多数才能服务。[7.2.0 配置](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf)、[clusterUpdateState 实现](https://github.com/redis/redis/blob/7.2.0/src/cluster.c)
 
 副本可用于读扩展。在 Cluster 副本连接上发送：
 

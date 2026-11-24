@@ -27,7 +27,7 @@ order: 19
 
 Java、librdkafka 与 Python 封装分别提供自己的配置接口。同名项的默认值可能不同，近似机制也可能使用不同名称，生产与消费侧的作用域同样需要区分。查阅时先选择对应客户端，再按接口契约组合配置。
 
-每次查参数，至少应记下四项：客户端版本、所属对象或作用域、单位与默认值，以及关联设置。封装库还可能修改默认值，因此部署验收时要检查实际生效配置，不能只看文档表格。
+每次查参数，至少应记下四项：客户端版本、所属对象或作用域、单位与默认值，以及关联设置。封装库还可能修改默认值，因此部署验收时要检查实际生效配置，文档表格只是起点。
 
 | 配置作用域                                          | 对象与默认值来源                                           | 校验与覆盖                                                                                                                |
 | --------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -38,22 +38,22 @@ Java、librdkafka 与 Python 封装分别提供自己的配置接口。同名项
 | librdkafka Global Configuration（C 全局配置）       | `rd_kafka_conf_t`，查 v2.8.0 的全局配置表及 P/C 标记       | Setter 检查名称和值，`rd_kafka_new()` 再检查组合。每实例的设置彼此独立                                                    |
 | librdkafka Topic Configuration（C 本地 Topic 配置） | `rd_kafka_topic_conf_t`，查 v2.8.0 的 Topic 配置表         | Topic setter 和本地 Topic 句柄创建阶段校验。显式 Topic 配置用于该句柄，传 NULL 使用适用的客户端默认 Topic 配置            |
 
-单位以具体条目为准。比如批次大小用字节，队列容量可能用 KiB，等待时间通常用毫秒。C 本地 Topic 的 `acks` 控制客户端请求确认策略，服务端 Topic 的 `min.insync.replicas` 控制相应写入条件。两者共同影响结果，各自由不同对象解析。
+单位以具体条目为准。比如批次大小用字节，队列容量可能用 KiB，等待时间通常用毫秒。C 本地 Topic 的 `acks` 由客户端决定：发请求时要求几个副本确认才算写成功；服务端 Topic 的 `min.insync.replicas` 由 Broker 决定：至少几个副本在线才允许写入。前者是客户端提的要求，后者是服务端设的门槛，两边都满足才成功。
 
 ## 2. 关键默认值对照
 
 | 项目                       | Java Kafka Client 3.9 | librdkafka v2.8.0        | 复盘重点                             |
 | -------------------------- | --------------------- | ------------------------ | ------------------------------------ |
-| enable.idempotence         | 无冲突时默认 true     | 默认 false               | 不写“Kafka 默认统一关闭”             |
-| acks                       | all                   | all／-1                  | 都不等于同步刷所有磁盘               |
-| linger.ms                  | 0ms                   | 5ms                      | 是聚合等待，不是总投递超时           |
-| enable.auto.commit         | true                  | true                     | 不能证明业务已经完成                 |
+| enable.idempotence         | 无冲突时默认 true     | 默认 false               | 两端默认值不同                       |
+| acks                       | all                   | all／-1                  | 确认范围止于 ISR，磁盘刷写另计       |
+| linger.ms                  | 0ms                   | 5ms                      | 只覆盖聚合等待                       |
+| enable.auto.commit         | true                  | true                     | 与业务完成无关                       |
 | enable.auto.offset.store   | 无同名公共配置        | true                     | C 的本地 Store 与 Commit 分开        |
 | isolation.level            | read_uncommitted      | read_committed           | 显式核对事务读语义                   |
 | auto.offset.reset 默认值   | latest                | largest（latest 的别名） | 无有效位置或位置越界时从当时末端继续 |
 | auto.offset.reset 错误路线 | none                  | error                    | 显式选错位点报错路径                 |
 
-上表固定版本。含冲突配置时还需查看校验与调整规则，不应只保留一个布尔值。
+上表只对这两个固定版本成立。几处配置互相牵制时，还要看客户端怎么校验、会不会替你改值——能不能用，不只看某个布尔开关。
 
 迁移同一条订单处理链时，C 默认关闭生产者幂等，网络重试可能重复追加。两端默认 `acks=all` 都按当前 ISR（同步副本集合）及适用服务端门槛确认。C 默认聚合等待 5 ms，低流量时可能更容易凑成批次，也可能增加等待。Java 默认 0 ms 仍可把已经积累的记录合并发送。
 
@@ -147,7 +147,7 @@ int main(void) {
 
 ### 有Key路由的固定字节算例
 
-前提：6个分区，未显式指定分区，使用内置算法，Java未忽略Key，输入为表中UTF-8字节。数值来自本地纯哈希算术校对，不是实际客户端投递结果。
+前提：6 个分区，未显式指定分区，使用内置算法，Java 未忽略 Key，输入为表中 UTF-8 字节。数值来自本地纯哈希算术校对，与实际客户端投递结果不同。
 
 | 文本     | UTF-8十六进制      | Java Murmur2正数化值 | Java分区 | C默认CRC32值 | C分区 |
 | -------- | ------------------ | -------------------: | -------: | -----------: | ----: |
@@ -155,9 +155,9 @@ int main(void) {
 | alpha    | 616c706861         |           1337910568 |        4 |   3504355690 |     4 |
 | 订单一   | e8aea2e58d95e4b880 |           1586882365 |        1 |   3795464396 |     2 |
 
-Java路线为`(murmur2(bytes) & 0x7fffffff) % 6`，C默认非空Key为CRC32取模；同一个例子偶然相同不证明整体兼容。C的murmur2_random用于兼容有Key映射，还需分别测试NULL、零长度、显式Partition与无Key批次策略；这里没有为随机路线编造固定分区。[Kafka3.9.0 Utils.murmur2](https://github.com/apache/kafka/blob/3.9.0/clients/src/main/java/org/apache/kafka/common/utils/Utils.java)
+Java 路线为 `(murmur2(bytes) & 0x7fffffff) % 6`，C 默认非空 Key 为 CRC32 取模；同一个例子偶然相同，整体兼容性仍需分别测试。C的murmur2_random用于兼容有Key映射，还需分别测试NULL、零长度、显式Partition与无Key批次策略；这里没有为随机路线编造固定分区。[Kafka3.9.0 Utils.murmur2](https://github.com/apache/kafka/blob/3.9.0/clients/src/main/java/org/apache/kafka/common/utils/Utils.java)
 
-Java 的 StringSerializer 默认编码为 UTF-8，C 接口使用调用方传入的字节与长度。Murmur2 将字节混合成 32 位值，再清除符号位。C 默认 `consistent_random` 对非零长度 Key 求无符号 CRC32。两者分别对分区数取模，例如 `501153024 % 6 = 0`、`1475806942 % 6 = 4`。两个生产者把同一业务 Key 写入不同分区时，分区内顺序不能覆盖整条 Key 的事件链。
+Java 的 StringSerializer 默认编码为 UTF-8，C 接口使用调用方传入的字节与长度。Murmur2 将字节混合成 32 位值，再清除符号位。C 默认 `consistent_random` 对非零长度 Key 求无符号 CRC32。两者分别对分区数取模，例如 `501153024 % 6 = 0`、`1475806942 % 6 = 4`。两个生产者算出的分区不同时，同一个业务 Key 的记录会散到两个分区。Kafka 只保证单个分区内的先后，这两条谁先谁后就说不清了；要让同一 Key 的事件保持顺序，必须让它们落在同一分区。
 
 | 输入边界               | Java 3.9 内置路线                             | C v2.8.0 内置路线                                                                          |
 | ---------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -169,29 +169,29 @@ Java 的 StringSerializer 默认编码为 UTF-8，C 接口使用调用方传入�
 
 ## 3. 常用参数名称、方向与作用层次 {#_3-容易抄错的参数名称和方向}
 
-| 需求               | Java 3.9                  | librdkafka v2.8.0                     | 常见误区                                 |
-| ------------------ | ------------------------- | ------------------------------------- | ---------------------------------------- |
-| Fetch 等待         | fetch.max.wait.ms         | fetch.wait.max.ms                     | 名称次序不同                             |
-| 单分区 Fetch 大小  | max.partition.fetch.bytes | fetch.message.max.bytes，前者也为别名 | 不应当成绝对阻止超大首批返回的统一硬上限 |
-| 单次应用 poll 条数 | max.poll.records          | consumer_poll 返回单个消息对象        | 不用 C 的 batch.num.messages 替代        |
-| 生产批次条数       | 不用 C 同名项照搬         | batch.num.messages                    | 它不属于消费 Fetch                       |
-| 请求大小           | max.request.size          | 按 C 的 message.max.bytes 等契约核对  | 不同层级不能一一等同                     |
+| 需求               | Java 3.9                  | librdkafka v2.8.0                     | 常见误区                             |
+| ------------------ | ------------------------- | ------------------------------------- | ------------------------------------ |
+| Fetch 等待         | fetch.max.wait.ms         | fetch.wait.max.ms                     | 名称次序不同                         |
+| 单分区 Fetch 大小  | max.partition.fetch.bytes | fetch.message.max.bytes，前者也为别名 | 它是目标值，超出目标的首批仍可能返回 |
+| 单次应用 poll 条数 | max.poll.records          | consumer_poll 返回单个消息对象        | C 的 batch.num.messages 属于生产侧   |
+| 生产批次条数       | 不用 C 同名项照搬         | batch.num.messages                    | 它不属于消费 Fetch                   |
+| 请求大小           | max.request.size          | 按 C 的 message.max.bytes 等契约核对  | 不同层级各有限制，一一对应并不存在   |
 
-Fetch 大小上限、首批推进例外与客户端自动调整规则依参数和版本而异。排查超大消息要同时核对生产者、Topic/Broker、复制与消费者，不能只把某一处改大。
+Fetch 大小上限、首批推进例外与客户端自动调整规则依参数和版本而异。排查超大消息要同时核对生产者、Topic/Broker、复制与消费者，只把某一处改大会在另一层被拒绝。
 
 | 关系             | Producer / Consumer 配置                                                                                                  | 边界                                                                                                                             |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | 同名且目标接近   | Producer `linger.ms`（ms）、`batch.size`（字节）、`acks`、`enable.idempotence`                                            | 都涉及聚合或发送，但默认值和批次大小语义不同。Java `batch.size` 控制每分区的批次分配目标，C 还用 `batch.num.messages` 限制记录数 |
 | 不同名且目标接近 | Consumer `fetch.max.wait.ms` / `fetch.wait.max.ms`（ms），`max.partition.fetch.bytes` / `fetch.message.max.bytes`（字节） | Fetch 等待与单分区取数目标分别生效。C 的 `max.partition.fetch.bytes` 是相应别名                                                  |
 | 无严格一一映射   | Java Producer `max.request.size` / C `message.max.bytes`                                                                  | Java 同时限制请求大小及未压缩记录批次大小。C 用后者限制协议请求大小，受封装开销及服务端最终检查影响                              |
-| 无严格一一映射   | Java Consumer `max.poll.records` / C `rd_kafka_consumer_poll()`                                                           | Java 限制单次 Poll 交付条数，C API 返回单个消息对象。两者都不能据此推断 Fetch 批次                                               |
+| 无严格一一映射   | Java Consumer `max.poll.records` / C `rd_kafka_consumer_poll()`                                                           | Java 限制单次 Poll 交付条数，C API 返回单个消息对象。两者与 Fetch 批次无对应关系                                                 |
 | 同名或仅一端存在 | 两端 Consumer `enable.auto.commit`，C 独有 `enable.auto.offset.store`                                                     | 自动提交和本地自动存储是两个阶段                                                                                                 |
 
 ## 4. 时间预算要分层
 
-`max.poll.interval.ms` 面向应用消费进展，Session 与 Heartbeat 面向成员存活，投递超时面向生产记录生命周期，事务超时面向事务状态。它们不是同一个计时器的多个名字。
+四个超时盯的是四件不同的事：`max.poll.interval.ms` 管应用两次 poll 之间隔了多久，超了就满足被移出组的条件；Session 与 Heartbeat 管成员还活着没有，心跳断了组里就把你当成死成员；投递超时管一条生产记录从入队到放弃还能花多久，到点就不再重试；事务超时管事务开得太久，协调者会中止它。
 
-Kafka 4.0 新 Consumer 协议还把部分超时控制转到服务端，不能继续用 Classic 的全部配置解释它。实际启用前同时核对 Broker 与客户端支持状态。
+Kafka 4.0 新 Consumer 协议还把部分超时控制转到服务端，Classic 的配置不能全部沿用。实际启用前同时核对 Broker 与客户端支持状态。
 
 从发送到消费的时间线可分为以下阶段：
 
@@ -203,11 +203,11 @@ Kafka 4.0 新 Consumer 协议还把部分超时控制转到服务端，不能继
 | Classic 应用和组存活 | `max.poll.interval.ms`、`heartbeat.interval.ms`、`session.timeout.ms`                              | 分别约束应用 Poll 间隔、心跳发送和组移除条件。Worker 完成进度需另外监测                                                              |
 | 开放事务             | `transaction.timeout.ms` 与 Broker `transaction.max.timeout.ms`                                    | 协调器可中止超时事务，客户端申请值受服务端上限约束                                                                                   |
 
-例如 Java 将 `linger.ms` 设为 5 ms、请求超时为 30 s 时，投递预算应至少为 30,005 ms。把消费 Poll 间隔也设为这个值无法据此判断业务安全，两者监测不同事件。Kafka 4.0 Consumer 协议的服务端心跳与会话配置见[第 12 章](/articles/kafka-rebalance.html)。
+例如 Java 将 `linger.ms` 设为 5 ms、请求超时为 30 s 时，投递预算应至少为 30,005 ms。消费 Poll 间隔是另一个计时器，设成同一数值也判断不了业务安全。Kafka 4.0 Consumer 协议的服务端心跳与会话配置见[第 12 章](/articles/kafka-rebalance.html)。
 
 ## 5. 参数记录应便于审计
 
-记录修改原因、预期改善的指标、风险和回退方法。遇到 Unknown Property 时，应先确认客户端和作用域，而不是逐行删除报错项，直到程序能启动。导出配置时要清除密码、私钥与令牌，避免排错日志中留下凭据。
+记录修改原因、预期改善的指标、风险和回退方法。遇到 Unknown Property 时，应先确认客户端和作用域；逐行删除报错项直到程序启动，会掩盖真正的问题。导出配置时要清除密码、私钥与令牌，避免排错日志中留下凭据。
 
 以 Kafka 3.9 KRaft 上的 `review-orders` 为例。变更只针对一台 Java 3.9 订单 Producer：
 

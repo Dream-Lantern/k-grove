@@ -25,7 +25,7 @@ order: 18
 
 ## 1. TLB miss、Page Fault 与非法地址
 
-翻译后备缓冲（TLB，Translation Lookaside Buffer）缓存翻译和属性。中央处理器（CPU，Central Processing Unit）没找到缓存翻译时，不必立刻进入内核：在本章 x86 硬件分页语境中，页表有效且权限满足就可以完成翻译。页故障异常（#PF，Page-Fault Exception，常称缺页异常）则与当前指令的访问相关，是**同步异常**，不同于异步外设中断。
+翻译后备缓冲（TLB，Translation Lookaside Buffer）缓存的是“这个虚拟页对应哪个物理页、能不能写”这类结果。中央处理器（CPU，Central Processing Unit）没找到缓存翻译时，不必立刻进入内核：在本章 x86 硬件分页语境中，页表有效且权限满足就可以完成翻译。页故障异常（#PF，Page-Fault Exception，常称缺页异常）则与当前指令的访问相关，是**同步异常**，不同于异步外设中断。
 
 | 情况                  | 当前状态                                      | 可能结果                                   |
 | --------------------- | --------------------------------------------- | ------------------------------------------ |
@@ -35,7 +35,7 @@ order: 18
 
 [![正常翻译、TLB 未命中和页故障后合法恢复或拒绝访问的层次](/assets/notes/operating-systems/os-fault.svg)](/assets/notes/operating-systems/os-fault.svg)
 
-Page Fault 不等于必读存储，也不等于程序必有错误；反过来，不是所有非法访问都以相同异常形式出现，例如 x86-64 非规范地址可能先触发其他异常。内核不能对所有未知地址自动分配页。[第十五章分页](/articles/os-paging-page-tables.html)、[第十六章 TLB](/articles/os-tlb.html)
+一次 Page Fault 只说明这次访问按当前页表走不通；走不通是因为页还没分配、因为写保护、还是因为这个地址本就不该访问，要再看错误码和映射记录；反过来，非法访问的异常形式也不止一种，例如 x86-64 非规范地址可能先触发其他异常。内核不能对所有未知地址自动分配页。[第十五章分页](/articles/os-paging-page-tables.html)、[第十六章 TLB](/articles/os-tlb.html)
 
 ### x86 页故障错误码怎样读
 
@@ -44,8 +44,8 @@ Page Fault 不等于必读存储，也不等于程序必有错误；反过来，
 | 位/字段   | 含义与边界                                                                                            |
 | --------- | ----------------------------------------------------------------------------------------------------- |
 | bit0 P    | 普通常见情形下，0 为不存在翻译所致，1 为保护违规；现代保留位违规等也按手册报告，不能只读 P 就断定 COW |
-| bit1 W/R  | 故障访问为写时通常为 1，读为 0；描述访问类型，不等于页表可写位                                        |
-| bit2 U/S  | 用户模式访问为 1，特权模式访问为 0；描述访问来源，不等于 PTE 的 User 位                               |
+| bit1 W/R  | 故障访问为写时通常为 1，读为 0；描述访问类型，与页表可写位是两回事                                    |
+| bit2 U/S  | 用户模式访问为 1，特权模式访问为 0；描述访问来源，与 PTE 的 User 位是两回事                           |
 | bit3 RSVD | 使用的分页结构中存在适用保留位违规；不是普通缺少数据页                                                |
 | bit4 I/D  | 在支持并启用相应报告条件时标识指令获取；不是所有模式都能据此识别取指                                  |
 
@@ -55,7 +55,7 @@ Page Fault 不等于必读存储，也不等于程序必有错误；反过来，
 
 ## 2. 三类合法延迟工作
 
-以下是现代 Linux 的通用教学路径。虚拟内存区域（VMA，Virtual Memory Area）记录合法范围、权限与后备关系；内核结合区域和实际访问类型判断能否修复，不能只看某个页表项缺失。[Linux Process Addresses](https://docs.kernel.org/mm/process_addrs.html)
+以下是现代 Linux 的通用教学路径。虚拟内存区域（VMA，Virtual Memory Area）是内核为进程记的一条条区间：这段地址合法、允许读还是写、背后的数据来自文件还是匿名页；内核结合区域和实际访问类型判断能否修复，不能只看某个页表项缺失。[Linux Process Addresses](https://docs.kernel.org/mm/process_addrs.html)
 
 | 案例                              | 初始状态及触发访问                               | 内核可能的处理                                                               | 恢复结果                         |
 | --------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- | -------------------------------- |
@@ -71,7 +71,7 @@ Page Fault 不等于必读存储，也不等于程序必有错误；反过来，
 
 ## 3. minor 与 major 的计数口径
 
-Linux `getrusage()` 的次缺页异常（Minor Page Fault）统计未要求从磁盘加载页面的缺页处理，主缺页异常（Major Page Fault）统计需要相应加载的处理。它们是内核统计口径，不是简单的“物理页存在/不存在”。[getrusage(2)](https://man7.org/linux/man-pages/man2/getrusage.2.html)
+Linux `getrusage()` 的次缺页异常（Minor Page Fault）数的是“不用去磁盘取数据就能处理完”的次数——可能只是补一条映射，或者给匿名页分配一个空页；主缺页异常（Major Page Fault）数的是必须把数据从文件或交换区读上来才能继续的次数。它们是内核统计口径，不是简单的“物理页存在/不存在”。[getrusage(2)](https://man7.org/linux/man-pages/man2/getrusage.2.html)
 
 | 场景                                 | 常见统计倾向，而非每次访问的绝对保证 |
 | ------------------------------------ | ------------------------------------ |
@@ -80,7 +80,7 @@ Linux `getrusage()` 的次缺页异常（Minor Page Fault）统计未要求从�
 | 需要文件或适用后备存储加载           | Major                                |
 | 有效页表完成 TLB Miss                | 不因此记一次 Page Fault              |
 
-Minor 也可能很昂贵；Major 非零不证明当前正在颠簸，要结合时间窗、负载、缓存和内存压力。COW 的 Minor 次数不等于物理页复制次数：独占恢复可能不复制，运行时的栈和库也可能缺页。Windows hard/soft fault 不应与 Linux 两项逐项画等号。
+Minor 也可能很昂贵；Major 非零也不证明系统正在颠簸（thrashing，指忙于在内存和交换区之间来回搬页、真正干活的时间很少），还要结合时间窗、负载、缓存和内存压力。COW 的 Minor 次数与物理页复制次数并不对应：独占恢复可能不复制，运行时的栈和库也可能缺页。Windows hard/soft fault 与 Linux 两项不能逐项对应。
 
 可用 `getrusage(RUSAGE_SELF,...)` 看当前进程统计；`/proc/<PID>/stat` 有 minflt/majflt 等字段，但进程名字段含括号、可能包含空格，不能随便按空格拆开再数列；环境提供时也可运行 `/usr/bin/time -v ./faults`。这些累计数需取对应时间窗差值。[proc_pid_stat(5)](https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html)
 
@@ -104,7 +104,7 @@ CPU 异常是硬件到内核的控制转移，用户信号是内核报告事件�
 
 [![Linux 0.11 do_no_page 中空页、共享可执行页、读四块及映射/失败路径](/assets/notes/operating-systems/os-linux011-no-page.svg)](/assets/notes/operating-systems/os-linux011-no-page.svg)
 
-数值例子：start_code=`0x04000000`、故障地址=`0x04002240`，对齐后为 `0x04002000`，tmp=`0x2000`。若有 executable 且 end_data=`0x2900`，会先尝试共享，不能共享时从逻辑块 `1+0x2000/1024=9` 起查询 9～12 四块；页尾超出部分为 `0x2000+0x1000−0x2900=0x700` 字节，需清零。这里假设相关块可取得，不代表设备实测。
+数值例子：start_code=`0x04000000`、故障地址=`0x04002240`，对齐后为 `0x04002000`，tmp=`0x2000`。若有 executable 且 end_data=`0x2900`，会先尝试共享，不能共享时从逻辑块 `1+0x2000/1024=9` 起查询 9～12 四块；页尾超出部分为 `0x2000+0x1000−0x2900=0x700` 字节，需清零。这里假设相关块可取得，是模型假设，不是设备实测。
 
 还要保留一个历史限制：`bread_page()` 返回 void，只在有关缓冲有效时复制对应块，`do_no_page()` 没有检查现代风格的整页读取状态返回值。不能凭教学需要虚构“读失败已通过返回码统一终止任务”的分支。get_free_page 的预清零、空洞块处理和旧缓冲读取实现要结合看；不把这种错误处理能力当作现代 Linux 的保证。
 
@@ -182,6 +182,6 @@ cleanup:
 
 ## 本章小结与联读
 
-TLB Miss、可恢复页故障与非法访问需要分开；错误码描述硬件观察，内核再判断访问意图及恢复路径，统计又是另一个层次。下一步读[第十九章置换、工作集与 swap](/articles/os-page-replacement-swap.html)及[第二十章 mmap 与页缓存](/articles/os-mmap-page-cache.html)。本章保留恢复的基本分类，不提前展开完整置换和文件映射实现。
+TLB Miss、可恢复页故障与非法访问需要分开；错误码只说硬件看到了什么（页不存在、是写操作、来自用户态），内核还要对照映射记录判断这次访问该不该被允许、该怎么恢复；minor/major 两项统计数的是另一回事——处理过程中有没有真去磁盘取数据。下一步读[第十九章置换、工作集与 swap](/articles/os-page-replacement-swap.html)及[第二十章 mmap 与页缓存](/articles/os-mmap-page-cache.html)。本章保留恢复的基本分类，不提前展开完整置换和文件映射实现。
 
 [返回本册目录](/collections/operating-systems/)

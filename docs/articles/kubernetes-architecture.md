@@ -98,7 +98,7 @@ Deployment：管理 Pod 模板的发布和更新
 3. `cloud-controller-manager` 是与云平台集成有关的可选组件；部分网络方案也会替代 `kube-proxy` 的 Service 数据平面实现。
 4. CNI（Container Network Interface，容器网络接口）约定如何为容器配置网络；网络插件实现具体能力，不意味着每个集群都存在一个同名的独立常驻进程。CoreDNS 和存储驱动等补充能力在后文介绍。
 
-先把图当作“职责地图”，不必一次掌握所有内部接口。[官方组件概览](https://kubernetes.io/docs/concepts/overview/components/)
+先把图当作“职责地图”，内部接口可以留到具体章节再看。[官方组件概览](https://kubernetes.io/docs/concepts/overview/components/)
 
 ## 4. 控制平面的组件职责 {#_4-控制平面-谁接收请求-谁决定下一步}
 
@@ -106,7 +106,7 @@ Deployment：管理 Pod 模板的发布和更新
 
 `kubectl`、客户端程序和集群组件通过 Kubernetes API 读取或修改对象，kube-apiserver 提供这一入口。
 
-例如，提交 Deployment 时，需要经过相应的身份认证、授权、准入、字段校验与对象处理，成功的状态变更才会通过存储后端持久化。保存的 API 对象既可以包含期望状态，也可以包含组件上报的已观察状态；API Server 并非只保存期望。普通用户通过 `kubectl` 命令无法直接修改 etcd，也不是通过 `kubectl` 登录到某台工作节点执行启动容器的脚本。
+例如，提交 Deployment 时，请求要先过身份认证，再过授权，然后是准入、字段校验与对象处理，全部通过后，这次状态变更才会交给存储后端保存下来。保存的 API 对象既可以包含期望状态，也可以包含组件上报的已观察状态；API Server 并非只保存期望。普通用户通过 `kubectl` 命令无法直接修改 etcd，也不是通过 `kubectl` 登录到某台工作节点执行启动容器的脚本。
 
 API Server 并不会在收到每个请求后，同步调用某个控制器，并等到所有容器启动完成才回复。请求处理与后续状态协调是两件事，具体权限流程会在安全章节展开。[Kubernetes API](https://kubernetes.io/docs/concepts/overview/kubernetes-api/)
 
@@ -130,19 +130,19 @@ etcd 是持久的分布式键值存储，是 Kubernetes 默认的集群状态存
 
 Scheduler 关注需要调度、尚未绑定到节点的 Pod，根据资源需求、节点条件和调度约束等选择合适位置，并推进绑定。
 
-它回答的是“这个 Pod 放在哪个节点”，不是“在节点上如何拉镜像和启动进程”。如果没有节点满足条件，Pod 可能暂时无法调度；调度器不能凭空创造 CPU、内存或device。[Kubernetes 调度器](https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/)
+它回答的是“这个 Pod 放在哪个节点”，不是“在节点上如何拉镜像和启动进程”。如果没有节点满足条件，Pod 可能暂时无法调度；CPU、内存或 device 不会因为调度而凭空出现。[Kubernetes 调度器](https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/)
 
 ### 4.5 cloud-controller-manager：对接云平台
 
 这个组件把部分云平台相关控制逻辑与 Kubernetes 的核心控制逻辑分离，例如与节点或云负载均衡器有关的集成。
 
-本地学习集群不一定需要它。也不能因为创建了某个 API 对象，就假定任何环境都会自动提供对应的云资源；这取决于部署方式和实际集成能力。[云控制器](https://kubernetes.io/docs/concepts/architecture/cloud-controller/)
+本地学习集群不一定需要它。创建某个 API 对象也不代表任何环境都会自动提供对应的云资源；这取决于部署方式和实际集成能力。[云控制器](https://kubernetes.io/docs/concepts/architecture/cloud-controller/)
 
 ## 5. 工作节点：谁把 Pod 变成运行中的容器？
 
 ### 5.1 kubelet：负责本节点上的 Pod
 
-kubelet 是节点上的主要代理。对于普通调度到本节点的 Pod，它根据相应规格协调运行，执行健康检查，并向控制平面报告节点和 Pod 的状态。
+kubelet 是节点上的主要代理。Pod 被调度到本节点后，它按 Pod 规格把容器拉起来，执行健康检查，同时持续把节点和 Pod 的状态回报给控制平面。
 
 它既不是整个集群的调度器，也不直接代替容器运行时完成所有底层操作。单独讨论静态 Pod 时，还有与常规调度不同的管理路径，后续 kubelet 章节再展开。[kubelet 说明](https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/)
 
@@ -162,7 +162,7 @@ CRI 是接口，不是必须单独安装的容器引擎。具体搭建方式需�
 
 ### 5.3 CNI：把 Pod 接入网络
 
-在 Linux 常见部署中，运行时的网络集成通过容器网络接口（Container Network Interface，CNI）等机制，配合网络插件完成地址、接口与路由相关配置。
+在 Linux 常见部署中，运行时的网络集成通过容器网络接口（Container Network Interface，CNI）等机制，配合网络插件完成三步配置：给容器分配地址、接上网络接口、写好路由，这样 Pod 才能接入集群网络。
 
 不同方案可以使用覆盖网络、原生路由或云网络集成。这里先记住它主要关联“Pod 如何接入并使用网络”，具体路径在网络章节展开。[Kubernetes 网络模型](https://kubernetes.io/docs/concepts/services-networking/)
 
@@ -170,13 +170,13 @@ CRI 是接口，不是必须单独安装的容器引擎。具体搭建方式需�
 
 kube-proxy 观察 Service、EndpointSlice 等对象，维护节点上的相关转发规则。应用访问 Service 时，数据平面按照这些规则把流量送往后端。
 
-它不等同于集群 DNS，也不负责为每个 Pod 分配网络。部分网络方案提供自己的 Service 转发实现，因此不能把 kube-proxy 当作所有集群都不可替代的固定进程。[Service 网络机制](https://kubernetes.io/docs/concepts/services-networking/service/)
+它不等同于集群 DNS，也不负责为每个 Pod 分配网络。部分网络方案提供自己的 Service 转发实现，因此 kube-proxy 只覆盖其中一部分集群形态。[Service 网络机制](https://kubernetes.io/docs/concepts/services-networking/service/)
 
 ### 5.5 CoreDNS 与存储驱动：主图之外还需要认识的能力
 
-CoreDNS 常用于集群内的 DNS 服务发现。例如，应用通过 Service 的域名寻找服务，而不必手工记录每个 Pod 的 IP。DNS 查询和后续业务流量转发是两个过程，不应都归到 kube-proxy。[CoreDNS 使用说明](https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/)
+CoreDNS 常用于集群内的 DNS 服务发现。例如，应用通过 Service 的域名寻找服务，而不必手工记录每个 Pod 的 IP。DNS 查询和后续业务流量转发是两个过程，分别由 DNS 组件和数据平面负责。[CoreDNS 使用说明](https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/)
 
-存储方面，卷及存储驱动帮助 Pod 使用文件系统与后端存储。CSI（Container Storage Interface，容器存储接口）约定 Kubernetes 与存储驱动之间的操作接口，让不同存储系统可以提供创建卷、挂载等能力。卷不一定持久；临时卷、持久卷及回收策略需要分别理解，更不能把“挂载了卷”直接等同于“已经备份”。[卷的用途与生命周期](https://kubernetes.io/docs/concepts/storage/volumes/)
+存储方面，卷及存储驱动帮助 Pod 使用文件系统与后端存储。CSI（Container Storage Interface，容器存储接口）约定 Kubernetes 与存储驱动之间的操作接口，让不同存储系统可以提供创建卷、挂载等能力。卷不一定持久；临时卷、持久卷及回收策略需要分别理解，挂载了卷与已经备份也是两件事。[卷的用途与生命周期](https://kubernetes.io/docs/concepts/storage/volumes/)
 
 ## 6. Kubernetes 怎样理解“我要三个副本”？
 
@@ -199,7 +199,7 @@ spec:
 
 它表达的是期望副本数量为 3。如果已观察到的可用实例不足，相关组件会继续尝试推进；容量不足、镜像不可用或权限错误等问题也可能让目标迟迟无法达到。
 
-不是所有对象都拥有完全相同的 `spec/status` 结构，也不应把期望副本数直接当作当前就绪实例数。[对象、spec 与 status](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
+不是所有对象都拥有完全相同的 `spec/status` 结构。`spec.replicas: 3` 是你要求的数量，`status` 里报告的已就绪副本数则是实际到位的数量，两者可以长时间不相等。[对象、spec 与 status](https://kubernetes.io/docs/concepts/overview/working-with-objects/)
 
 [![控制循环：不断协调期望与已观察状态](/assets/notes/kubernetes/k8s-reconcile-loop.svg)](/assets/notes/kubernetes/k8s-reconcile-loop.svg)
 
@@ -213,7 +213,7 @@ spec:
 
 [![从 Deployment 到 Pod 运行](/assets/notes/kubernetes/k8s-deployment-journey.svg)](/assets/notes/kubernetes/k8s-deployment-journey.svg)
 
-图 3：按主要状态变化整理的教学流程。箭头表示后续工作依赖哪些对象或状态变化，不代表组件之间存在固定的同步调用链；各组件会独立观察、重试与协调。
+图 3：按主要状态变化整理的教学流程。箭头表示后续工作依赖哪些对象或状态变化，与组件之间是否存在固定的同步调用链无关；各组件会独立观察、重试与协调。
 
 ### 第一步：客户端提交 Deployment
 
@@ -231,7 +231,7 @@ ReplicaSet Controller 根据选择器、受管理 Pod 及副本目标协调 Pod 
 
 ### 第四步：Scheduler 选择节点并推进绑定
 
-Scheduler 为需要调度的 Pod 寻找可行节点，再完成相应绑定。三个副本不必然自动分散在三台不同机器；想获得特定的分布效果，需要结合容量和调度约束设计。
+Scheduler 为需要调度的 Pod 寻找可行节点，再完成相应绑定。三个副本默认可能落在同一台机器上。想获得特定的分布效果，需要结合容量和调度约束设计。
 
 本章先不展开过滤、评分和绑定扩展点，只保留“选择位置”和“执行运行”之间的职责区别。[调度概念](https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/)
 
@@ -318,7 +318,7 @@ kubectl get replicasets -n k8s-arch-demo -l app=web-demo -o yaml
 kubectl get pods -n k8s-arch-demo -l app=web-demo -o yaml
 ```
 
-条件满足时，预期最终看到三个就绪副本。在 YAML 的 `metadata.ownerReferences` 中可观察 ReplicaSet 指向 Deployment、Pod 指向 ReplicaSet 的所属关系。Pod 列表中出现三个对象，并不能证明三个副本已经 Ready；还要结合 Deployment 的 `READY`、`AVAILABLE` 和 Pod 的 `READY`、Conditions 判断。`rollout status` 超时表示等待期限内未完成，应查看事件和状态，不代表创建请求一定失败。
+条件满足时，预期最终看到三个就绪副本。在 YAML 的 `metadata.ownerReferences` 中可观察 ReplicaSet 指向 Deployment、Pod 指向 ReplicaSet 的所属关系。Pod 列表中出现三个对象，三个副本是否 Ready 还要看状态字段；还要结合 Deployment 的 `READY`、`AVAILABLE` 和 Pod 的 `READY`、Conditions 判断。`rollout status` 超时表示等待期限内未完成，应查看事件和状态；创建请求本身可能已经成功。
 
 **场景 B：删除一个受管理的 Pod。** 从上述列表选一个 Pod，将下面的 `POD_NAME` 替换为实际名称：
 
@@ -332,7 +332,7 @@ kubectl delete pod POD_NAME -n k8s-arch-demo
 kubectl get pods -n k8s-arch-demo -l app=web-demo --watch
 ```
 
-ReplicaSet 的期望仍是三个副本。控制器观察到需要补足时，会通过 API 请求创建新 Pod；新 Pod 的名称和 UID 与被删除者不同。它仍需经历调度、拉镜像、启动和就绪检查，不能保证立即可用；观察期间旧 Pod 可能仍在终止，列表数量也可能暂时超过三个。按 `Ctrl+C` 停止观察。
+ReplicaSet 的期望仍是三个副本。控制器观察到需要补足时，会通过 API 请求创建新 Pod；新 Pod 的名称和 UID 与被删除者不同。它仍需经历调度、拉镜像、启动和就绪检查，可用时间取决于这些步骤；观察期间旧 Pod 可能仍在终止，列表数量也可能暂时超过三个。按 `Ctrl+C` 停止观察。
 
 **场景 C：从三个副本扩到五个。**
 
@@ -379,7 +379,7 @@ kubectl / API 客户端 → kube-apiserver → 相应 API 状态处理
 
 这是逻辑关系，不保证每个数据包都物理经过一个独立的“Service 进程”。具体转发由所选网络、入口控制器和数据平面实现决定。
 
-普通业务请求通常不需要先经过 API Server，也不会把请求数据写进 etcd。反过来，应用如果主动调用 Kubernetes API，则确实会使用管理 API；不要把两类请求混为一谈。
+普通业务请求通常不需要先经过 API Server，也不会把请求数据写进 etcd。反过来，应用如果主动调用 Kubernetes API，则确实会使用管理 API；两类请求的路径不同。
 
 本章到这里先建立路径区别，Service、DNS 和 Ingress 的访问实验留到对应资源章节。[网络与入口概览](https://kubernetes.io/docs/concepts/services-networking/)
 
@@ -391,19 +391,19 @@ kubectl / API 客户端 → kube-apiserver → 相应 API 状态处理
 
 ### 9.2 工作节点故障
 
-失联节点上的进程不能理解成被 Kubernetes 直接“搬运”到另一台机器。对于受相应控制器管理的工作负载，在故障被处理、旧对象状态及删除条件允许、并且其他节点具备资源和依赖的情况下，系统可以协调创建替代 Pod。
+失联节点上的进程并没有被 Kubernetes 直接“搬运”到另一台机器。对于受相应控制器管理的工作负载，在故障被处理、旧对象状态及删除条件允许、并且其他节点具备资源和依赖的情况下，系统可以协调创建替代 Pod。
 
-新 Pod 的身份、地址和运行位置可能变化；存储能否重新挂载、应用如何恢复业务状态，还要另行设计。因此副本机制不能替代数据备份。[Pod 生命周期](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
+新 Pod 的身份、地址和运行位置可能变化；存储能否重新挂载、应用如何恢复业务状态，还要另行设计。因此副本机制与数据备份是两件事。[Pod 生命周期](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
 
 ### 9.3 控制平面不可用
 
-已有容器可能暂时继续运行，但新的 API 操作、调度和控制循环会受影响，不能进一步推导成“应用完全不受影响”。
+已有容器可能暂时继续运行，但新的 API 操作、调度和控制循环会受影响，业务影响要按依赖逐项判断。
 
-图中画出两个控制节点，并不等于已经具备高可用。尤其是只有两个 etcd 投票成员时，失去一个就无法维持多数。kubeadm 的高可用拓扑需要分别考虑控制平面入口、etcd 多数派和故障域，而不是只数控制节点的图标。[kubeadm 高可用拓扑](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)
+图中画出两个控制节点，与是否具备高可用是两回事。尤其是只有两个 etcd 投票成员时，失去一个就无法维持多数。kubeadm 的高可用拓扑需要分别考虑控制平面入口、etcd 多数派和故障域，而不是只数控制节点的图标。[kubeadm 高可用拓扑](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/)
 
 ### 9.4 网络或存储组件异常
 
-应用进程正在运行，并不代表网络可达；节点 Ready，也不能证明每条业务路径都通畅。Pod 网络、Service 转发、DNS、入口和存储各有对应的检查位置。排障时，应先判断故障位于哪条路径，再查找相应组件的证据。
+应用进程正在运行，网络仍可能不可达；节点 Ready，也只是节点层面的状态。Pod 网络、Service 转发、DNS、入口和存储各有对应的检查位置。排障时，应先判断故障位于哪条路径，再查找相应组件的证据。
 
 ## 10. 后续资源章节放在这张地图的什么位置？
 

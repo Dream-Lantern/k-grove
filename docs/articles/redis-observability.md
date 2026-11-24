@@ -21,15 +21,15 @@ order: 30
 
 [返回本册目录](/collections/redis/)
 
-INFO 提供实例、客户端、复制和内存等状态线索。诊断时先确定实例身份与症状，再在同一时间窗内关联客户端、Redis 和操作系统的证据，逐步形成可验证的原因与处置方案。
+INFO 输出的是一个个计数器和状态字段，它本身不会告诉你哪里出了问题。排障的顺序是：先说清是哪个实例、什么症状，再把同一时间段里客户端、Redis 自身和操作系统三边的数据摆到一起比对，看哪一种解释能同时对上三边。
 
 ![分层建立排障假设](/assets/notes/redis/redis-study-triage.svg)
 
 ## 1. 先确定自己在看哪个实例
 
-记录版本、运行模式、角色、运行时长和采样时间。刚重启的实例累计计数较低，不代表负载一直很低；连接了副本也不能按主节点预期解释所有指标。
+记录版本、运行模式、角色、运行时长和采样时间。刚重启的实例累计计数较低，可能只是统计窗口短；连接了副本的实例，指标含义也与纯主节点不同。
 
-CPU（Central Processing Unit，中央处理器）的累计耗时需要用区间差值观察。以下 `redis` 代码块是发给 Redis 的观察命令，不是 Shell（命令解释环境）命令；基线为 Redis Open Source 7.2.0，例外另标，不能据此推断 Redis Software 或 Redis Cloud 的能力。
+CPU（Central Processing Unit，中央处理器）的累计耗时需要用区间差值观察。以下 `redis` 代码块是发给 Redis 的观察命令，不是 Shell（命令解释环境）命令；基线为 Redis Open Source 7.2.0，例外另标；Redis Software 或 Redis Cloud 的能力要另查。
 
 ```redis
 # 查询 服务器版本、运行模式和启动时间；server 是 INFO 的信息分区名，不是键名
@@ -56,23 +56,23 @@ INFO keyspace
 
 这些是观察示例，实际权限和产品可能限制字段。缺失字段应记录为不可用，而不是自动填成零。[INFO 字段参考](https://redis.io/docs/latest/commands/info/)
 
-| 分类         | 重要字段                                        | 观察目的与单位                                                         |
-| ------------ | ----------------------------------------------- | ---------------------------------------------------------------------- |
-| server       | redis_version、uptime_in_seconds、redis_mode    | 版本、运行秒数、运行模式                                               |
-| clients      | connected_clients、blocked_clients              | 普通客户端连接数（不含副本连接）、阻塞操作中的客户端数；阻塞不等于故障 |
-| stats        | instantaneous_ops_per_sec、rejected_connections | 近期采样的每秒命令数、因 maxclients 限制被拒绝的累计连接数             |
-| stats        | evicted_keys、expired_keys                      | 因内存限制淘汰、因期限到达过期的累计键数                               |
-| memory       | used_memory、used_memory_rss                    | 分配器统计的 Redis 内存、操作系统看到的驻留内存，均为字节              |
-| persistence  | rdb_bgsave_in_progress、aof_rewrite_in_progress | RDB 后台快照、AOF 重写是否进行中，0/1 状态                             |
-| replication  | role、master_link_status、master_repl_offset    | 角色、副本到主节点的链路状态、复制流字节偏移；链路字段依角色出现       |
-| commandstats | calls、usec、usec_per_call                      | 调用累计数、累计执行微秒、平均执行微秒；平均不是 P99                   |
-| latencystats | p50、p99、p99.9                                 | 按命令统计的执行耗时分位数，单位微秒；默认最后一项也称 P999            |
-| cpu          | used_cpu_user、used_cpu_sys                     | Redis 进程累计用户态、内核态 CPU 秒数，不是当前使用百分比              |
-| keyspace     | dbN 的 keys、expires、avg_ttl                   | 键数、有期限的键数、平均剩余期限估计（毫秒），不是字段级 TTL 统计      |
+| 分类         | 重要字段                                        | 观察目的与单位                                                                     |
+| ------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
+| server       | redis_version、uptime_in_seconds、redis_mode    | 版本、运行秒数、运行模式                                                           |
+| clients      | connected_clients、blocked_clients              | 普通客户端连接数（不含副本连接）、阻塞操作中的客户端数；阻塞是正常等待，未必是故障 |
+| stats        | instantaneous_ops_per_sec、rejected_connections | 近期采样的每秒命令数、因 maxclients 限制被拒绝的累计连接数                         |
+| stats        | evicted_keys、expired_keys                      | 因内存限制淘汰、因期限到达过期的累计键数                                           |
+| memory       | used_memory、used_memory_rss                    | 分配器统计的 Redis 内存、操作系统看到的驻留内存，均为字节                          |
+| persistence  | rdb_bgsave_in_progress、aof_rewrite_in_progress | RDB 后台快照、AOF 重写是否进行中，0/1 状态                                         |
+| replication  | role、master_link_status、master_repl_offset    | 角色、副本到主节点的链路状态、复制流字节偏移；链路字段依角色出现                   |
+| commandstats | calls、usec、usec_per_call                      | 调用累计数、累计执行微秒、平均执行微秒；平均不是 P99                               |
+| latencystats | p50、p99、p99.9                                 | 按命令统计的执行耗时分位数，单位微秒；默认最后一项也称 P999                        |
+| cpu          | used_cpu_user、used_cpu_sys                     | Redis 进程累计用户态、内核态 CPU 秒数，不是当前使用百分比                          |
+| keyspace     | dbN 的 keys、expires、avg_ttl                   | 键数、有期限的键数、平均剩余期限估计（毫秒），不是字段级 TTL 统计                  |
 
 RDB（Redis Database，数据库快照）保存时点数据；AOF（Append Only File，追加写日志）记录写入。持久化标记只能说明状态，需联合时长、结果、磁盘与 fork（创建子进程）观察，见 [第 19 章](/articles/redis-rdb-aof.html)。RSS（Resident Set Size，驻留内存大小）与分配器统计不必相等，内存判断见 [第 25 章](/articles/redis-memory-eviction.html)。
 
-latencystats 自 Redis Open Source 7.0.0 提供，需启用 latency-tracking（命令延迟跟踪）且已有样本；7.2.0 默认启用，分位配置默认 50、99、99.9。分位数表示相应比例样本不超过的值，不是端到端等待；P99 即第 99 百分位数。核验依据为 [7.0.0 配置](https://github.com/redis/redis/blob/7.0.0/redis.conf)、[7.2.0 INFO 实现](https://github.com/redis/redis/blob/7.2.0/src/server.c)，工具口径见 [第 29 章](/articles/redis-slow-queries.html)。
+latencystats 自 Redis Open Source 7.0.0 提供，需启用 latency-tracking（命令延迟跟踪）且已有样本；7.2.0 默认启用，分位配置默认 50、99、99.9。分位数是一个阈值：把样本按耗时排好，P99 就是站在 99% 位置的那个值，意味着 99% 的请求都不超过它。它只统计 Redis 执行命令这一段，客户端排队和网络往返不算在里面。核验依据为 [7.0.0 配置](https://github.com/redis/redis/blob/7.0.0/redis.conf)、[7.2.0 INFO 实现](https://github.com/redis/redis/blob/7.2.0/src/server.c)，工具口径见 [第 29 章](/articles/redis-slow-queries.html)。
 
 解析程序应容忍新字段、缺失字段与角色差异，将缺失记为 N/A（Not Available，不可用）。重启、统计重置、切换实例都会破坏累计值的连续性；先确认实例身份和时间，再计算差值。版本适配方法见 [第 32 章](/articles/redis-upgrade-validation.html)。
 
@@ -95,11 +95,11 @@ Counter（累计计数器）的区间平均速率为：
 Rate = (Counter_t2 - Counter_t1) / (t2 - t1)
 ```
 
-教学假设：60 秒内 expired_keys 从 1000 到 1600，则平均每秒过期 10 个键，不代表每一秒都恰好 10 个。过期增长常属正常生命周期；淘汰增长则要结合 maxmemory（内存上限）、策略和命中率判断。计数回退、实例变化或重置后，应丢弃跨界差值重新取样，不能得到负速率后仍照常告警。
+教学假设：60 秒内 expired_keys 从 1000 到 1600，则平均每秒过期 10 个键，每一秒的实际数量会有波动。过期增长常属正常生命周期；淘汰增长则要结合 maxmemory（内存上限）、策略和命中率判断。计数回退、实例变化或重置后，应丢弃跨界差值重新取样，不能得到负速率后仍照常告警。
 
 ## 3. 根据连接类别解释缓冲增长 {#_3-输入与输出缓冲为什么增长}
 
-输入侧可能因大请求、Pipeline 积压或处理速度不足出现压力；输出侧则可能因大回复、慢读客户端、订阅者消费慢或复制链路落后而增长。
+输入缓冲变大，通常是客户端发得太快：一次塞进大请求、Pipeline 连着灌，或者 Redis 处理不过来，后面的命令堆在缓冲里。输出缓冲变大，是 Redis 攒着发不出去：回复本身太大、客户端读得太慢、订阅者消费不过来，或者复制链路落后。
 
 ```redis
 # 列出当前客户端连接的地址、状态、缓冲等信息；无额外参数
@@ -159,11 +159,11 @@ CLIENT LIST 能帮助定位连接；连接多时列举也有成本，应控制�
 
 ACL 自 Redis Open Source 6.0.0 提供，NOPERM 要分别查命令、键和频道范围，不能看到错误就扩大账号权限，见 [官方 ACL](https://redis.io/docs/latest/commands/acl/) 和 [第 31 章](/articles/redis-security-maintenance.html)。
 
-MOVED 通常要求客户端更新槽位映射；ASK 只针对当前迁移请求，应在目标节点的同一连接上先 ASKING，再发送该请求，不能据此永久改槽位映射，也不能绕过认证授权。路由协议详见 [Cluster 规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/) 与 [第 24 章集群运维](/articles/redis-cluster-operations.html)。
+MOVED 通常要求客户端更新槽位映射；ASK 只针对当前迁移请求，应在目标节点的同一连接上先 ASKING，再发送该请求；槽位映射保持不变，认证授权也仍然适用。路由协议详见 [Cluster 规范](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/) 与 [第 24 章集群运维](/articles/redis-cluster-operations.html)。
 
 `nil` 或空结果不等同异常，它可能是键不存在、范围没有元素或事务冲突等正常协议结果。客户端必须结合命令语义解释，而不是统一返回“Redis 连接失败”。
 
-例如 [MGET](/articles/redis-strings.html) 对非 String 键也会给出逐键 nil；[HTTL](https://redis.io/docs/latest/commands/httl/) 自 Redis Open Source 7.4.0 提供，查询 Hash 字段的 TTL（Time To Live，存活时间），不等于整个 Hash Key 的 TTL：
+例如 [MGET](/articles/redis-strings.html) 对非 String 键也会给出逐键 nil；[HTTL](https://redis.io/docs/latest/commands/httl/) 自 Redis Open Source 7.4.0 提供，查询的是 Hash 字段的 TTL（Time To Live，存活时间），与整个 Hash Key 的 TTL 是两套期限：
 
 ```redis
 # 查询 Hash user:1001 中字段 name、age、status 的剩余秒数；FIELDS 3 表示查询 3 个字段
@@ -177,18 +177,18 @@ HTTL user:1001 FIELDS 3 name age status
 
 ## 5. 形成可复核的诊断记录
 
-一份有效的诊断记录可以包含症状与时间、业务影响、只读采样、候选原因、反证、拟采取的最小变更，以及回退和验收方式。先定位问题再调整参数，有助于避免将短暂恢复误认为根因已经解决。
+一份能复查的诊断记录要写清六件事：什么时间出现了什么症状、影响了多少业务、做了哪些只读采样、怀疑哪些原因、有哪些证据与这些怀疑相矛盾、准备做的最小改动及怎么回退和验收。其中“反证”是主动去找“如果这个原因成立，本该看到 X，但实际没看到”的证据，而不是只收集支持假设的数据。先定位问题再调参数，才不会把短暂恢复当成根因已解决。
 
 教学案例：应用报告 Redis 请求 P99 从 2 ms 升到 80 ms。按以下流程采样并验证根因：
 
 1. 客户端侧记录连接池等待、线程等待、超时、重试次数和响应大小，确认这两个 P99 的采样范围一致。
-2. 同时采集 Redis Slowlog、commandstats、latencystats、CLIENT LIST，区分执行变慢、输入积压与输出滞留；Slowlog 空也不能排除排队。
+2. 同时采集 Redis Slowlog、commandstats、latencystats、CLIENT LIST，区分执行变慢、输入积压与输出滞留；Slowlog 为空只说明没有慢命令，排队仍可能发生在别处。
 3. 关联 Redis CPU、内存、复制与持久化状态，以及 OS（Operating System，操作系统）的 CPU、调度、内存、磁盘与网络；观察 fork 暂停和后台任务的资源竞争。
 4. 对齐时钟与同一时间窗，保留采样间隔、实例角色和重置事件；不能拿重启前后的累计量或不同时间段直接比较。
 5. 提出可反驳的假设。例如“大回复导致慢客户端输出积压”，应同时找回复变大、omem 增长、网络或解码压力；若回复大小、缓冲和网络均稳定，应寻找其他原因。
-6. 在隔离环境限定某类读取的返回量作为最小实验，比较端到端延迟、吞吐与缓冲变化；先定义回滚条件，再决定是否在生产小范围变更并验收。相关性不等于因果关系，实验结果也要记录适用范围。
+6. 在隔离环境限定某类读取的返回量作为最小实验，比较端到端延迟、吞吐与缓冲变化；先定义回滚条件，再决定是否在生产小范围变更并验收。相关性只能提示方向，因果要靠实验设计；实验结果也要记录适用范围。
 
-区分观察和处置，命令权限允许并不意味着可以任意执行：
+区分观察和处置：权限允许只解决“能不能执行”，是否该执行要另行判断：
 
 | 操作             | 影响                                   |
 | ---------------- | -------------------------------------- |

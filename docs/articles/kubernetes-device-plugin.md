@@ -25,11 +25,11 @@ order: 31
 
 调度器需要知道节点提供哪些可分配资源，容器运行时又需要知道进程怎样访问实际设备。设备插件与 kubelet 协作，把这两个阶段连接起来。
 
-插件发现设备并报告健康等信息；kubelet 的设备管理器跟踪这些信息并更新 Node 的相关资源状态；调度器根据请求和适用条件选择节点；节点侧再完成设备分配及运行配置准备。以下用 GPU（Graphics Processing Unit，图形处理器）举例。
+整个流程分四步：先由插件发现节点上有哪些设备，并把健康状态报给 kubelet；然后 kubelet 的设备管理器把这些信息写进 Node 的资源状态，调度器才看得见；接着调度器按 Pod 的请求和适用条件挑一个节点；最后由节点侧的 kubelet 完成具体设备分配和运行配置准备。以下用 GPU（Graphics Processing Unit，图形处理器）举例。
 
 [![Device Plugin：调度与分配边界](/assets/notes/kubernetes/k8s-device-plugin-detail.svg)](/assets/notes/kubernetes/k8s-device-plugin-detail.svg)
 
-图中区分调度器的节点选择与 kubelet 的节点侧分配。设备插件常采用 DaemonSet 部署，但部署方式与插件接口是两个层次。上一章的排障方法在这里仍适用：先确认停在发现、调度、节点准备还是应用访问阶段。
+图中区分调度器的节点选择与 kubelet 的节点侧分配。设备插件通常用 DaemonSet 部署，但那只是“怎样把它装到每台节点上”；它和 kubelet 之间按什么接口通信是另一回事，换个部署方式，接口也不会跟着变。上一章的排障方法在这里仍适用：先确认停在发现、调度、节点准备还是应用访问阶段。
 
 ## 2. 注册 socket 与插件服务
 
@@ -59,11 +59,11 @@ Device Plugin（设备插件）通过 gRPC 与 kubelet 通信；RPC（Remote Pro
 
 ## 3. 数量、占用与健康要分开
 
-Node capacity/allocatable、调度中的已请求数量、插件报告的健康设备列表，是不同信息。一个 Pod 退出释放分配，不意味着硬件总容量需要从 3 自动加回 4。
+这里有三个数，来源和含义都不一样：Capacity 是节点上报的设备总数；Allocatable 是可参与分配的数量；插件报告的健康设备列表则逐块说明设备状态。某个 Pod 已经占用了几个，是调度器自己记的账，不会直接从 Allocatable 里扣——所以一个 Pod 退出释放分配，不意味着硬件总容量需要从 3 自动加回 4。
 
 经典接口没有通用的 Deallocate RPC，不能承诺“插件在每次 Pod 删除时收到标准回收调用并完成全部硬件清理”。具体实现可能有额外跟踪与清理机制，生命周期需要独立设计。
 
-设备变为不健康时，后续可分配信息和已有工作负载的处理也不是同一件事。健康上报不代表所有已使用该设备的容器会立即被安全迁移。
+设备变为不健康时，后续可分配信息和已有工作负载的处理也不是同一件事。健康上报只反映插件状态，已使用该设备的容器不会自动迁移。
 
 合成案例：Node A 有 4 个设备，其中一个运行期间变为 Unhealthy，插件通过 ListAndWatch 更新列表。按 1.28 Device Manager 的 `GetCapacity`，在列表仍包含这 4 个设备、只有健康状态改变的假设下，Capacity 仍为 4，Allocatable 变为 3。后续分配不使用该不健康设备；已运行 Pod 是否退出、如何重试或迁移，由应用、设备故障表现和厂商恢复机制共同决定，不存在自动安全迁移保证。
 
@@ -73,7 +73,7 @@ Node capacity/allocatable、调度中的已请求数量、插件报告的健康�
 
 经典扩展资源必须按整数单位请求，不能超卖；同一容器同时声明 request 和 limit 时两者必须相等。只声明 limit 时，相应 request 可按默认规则形成；只声明 request 而缺少这类资源要求的 limit，也不是完整合法配置。[v1.28.0 资源校验](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/apis/core/validation/validation.go) · [扩展资源整数判定](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/apis/core/helper/helpers.go)
 
-下面是假设设备均健康、尚无设备请求占用时的教学数据，资源名不代表实际厂商或已安装驱动：
+下面是假设设备均健康、尚无设备请求占用时的教学数据，资源名是教学示例，与厂商或已安装驱动无关：
 
 | Node   | Capacity | Allocatable |
 | ------ | -------: | ----------: |
@@ -99,7 +99,7 @@ spec:
           vendor.example.com/gpu: 2
 ```
 
-若其他条件满足，A 和 B 都可成为候选；Scheduler 选节点，选中后 kubelet 选两个具体 Device ID，再调用插件 Allocate。假设该 Pod 最终在 A 使用两个设备，A 的 Capacity/Allocatable 仍可为 4/4，而设备请求占用为 2、按调度记账可剩 2；Allocatable 不是每次分配后直接减小的“实时空闲数”。若 B 的两个单位已被其他 Pod 请求占用，B 即使显示 2/2，也不能再接纳这个请求。
+若其他条件满足，A 和 B 都可成为候选；Scheduler 选节点，选中后 kubelet 选两个具体 Device ID，再调用插件 Allocate。假设该 Pod 最终在 A 使用两个设备，A 的 Capacity/Allocatable 仍可为 4/4，而设备请求占用为 2、按调度记账可剩 2；Allocatable 不是每次分配后直接减小的“实时空闲数”。若 B 的两个单位已被其他 Pod 请求占用，B 即使显示 2/2，也无法再接纳这个请求。
 
 Quantity（资源数量）的合法性取决于解析后的值，而不是有没有后缀：
 
@@ -113,17 +113,17 @@ Quantity（资源数量）的合法性取决于解析后的值，而不是有没
 
 有效只表示通过该数量规则，不证明集群有这么多设备。扩展资源必须在 limits 中声明；同时写 requests/limits 必须相等。若 request 未被其他准入机制设置，只写 limit 时会默认出相同 request，不能用不同 request/limit 超卖设备。[1.28 扩展资源 Quantity 示例](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/configuration/manage-resources-containers.md)与前述资源校验源码都按数值判定整数。
 
-厂商可以把一个单位定义为物理设备、MIG 分区或其他逻辑单元，但这不会让标准数量字段自动支持任意分数。时间共享和虚拟化机制的隔离、显存及性能语义需要另核对，不因单位变多就自动安全共享。
+厂商可以把一个单位定义为整块物理卡、MIG 分区（把一块 GPU 切成几个互相隔离的实例）或其他逻辑单元，但这不会让标准数量字段自动支持任意分数。时间共享和虚拟化机制的隔离、显存及性能语义需要另核对，不因单位变多就自动安全共享。
 
 资源名称本身不能说明其显存、计算隔离和拓扑条件。申请一个单位也不保证获得指定型号或吞吐，选择设备型号还可能涉及资源名、节点标签及插件能力。
 
 NUMA（Non-Uniform Memory Access，非一致性内存访问）使 CPU 访问不同位置内存的成本不同。例如 GPU 靠近 NUMA Node 1，而可用的独占 CPU 位于 NUMA Node 0，就可能难以满足单 NUMA 对齐要求。
 
-Topology Manager（拓扑管理器）在 kubelet 侧收集 CPU、设备等资源管理器的拓扑提示，按策略判断是否接受组合。假设相关提示不能形成单 NUMA 对齐，`single-numa-node` 策略可能拒绝节点侧准入；`best-effort` 又有不同容忍语义。因此 Pod 已被 Scheduler 选中节点，也可能在 kubelet 侧失败。Topology Manager 不是另一种 Scheduler 节点选择算法；具体结果依赖管理策略、作用域和插件提供的拓扑信息。[1.28 Topology Manager](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/administer-cluster/topology-manager.md)
+Topology Manager（拓扑管理器）在 kubelet 侧把 CPU、设备等资源管理器给出的位置信息汇总起来，判断这组资源能不能落在同一个位置，再按策略决定要不要接受这次分配。假设相关提示不能形成单 NUMA 对齐，`single-numa-node` 策略可能拒绝节点侧准入；`best-effort` 又有不同容忍语义。因此 Pod 已被 Scheduler 选中节点，也可能在 kubelet 侧失败。Topology Manager 不是另一种 Scheduler 节点选择算法；具体结果依赖管理策略、作用域和插件提供的拓扑信息。[1.28 Topology Manager](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/administer-cluster/topology-manager.md)
 
 ## 5. PodResources 与利用率监控
 
-PodResources API 可以提供适用的 Pod、容器与设备分配信息，用于关联“谁分到了哪些设备”。它不等于 GPU 利用率、显存占用和温度的采集接口。
+PodResources API 可以提供适用的 Pod、容器与设备分配信息，用于关联“谁分到了哪些设备”。它只暴露资源分配信息，利用率、显存与温度要靠监控接口。
 
 Linux 常见 Socket 为 `/var/lib/kubelet/pod-resources/kubelet.sock`，与插件注册 Socket 不同：
 
@@ -133,7 +133,7 @@ Linux 常见 Socket 为 `/var/lib/kubelet/pod-resources/kubelet.sock`，与插�
 | Get                     | 按 Pod 名和命名空间查询；KubeletPodResourcesGet 为 Alpha，默认关闭       |
 | GetAllocatableResources | 查询 kubelet 已知的可分配资源集合；不是扣除所有 Pod 占用后的实时空闲清单 |
 
-1.28 的基础 PodResources 和 GetAllocatableResources 已 GA；不要据此推断 Get 也默认可用。[v1.28.0 PodResources protobuf](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubelet/pkg/apis/podresources/v1/api.proto)、[特性门控](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/features/kube_features.go)。
+1.28 的基础 PodResources 和 GetAllocatableResources 已 GA；Get 是否默认可用要另查。[v1.28.0 PodResources protobuf](https://github.com/kubernetes/kubernetes/blob/v1.28.0/staging/src/k8s.io/kubelet/pkg/apis/podresources/v1/api.proto)、[特性门控](https://github.com/kubernetes/kubernetes/blob/v1.28.0/pkg/features/kube_features.go)。
 
 | 数据                         | 主要来源           |
 | ---------------------------- | ------------------ |
@@ -141,7 +141,7 @@ Linux 常见 Socket 为 `/var/lib/kubelet/pod-resources/kubelet.sock`，与插�
 | 设备是否健康                 | Device Plugin 上报 |
 | GPU 利用率、显存使用量、温度 | 厂商遥测工具       |
 
-利用率需通过厂商等遥测采集，再用可靠设备身份关联分配信息。本地 Socket 属于节点敏感接口，不应随意暴露给普通容器，也不在这里挂载或调用。
+利用率需通过厂商等遥测采集，再用可靠设备身份关联分配信息。本地 Socket 属于节点敏感接口，暴露给普通容器会放大节点权限，也不在这里挂载或调用。
 
 ## 6. 排查分成三个阶段
 

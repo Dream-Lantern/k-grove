@@ -23,7 +23,7 @@ order: 14
 
 ## 1. 调度需要的数字与运行时限制
 
-Request（资源请求，字段为 `requests`）是调度等机制的重要输入；Limit（资源限制，字段为 `limits`）描述适用的运行约束。调度器不是只看某一刻的 CPU 空闲率，就随意把所有 Pod 堆到看起来空闲的节点。
+Request（资源请求，字段为 `requests`）是 Pod 向集群申报的“我至少要这么多”，调度器按这个数去找节点、在节点上占位；Limit（资源限制，字段为 `limits`）是给容器画的上限，运行起来超过它就会被节流或终止。调度器不是只看某一刻的 CPU 空闲率，就随意把所有 Pod 堆到看起来空闲的节点。
 
 | 配置         | 主要用途                                   | 常见误解                     |
 | ------------ | ------------------------------------------ | ---------------------------- |
@@ -32,9 +32,9 @@ Request（资源请求，字段为 `requests`）是调度等机制的重要输�
 | 内存 request | 调度核算等                                 | 一定已经预分配了物理内存     |
 | 内存 limit   | 约束适用的内存使用                         | 配置后就不会发生节点内存压力 |
 
-CPU Throttling（CPU 节流）通过限制 CPU 时间可能使延迟增加；内存超限则可能触发 OOM（Out of Memory，内存不足）终止，具体行为还取决于系统、cgroup 与运行时配置。容器内存超限触发的 OOM 与 kubelet 因节点内存压力进行的 Pod 驱逐是不同机制。OOMKilled、驱逐和应用主动退出需要分别查证，不能仅凭一次重启就将它们归为一类。
+CPU Throttling（CPU 节流）通过限制 CPU 时间可能使延迟增加；内存超限则可能触发 OOM（Out of Memory，内存不足）终止，具体行为还取决于系统、cgroup 与运行时配置。容器内存超过自己的 limit，是运行时把容器杀掉；节点整体内存吃紧，是 kubelet 挑 Pod 驱逐，两者触发条件不同。OOMKilled、驱逐和应用主动退出需要分别查证；一次重启的退出码不足以归类。
 
-Node Allocatable（节点可分配资源）是扣除适用系统保留等之后可供 Pod 使用的预算，不等于机器物理总量。假设 Node A 可分配 2 CPU=2000m，已有 Pod CPU request 合计 1500m，实际 CPU 使用率仅 20%。以下是两个**独立候选场景**，不是先后调度：
+Node Allocatable（节点可分配资源）是扣除适用系统保留等之后可供 Pod 使用的预算，小于机器物理总量。假设 Node A 可分配 2 CPU=2000m，已有 Pod CPU request 合计 1500m，实际 CPU 使用率仅 20%。以下是两个**独立候选场景**，不是先后调度：
 
 | 候选 Pod | CPU request | 核算                         | 仅 CPU request 条件 |
 | -------- | ----------- | ---------------------------- | ------------------- |
@@ -70,7 +70,7 @@ resources:
 
 验收应读取最终 Pod 的 resources，而不只看 Deployment 源文件。LimitRange、准入和运行时设置可能影响最终配置。[1.28 requests 与 limits 默认规则](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/configuration/manage-resources-containers.md)
 
-资源值应来自启动峰值、稳定负载与故障场景的观察。request 显式固定时，提高 CPU limit 本身不增加上述普通 CPU request 核算；省略 request 而发生默认化，则可能明显提高请求量。实际运行时的资源竞争与调度请求又是两个观察层次。
+资源值应来自启动峰值、稳定负载与故障场景的观察。request 显式固定时，提高 CPU limit 本身不增加上述普通 CPU request 核算；省略 request 而发生默认化，则可能明显提高请求量。调度只看 request，容器实际用了多少、有没有被节流，要到运行时才看得到。
 
 ## 3. 一个 Pod 需要多少资源
 
@@ -90,7 +90,7 @@ resources:
 
 overhead 若由 RuntimeClass 等机制提供，应按实际保存的 Pod 核算。1.28 的 SidecarContainers 是默认关闭的 Alpha；若启用，某些 init 会与后续容器重叠运行，不能套用以上普通 init 简式。[1.28 init 资源共享](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/workloads/pods/init-containers.md)
 
-因此，不能只凭一个容器的 request 解释整个 Pod 的调度结果，也不能仅用“requests 总和小于节点物理内存”判断能否调度。Node allocatable、已有请求、系统保留和其他约束都会影响结果。
+因此，整个 Pod 的调度结果要看各容器 request 的汇总，还要叠加系统保留、其他 Pod 与调度约束；“requests 总和小于节点物理内存”并不是充分条件。Node allocatable、已有请求、系统保留和其他约束都会影响结果。
 
 计算时应把普通 init、Pod 开销和已启用的特性一起纳入。详细条件参见 [Kubernetes 1.28 容器资源管理](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/concepts/configuration/manage-resources-containers.md)。
 
@@ -104,9 +104,9 @@ QoS（Quality of Service，服务质量类别）根据 CPU、内存配置分类�
 | BestEffort | 所有相关容器均无有效的正值 CPU/内存 request 或 limit     | 一个容器完全未设置 CPU/内存资源          |
 | Burstable  | 其他情况                                                 | 本章 250m/1、256Mi/512Mi 示例            |
 
-其他资源字段不直接决定这套 CPU/内存 QoS 分类；不要只检查 YAML 是否出现 resources 就下结论。可从 Pod `status.qosClass` 对照结果。[v1.28.0 QoS 判定源码](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/apis/core/v1/helper/qos/qos.go)
+其他资源字段不直接决定这套 CPU/内存 QoS 分类；YAML 里出现 resources 字段，并不足以确定 QoS 类别。可从 Pod `status.qosClass` 对照结果。[v1.28.0 QoS 判定源码](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/apis/core/v1/helper/qos/qos.go)
 
-QoS 可参与节点压力下的处理，但不是 CPU 性能排名或业务优先级。Burstable 不代表资源一定不足，BestEffort 不代表立即被驱逐；Guaranteed 仍可能因内存 limit 触发 OOM，不等于业务 SLO（Service Level Objective，服务等级目标）的保证，也不等于 PriorityClass（优先级类别）。
+QoS 可参与节点压力下的处理，但不是 CPU 性能排名或业务优先级。Burstable 只描述 request 与 limit 的关系，BestEffort 也不会因此立即被驱逐；Guaranteed 仍可能因内存 limit 触发 OOM，它既不是业务 SLO（Service Level Objective，服务等级目标）的保证，也与 PriorityClass（优先级类别）无关。
 
 以下只读命令对照最终保存的配置与状态：
 
@@ -132,7 +132,7 @@ ResourceQuota 可限制命名空间等适用范围的资源总量或对象数量
 
 PDB（PodDisruptionBudget，Pod 中断预算）用于约束适用的自愿中断中的可用性，例如通过 Eviction API 进行节点维护时。它不会阻止所有故障，也不保证机器断电时依然保留某个副本数。
 
-PDB 的 `minAvailable` 或 `maxUnavailable` 与 Deployment 滚动更新策略中的同名字段属于不同对象。PDB 不能代替 Deployment 自己的更新预算，也不能让应用在没有健康副本时凭空可用。
+PDB 的 `minAvailable` 或 `maxUnavailable` 与 Deployment 滚动更新策略中的同名字段属于不同对象。PDB 只约束自愿驱逐，Deployment 的更新预算要单独设置；没有健康副本时，PDB 也解决不了可用性问题。
 
 ### 5.1 四副本预算推演
 
@@ -202,11 +202,11 @@ kubectl get pods -n study -l app=catalog
 
 设计预算时需要考虑：副本数、每副本承载能力、就绪检查、故障域、节点维护与依赖。单副本服务要求“不允许中断”可能阻塞受控驱逐，但不会让它自动获得高可用。
 
-进阶字段 `unhealthyPodEvictionPolicy` 在 v1.28 受 PDBUnhealthyPodEvictionPolicy 门控控制，为默认开启的 Beta，并非所有版本的稳定字段。未指定时使用 IfHealthyBudget：Running 但未 Ready 的 Pod，需应用当前健康数不低于所需健康数才允许按该规则驱逐。AlwaysAllow 则允许驱逐这类未健康的 Running Pod，不要求满足健康预算；它不取消健康 Pod 的预算检查。Pending、Succeeded、Failed 等 phase 的处理另有规则，不能把所有非 Ready Pod 混为一类。实际集群若关闭门控，不能依赖该字段。[v1.28.0 门控定义](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/features/kube_features.go)与[1.28 不健康 Pod 驱逐策略](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/run-application/configure-pdb.md)共同限定此行为。
+进阶字段 `unhealthyPodEvictionPolicy` 在 v1.28 受 PDBUnhealthyPodEvictionPolicy 门控控制，为默认开启的 Beta，并非所有版本的稳定字段。未指定时使用 IfHealthyBudget：Running 但未 Ready 的 Pod，需应用当前健康数不低于所需健康数才允许按该规则驱逐。AlwaysAllow 允许驱逐这类未健康的 Running Pod，不受健康预算限制；健康 Pod 的预算检查仍然生效。Pending、Succeeded、Failed 等 phase 的处理另有规则，不能把所有非 Ready Pod 混为一类。实际集群若关闭门控，不能依赖该字段。[v1.28.0 门控定义](https://raw.githubusercontent.com/kubernetes/kubernetes/v1.28.0/pkg/features/kube_features.go)与[1.28 不健康 Pod 驱逐策略](https://raw.githubusercontent.com/kubernetes/website/release-1.28/content/en/docs/tasks/run-application/configure-pdb.md)共同限定此行为。
 
 ## 6. 如何把数字变成可解释的配置
 
-可以先记录负载：分别观察启动阶段与稳定运行时的 CPU、内存、延迟和重启原因，再设置请求与限制，并验证高负载及缩容时的行为。每次变更都保留旧值和观察窗口，不要同时调整资源与应用版本，以免无法判断变化原因。
+可以先记录负载：分别观察启动阶段与稳定运行时的 CPU、内存、延迟和重启原因，再设置请求与限制，并验证高负载及缩容时的行为。每次变更都保留旧值和观察窗口；同时调整资源与应用版本，会无法判断变化来自哪一项。
 
 初次学习可以先读事件和实际对象，不必先改数值：
 
@@ -230,7 +230,7 @@ kubectl get resourcequota,limitrange -n NAMESPACE
 | 节点维护的驱逐无法继续 | PDB、Pod 健康状态及其他维护约束               |
 | HPA 扩容未生效         | 指标和控制器状态、配额、节点容量与调度事件    |
 
-这些是分层取证线索，不是症状与根因的一一对应关系。本章没有执行节点维护。
+这张表说的是先看哪里，不是“某个现象必然对应某个根因”。本章没有执行节点维护。
 
 资源管理关注容量与约束，可用性预算关注特定中断路径；两者都需要与应用的真实服务能力一起验证。继续在[第十五章](/articles/kubernetes-deployment.html)学习逐步发布新版本。
 

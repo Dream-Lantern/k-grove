@@ -47,17 +47,17 @@ GA（General Availability，正式发布）与 RC（Release Candidate，候选�
 
 Redis Open Source 8.8.0 的 [正式发布记录](https://github.com/redis/redis/blob/8.8.0/00-RELEASENOTES)与 [新特性说明](https://redis.io/docs/latest/develop/whats-new/8-8/)列出以下入口：
 
-| 能力                        | 学习重点                                                                                                        |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Array（数组）数据类型       | 有序、可按索引访问的集合，不等同于 List                                                                         |
-| Hash 字段级通知             | 细分字段变化通知，不等同于新增字段 TTL；字段过期见 [第 4 章](/articles/redis-hashes.html)                       |
-| INCREX                      | 将递增、数值边界和期限组合为单条命令                                                                            |
-| XNACK                       | 消费者显式释放待确认（Pending）消息，不代表业务已完成；见 [第 12 章](/articles/redis-streams.html)              |
-| Sorted Set 的 COUNT 聚合    | ZUNION/ZINTER 及其 STORE 版本新增聚合方式，不是普通 ZCOUNT 命令                                                 |
-| JSON.SET FPHA               | 指定同质浮点数组的浮点表示类型，不是所有 JSON 写入的新必填项                                                    |
-| FT.HYBRID / FT.PROFILE 改进 | 前者增加 KNN（K-Nearest Neighbors，k 近邻）候选控制参数，后者支持 HYBRID 分析；不能写成 FT.HYBRID 到 8.8 才出现 |
+| 能力                        | 学习重点                                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Array（数组）数据类型       | 有序、可按索引访问的集合，不等同于 List                                                                                  |
+| Hash 字段级通知             | 细分字段变化通知，不等同于新增字段 TTL；字段过期见 [第 4 章](/articles/redis-hashes.html)                                |
+| INCREX                      | 将递增、数值边界和期限组合为单条命令                                                                                     |
+| XNACK                       | 消费者显式释放待确认（Pending）消息，只表示消息不再重投，业务是否完成要另看；见 [第 12 章](/articles/redis-streams.html) |
+| Sorted Set 的 COUNT 聚合    | ZUNION/ZINTER 及其 STORE 版本新增聚合方式，不是普通 ZCOUNT 命令                                                          |
+| JSON.SET FPHA               | 指定同质浮点数组的浮点表示类型，不是所有 JSON 写入的新必填项                                                             |
+| FT.HYBRID / FT.PROFILE 改进 | 前者增加 KNN（K-Nearest Neighbors，k 近邻）候选控制参数，后者支持 HYBRID 分析；不能写成 FT.HYBRID 到 8.8 才出现          |
 
-INCREX（Increment with Expiration，带过期控制的原子递增）解决传统 INCR 后、EXPIRE 前进程失败可能留下无期限计数键的问题。原子性（Atomicity）指该命令内部更新不被其他客户端命令插入，不等于跨系统提交保证。旧版本可用有限 Lua 脚本组合，8.8.0 起有原生命令：
+INCREX（Increment with Expiration，带过期控制的原子递增）解决传统 INCR 后、EXPIRE 前进程失败可能留下无期限计数键的问题。原子性（Atomicity）指该命令内部更新不被其他客户端命令插入，覆盖范围仅限单个命令。旧版本可用有限 Lua 脚本组合，8.8.0 起有原生命令：
 
 ```redis
 # 原子增加整数计数键 demo:rate:user:1001:minute:123；BYINT 1 加 1，UBOUND 10 限制结果不超过 10（Redis 8.8+）
@@ -71,28 +71,28 @@ UBOUND 允许结果等于上界，默认超界时跳过整个更新、保留原�
 
 ## 2. 8.6：把能力与保证分开
 
-LRM（Least Recently Modified，最近最少修改）关注修改，而 LRU（Least Recently Used，最近最少使用）关注访问，两者不能只靠名字认定哪个更适合。新策略是否适用于业务，要看读写分布与允许淘汰的数据范围。
+LRM（Least Recently Modified，最近最少修改）按“最后一次写入的时间”挑淘汰对象，LRU（Least Recently Used，最近最少使用）按“最后一次被读或写的时间”挑，一个看写、一个看访问。哪个更合适不能靠名字断定，要看你的读写比例，以及哪些数据允许被淘汰。
 
 HOTKEYS 等能力为热点定位增加了工具，但应核对可用命令、采集成本、权限与观测窗口，不能将旧版本不存在的命令写入通用排障脚本。
 
-Streams 的 IDMP/IDMPAUTO（Idempotent Production，显式/自动幂等生产选项）为生产条目的去重提供新机制，仍需理解去重标识、保留时限和容量约束。它不自动把消费者对外部数据库的副作用变成“恰好执行一次”，也不替代 PEL（Pending Entries List，待确认条目列表）和故障处理。[Redis 8.6 新特性](https://redis.io/docs/latest/develop/whats-new/8-6/)
+Streams 的 IDMP/IDMPAUTO（Idempotent Production，显式/自动幂等生产选项）让 XADD 自己按去重标识判断这条要不要真的写进去，重复投递不会变成两条。使用时仍要弄清去重标识怎么取、保留多久、占多少容量。它不自动把消费者对外部数据库的副作用变成“恰好执行一次”，也不替代 PEL（Pending Entries List，待确认条目列表）和故障处理。[Redis 8.6 新特性](https://redis.io/docs/latest/develop/whats-new/8-6/)
 
-Redis Open Source 8.6.0 的历史已知限制是：避免将 XADD IDMP / IDMPAUTO 与 `appendonly yes`、`aof-use-rdb-preamble no` 组合使用。两项是 redis.conf 配置，不是可直接发送的 Redis 命令；它们表示启用 AOF（Append Only File，追加写日志），但基础部分不使用 RDB（Redis Database，数据库快照）前导格式。不能把这条历史问题推广为整个 8.6 分支永久不可用，也不能仅凭“下一补丁修复”的计划确定完成版本。
+Redis Open Source 8.6.0 的历史已知限制是：避免将 XADD IDMP / IDMPAUTO 与 `appendonly yes`、`aof-use-rdb-preamble no` 组合使用。两项是 redis.conf 配置，不是可直接发送的 Redis 命令；它们表示启用 AOF（Append Only File，追加写日志），但基础部分不使用 RDB（Redis Database，数据库快照）前导格式。这条历史问题只对应具体版本，不能推广为整个 8.6 分支永久不可用；“下一补丁修复”也只是计划，完成版本要等发布记录。
 
-| 补丁        | 本次已核实的发布记录                                                                                                                                           | 可以得出的结论                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| 8.6.0       | 明列上述非默认 AOF 组合限制                                                                                                                                    | 不把此组合当作已验证可用                                        |
-| 8.6.1       | 列出 HOTKEYS 与 RDB 加载等修复，未列 IDMP 持久化修复                                                                                                           | 不能把计划文字当成该补丁修复证据                                |
-| 8.6.2       | #14794 增加内部 XIDMPRECORD 并在 AOFRW 输出；#14858 修复重复去重标识 IID 命中时的元数据变更记录；#14869 修复 RDB 加载后的 IDMP 定时过期；另有 #14897 IDMP 修复 | 已有明确持久化与恢复修复，仍须验证目标组合                      |
-| 8.6.3–8.6.6 | 逐节检查，未列出新增 IDMP 专项修复；包含其他 Streams、加载及安全修复                                                                                           | 不据此声称所有 IDMP 问题均已解决，也不能只挑 8.6.2 忽略后续修复 |
+| 补丁        | 本次已核实的发布记录                                                                                                                                           | 可以得出的结论                                           |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| 8.6.0       | 明列上述非默认 AOF 组合限制                                                                                                                                    | 不把此组合当作已验证可用                                 |
+| 8.6.1       | 列出 HOTKEYS 与 RDB 加载等修复，未列 IDMP 持久化修复                                                                                                           | 计划文字只是说明，不构成该补丁的修复证据                 |
+| 8.6.2       | #14794 增加内部 XIDMPRECORD 并在 AOFRW 输出；#14858 修复重复去重标识 IID 命中时的元数据变更记录；#14869 修复 RDB 加载后的 IDMP 定时过期；另有 #14897 IDMP 修复 | 已有明确持久化与恢复修复，仍须验证目标组合               |
+| 8.6.3–8.6.6 | 逐节检查，未列出新增 IDMP 专项修复；包含其他 Streams、加载及安全修复                                                                                           | 不能据此认为所有 IDMP 问题均已解决；后续补丁仍需逐项核对 |
 
 AOFRW（AOF Rewrite，AOF 重写）不能只重建可见消息，还需恢复去重元数据。8.6.2 的 XIDMPRECORD 用于重写文件中重建生产者与去重标识的映射，是内部恢复命令，不是业务需要手工调用的接口。结论对照 [8.6.6 标签所含逐补丁发布记录](https://github.com/redis/redis/blob/8.6.6/00-RELEASENOTES)以及 [8.6.1 aof.c](https://github.com/redis/redis/blob/8.6.1/src/aof.c)、[8.6.2 aof.c](https://github.com/redis/redis/blob/8.6.2/src/aof.c)：前者没有 XIDMPRECORD 输出，后者已有该恢复逻辑。
 
-本次没有验证任何 IDMP 持久化组合。采用前须在目标补丁测试：RDB 前导开/关、重写前/后重启、已有去重标识重试、去重状态到期及副本切换。应检查重启后是否仍返回原消息标识、是否错误新增或过早遗忘；发布记录确认修复不等于自己的恢复实验通过。
+本次没有验证任何 IDMP 持久化组合。采用前须在目标补丁测试：RDB 前导开/关、重写前/后重启、已有去重标识重试、去重状态到期及副本切换。应检查重启后是否仍返回原消息标识、是否错误新增或过早遗忘；发布记录确认修复，只说明上游认可该改动；自己的恢复实验仍要单独通过。
 
 ## 3. 8.10：紧凑表示与备份恢复的阅读入口 {#_3-8-10-继续观察-不追着目录堆命令}
 
-8.10 专门版本页列出紧凑 Hash、增量备份恢复和若干新命令。学习时应先理解原有编码与恢复边界，再研究新的文件集和一致性边界；不要看到“增量备份”就假定任意复制变化文件都可恢复。[Redis 8.10 更新说明](https://redis.io/docs/latest/develop/whats-new/8-10/)
+8.10 专门版本页列出紧凑 Hash、增量备份恢复和若干新命令。学习时应先理解原有编码与恢复边界，再研究新的文件集和一致性边界；“增量备份”只覆盖特定变化文件，任意复制变化文件未必可恢复。[Redis 8.10 更新说明](https://redis.io/docs/latest/develop/whats-new/8-10/)
 
 与日常需求关系不大的新命令，保留索引比再写一篇只有语法的短章更合适。
 
@@ -121,14 +121,14 @@ HGET demo:user:1 age
 
 Redis Open Source 8.10.0 新增的节点备份使用 MP-AOF（Multi-part AOF，多部分 AOF），由 Redis 固定文件集合，而不是让调用者任意复制正在变化的 AOF 目录：
 
-| 命令           | 主要作用与条件                                         |
-| -------------- | ------------------------------------------------------ |
-| BACKUP START   | 打开备份窗口，触发或接入基础快照生成，可能先等待       |
-| BACKUP LIST    | 列出目前已固定的不可变文件；封存前不一定完整           |
-| BACKUP SEAL    | 从 incrementing 封存基础文件、增量及清单，确定恢复边界 |
-| BACKUP STATUS  | 查询状态、开始/封存时间与错误                          |
-| BACKUP CLEANUP | 复制确认后清理 sealed/failed 本地备份文件              |
-| BACKUP ABORT   | 取消尚未封存的备份                                     |
+| 命令           | 主要作用与条件                                                               |
+| -------------- | ---------------------------------------------------------------------------- |
+| BACKUP START   | 打开备份窗口，触发或接入基础快照生成，可能先等待                             |
+| BACKUP LIST    | 列出目前已固定的不可变文件；封存前不一定完整                                 |
+| BACKUP SEAL    | 把仍在增长的增量部分封存，连同基础文件与清单一起固定，确定能恢复到哪个时间点 |
+| BACKUP STATUS  | 查询状态、开始/封存时间与错误                                                |
+| BACKUP CLEANUP | 复制确认后清理 sealed/failed 本地备份文件                                    |
+| BACKUP ABORT   | 取消尚未封存的备份                                                           |
 
 这些命令都不需要额外位置参数，但状态条件必须满足；START 的 OK 不是“备份已完成”。配置、完整时序、`preload-file` 恢复与 RPO/RTO 验收见 [第 31 章](/articles/redis-security-maintenance.html)，语法入口见 [BACKUP](https://redis.io/docs/latest/commands/backup/)。
 
@@ -144,13 +144,13 @@ JSON（JavaScript Object Notation，JavaScript 对象表示法）使用 JSONPath
 | 访问名为 size、in 的字段      | `$.size`、`$["in"]` | 它们是保留操作符，需明确字段访问上下文         |
 | 访问 arr 下名为 length 的字段 | `$.arr.length`      | `$.arr.length()` 则是函数调用，语义不同        |
 
-升级前收集实际路径表达式回归，尤其关注特殊字段名、括号、运算符和客户端转义；不要只测新增函数。依据为 [官方 JSONPath 兼容警告与语法](https://redis.io/docs/latest/develop/data-types/json/path/)。JSON 与 Search 的基本建模见 [第 33 章](/articles/redis-extensions.html)。
+升级前收集实际路径表达式回归，尤其关注特殊字段名、括号、运算符和客户端转义；只测新增函数会漏掉旧路径的回归。依据为 [官方 JSONPath 兼容警告与语法](https://redis.io/docs/latest/develop/data-types/json/path/)。JSON 与 Search 的基本建模见 [第 33 章](/articles/redis-extensions.html)。
 
 8.10.0 是能力引入点，不是推荐停留点；已核对 [8.10.2 发布记录](https://github.com/redis/redis/blob/8.10.2/00-RELEASENOTES)，其中 8.10.1、8.10.2 含后续安全修复，包括加载、向量与 ACL 相关问题。仍需按实际变更日审查目标补丁，不据本章日期假定某补丁永远最新。
 
 ### Redis 8.12-RC1：预发布能力观察，不作为生产升级基线
 
-截至本次核验，[8.12-RC1 官方发布页](https://github.com/redis/redis/releases/tag/8.12-rc1)标记为 Pre-release，明确不适合生产。仅选择与已有章节相连的三项观察：Set 成员级过期让集合成员可独立到期；压缩 Bitmap（位图）增加一种更适合部分稀疏集合的表示；BLESS 允许指定键避免淘汰，不能据此推导完整的数据保护保证。
+截至本次核验，[8.12-RC1 官方发布页](https://github.com/redis/redis/releases/tag/8.12-rc1)标记为 Pre-release，明确不适合生产。仅选择与已有章节相连的三项观察：Set 成员级过期让集合成员可独立到期；压缩 Bitmap（位图）增加一种更适合部分稀疏集合的表示；BLESS 可以把指定的键标成“不要淘汰”，但只对列出来的那些键生效。
 
 这些候选版本能力在正式版发布后核对语义和兼容性。发布说明还提及 Cluster 迁移进度观测改进，迁移验证方法沿用 [第 24 章](/articles/redis-cluster-operations.html)。
 
@@ -164,12 +164,12 @@ JSON（JavaScript Object Notation，JavaScript 对象表示法）使用 JSONPath
 | HEXPIRE / HTTL       | 7.4          | 字段存在、覆盖后的 TTL 语义、客户端回复解析；见第 4 章               |
 | XACKDEL              | 8.2          | KEEPREF / DELREF / ACKED 的多组删除策略；见第 12 章                  |
 | XADD IDMP / IDMPAUTO | 8.6.0        | 按上文区分 8.6.0 历史限制与 8.6.2 修复；目标组合仍需恢复验证         |
-| INCREX               | 8.8.0        | 整数/浮点模式、实际增量、边界与期限，不等于跨系统请求去重            |
+| INCREX               | 8.8.0        | 整数/浮点模式、实际增量、边界与期限；去重仍要靠业务键                |
 | BACKUP / HIMPORT 等  | 8.10         | 目标产品可用性、命令参数、备份文件集与恢复路径；不是本册通用恢复步骤 |
 
 最低版本标明能力的引入时间；实际发行版、客户端与持久化组合还需单独验证。
 
-版本号不等于功能可用性。Redis Open Source、Redis Stack、Redis Software、Redis Cloud 的发行与开放能力不同，COMMAND INFO 只能提供第一层证据，仍需核对参数、权限和产品限制。
+版本号只标发布顺序，功能是否可用要另查。Redis Open Source、Redis Stack、Redis Software、Redis Cloud 的发行与开放能力不同，COMMAND INFO 只能提供第一层证据，仍需核对参数、权限和产品限制。
 
 | 验证维度 | 检查内容                                                                                    |
 | -------- | ------------------------------------------------------------------------------------------- |
@@ -191,4 +191,4 @@ JSON（JavaScript Object Notation，JavaScript 对象表示法）使用 JSONPath
 
 完成这些验证后，再制定分批变更、观察和回退计划。回退可能涉及持久化格式与扩展版本，因此不能默认老版本能够直接加载新版本写出的文件。未经验证的路径，应明确标记为未验证，而不能写成“兼容”。
 
-升级成功不等于可以安全回退。升级前保留可由旧版本恢复的独立备份、配置与扩展依赖，并验证回退后的业务数据边界；若上线后继续写入，回退还要处理这段新数据，不能只把二进制换回去。
+升级成功只说明新版本能跑，回退是否安全要单独验证。升级前保留可由旧版本恢复的独立备份、配置与扩展依赖，并验证回退后的业务数据边界；若上线后继续写入，回退还要处理这段新数据，不能只把二进制换回去。
