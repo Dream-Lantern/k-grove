@@ -83,12 +83,12 @@ ZRANGE demo:rank:ties 0 -1 WITHSCORES
 # 读取 Zset demo:rank:ties 的索引范围 0～-1，包含两端；索引从 0 开始，-1 表示最后一项
 # REV 按逆序返回；WITHSCORES 同时返回每个成员的分数
 ZRANGE demo:rank:ties 0 -1 REV WITHSCORES
-# 读取 Zset demo:rank:ties 的字典序范围；BYLEX 按成员字节序筛选，- 和 + 分别表示无下界和无上界，示例要求成员同分
+# 读取 Zset demo:rank:ties 的字典序范围；BYLEX 按成员字节序筛选，- 和 + 分别表示无下界和无上界，使用 BYLEX 的前提是成员必须同分。
 # 默认按正序返回
 ZRANGE demo:rank:ties - + BYLEX
 ```
 
-预期新增 `3` 个成员，正向为 alice、bob、carol，反向为 carol、bob、alice，分数均为 `100`；BYLEX 返回 alice、bob、carol。字节字典序比较的是成员的二进制字节，不是语言学排序。 **BYLEX 需要成员具有相同 score 才能得到预期字典序；不同 score 下回复未规定，不能当作全局字典序查询。** Redis 不记录谁先达到该分数；业务若要求先到先排，需额外设计模型。
+预期新增 `3` 个成员，正向为 alice、bob、carol，反向为 carol、bob、alice，分数均为 `100`；BYLEX 返回 alice、bob、carol。字节字典序比较的是成员的二进制字节，不是语言学排序。 **BYLEX 需要成员具有相同 score 才能得到预期字典序；不同 score 下回复未规定，不能当作全局字典序查询。** 
 
 ## 2. 更新条件与计数返回
 
@@ -129,9 +129,9 @@ ZINCRBY 可按增量修改分数。score 使用 IEEE 754（IEEE Standard for Flo
 
 ## 3. 分数范围与返回量
 
-范围边界通常有闭区间与 `(` 前缀表示的开区间规则，不把数学表达式中的方括号直接当成任意命令参数。
+范围边界通常有闭区间与 `(` 前缀表示的开区间规则。
 
-下表是官方命令复杂度，表示工作量随规模增长的趋势，不是固定耗时。N 为集合成员数，M 为本次返回或处理的成员数：
+下表是官方命令复杂度，N 为集合成员数，M 为本次返回或处理的成员数：
 
 | 命令          | 复杂度                                    |
 | ------------- | ----------------------------------------- |
@@ -145,8 +145,6 @@ ZINCRBY 可按增量修改分数。score 使用 IEEE 754（IEEE Standard for Flo
 [ZADD](https://redis.io/docs/latest/commands/zadd/) · [ZSCORE](https://redis.io/docs/latest/commands/zscore/) · [ZRANK](https://redis.io/docs/latest/commands/zrank/) · [ZRANGE](https://redis.io/docs/latest/commands/zrange/) · [ZRANGEBYSCORE](https://redis.io/docs/latest/commands/zrangebyscore/) · [ZREM](https://redis.io/docs/latest/commands/zrem/)
 
 ZRANGE 的 LIMIT 用于 BYSCORE/BYLEX 范围，不能用于默认的索引查询。很大的 offset（跳过的成员数）仍需遍历前面的成员，可能产生 O(N) 级成本；LIMIT 不会把任意深度分页变成常数时间。大返回量及全量 WITHSCORES 还会消耗处理器、内存与网络资源。
-
-历史 ZRANGEBYSCORE、ZREVRANGE 等命令按各自参数解释；本章以注明版本的统一 ZRANGE 为教学入口，范围、顺序和分数选项分别查阅。
 
 ## 4. 排行榜之外的用途
 
@@ -163,15 +161,13 @@ ZADD demo:delayed 100 task-a 120 task-b 150 task-c
 ZRANGE demo:delayed -inf 110 BYSCORE
 ```
 
-预期新增 `3` 个任务，查询只返回 task-a；`-inf` 表示负无穷。多个 Worker（工作进程，负责执行任务）仍可能同时查到 task-a，查询没有领取或删除它。应用还需原子领取、状态更新、超时重试和业务幂等（Idempotency，使重复请求不重复产生业务效果），见 [第 28 章：锁、限流与业务幂等](/articles/redis-locks-rate-limits.html)。
-
-用 score 表示到期时间，也不会让 Redis 自动在该时刻准确触发任务。轮询延迟、时钟与实例故障均需处理。
+预期新增 `3` 个任务，查询只返回 task-a；`-inf` 表示负无穷。多个 Worker（工作进程，负责执行任务）可能同时查到 task-a。应用还需原子领取、状态更新、超时重试和业务幂等（Idempotency，使重复请求不重复产生业务效果），见 [第 28 章：锁、限流与业务幂等](/articles/redis-locks-rate-limits.html)。
 
 ## 5. 聚合与 Cluster 条件
 
 ZUNIONSTORE、ZINTERSTORE 等聚合可结合权重与 SUM/MIN/MAX 处理分数，结果写入目标键，属于变更操作。参与键和目的键需要满足适用的 Cluster 约束，不能靠“恰好在同一节点”替代同槽判断。
 
-Redis Cluster（Redis 集群）按 Hash Slot（哈希槽）分配键，同一节点可承载多个槽，所以同节点不等于同槽。以下只在启用了 Cluster 的学习节点执行，无需先创建这些键；预期三个槽编号相同：
+Redis Cluster（Redis 集群）按 Hash Slot（哈希槽）分配键，同一节点可承载多个槽，所以同节点不等于同槽。以下只在启用了 Cluster 的学习节点执行：
 
 ```redis
 # 计算键 demo:{rank}:day1 所属的槽号；花括号内的 hash tag 用于确定槽，相同 tag 的键会落在同一槽
@@ -193,9 +189,9 @@ CLUSTER KEYSLOT demo:{rank}:result
 
 Dictionary 按成员快速查找 score；Skip List 通过多层有序链接跳过部分成员，支持分数范围和排名查询。两者共同维护同一份成员与分数关系，分别服务按成员查找与有序访问。
 
-7.2.0 中，`zset-max-listpack-entries` 默认 `128`，限制紧凑集合成员数；`zset-max-listpack-value` 默认 `64` 字节，限制成员长度。增长超过适用阈值，或不能满足容量安全检查时，会转为 skiplist 与 dictionary；创建时也可能根据预计规模直接选择后者，不能只按当前成员数推断编码。[7.2.0 t_zset.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_zset.c) · [7.2.0 redis.conf](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf)
+7.2.0 中，`zset-max-listpack-entries` 默认 `128`，限制紧凑集合成员数；`zset-max-listpack-value` 默认 `64` 字节，限制成员长度。增长超过适用阈值，或不能满足容量安全检查时，会转为 skiplist 与 dictionary；创建时也可能根据预计规模直接选择skiplist+dictionary，所以不能只按当前成员数推断编码。[7.2.0 t_zset.c](https://raw.githubusercontent.com/redis/redis/7.2.0/src/t_zset.c) · [7.2.0 redis.conf](https://raw.githubusercontent.com/redis/redis/7.2.0/redis.conf)
 
-历史对照：Redis Open Source 6.2.0 的小集合使用 ziplist（压缩列表），7.0.0 改为 listpack；较大集合仍有跳表与字典组合。这里只比较固定版本，不外推所有早期实现，更不把编码名称当作 Redis 对外命令接口的行为差异。[6.2.0 源码](https://raw.githubusercontent.com/redis/redis/6.2.0/src/t_zset.c) · [7.0.0 源码](https://raw.githubusercontent.com/redis/redis/7.0.0/src/t_zset.c)
+历史对照：Redis Open Source 6.2.0 的小集合使用 ziplist（压缩列表），7.0.0 改为 listpack；较大集合仍有跳表与字典组合。[6.2.0 源码](https://raw.githubusercontent.com/redis/redis/6.2.0/src/t_zset.c) · [7.0.0 源码](https://raw.githubusercontent.com/redis/redis/7.0.0/src/t_zset.c)
 
 ## 6. 将成员、精度与槽关系落实到接口 {#_6-读这个结构时的检查清单}
 

@@ -21,7 +21,7 @@ order: 8
 
 记录用户当天是否活跃时，每人只需一个“是/否”状态。Bitmap（位图）利用 String（字符串）的 bit（二进制位，取值为 0 或 1）保存这些标记，**不是独立的 Redis 数据类型**。用户标识能映射到紧凑、有界的位置时，这种存法可以节省空间，String 基础见 [第 3 章](/articles/redis-strings.html)。
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，预期结果是教学推演，假定各示例新键起初不存在、无并发修改；同节接续命令沿用前文数据。以 Redis Open Source 7.2.0 为基准，新参数另标最低版本。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。以 Redis Open Source 7.2.0 为基准，新参数另标最低版本。
 
 ## 1. 先确定偏移映射
 
@@ -66,7 +66,7 @@ BITCOUNT demo:active:day-1
 
 预期依次为 `0`、`1`、`1`。42 是位偏移，不是第 42 个字节。位图空间取决于最大 offset，不是实际置位人数；写到位置 k，原始字节长度至少需要 `floor(k / 8) + 1`，中间未写的位置补零。
 
-Redis Open Source 7.2.0 默认 String 长度限制为 512 MB（512 × 1024 × 1024 字节），对应 SETBIT offset 范围 `0` 到 `2^32-1`。源码按 `proto-max-bulk-len` 检查范围，因此这是默认配置边界，不外推为所有自定义配置的硬上限。即使只置一个 bit，接近上限的首次写入也可能分配大块连续内存、补零并造成延迟；理论上限不是业务建议。[SETBIT 分配风险](https://redis.io/docs/latest/commands/setbit/) · [7.2.0 offset 检查](https://raw.githubusercontent.com/redis/redis/7.2.0/src/bitops.c)
+Redis Open Source 7.2.0 默认 String 长度限制为 512 MB（512 × 1024 × 1024 字节），对应 SETBIT offset 范围 `0` 到 `2^32-1`。源码按 `proto-max-bulk-len` 检查范围，这是默认配置边界。即使只置一个 bit，接近上限的首次写入也可能分配大块连续内存、补零并造成延迟；理论上限不是业务建议。[SETBIT 分配风险](https://redis.io/docs/latest/commands/setbit/) · [7.2.0 offset 检查](https://raw.githubusercontent.com/redis/redis/7.2.0/src/bitops.c)
 
 反例推演：用户标识 `900000000000` 直接作为 offset，理论上需要约 112.5 GB 的原始位数据，且在上述默认配置下直接超出范围、命令会报错。即使换成范围内的巨大稀疏标识，也可能浪费大量内存；不要为了演示而执行这类大偏移写入。
 
@@ -76,9 +76,11 @@ Redis Open Source 7.2.0 默认 String 长度限制为 512 MB（512 × 1024 × 10
 
 ## 2. 字节区间与位区间
 
-BITCOUNT 统计值为 1 的位数。传统 start/end 默认按 byte（字节，每字节 8 位）索引解释；Redis Open Source 7.0.0 起可显式指定 BYTE 或 BIT，边界均包含在范围内。接续上一节仅 offset 0 置位的 `demo:bitmap`，再置位 offset 8：
+BITCOUNT 统计值为 1 的位数。传统 start/end 默认按 byte（字节，每字节 8 位）索引解释；Redis Open Source 7.0.0 起可显式指定 BYTE 或 BIT，边界均包含在范围内。
 
 ```redis
+# 将位图 demo:bitmap 的位偏移 0 设为 1；位偏移从 0 开始，返回该位置修改前的位值
+SETBIT demo:bitmap 0 1
 # 将位图 demo:bitmap 的位偏移 8 设为 1；位偏移从 0 开始，返回该位置修改前的位值
 SETBIT demo:bitmap 8 1
 # 统计位图 demo:bitmap 中值为 1 的位数；0～2 是包含两端的范围，单位为字节（默认）

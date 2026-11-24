@@ -21,7 +21,7 @@ order: 10
 
 查找附近商店时，Redis GEO（Geospatial，地理空间索引）可以保存成员位置，再按中心和范围检索。先确定经纬度和单位，再选择范围、排序与返回数量；它不能直接替代完整 GIS（Geographic Information System，地理信息系统）、道路规划和高精度测距。
 
-以下 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。坐标和结果是教学示意；假定在独立学习实例上从不存在的 `demo:places` 开始，按顺序执行且无并发修改。实现以 Redis Open Source 7.2.0 为参照；基础 GEO 命令自 3.2.0 起提供，GEOSEARCH / GEOSEARCHSTORE 自 6.2.0 起提供。
+以下 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。坐标和结果是教学示意；从 `demo:places` 开始，按顺序执行且无并发修改。实现以 Redis Open Source 7.2.0 为参照；基础 GEO 命令自 3.2.0 起提供，GEOSEARCH / GEOSEARCHSTORE 自 6.2.0 起提供。
 
 ## 1. 经纬度顺序与单位
 
@@ -89,7 +89,7 @@ GEOSEARCH demo:places FROMLONLAT 116.40 39.90 BYRADIUS 5 km COUNT 10 ANY
 
 三条都最多返回 10 个成员，现有数据只有两点，不会凭空凑满 10 个。COUNT 限制返回数量，不保证只扫描这么多候选。以 7.2.0 为准，不带 ANY 且省略排序的 COUNT 会按 ASC 选最近结果，所以前两条在此规则下等价；ANY 允许找到足够结果后提前停止，可能减少搜索工作，但不保证全局最近。ANY 可与排序选项组合；7.2.0 会对提前找到的结果再排序，仍不能恢复全局最优保证。要分别判断返回数量、候选扫描量和排序要求。[官方 COUNT ANY 语义](https://redis.io/docs/latest/commands/geosearch/) · [7.2.0 提前停止与排序](https://raw.githubusercontent.com/redis/redis/7.2.0/src/geo.c)
 
-GEOSEARCHSTORE 把结果写入目标有序集合。下面是单行 Redis 命令，不使用 Shell 的反斜杠续行：
+GEOSEARCHSTORE 把结果写入目标有序集合。下面是单行 Redis 命令：
 
 ```redis
 # 查询源地理索引 demo:places，将结果覆盖保存到目标 Zset demo:nearby；FROMLONLAT 116.40 39.90 指定中心经度、纬度

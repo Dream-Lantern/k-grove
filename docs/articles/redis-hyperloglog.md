@@ -21,7 +21,7 @@ order: 9
 
 网站每天约有多少独立访客？如果只要数量趋势，不需要用户名单，可以考虑 HyperLogLog（HLL，基数估算概率数据结构）。它用固定规模的统计信息近似估算 Cardinality（基数，即不重复元素数量），以统计误差换取较少内存，不保存可精确查询的成员集合。
 
-本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令，假定示例新键起初不存在且无并发修改。以下按 Redis Open Source 7.2.0 解释实现，HLL 命令自 Redis Open Source 2.8.9 起提供。
+本章 `redis` 代码块是可在 `redis-cli` 交互环境输入的 Redis 命令。以下按 Redis Open Source 7.2.0 解释实现，HLL 命令自 Redis Open Source 2.8.9 起提供。
 
 ## 1. 先区分数量与成员查询
 
@@ -53,7 +53,7 @@ HLL 不保存一份可重新取出的完整用户名单。因此不能用它判�
 
 只依赖一条最长零串容易受偶然极端值影响。多个寄存器把输入分组，各自保留观察到的最大零串统计值，再综合估计，降低波动；哈希映射和样本本身仍有随机性，所以结果存在统计误差，不能当成精确计数。[HLL 原始论文](https://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf)
 
-“前导零”常用于解释原理；Redis Open Source 7.2.0 的具体实现是用哈希低 14 位选择寄存器，再从剩余部分的低位端数连续零，记录“零的数量加 1”。这里的方向是实现约定，不应把概念图当作逐位源码布局。[7.2.0 hllPatLen 与寄存器更新](https://raw.githubusercontent.com/redis/redis/7.2.0/src/hyperloglog.c)
+“前导零”常用于解释原理；Redis Open Source 7.2.0 的具体实现是用哈希低 14 位选择寄存器，再从剩余部分的低位端数连续零，记录“零的数量加 1”。这里的方向是实现约定。[7.2.0 hllPatLen 与寄存器更新](https://raw.githubusercontent.com/redis/redis/7.2.0/src/hyperloglog.c)
 
 ## 2. 基本用法与返回
 
